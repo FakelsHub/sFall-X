@@ -291,6 +291,7 @@ const DWORD db_fseek_ = 0x4C60C0;
 const DWORD db_fwriteByte_ = 0x4C61AC;
 const DWORD db_fwriteByteCount_ = 0x4C6464;
 const DWORD db_fwriteInt_ = 0x4C6214;
+const DWORD db_fwriteLongCount_ = 0x4C6550;
 const DWORD db_get_file_list_ = 0x4C6628;
 const DWORD db_read_to_buf_ = 0x4C5DD4;
 const DWORD dbase_close_ = 0x4E5270;

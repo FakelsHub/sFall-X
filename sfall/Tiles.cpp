@@ -1,4 +1,4 @@
-/*
+﻿/*
  *    sfall
  *    Copyright (C) 2008, 2009, 2010, 2012  The sfall team
  *
@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include "Define.h"
 #include "FalloutEngine.h"
 #include "FileSystem.h"
 #include "Tiles.h"
@@ -71,6 +72,27 @@ struct frm {
 
 static OverrideEntry** overrides;
 static DWORD origTileCount=0;
+
+static const DWORD Tiles_0E[] = {
+	0x484255, 0x48429D, 0x484377, 0x484385, 0x48A897, 0x48A89A, 0x4B2231,
+	0x4B2374, 0x4B2381, 0x4B2480, 0x4B248D, 0x4B2A7C, 0x4B2BDA,
+};
+
+static const DWORD Tiles_3F[] = {
+	0x41875D, 0x4839E6, 0x483A2F, 0x484380, 0x48A803, 0x48A9F2, 0x48C96C,
+	0x48C99F, 0x48C9D2, 0x4B2247, 0x4B2334, 0x4B2440, 0x4B2AB9, 0x4B2B8F,
+	0x4B2BF4,
+};
+
+static const DWORD Tiles_40[] = {
+	0x48C941, 0x48C955, 0x48CA5F, 0x48CA71, 0x48CA9B, 0x48CAAD, 0x48CADB,
+	0x48CAEB, 0x48CAF7, 0x48CB20, 0x48CB32, 0x48CB61,
+};
+
+static const DWORD Tiles_C0[] = {
+	0x48424E, 0x484296, 0x484372, 0x48A88D, 0x48A892, 0x4B222C, 0x4B236F,
+	0x4B247B, 0x4B2A77, 0x4B2BD5,
+};
 
 static DWORD db_fopen(const char* path, const char* mode) {
 	DWORD result;
@@ -299,7 +321,109 @@ end:
 	}
 }
 
+static void __declspec(naked) art_id_hook() {
+	__asm {
+		cmp  esi, 0x4000000                       // Tile?
+		jne  end                                  // yes
+		and  eax, 0x3FFF
+		retn
+end:
+		and  eax, 0xFFF
+		retn
+	}
+}
+
+static void __declspec(naked) art_get_name_hook() {
+	 __asm {
+		sar  eax, 0x18
+		cmp  eax, ObjType_Tile
+		jne  end
+		mov  esi, edx
+		mov  ebp, edx
+		and  esi, 0x3FFF
+		and  ebp, 0xC000
+		sar  ebp, 0xE
+end:
+		test esi, esi
+		retn
+	 }
+}
+
+#ifdef TRACE
+static void __declspec(naked) map_save_file_hook() {
+	__asm {
+		push edx
+nextSquare:
+		and  dword ptr [edx], 0xFFF0FFF
+		add  edx, 4
+		loop nextSquare
+		pop  edx
+		mov  ecx, ebx
+		jmp  db_fwriteLongCount_
+	}
+}
+
+static void __declspec(naked) square_load_hook() {
+	 __asm {
+		mov  ecx, ebx
+		mov  edi, edx
+		call db_freadIntCount_
+		test eax, eax
+		jnz  end
+		pushad
+		mov  eax, 0xC000C000
+		mov  ebx, 0x3F0E
+loopSquares:
+		test [edi], eax
+		jnz  skip
+		add  edi, 4
+		loop loopSquares
+		mov  eax, 0xF000F000
+		mov  ebx, 0x0F0C
+skip:
+		xor  ax, ax
+		shr  eax, 0x10
+		push eax
+		push 0x484371
+		call SafeWrite32
+		xor  eax, eax
+		mov  al, bl
+		push eax
+		push eax
+		push 0x484377
+		call SafeWrite8
+		push 0x484385
+		call SafeWrite8
+		xor  eax, eax
+		mov  al, bh
+		push eax
+		push 0x484380
+		call SafeWrite8
+		popad
+end:
+		retn
+	 }
+}
+#endif
+
 void TilesInit() {
+	if (GetPrivateProfileIntA("Misc", "MoreTiles", 0, ini)) {
+		if (*(DWORD*)0x1000E1BF == 0x1000 && *(DWORD*)0x1000E1D9 == 0x0FFF) { // HRP 4.1.8
+			SafeWrite8(0x1000E1C0, 0x40);
+			SafeWrite8(0x1000E1DA, 0x3F);
+			MakeCall(0x419D46, art_id_hook);
+			MakeCall(0x419479, art_get_name_hook);
+			for (int i = 0; i < sizeof(Tiles_0E)/4; i++) SafeWrite8(Tiles_0E[i], 0xE);
+			for (int i = 0; i < sizeof(Tiles_3F)/4; i++) SafeWrite8(Tiles_3F[i], 0x3F);
+			for (int i = 0; i < sizeof(Tiles_40)/4; i++) SafeWrite8(Tiles_40[i], 0x40);
+			for (int i = 0; i < sizeof(Tiles_C0)/4; i++) SafeWrite8(Tiles_C0[i], 0xC0);
+		}
+	 }
+#ifdef TRACE 
+	 else HookCall(0x483BCD, &map_save_file_hook);
+	 HookCall(0x48434C, &square_load_hook);
+#endif
+
 	tileMode=GetPrivateProfileIntA("Misc", "AllowLargeTiles", 0, ini);
 	if(!tileMode) return;
 	HookCall(0x481D72, &ArtInitHook);

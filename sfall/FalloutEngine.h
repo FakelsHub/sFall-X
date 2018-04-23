@@ -466,6 +466,7 @@ extern const DWORD db_fseek_;
 extern const DWORD db_fwriteByte_;
 extern const DWORD db_fwriteByteCount_;
 extern const DWORD db_fwriteInt_;
+extern const DWORD db_fwriteLongCount_;
 extern const DWORD db_get_file_list_;
 extern const DWORD db_read_to_buf_;
 extern const DWORD dbase_close_;

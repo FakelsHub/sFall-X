@@ -269,6 +269,7 @@
 
 #define WEAPON_TWO_HANDED      (0x200)
 
+#define ObjType_Tile	 (4)
 
 #define ROLL_CRITICAL_FAILURE (0)
 #define ROLL_FAILURE          (1)
