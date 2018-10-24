@@ -33,6 +33,7 @@ WRAP_WATCOM_FFUNC4(void, qsort, void*, base, long, number, long, elSize, DWORD, 
 WRAP_WATCOM_FFUNC3(long, tile_num_in_direction, long, tile, long, rotation,long, distance)
 
 // stdcall
+WRAP_WATCOM_FUNC1(long, gsound_background_volume_get_set, long, setVolume)
 WRAP_WATCOM_FUNC2(GameObject*, ai_retrieve_object, GameObject*, critter, GameObject*, item)
 WRAP_WATCOM_FUNC2(GameObject*, ai_search_environ, GameObject*, critter, long, itemType)
 WRAP_WATCOM_FUNC1(GameObject*, ai_search_inven_armor, GameObject*, critter)

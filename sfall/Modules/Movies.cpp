@@ -35,30 +35,29 @@
 namespace sfall
 {
 
+#define SAFERELEASE(a) { if (a) { a->Release(); a = 0; } }
+
 static DWORD MoviePtrs[MaxMovies];
 char MoviePaths[MaxMovies * 65];
 
-extern IDirect3D9* d3d9;
-extern IDirect3DDevice9* d3d9Device;
-
-#define SAFERELEASE(a) { if (a) { a->Release(); a = 0; } }
+static IDirect3DTexture9* movieTex;
 
 class CAllocator : public IVMRSurfaceAllocator9, IVMRImagePresenter9 {
 private:
-	IDirect3DSurface9* surface;
-	IVMRSurfaceAllocatorNotify9 *pAllocNotify;
 	ULONG RefCount;
-	IDirect3DTexture9* ptex;
+	IVMRSurfaceAllocatorNotify9 *pAllocNotify;
+	IDirect3DSurface9* surface;
+	IDirect3DTexture9* pTex;
 
 public:
-	IDirect3DTexture9* tex;
+	IDirect3DTexture9* mTex;
 
 	CAllocator() {
 		RefCount = 1;
 		surface = nullptr;
 		pAllocNotify = nullptr;
-		tex = nullptr;
-		ptex = nullptr;
+		mTex = nullptr;
+		pTex = nullptr;
 	}
 
 	ULONG _stdcall AddRef() {
@@ -67,7 +66,7 @@ public:
 
 	ULONG _stdcall Release() {
 		if (--RefCount == 0) {
-			TerminateDevice(0);
+			TerminateDevice(-2);
 			if (pAllocNotify) {
 				pAllocNotify->Release();
 				pAllocNotify = nullptr;
@@ -77,8 +76,8 @@ public:
 	}
 
 	HRESULT _stdcall QueryInterface(const IID &riid, void** ppvObject) {
+		dlog_f(" QueryInterface IID: %d", DL_INIT, riid);
 		HRESULT hr = E_NOINTERFACE;
-
 		if (ppvObject == nullptr) {
 			hr = E_POINTER;
 		} else if (riid == IID_IVMRSurfaceAllocator9) {
@@ -94,84 +93,97 @@ public:
 			AddRef();
 			hr = S_OK;
 		}
-
 		return hr;
 	}
 
 	HRESULT _stdcall InitializeDevice(DWORD_PTR dwUserID, VMR9AllocationInfo *lpAllocInfo, DWORD *lpNumBuffers) {
-		HRESULT hr;
-		//Set the device
-		hr = pAllocNotify->SetD3DDevice(d3d9Device, d3d9->GetAdapterMonitor(0));
-		//if(hr!=S_OK) return hr;
+		dlog(" InitializeDevice.", DL_INIT);
 
 		lpAllocInfo->dwFlags |= VMR9AllocFlag_TextureSurface;
 		lpAllocInfo->Pool = D3DPOOL_SYSTEMMEM;
+
 		// Ask the VMR-9 to allocate the surfaces for us.
-		hr = pAllocNotify->AllocateSurfaceHelper(lpAllocInfo, lpNumBuffers, &surface);
+		HRESULT hr = pAllocNotify->AllocateSurfaceHelper(lpAllocInfo, lpNumBuffers, &surface);
 		if (FAILED(hr)) return hr;
 
-		hr = surface->GetContainer(IID_IDirect3DTexture9, (void**)&ptex);
+		hr = surface->GetContainer(IID_IDirect3DTexture9, (void**)&pTex);
 		if (FAILED(hr)) {
-			TerminateDevice(0);
+			TerminateDevice(-1);
 			return hr;
 		}
 
-		d3d9Device->CreateTexture(lpAllocInfo->dwWidth, lpAllocInfo->dwHeight, 1, 0, lpAllocInfo->Format, D3DPOOL_DEFAULT, &tex, nullptr);
-
+		dlog_f(" Height: %d", DL_INIT, lpAllocInfo->dwHeight);
+		dlog_f(" Width: %d", DL_INIT, lpAllocInfo->dwWidth);
+		dlog_f(" Format: %d", DL_INIT, lpAllocInfo->Format);
+		
+		if (d3d9Device->CreateTexture(lpAllocInfo->dwWidth, lpAllocInfo->dwHeight, 1, 0, lpAllocInfo->Format, D3DPOOL_DEFAULT, &mTex, nullptr) != D3D_OK) {
+			dlog(" Fail CreateTexture.", DL_INIT);
+		}
 		return S_OK;
 	}
 
 	HRESULT _stdcall TerminateDevice(DWORD_PTR dwID) {
-		SAFERELEASE(ptex);
+		dlog_f(" TerminateDevice ID: %d", DL_INIT, dwID);
+		SAFERELEASE(pTex);
 		SAFERELEASE(surface);
-		SAFERELEASE(tex);
+		SAFERELEASE(mTex);
 		return S_OK;
 	}
 
 	HRESULT _stdcall GetSurface(DWORD_PTR dwUserID, DWORD SurfaceIndex, DWORD SurfaceFlags, IDirect3DSurface9 **lplpSurface) {
+		dlog(" GetSurface:", DL_INIT);
 		if (SurfaceIndex != 0) return E_FAIL;
+
+		dlog(" OK.", DL_INIT);
 		*lplpSurface = surface;
 		surface->AddRef();
+
 		return S_OK;
 	}
 
 	HRESULT _stdcall AdviseNotify(IVMRSurfaceAllocatorNotify9 *lpIVMRSurfAllocNotify) {
 		if (lpIVMRSurfAllocNotify) {
+			dlog(" AdviseNotify.", DL_INIT);
 			pAllocNotify = lpIVMRSurfAllocNotify;
 			pAllocNotify->AddRef();
-			return S_OK;
+
+			//Set the device
+			HMONITOR hMonitor = d3d9->GetAdapterMonitor(D3DADAPTER_DEFAULT);
+			return pAllocNotify->SetD3DDevice(d3d9Device, hMonitor);
 		} else {
 			return E_FAIL;
 		}
 	}
 
 	HRESULT _stdcall StartPresenting(DWORD_PTR dwUserID) {
+		dlog(" StartPresenting.", DL_INIT);
 		return S_OK;
 	}
+
 	HRESULT _stdcall StopPresenting(DWORD_PTR dwUserID) {
+		dlog(" StopPresenting.", DL_INIT);
 		return S_OK;
 	}
+
 	HRESULT _stdcall PresentImage(DWORD_PTR dwUserID, VMR9PresentationInfo *lpPresInfo) {
-		d3d9Device->UpdateTexture(ptex, tex);
+		dlog(" PresentImage.", DL_INIT);
+		d3d9Device->UpdateTexture(pTex, mTex);
 		return S_OK;
 	}
 };
 
 struct sDSTexture {
+	CAllocator *pMyAlloc;
 	IGraphBuilder *pGraph;
-	ICaptureGraphBuilder2 *pBuild;
+	//ICaptureGraphBuilder2 *pBuild;
 	IBaseFilter *pVmr;
 	IVMRFilterConfig9 *pConfig;
 	IVMRSurfaceAllocatorNotify9 *pAlloc;
 	IMediaControl *pControl;
-	CAllocator *pMyAlloc;
 	IMediaSeeking *pSeek;
-};
+} movieInterface;
 
-static IDirect3DTexture9* tex;
-static sDSTexture info;
-
-void ResumeMovie(sDSTexture* movie) {
+void PlayMovie(sDSTexture* movie) {
 	movie->pControl->Run();
 }
 
@@ -193,77 +205,167 @@ void SeekMovie(sDSTexture* movie, DWORD shortTime) {
 	movie->pSeek->SetPositions(&time, AM_SEEKING_AbsolutePositioning, nullptr, AM_SEEKING_NoPositioning);
 }
 
-DWORD FreeMovie(sDSTexture* info) {
-	if (info->pControl) info->pControl->Release();
-	if (info->pSeek) info->pSeek->Release();
-	if (info->pAlloc) info->pAlloc->Release();
-	if (info->pMyAlloc) info->pMyAlloc->Release();
-	if (info->pConfig) info->pConfig->Release();
-	if (info->pVmr) info->pVmr->Release();
-	if (info->pGraph) info->pGraph->Release();
-	if (info->pBuild) info->pBuild->Release();
+DWORD FreeMovie(sDSTexture* movie) {
+	dlog(" FreeMovie.", DL_INIT);
+	if (movie->pControl) movie->pControl->Release();
+	if (movie->pSeek) movie->pSeek->Release();
+	if (movie->pAlloc) movie->pAlloc->Release();
+	if (movie->pMyAlloc) movie->pMyAlloc->Release();
+	if (movie->pConfig) movie->pConfig->Release();
+	if (movie->pVmr) movie->pVmr->Release();
+	if (movie->pGraph) movie->pGraph->Release();
+	//if (info->pBuild) info->pBuild->Release();
 	return 0;
 }
 
-DWORD CreateDSGraph(wchar_t* path, IDirect3DTexture9** tex, sDSTexture* result) {
-	memset(result, 0, sizeof(sDSTexture));
+void ResetDevice() {
+	//d3d9Device->Release();
+	//d3d9->Release();
+	D3DDISPLAYMODE disMode;
+	D3DPRESENT_PARAMETERS params;
 
-	// Create the Capture Graph Builder.
-	HRESULT hr = CoCreateInstance(CLSID_CaptureGraphBuilder2, 0, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void**)&result->pBuild);
-	if (hr != S_OK) return FreeMovie(result);
+	ZeroMemory(&params, sizeof(params));
+	ZeroMemory(&disMode, sizeof(disMode));
+	
+	HWND window;
+	DWORD temp;
+	GetFalloutWindowInfo(&temp, &temp, &temp, &temp, &window);
 
-	// Create the Filter Graph Manager.
-	hr = CoCreateInstance(CLSID_FilterGraph, 0, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)&result->pGraph);
-	if (hr != S_OK) return FreeMovie(result);
+	d3d9->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &disMode);
 
-	// Initialize the Capture Graph Builder.
-	hr = result->pBuild->SetFiltergraph(result->pGraph);
-	if (hr != S_OK) return FreeMovie(result);
+	dlog_f(" GetAdapterDisplayMode Format: %d", DL_INIT, disMode.Format);
 
-	hr = CoCreateInstance(CLSID_VideoMixingRenderer9, 0, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)&result->pVmr);
-	if (hr != S_OK) return FreeMovie(result);
+	params.BackBufferCount = 1;
+	params.BackBufferFormat = disMode.Format;
+	params.BackBufferWidth = disMode.Width;
+	params.BackBufferHeight = disMode.Height;
+	params.EnableAutoDepthStencil = false;
+	params.MultiSampleQuality = 0;
+	params.MultiSampleType = D3DMULTISAMPLE_NONE;
+	params.Windowed = false;
+	params.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	params.hDeviceWindow = window;
+	params.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+	
+	d3d9Device->Reset(&params);
 
-	hr = result->pGraph->AddFilter(result->pVmr, L"VMR9");
-	if (hr != S_OK) return FreeMovie(result);
-
-	result->pVmr->QueryInterface(IID_IVMRFilterConfig9, (void**)&result->pConfig);
-	result->pConfig->SetRenderingMode(VMR9Mode_Renderless);
-	result->pVmr->QueryInterface(IID_IVMRSurfaceAllocatorNotify9, (void**)&result->pAlloc);
-
-	result->pMyAlloc = new CAllocator();
-
-	result->pMyAlloc->AdviseNotify(result->pAlloc);
-	result->pAlloc->AdviseSurfaceAllocator(0, (IVMRSurfaceAllocator9*)result->pMyAlloc);
-
-	hr = result->pGraph->QueryInterface(IID_IMediaControl, (void**)&result->pControl);
-	hr |= result->pGraph->QueryInterface(IID_IMediaSeeking, (void**)&result->pSeek);
-	if (hr != S_OK) return FreeMovie(result);
-
-	result->pGraph->RenderFile(path, nullptr);
-	result->pControl->Run();
-
-	*tex = result->pMyAlloc->tex;
-	return 1;
 }
 
-static DWORD PlayFrameHook3() {
+DWORD CreateDSGraph(wchar_t* path, IDirect3DTexture9** tex, sDSTexture* movie) {
+	dlog(" CreateDSGraph.", DL_INIT);
+
+	ZeroMemory(movie, sizeof(sDSTexture));
+
+	/*if (Graphics::mode == 4) {
+		ResetDevice();
+	}*/
+
+	// Create the Capture Graph Builder.
+	//HRESULT hr = CoCreateInstance(CLSID_CaptureGraphBuilder2, 0, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void**)&movie->pBuild);
+	//if (hr != S_OK) return FreeMovie(movie);
+
+	// Create the Filter Graph Manager.
+	HRESULT hr = CoCreateInstance(CLSID_FilterGraph, 0, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)&movie->pGraph);
+	if (hr != S_OK) return FreeMovie(movie);
+
+	// Initialize the Capture Graph Builder.
+	//hr = movie->pBuild->SetFiltergraph(movie->pGraph);
+	//if (hr != S_OK) return FreeMovie(movie);
+
+	hr = CoCreateInstance(CLSID_VideoMixingRenderer9, 0, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)&movie->pVmr);
+	if (hr != S_OK) return FreeMovie(movie);
+
+	hr = movie->pGraph->QueryInterface(IID_IMediaControl, (void**)&movie->pControl);
+	hr |= movie->pGraph->QueryInterface(IID_IMediaSeeking, (void**)&movie->pSeek);
+	if (hr != S_OK) return FreeMovie(movie);
+	
+	//IVideoWindow *pVidWin = nullptr;
+	//result->pGraph->QueryInterface(IID_IVideoWindow, (void **)&pVidWin);
+	/*HWND hWnd;
+	DWORD left, top, width, height;
+	GetFalloutWindowInfo(&left, &top, &width, &height, &hWnd);*/
+    //pVidWin->put_Owner((OAHWND)hWnd);
+    //pVidWin->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS);
+    //pVidWin->SetWindowPosition(left, top, width, height);
+	
+	/* 
+	    Custom Allocator-Presenter VMR-9
+		https://docs.microsoft.com/ru-ru/windows/desktop/DirectShow/supplying-a-custom-allocator-presenter-for-vmr-9
+	*/
+	movie->pMyAlloc = new CAllocator();
+
+	hr = movie->pVmr->QueryInterface(IID_IVMRFilterConfig9, (void**)&movie->pConfig);
+	if (hr != S_OK) return FreeMovie(movie);
+
+	hr = movie->pConfig->SetRenderingMode(VMR9Mode_Renderless);
+	if (hr != S_OK) return FreeMovie(movie);
+
+	hr = movie->pVmr->QueryInterface(IID_IVMRSurfaceAllocatorNotify9, (void**)&movie->pAlloc);
+	if (hr != S_OK) return FreeMovie(movie);
+
+	hr = movie->pAlloc->AdviseSurfaceAllocator(0, (IVMRSurfaceAllocator9*)movie->pMyAlloc);
+	if (hr != S_OK) return FreeMovie(movie);
+
+	hr = movie->pMyAlloc->AdviseNotify(movie->pAlloc);
+	if (hr != S_OK) {
+		dlog_f(" ERR AdviseNotify hr: %d", DL_INIT, hr);
+		return FreeMovie(movie);
+	}
+	/****************************************************/
+	
+	hr = movie->pGraph->AddFilter(movie->pVmr, L"VMR9");
+	if (hr != S_OK) return FreeMovie(movie);
+	//BREAKPOINT
+	dlog(" RenderFile.", DL_INIT);
+	hr = movie->pGraph->RenderFile(path, nullptr);
+	if (hr != S_OK) dlog_f(" ERR RenderFile hr: %d", DL_INIT, hr);
+
+
+	*tex = movie->pMyAlloc->mTex;
+	dlog_f(" movie->pMyAlloc->mTex: %d", DL_INIT, *(DWORD*)tex);
+
+	return *(DWORD*)tex;
+}
+
+// Movie play looping
+static DWORD PlayMovieLoop() {
+	if (GetAsyncKeyState(VK_ESCAPE)) {
+		StopMovie(&movieInterface);
+		return 0;  // stop play
+	}
+
 	PlayMovieFrame();
-	if (GetAsyncKeyState(VK_ESCAPE)) return 0;
 
 	_int64 pos, end;
-	info.pSeek->GetCurrentPosition(&pos);
-	info.pSeek->GetStopPosition(&end);
-
-	return (end == pos) ? 0 : 1;
+	movieInterface.pSeek->GetCurrentPosition(&pos);
+	movieInterface.pSeek->GetStopPosition(&end);
+	bool isPlayEnd = (end == pos);
+	if (isPlayEnd) {
+		StopMovie(&movieInterface);
+	}
+	return !isPlayEnd; // 0 - stop play
 }
 
 static void __declspec(naked) PlayFrameHook1() {
 	__asm {
 		push ecx;
 		xor  eax, eax;
-		call fo::funcoffs::GNW95_process_message_; //windows message pump
-		call PlayFrameHook3;
+		call fo::funcoffs::GNW95_process_message_; //windows message pump //call fo::funcoffs::get_input_; //
+		call PlayMovieLoop;
 		pop  ecx;
+		retn;
+	}
+}
+
+static void __declspec(naked) PlayFrameHook11() {
+	__asm {
+		push ecx;
+		call PlayMovieLoop;
+		pop  ecx;
+		//test eax, eax;
+		//jz   stopPlay;
+		//jmp  fo::funcoffs::moviePlaying_;
+//stopPlay:
 		retn;
 	}
 }
@@ -271,12 +373,14 @@ static void __declspec(naked) PlayFrameHook1() {
 static void __declspec(naked) PlayFrameHook2() {
 	__asm {
 		xor eax,eax;
-		dec eax;
+		dec eax;     // set -1
 		retn;
 	}
 }
 
-static DWORD _cdecl PreparePlayMovie(const DWORD id) {
+static DWORD backgroundVolume = 0;
+
+static DWORD __fastcall PreparePlayMovie(const DWORD id) {
 	//Get file path in unicode
 	wchar_t path[MAX_PATH];
 	char* master_patches = fo::var::patches;
@@ -298,21 +402,49 @@ static DWORD _cdecl PreparePlayMovie(const DWORD id) {
 	if (h == INVALID_HANDLE_VALUE) return 0;
 	CloseHandle(h);
 
-	//Create texture and dshow info
-	if (!CreateDSGraph(path, &tex, &info)) return 0;
+	if (GetAsyncKeyState(VK_ESCAPE)) return 0;
 
-	GetAsyncKeyState(VK_ESCAPE);
-	SetMovieTexture(tex);
-	HookCall(0x44E937, PlayFrameHook1);
-	HookCall(0x44E949, PlayFrameHook2);
+	//Create texture and graph filter
+	if (!CreateDSGraph(path, &movieTex, &movieInterface)) return FreeMovie(&movieInterface);
 
+	SetMovieTexture(movieTex);
+
+	// patching gmovie_play_ for disabled subtitles
+	if (*(DWORD*)FO_VAR_subtitles == 0) { // stop .acm play
+		HookCall(0x44E937, PlayFrameHook1); // looping call moviePlaying_
+		//SafeWrite16(0x44E949, 0x08EB); // skip call get_input_
+		HookCall(0x44E949, PlayFrameHook2); // looping call get_input_
+	} else {
+		HookCall(0x44E937, PlayFrameHook11); // looping call moviePlaying_
+		backgroundVolume = fo::func::gsound_background_volume_get_set(0); // mute
+		//SafeWrite8(0x486654, 0xC3); //ret
+	}
+
+	//BlockCall(0x4C8BE1);
+	//BlockCall(0x4C8BDC);
+	//SafeWrite16(0x4C8D61, 0x9090);
+	//SafeWrite8(0x4C8D63, 0x90);
+	//BlockCall(0x487BB9); //subboff
+
+	Graphics::PlayAviMovie = true;
+	PlayMovie(&movieInterface);
 	return 1;
 }
 
 static void _stdcall PlayMovieRestore() {
-	SafeWrite32(0x44E938, 0x3934c);
-	SafeWrite32(0x44E94A, 0x7a22a);
-	FreeMovie(&info);
+	dlog(" PlayMovieRestore.", DL_INIT);
+	SafeWrite32(0x44E938, 0x3934c);  // call moviePlaying_
+	if (*(DWORD*)FO_VAR_subtitles == 0) {
+		//SafeWrite16(0x44E949, 0x2AE8); 
+		SafeWrite32(0x44E94A, 0x7a22a);  // call get_input_
+	} else {
+		if (backgroundVolume) { 
+			backgroundVolume = fo::func::gsound_background_volume_get_set(backgroundVolume); // restore volume
+			//SafeWrite8(0x486654, 0x53); //ret
+		}
+	}
+	Graphics::PlayAviMovie = false;
+	FreeMovie(&movieInterface);
 }
 
 static const DWORD gmovie_play_addr = 0x44E695;
@@ -323,6 +455,7 @@ static void __declspec(naked) gmovie_play_hack() {
 		push ecx;
 		push edx;
 		push eax;
+		mov  ecx, eax;
 		call PreparePlayMovie;
 		test eax,eax;
 		pop  eax;
@@ -368,11 +501,11 @@ static void* musicLoopPtr = nullptr;
 
 static void FreeSound(sDSSound* sound) {
 	sound->pEvent->SetNotifyWindow(0, WM_APP, 0);
+	SAFERELEASE(sound->pAudio);
 	SAFERELEASE(sound->pEvent);
 	SAFERELEASE(sound->pSeek);
 	SAFERELEASE(sound->pControl);
 	SAFERELEASE(sound->pGraph);
-	SAFERELEASE(sound->pAudio);
 	delete sound;
 }
 
@@ -430,7 +563,7 @@ LRESULT CALLBACK SoundWndProc(HWND wnd, UINT msg, WPARAM w, LPARAM l) {
 }
 
 static void CreateSndWnd() {
-	dlog(" Created sfall sound windows.", DL_INIT);
+	dlog(" Created sfall sound callback window.", DL_INIT);
 	if (Graphics::mode == 0) CoInitialize(0);
 
 	WNDCLASSEX wcx;
@@ -530,6 +663,7 @@ static sDSSound* PlayingSound(wchar_t* path, bool loop) {
 
 	result->pGraph->QueryInterface(IID_IMediaEventEx, (void**)&result->pEvent);
 	result->pEvent->SetNotifyWindow((OAHWND)soundwindow, WM_APP, id);
+
 	result->pGraph->QueryInterface(IID_IBasicAudio, (void**)&result->pAudio);
 
 	result->pControl->RenderFile(path);
@@ -754,7 +888,7 @@ void SkipOpeningMoviesPatch() {
 	if (GetConfigInt("Misc", "SkipOpeningMovies", 0)) {
 		dlog("Skipping opening movies.", DL_INIT);
 		SafeWrite16(0x4809C7, 0x1CEB);            // jmps 0x4809E5
-		dlogr(" Done", DL_INIT);
+		dlogr(" Done.", DL_INIT);
 	}
 }
 
@@ -765,7 +899,7 @@ void Movies::init() {
 	LoadGameHook::OnBeforeGameClose() += WipeSounds;
 
 	if (*((DWORD*)0x00518DA0) != 0x00503300) {
-		dlog("Error: The value at address 0x001073A0 is not equals 0x00503300.", DL_INIT);
+		dlog(" Error: The value at address 0x001073A0 is not equals 0x00503300.", DL_INIT);
 	}
 	for (int i = 0; i < MaxMovies; i++) {
 		MoviePtrs[i] = (DWORD)&MoviePaths[65 * i];
@@ -787,6 +921,12 @@ void Movies::init() {
 	dlog(".", DL_INIT);
 	if (Graphics::mode != 0 && GetConfigInt("Graphics", "AllowDShowMovies", 0)) { // TODO: Not working implementation
 		MakeJump(0x44E690, gmovie_play_hack);
+		
+		// Restore engine values overwritten from HRP
+		//LoadGameHook::OnGameInit() += []() {
+		//	SafeWrite8(0x487781, 0x74); // play MVE
+		//	
+		//};
 	}
 	dlogr(" Done", DL_INIT);
 
@@ -804,13 +944,12 @@ void Movies::init() {
 		CreateSndWnd();
 	}
 
-	DWORD tmp;
-	tmp = SimplePatch<DWORD>(0x4A36EC, "Misc", "MovieTimer_artimer4", 360, 0);
-	tmp = SimplePatch<DWORD>(0x4A3747, "Misc", "MovieTimer_artimer3", 270, 0, tmp);
-	tmp = SimplePatch<DWORD>(0x4A376A, "Misc", "MovieTimer_artimer2", 180, 0, tmp);
+	DWORD day = SimplePatch<DWORD>(0x4A36EC, "Misc", "MovieTimer_artimer4", 360, 0);
+	day = SimplePatch<DWORD>(0x4A3747, "Misc", "MovieTimer_artimer3", 270, 0, day);
+	day = SimplePatch<DWORD>(0x4A376A, "Misc", "MovieTimer_artimer2", 180, 0, day);
 	Artimer1DaysCheckTimer = GetConfigInt("Misc", "MovieTimer_artimer1", 90);
 	if (Artimer1DaysCheckTimer != 90) {
-		Artimer1DaysCheckTimer = max(0, min(tmp, Artimer1DaysCheckTimer));
+		Artimer1DaysCheckTimer = max(0, min(day, Artimer1DaysCheckTimer));
 		char s[255];
 		sprintf_s(s, "Applying patch: MovieTimer_artimer1 = %d. ", Artimer1DaysCheckTimer);
 		dlog(s, DL_INIT);

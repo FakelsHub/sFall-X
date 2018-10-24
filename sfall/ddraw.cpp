@@ -98,15 +98,15 @@ __declspec(naked) void FakeDirectDrawEnumerateW()
 	_asm jmp [ddraw.DirectDrawEnumerateW];
 }
 
-//__declspec(naked) void FakeDllCanUnloadNow()
-//{
-//	_asm jmp [ddraw.DllCanUnloadNow];
-//}
-//
-//__declspec(naked) void FakeDllGetClassObject()
-//{
-//	_asm jmp [ddraw.DllGetClassObject];
-//}
+__declspec(naked) void FakeDllCanUnloadNow()
+{
+	_asm jmp [ddraw.DllCanUnloadNow];
+}
+
+__declspec(naked) void FakeDllGetClassObject()
+{
+	_asm jmp [ddraw.DllGetClassObject];
+}
 
 __declspec(naked) void FakeGetDDSurfaceLocal()
 {
