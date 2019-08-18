@@ -53,6 +53,8 @@ static DWORD _stdcall HandleMapUpdateForScripts(const DWORD procId);
 
 static int idle;
 
+std::string ScriptExtender::iniConfigFolder;
+
 struct GlobalScript {
 	ScriptProgram prog;
 	int count;
@@ -683,7 +685,14 @@ static void __declspec(naked) map_save_in_game_hook() {
 		jmp  fo::funcoffs::game_time_;
 	}
 }
-
+/*
+static void ClearEventUpdateMapProc() {
+	using fo::QueueType;
+	_asm mov  eax, map_update_event; // type
+	_asm xor  edx, edx; // func
+	_asm call fo::funcoffs::queue_clear_type_;
+}
+*/
 void ScriptExtender::init() {
 	LoadGameHook::OnAfterGameStarted() += LoadGlobalScripts;
 	LoadGameHook::OnGameReset() += [] () {
@@ -717,6 +726,19 @@ void ScriptExtender::init() {
 		dlogr("Arrays in backward-compatiblity mode.", DL_SCRIPT);
 	}
 
+	iniConfigFolder = GetConfigString("Scripts", "IniConfigFolder", "");
+	size_t len = iniConfigFolder.length();
+	if (len) {
+		char c = iniConfigFolder[len - 1];
+		bool pathSeparator = (c == '\\' || c == '/');
+		if (len > 49 || (len == 49 && !pathSeparator)) {
+			iniConfigFolder.clear();
+			dlogr("Error: IniConfigFolder contains too long a folder path.", DL_SCRIPT);
+		} else if (!pathSeparator) {
+			iniConfigFolder += '\\';
+		}
+	}
+
 	alwaysFindScripts = isDebug && (GetPrivateProfileIntA("Debugging", "AlwaysFindScripts", 0, sfall::ddrawIni) != 0);
 
 	MakeJump(0x4A390C, FindSidHack);
@@ -745,8 +767,8 @@ void ScriptExtender::init() {
 	long long data = 0x397401C1F6; // test cl, 1; jz 0x483CF2
 	SafeWriteBytes(0x483CB4, (BYTE*)&data, 5);
 
-	// Sets the DAM_BACKWASH_ flag for the attacker before calling compute_damage_
-	SafeWrite32(0x423DE7, 0x40164E80); // or [esi+ctd.flags3Source], DAM_BACKWASH_
+	// Sets the DAM_BACKWASH flag for the attacker before calling compute_damage_
+	SafeWrite32(0x423DE7, 0x40164E80); // or [esi+ctd.flags3Source], DAM_BACKWASH
 	long idata =  0x146E09;            // or dword ptr [esi+ctd.flagsSource], ebp
 	SafeWriteBytes(0x423DF0, (BYTE*)&idata, 3);
 	if (*(BYTE*)0x423DEB != 0xE8) { // not hook call
@@ -754,6 +776,8 @@ void ScriptExtender::init() {
 	}
 
 	InitNewOpcodes();
+
+	//ScriptExtender::OnMapExit() += ClearEventUpdateMapProc;
 }
 
 Delegate<>& ScriptExtender::OnMapExit() {

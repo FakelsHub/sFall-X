@@ -28,7 +28,8 @@
 namespace sfall
 {
 
-static const char* critTableFile = ".\\CriticalOverrides.ini";
+static std::string critTableFile(".\\");
+
 const DWORD Criticals::critTableCount = 2 * 19 + 1; // Number of species in new critical table
 
 static DWORD mode;
@@ -87,7 +88,7 @@ static int CritTableLoad() {
 					fo::CritInfo& newEffect = baseCritTable[newCritter][part][crit];
 					fo::CritInfo& defaultEffect = fo::var::crit_succ_eff[critter][part][crit];
 					for (int i = 0; i < 7; i++) {
-						newEffect.values[i] = GetPrivateProfileIntA(section, critNames[i], defaultEffect.values[i], critTableFile);
+						newEffect.values[i] = GetPrivateProfileIntA(section, critNames[i], defaultEffect.values[i], critTableFile.c_str());
 						if (isDebug) {
 							char logmsg[256];
 							if (newEffect.values[i] != defaultEffect.values[i]) {
@@ -113,11 +114,11 @@ static int CritTableLoad() {
 			for (int critter = 0; critter < Criticals::critTableCount; critter++) {
 				sprintf_s(buf, "c_%02d", critter);
 				int all;
-				if (!(all = GetPrivateProfileIntA(buf, "Enabled", 0, critTableFile))) continue;
+				if (!(all = GetPrivateProfileIntA(buf, "Enabled", 0, critTableFile.c_str()))) continue;
 				for (int part = 0; part < 9; part++) {
 					if (all < 2) {
 						sprintf_s(buf2, "Part_%d", part);
-						if (!GetPrivateProfileIntA(buf, buf2, 0, critTableFile)) continue;
+						if (!GetPrivateProfileIntA(buf, buf2, 0, critTableFile.c_str())) continue;
 					}
 
 					sprintf_s(buf2, "c_%02d_%d", critter, part);
@@ -126,7 +127,7 @@ static int CritTableLoad() {
 						for (int i = 0; i < 7; i++) {
 							sprintf_s(buf3, "e%d_%s", crit, critNames[i]);
 							if (i == 1) { // EffectFlags
-								auto valStr = GetIniList(buf2, buf3, "", 128, ',', critTableFile);
+								auto valStr = GetIniList(buf2, buf3, "", 128, ',', critTableFile.c_str());
 								int size = valStr.size();
 								if (size == 0) continue;
 								int value = 0;
@@ -142,7 +143,7 @@ static int CritTableLoad() {
 								}
 								effect.values[i] = value;
 							} else {
-								effect.values[i] = GetPrivateProfileIntA(buf2, buf3, effect.values[i], critTableFile);
+								effect.values[i] = GetPrivateProfileIntA(buf2, buf3, effect.values[i], critTableFile.c_str());
 							}
 						}
 					}
@@ -282,6 +283,7 @@ void Criticals::init() {
 	mode = GetConfigInt("Misc", "OverrideCriticalTable", 2);
 	if (mode < 0 || mode > 4) mode = 0;
 	if (mode) {
+		critTableFile += GetConfigString("Misc", "OverrideCriticalFile", "CriticalOverrides.ini");
 		CriticalTableOverride();
 		LoadGameHook::OnBeforeGameStart() += []() {
 			memcpy(critTable, baseCritTable, sizeof(critTable)); // Apply loaded critical table
