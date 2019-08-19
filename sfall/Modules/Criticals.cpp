@@ -283,7 +283,7 @@ void Criticals::init() {
 	mode = GetConfigInt("Misc", "OverrideCriticalTable", 2);
 	if (mode < 0 || mode > 4) mode = 0;
 	if (mode) {
-		critTableFile += GetConfigString("Misc", "OverrideCriticalFile", "CriticalOverrides.ini");
+		critTableFile += GetConfigString("Misc", "OverrideCriticalFile", "CriticalOverrides.ini", MAX_PATH);
 		CriticalTableOverride();
 		LoadGameHook::OnBeforeGameStart() += []() {
 			memcpy(critTable, baseCritTable, sizeof(critTable)); // Apply loaded critical table

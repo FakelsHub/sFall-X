@@ -538,7 +538,7 @@ static int ParseIniSetting(const char* iniString, const char* &key, char section
 	if (!ScriptExtender::iniConfigFolder.empty()) {
 		const char* pos = strfind(iniString, &::sfall::ddrawIni[2]);
 		if (pos && pos < fileEnd) goto ddraw;
-		size_t len = ScriptExtender::iniConfigFolder.length(); // limit to 49 characters
+		size_t len = ScriptExtender::iniConfigFolder.length(); // limit up to 62 characters
 		memcpy(&file[2], ScriptExtender::iniConfigFolder.c_str(), len);
 		int n = 0; // position of the beginning of the file name
 		for	(int i = filelen - 4; i > 0; i--) {
@@ -547,7 +547,7 @@ static int ParseIniSetting(const char* iniString, const char* &key, char section
 				break;
 			}
 		}
-		strncpy_s(&file[2 + len], (80 - 2) - len, &iniString[n], filelen - n); // copy filename (max len 28)
+		strncpy_s(&file[2 + len], (128 - 2) - len, &iniString[n], filelen - n); // copy filename
 	} else {
 ddraw:
 		memcpy(&file[2], iniString, filelen);
@@ -563,7 +563,7 @@ ddraw:
 static char IniStrBuffer[256];
 static DWORD GetIniSetting(const char* str, bool isString) {
 	const char* key;
-	char section[33], file[80];
+	char section[33], file[128];
 
 	if (ParseIniSetting(str, key, section, file) < 0) {
 		return -1;
