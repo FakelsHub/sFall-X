@@ -2289,6 +2289,32 @@ skip:
 	}
 }
 
+static long __fastcall GetFreeTilePlacement(long elev, long _tile) {
+	long count = 0, dist = 1;
+	long tile = _tile;
+	long rotation = fo::var::rotation;
+	while (fo::func::obj_blocking_at(0, tile, elev))
+	{
+		tile = fo::func::tile_num_in_direction(tile, rotation, dist);
+		if (++count > 5 && ++dist > 5) return _tile;
+		if (++rotation > 5) rotation = 0;
+	}
+	return tile;
+}
+
+static void __declspec(naked) map_check_state_hook() {
+	__asm {
+		mov  ecx, esi; // elev
+		call GetFreeTilePlacement; // edx - tile
+		mov  edx, eax; // tile
+		// restore
+		mov  ebx, esi; // elev
+		mov  eax, ds:[FO_VAR_obj_dude];
+		xor  ecx, ecx;
+		jmp  fo::funcoffs::obj_move_to_tile_;
+	}
+}
+
 void BugFixes::init()
 {
 	#ifndef NDEBUG
@@ -2894,6 +2920,9 @@ void BugFixes::init()
 	if (GetConfigInt("Misc", "CarPlacedTileFix", 1)) {
 		MakeCall(0x4C2367,  wmInterfaceInit_hack);
 	}
+
+	// Placement the player's on a nearby empty tile when the entrance tile is blocked by another object when entering the map
+	HookCall(0x4836F8, map_check_state_hook);
 }
 
 }

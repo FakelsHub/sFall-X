@@ -1222,7 +1222,7 @@ void sf_set_ini_setting(OpcodeContext& ctx) {
 		saveValue = argVal.strValue();
 	}
 	const char* key;
-	char section[33], file[67];
+	char section[33], file[128];
 	int result = ParseIniSetting(ctx.arg(0).strValue(), key, section, file);
 	if (result > 0) {
 		result = WritePrivateProfileString(section, key, saveValue, file);
@@ -1258,7 +1258,7 @@ void sf_get_ini_sections(OpcodeContext& ctx) {
 	std::vector<char*> sections;
 	char* section = getIniSectionBuf;
 	while (*section != 0) {
-		sections.push_back(section);
+		sections.push_back(section); // position
 		section += std::strlen(section) + 1;
 	}
 	size_t sz = sections.size();
@@ -1268,7 +1268,7 @@ void sf_get_ini_sections(OpcodeContext& ctx) {
 	for (size_t i = 0; i < sz; ++i) {
 		size_t j = i + 1;
 		int len = (j < sz) ? sections[j] - sections[i] - 1 : -1;
-		arr.val[i].set(sections[i], len);
+		arr.val[i].set(sections[i], len); // copy string from buffer
 	}
 	ctx.setReturn(arrayId);
 }
