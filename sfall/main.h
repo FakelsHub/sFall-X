@@ -95,5 +95,6 @@ size_t Translate(const char* section, const char* setting, const char* defaultVa
 
 extern const char ddrawIni[];
 extern DWORD modifiedIni;
+extern bool hrpIsEnabled;
 
 }

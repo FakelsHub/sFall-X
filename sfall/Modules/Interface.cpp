@@ -8,8 +8,6 @@
 namespace sfall
 {
 
-bool hrpIsEnabled = false;
-
 static BYTE movePointBackground[16 * 9 * 5];
 static fo::UnlistedFrm* ifaceFrm = nullptr;
 
@@ -430,8 +428,6 @@ static void WorldMapInterfacePatch() {
 }
 
 void Interface::init() {
-	hrpIsEnabled = (*(DWORD*)0x4E4480 != 0x278805C7); // check enabled HRP
-
 	if (GetConfigInt("Interface", "ActionPointsBar", 0)) {
 		ActionPointsBarPatch();
 		if (hrpIsEnabled) LoadGameHook::OnAfterGameInit() += APBarRectPatch;
