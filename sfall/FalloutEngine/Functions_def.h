@@ -34,7 +34,7 @@ WRAP_WATCOM_FFUNC3(FrmFrameData*, frame_ptr, FrmHeaderData*, frm, long, frame, l
 WRAP_WATCOM_FFUNC3(GameObject*, inven_find_type, GameObject*, critter, long, itemType, DWORD*, buf)
 WRAP_WATCOM_FFUNC3(long, inven_wield, GameObject*, critter, GameObject*, item, long, slot)
 WRAP_WATCOM_FFUNC7(void, make_straight_path_func, GameObject*, objFrom, DWORD, tileFrom, DWORD, tileTo, void*, rotationPtr, DWORD*, result, long, flags, void*, func)
-WRAP_WATCOM_FFUNC3(long, obj_blocking_at, GameObject*, object, long, tile, long, elevation)
+WRAP_WATCOM_FFUNC3(GameObject*, obj_blocking_at, GameObject*, object, long, tile, long, elevation)
 WRAP_WATCOM_FFUNC1(void, obj_delete_list, void*, objList)
 WRAP_WATCOM_FFUNC4(long, obj_create_list, long, tile, long, elev, long, objType, void*, buf)
 WRAP_WATCOM_FFUNC3(long, object_under_mouse, long, crSwitch, long, inclDude, long, elevation)

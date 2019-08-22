@@ -323,7 +323,7 @@ void AnimationsAtOnce::init() {
 	SafeWrite16(0x4120B8, 0x9090); // fix action_use_an_item_on_object_
 
 	// Fixed direction frame for dude after ladder animation
-	SafeWriteBatch<BYTE>(25, {0x49CA16, 0x49C972, 0x49CABA});
+	SafeWrite16(0x49CA14, 0xB190); // mov cl, 26 (force skip set direction)
 }
 
 void AnimationsAtOnce::exit() {
