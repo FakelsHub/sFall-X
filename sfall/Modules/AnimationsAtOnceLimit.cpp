@@ -204,6 +204,24 @@ end:
 	}
 }
 
+static void __declspec(naked)  action_climb_ladder_hook() {
+	__asm {
+		cmp  word ptr [edi + 0x40], 0xFFFF; // DestTile
+		je   skip;
+		cmp  dword ptr [edi + 0x3C], 0;     // DestMap
+		je   reset;
+		push edx;
+		mov  edx, ds:[FO_VAR_map_number];
+		cmp  dword ptr [edi + 0x3C], edx;
+		pop  edx;
+		jne  skip;
+reset:
+		and  al, ~0x4; // reset RB_DONTSTAND flag
+skip:
+		jmp  fo::funcoffs::register_begin_;
+	}
+}
+
 void ApplyAnimationsAtOncePatches(signed char aniMax) {
 	if (aniMax <= 32) return;
 
@@ -322,8 +340,8 @@ void AnimationsAtOnce::init() {
 	// Allow the "Magic Hand" animation when used the item on
 	SafeWrite16(0x4120B8, 0x9090); // fix action_use_an_item_on_object_
 
-	// Fixed direction frame for dude after ladder animation
-	SafeWrite16(0x49CA14, 0xB190); // mov cl, 26 (force skip set direction)
+	// Fix player stuck at "climbing" frame after ladder animation
+	HookCall(0x411E1F, action_climb_ladder_hook);
 }
 
 void AnimationsAtOnce::exit() {
