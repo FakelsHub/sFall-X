@@ -47,6 +47,12 @@ struct HooksInjectInfo {
 	bool isInject;
 };
 
+static struct HooksPositionInfo {
+	long hsPosition    = 0; // index of the hs_ * script, or the beginning of the position for registering scripts using the register_hook function
+	long positionShift = 0; // offset to the last registered script by the register_hook function
+	bool hasHsScript   = false;
+} hooksInfo[HOOK_COUNT];
+
 static HooksInjectInfo injectHooks[] = {
 	{HOOK_TOHIT,            Inject_ToHitHook,            false},
 	{HOOK_AFTERHITROLL,     Inject_AfterHitRollHook,     false},
@@ -170,11 +176,21 @@ bool HookScripts::HookHasScript(int hookId) {
 	return (hooks[hookId].empty() == false);
 }
 
-void _stdcall RegisterHook(fo::Program* script, int id, int procNum) {
+void RegisterHook(fo::Program* script, int id, int procNum, bool specReg) {
 	if (id >= numHooks) return;
 	for (std::vector<HookScript>::iterator it = hooks[id].begin(); it != hooks[id].end(); ++it) {
 		if (it->prog.ptr == script) {
-			if (procNum == 0) hooks[id].erase(it); // unregister
+			if (procNum == 0) {
+				long index = std::distance(hooks[id].begin(), it);
+				if (it->callback != -1) {
+					if (hooksInfo[id].hsPosition && hooksInfo[id].hsPosition > index) hooksInfo[id].hsPosition--; // for spec
+				} else {
+					if (hooksInfo[id].hasHsScript && hooksInfo[id].hsPosition == index) {
+						hooksInfo[id].hasHsScript = false; // unregister hs_ script
+					 } else	if (hooksInfo[id].positionShift) hooksInfo[id].positionShift--; // for register_hook
+				}
+				hooks[id].erase(it); // unregister
+			}
 			return;
 		}
 	}
@@ -182,12 +198,24 @@ void _stdcall RegisterHook(fo::Program* script, int id, int procNum) {
 
 	ScriptProgram *prog = GetGlobalScriptProgram(script);
 	if (prog) {
-		dlog_f("Global script %08x registered as hook id %d\n", DL_HOOK, script, id);
+		dlog_f("Global script: %08x registered as hook ID %d\n", DL_HOOK, script, id);
 		HookScript hook;
 		hook.prog = *prog;
 		hook.callback = procNum;
 		hook.isGlobalScript = true;
-		hooks[id].push_back(hook);
+
+		auto c_it = hooks[id].cend();
+		if (specReg) {
+			c_it = hooks[id].cbegin();
+			hooksInfo[id].hsPosition++;
+		} else if (procNum == -1) { // for register_hook
+			size_t index = hooksInfo[id].hsPosition + hooksInfo[id].positionShift; // last position of the registered script using register_hook
+			if (hooksInfo[id].hasHsScript) index++;
+			if (hooks[id].size() > index) c_it = hooks[id].cbegin() + index;
+			hooksInfo[id].positionShift++;
+		}
+		hooks[id].insert(c_it, hook);
+
 		switch (id) {
 		case HOOK_KEYPRESS:
 		case HOOK_MOUSECLICK:
@@ -233,6 +261,7 @@ void HookScriptClear() {
 	for(int i = 0; i < numHooks; i++) {
 		hooks[i].clear();
 	}
+	std::memset(hooksInfo, 0, HOOK_COUNT * sizeof(HooksPositionInfo));
 }
 
 void LoadHookScripts() {
@@ -241,6 +270,7 @@ void LoadHookScripts() {
 	initingHookScripts = 1;
 	for (int i = 0; i < numHooks; i++) {
 		if (!hooks[i].empty()) {
+			hooksInfo[i].hasHsScript = true;
 			InitScriptProgram(hooks[i][0].prog); // zero hook is always hs_*.int script because Hook scripts are loaded BEFORE global scripts
 		}
 	}
@@ -249,10 +279,10 @@ void LoadHookScripts() {
 }
 
 // run specific event procedure for all hook scripts
-void _stdcall RunHookScriptsAtProc(DWORD procId) {
+void RunHookScriptsAtProc(DWORD procId) {
 	for (int i = 0; i < numHooks; i++) {
-		if (!hooks[i].empty() && !hooks[i][0].isGlobalScript) {
-			RunScriptProc(&hooks[i][0].prog, procId); // run hs_*.int
+		if (hooksInfo[i].hasHsScript /*&& !hooks[i][hooksInfo[i].hsPosition].isGlobalScript*/) {
+			RunScriptProc(&hooks[i][hooksInfo[i].hsPosition].prog, procId); // run hs_*.int
 		}
 	}
 }

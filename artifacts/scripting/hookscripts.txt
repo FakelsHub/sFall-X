@@ -46,6 +46,7 @@ Changes argument value. The argument number (argnum) is 0-indexed. This is usefu
 
 > void register_hook(int hooktype)
 Used from a normal global script if you want to run it at the same point a full hook script would normally run. In case of this function, "start" proc will be executed in a current global script. You can use all above functions like normal.
+NOTE: In sfall versions 4.2/3.8.20 and higher, the registration order of hook handlers for the function was changed, so hook handlers will be executed after all hook scripts registered with the register_hook_proc function.
 
 > void register_hook_proc(int hooktype, proc procedure)
 The same as register_hook, except that you specifically define which procedure in the current script should be called as a hook (instead of "start"). Pass procedure the same as how you use dialog option functions. This IS the recommended way to use hook scripts, as it gives both modularity (each mod logic in a separate global script, no conflicts if you don't use "hs_*.int" scripts) and flexibility (you can place all related hook scripts for specific mod in a single script!).
