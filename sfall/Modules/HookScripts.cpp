@@ -96,6 +96,8 @@ static HooksInjectInfo injectHooks[] = {
 	{HOOK_SNEAK,            Inject_SneakCheckHook,       false},
 };
 
+bool newHookRegister = true;
+
 bool HookScripts::injectAllHooks;
 DWORD initingHookScripts;
 
@@ -187,7 +189,7 @@ void RegisterHook(fo::Program* script, int id, int procNum, bool specReg) {
 				} else {
 					if (hooksInfo[id].hasHsScript && hooksInfo[id].hsPosition == index) {
 						hooksInfo[id].hasHsScript = false; // unregister hs_ script
-					 } else	if (hooksInfo[id].positionShift) hooksInfo[id].positionShift--; // for register_hook
+					} else if (hooksInfo[id].positionShift) hooksInfo[id].positionShift--; // for register_hook
 				}
 				hooks[id].erase(it); // unregister
 			}
@@ -208,7 +210,7 @@ void RegisterHook(fo::Program* script, int id, int procNum, bool specReg) {
 		if (specReg) {
 			c_it = hooks[id].cbegin();
 			hooksInfo[id].hsPosition++;
-		} else if (procNum == -1) { // for register_hook
+		} else if (newHookRegister && procNum == -1) { // for register_hook
 			size_t index = hooksInfo[id].hsPosition + hooksInfo[id].positionShift; // last position of the registered script using register_hook
 			if (hooksInfo[id].hasHsScript) index++;
 			if (hooks[id].size() > index) c_it = hooks[id].cbegin() + index;
@@ -291,6 +293,11 @@ void HookScripts::init() {
 	OnMouseClick() += MouseClickHook;
 	LoadGameHook::OnGameModeChange() += GameModeChangeHook;
 	LoadGameHook::OnAfterGameStarted() += SourceUseSkillOnInit;
+
+	if (GetConfigInt("Scripts", "BackwardHooksRegistration", 1) > 0) {
+		newHookRegister = false;
+		dlogr("Enabled backward compatibility mode of scripts registration for register_hook function.", DL_INIT);
+	}
 
 	hookScriptPathFmt = GetConfigString("Scripts", "HookScriptPath", "", 255);
 	if (!hookScriptPathFmt.empty()) {

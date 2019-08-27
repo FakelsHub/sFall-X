@@ -478,11 +478,11 @@ static void PrepareGlobalScriptsListByMask() {
 
 		for (int i = 0; i < count; i++) {
 			char* name = _strlwr(filenames[i]); // name of the script in lower case
-			dlog_f("Found global script: %s\n", DL_SCRIPT|DL_INIT, name);
 
 			std::string baseName(name);
 			int lastDot = baseName.find_last_of('.');
 			if ((baseName.length() - lastDot) > 4) continue; // skip files of the wrong extension (bug in db_get_file_list fuction)
+			dlog_f("Found global script: %s\n", DL_INIT, name);
 
 			baseName = baseName.substr(0, lastDot); // script name without extension
 			if (basePath != fo::var::script_path_base || !IsGameScript(baseName.c_str())) {
@@ -685,14 +685,19 @@ static void __declspec(naked) map_save_in_game_hook() {
 		jmp  fo::funcoffs::game_time_;
 	}
 }
-/*
-static void ClearEventUpdateMapProc() {
-	using fo::QueueType;
-	_asm mov  eax, map_update_event; // type
-	_asm xor  edx, edx; // func
-	_asm call fo::funcoffs::queue_clear_type_;
+
+static void ClearEventsOnMapExit() {
+	using namespace fo;
+	__asm {
+		mov  eax, explode_event; // type
+		mov  edx, fo::funcoffs::queue_explode_exit_; // func
+		call fo::funcoffs::queue_clear_type_;
+		mov  eax, explode_fail_event;
+		mov  edx, fo::funcoffs::queue_explode_exit_;
+		call fo::funcoffs::queue_clear_type_;
+	}
 }
-*/
+
 void ScriptExtender::init() {
 	LoadGameHook::OnAfterGameStarted() += LoadGlobalScripts;
 	LoadGameHook::OnGameReset() += [] () {
@@ -777,7 +782,7 @@ void ScriptExtender::init() {
 
 	InitNewOpcodes();
 
-	//ScriptExtender::OnMapExit() += ClearEventUpdateMapProc;
+	ScriptExtender::OnMapExit() += ClearEventsOnMapExit; // for reorder executing functions before exiting map
 }
 
 Delegate<>& ScriptExtender::OnMapExit() {
