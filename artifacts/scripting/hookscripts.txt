@@ -257,6 +257,7 @@ Obj     arg5 - The destination object, when the item is moved to other object, o
 HOOK_BARTERPRICE (hs_barterprice.int)
 
 Runs whenever the value of goods being purchased is calculated
+Note: The hook is executed twice when entering the barter or after transaction, the first time for the player, the second time for the NPC
 
 critter arg1 - the critter doing the bartering (either dude_obj or inven_dude)
 critter arg2 - the critter being bartered with
@@ -267,6 +268,7 @@ int     arg6 - the value of all goods being traded before skill modifications
 critter arg7 - table of offered goods (being sold to NPC)
 int     arg8 - the total cost of the goods offered by the player
 int     arg9 - set 1 if the "offers" button was pressed (not for a party member), otherwise 0
+int     arg10 - set to 1 if there is a barter exchange with a party member NPC, otherwise 0
 
 int     ret1 - the modified value of all of the goods (pass -1 if you just want to modify offered goods)
 int     ret2 - the modified value of all offered goods
