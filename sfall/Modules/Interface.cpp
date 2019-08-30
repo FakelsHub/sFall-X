@@ -120,6 +120,7 @@ static void __declspec(naked) wmInterfaceInit_text_font_hook() {
 
 static DWORD wmTownMapSubButtonIds[WMAP_TOWN_BUTTONS + 1]; // _wmTownMapSubButtonIds replaced (index 0 - unsed element)
 static int worldmapInterface;
+static long wmapWinWidth = 640;
 
 // Window width
 static const DWORD wmWinWidth[] = {
@@ -138,7 +139,7 @@ static const DWORD wmWinWidth[] = {
 	// wmRefreshInterfaceOverlay_
 	0x4C50FD, 0x4C51CF, 0x4C51F8, 0x4C517F,
 	// wmInterfaceRefreshCarFuel_
-	0x4C528B, 0x4C529F, 0x4C52AA,
+	0x4C52AA, /*0x4C528B, 0x4C529F, - Conflict with indicator patch */
 	// wmInterfaceDrawSubTileList_
 	0x4C41C1, 0x4C41D2,
 	// wmTownMapRefresh_
@@ -281,6 +282,7 @@ static void WorldmapViewportPatch() {
 	if (!fo::func::db_access("art\\intrface\\worldmap.frm")) return;
 	dlog("Applying world map interface patch.", DL_INIT);
 
+	wmapWinWidth = WMAP_WIN_WIDTH;
 	mapSlotsScrollMax -= 216;
 	if (mapSlotsScrollMax < 0) mapSlotsScrollMax = 0;
 
@@ -390,6 +392,26 @@ static void WorldmapViewportPatch() {
 	dlogr(" Done", DL_INIT);
 }
 
+static void __declspec(naked) wmInterfaceRefreshCarFuel_hack_empty() {
+	__asm {
+		mov byte ptr [eax - 1], 15;
+		mov byte ptr [eax + 1], 15;
+		add eax, wmapWinWidth;
+		retn;
+	}
+}
+
+static void __declspec(naked) wmInterfaceRefreshCarFuel_hack() {
+	__asm {
+		mov byte ptr [eax - 1], 200;
+		mov byte ptr [eax + 1], 200;
+		add eax, wmapWinWidth;
+		mov byte ptr [eax - 1], 200;
+		mov byte ptr [eax + 1], 200;
+		retn;
+	}
+}
+
 static void WorldMapInterfacePatch() {
 	if (GetConfigInt("Misc", "WorldMapFontPatch", 0)) {
 		dlog("Applying world map font patch.", DL_INIT);
@@ -425,6 +447,10 @@ static void WorldMapInterfacePatch() {
 			LoadGameHook::OnAfterGameInit() += WorldmapViewportPatch; // Note: Must be applyling after WorldMapSlots patch
 		}
 	}
+	// Car fuel indicator graphics patch
+	MakeCall(0x4C528A, wmInterfaceRefreshCarFuel_hack_empty);
+	MakeCall(0x4C529E, wmInterfaceRefreshCarFuel_hack);
+	SafeWrite8(0x4C52A8, 197);
 }
 
 void Interface::init() {

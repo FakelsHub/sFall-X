@@ -681,8 +681,11 @@ void SetGlobals(GlobalVar* globals) {
 
 static void __declspec(naked) map_save_in_game_hook() {
 	__asm {
-		call fo::funcoffs::partyMemberSaveProtos_;
-		jmp  fo::funcoffs::game_time_;
+		test cl, 1;
+		jz   skip;
+		jmp  fo::funcoffs::scr_exec_map_exit_scripts_;
+skip:
+		jmp  fo::funcoffs::partyMemberSaveProtos_;
 	}
 }
 
@@ -766,11 +769,10 @@ void ScriptExtender::init() {
 
 	// Reorder executing functions before exiting map
 	// Called saving party members prototypes and remove the drug effects for NPC after executed map_exit_p_proc script handlers
-	HookCall(0x483CF9, map_save_in_game_hook);
-	MakeCall(0x483CB9, (void*)fo::funcoffs::scr_exec_map_exit_scripts_);
-	BlockCall(0x483CCD); // scr_exec_map_exit_scripts_
-	long long data = 0x397401C1F6; // test cl, 1; jz 0x483CF2
-	SafeWriteBytes(0x483CB4, (BYTE*)&data, 5);
+	HookCall(0x483CB4, map_save_in_game_hook);
+	HookCall(0x483CC3, (void*)fo::funcoffs::partyMemberSaveProtos_);
+	HookCall(0x483CC8, (void*)fo::funcoffs::partyMemberPrepLoad_);
+	HookCall(0x483CCD, (void*)fo::funcoffs::partyMemberPrepItemSaveAll_);
 
 	// Sets the DAM_BACKWASH flag for the attacker before calling compute_damage_
 	SafeWrite32(0x423DE7, 0x40164E80); // or [esi+ctd.flags3Source], DAM_BACKWASH
