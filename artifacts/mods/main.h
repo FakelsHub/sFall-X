@@ -18,19 +18,28 @@ procedure GetIniConfig(variable section, variable key, variable def, variable in
    return val;
 end
 
-// Gets the integer value from ini
-procedure GetConfig(variable section, variable key, variable def) begin
-   return GetIniConfig(section, key, def, ini);
+// Gets the string value from specified ini
+procedure GetIniConfigStr(variable section, variable key, variable def, variable inifile) begin
+   variable val := get_ini_string(inifile + "|" + section + "|" + key);
+   if val == -1 or val == "" then val := def;
+   return val;
 end
 
-// Gets the string value from ini
+// Gets the integer value from sfall-mods.ini
+procedure GetConfig(variable section, variable key, variable def) begin
+   variable val := get_ini_setting(ini + "|" + section + "|" + key);
+   if val == -1 then val := def;
+   return val;
+end
+
+// Gets the string value from sfall-mods.ini
 procedure GetConfigStr(variable section, variable key, variable def) begin
    variable val := get_ini_string(ini + "|" + section + "|" + key);
    if val == -1 or val == "" then val := def;
    return val;
 end
 
-// Gets the value from ini as a temp array of strings
+// Gets the value from sfall-mods.ini as a temp array of strings
 procedure GetConfigList(variable section, variable key) begin
    variable val := get_ini_string(ini + "|" + section + "|" + key);
    if val == -1 or val == "" then return [];
@@ -38,7 +47,7 @@ procedure GetConfigList(variable section, variable key) begin
    return string_split(val, ",");
 end
 
-// Gets the value from ini as a temp array of ints
+// Gets the value from sfall-mods.ini as a temp array of ints
 procedure GetConfigListInt(variable section, variable key) begin
    variable arr, i, item;
 
@@ -59,5 +68,5 @@ procedure Translate(variable id, variable def) begin
 end
 
 procedure InitConfigs begin
-   translationIni := GetConfigStr("Main", "TranslationsINI", "./Translations.ini");
+   translationIni := GetIniConfigStr("Main", "TranslationsINI", "Translations.ini", "ddraw.ini");
 end

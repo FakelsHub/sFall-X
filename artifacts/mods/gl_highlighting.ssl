@@ -202,6 +202,8 @@ procedure ToggleHighlight(variable enable) begin
          end
       end
    end
+   // set _Flat and remove _TransNone flags
+   if (enable) then write_short(0x48F404, 0x4008); else write_short(0x48F404, 0xC000);
    tile_refresh_display;
 end
 
