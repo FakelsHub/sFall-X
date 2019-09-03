@@ -1406,8 +1406,29 @@ void Perks::init() {
 		perksFile[0] = '.';
 		perksFile[1] = '\\';
 		HookCall(0x44272E, TraitInitWrapper); // game_init_
-	}
 
+		// Engine perks setting
+		long wScopeRangeMod = GetPrivateProfileIntA("PerksTweak", "WeaponScopeRangePenalty", -1, perksFile);
+		if (wScopeRangeMod >= 0 && wScopeRangeMod != 8) SafeWrite32(0x42448E, wScopeRangeMod);
+		wScopeRangeMod = GetPrivateProfileIntA("PerksTweak", "WeaponScopeRangeBonus", -1, perksFile);
+		if (wScopeRangeMod >= 2 && wScopeRangeMod != 5) SafeWrite32(0x424489, wScopeRangeMod);
+
+		long wLongRangeMod = GetPrivateProfileIntA("PerksTweak", "WeaponLongRangeBonus", -1, perksFile);
+		if (wLongRangeMod >= 2 && wLongRangeMod != 4) SafeWrite32(0x424474, wLongRangeMod);
+
+		long wAccurateMod = GetPrivateProfileIntA("PerksTweak", "WeaponAccurateBonus", -1, perksFile);
+		if (wAccurateMod >= 0 && wAccurateMod != 20) {
+			if (wAccurateMod > 200) wAccurateMod = 200;
+			SafeWrite8(0x42465D, static_cast<BYTE>(wAccurateMod));
+		}
+
+		long wHandlingMod = GetPrivateProfileIntA("PerksTweak", "WeaponHandlingBonus", -1, perksFile);
+		if (wHandlingMod >= 0 && wHandlingMod != 3) {
+			if (wHandlingMod > 10) wHandlingMod = 10;
+			SafeWrite8(0x424636, static_cast<char>(wHandlingMod));
+			SafeWrite8(0x4251CE, static_cast<char>(-wHandlingMod));
+		}
+	}
 	LoadGameHook::OnGameReset() += PerksReset;
 }
 
