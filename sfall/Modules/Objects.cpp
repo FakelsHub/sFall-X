@@ -213,8 +213,7 @@ void __fastcall Objects::sf_obj_process_seen(long tileIndex) {
 	size_t size = e_seen - s_seen;
 	std::memset((void*)s_seen, 0, size);
 
-	long index = sIndex;
-	while (index <= eIndex) {
+	for (long index = sIndex; index <= eIndex; index += 25) {
 		if (index >= 0 && index < 5001) {
 			((char*)FO_VAR_obj_seen_check)[index] = -1;
 			if (index >= 1) {
@@ -228,7 +227,6 @@ void __fastcall Objects::sf_obj_process_seen(long tileIndex) {
 				}
 			}
 		}
-		index += 25;
 	}
 	long tileTable = (sIndex > 0) ? sIndex * 8 : 0;
 	do {

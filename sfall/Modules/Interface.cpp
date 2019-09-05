@@ -63,11 +63,13 @@ static void ActionPointsBarPatch() {
 	dlog("Applying expanded action points bar patch.", DL_INIT);
 	if (hrpIsEnabled) {
 		// check valid data
-		if (!_stricmp((const char*)0x10039358, "HR_IFACE_%i.frm")) {
+		if (hrpVersionValid && !_stricmp((const char*)0x10039358, "HR_IFACE_%i.frm")) {
 			SafeWriteStr(0x10039363, "E.frm"); // patching HRP
 		} else {
 			dlog(" Incorrect HRP version!", DL_INIT);
+			return;
 		}
+		LoadGameHook::OnAfterGameInit() += APBarRectPatch;
 	} else {
 		APBarRectPatch();
 	}
@@ -394,6 +396,11 @@ static void WorldmapViewportPatch() {
 
 static void __declspec(naked) wmInterfaceRefreshCarFuel_hack_empty() {
 	__asm {
+		mov byte ptr [eax - 1], 13;
+		mov byte ptr [eax + 1], 13;
+		add eax, wmapWinWidth;
+		dec ebx;
+		mov byte ptr [eax], 14;
 		mov byte ptr [eax - 1], 15;
 		mov byte ptr [eax + 1], 15;
 		add eax, wmapWinWidth;
@@ -403,8 +410,8 @@ static void __declspec(naked) wmInterfaceRefreshCarFuel_hack_empty() {
 
 static void __declspec(naked) wmInterfaceRefreshCarFuel_hack() {
 	__asm {
-		mov byte ptr [eax - 1], 200;
-		mov byte ptr [eax + 1], 200;
+		mov byte ptr [eax - 1], 196;
+		mov byte ptr [eax + 1], 196;
 		add eax, wmapWinWidth;
 		mov byte ptr [eax - 1], 200;
 		mov byte ptr [eax + 1], 200;
@@ -442,7 +449,7 @@ static void WorldMapInterfacePatch() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (hrpIsEnabled) {
+	if (hrpIsEnabled && hrpVersionValid) {
 		if (worldmapInterface = GetConfigInt("Interface", "ExpandWorldMap", 0)) {
 			LoadGameHook::OnAfterGameInit() += WorldmapViewportPatch; // Note: Must be applyling after WorldMapSlots patch
 		}
@@ -451,12 +458,12 @@ static void WorldMapInterfacePatch() {
 	MakeCall(0x4C528A, wmInterfaceRefreshCarFuel_hack_empty);
 	MakeCall(0x4C529E, wmInterfaceRefreshCarFuel_hack);
 	SafeWrite8(0x4C52A8, 197);
+	SafeWrite8(0x4C5289, 12);
 }
 
 void Interface::init() {
 	if (GetConfigInt("Interface", "ActionPointsBar", 0)) {
 		ActionPointsBarPatch();
-		if (hrpIsEnabled) LoadGameHook::OnAfterGameInit() += APBarRectPatch;
 	}
 
 	WorldMapInterfacePatch();
