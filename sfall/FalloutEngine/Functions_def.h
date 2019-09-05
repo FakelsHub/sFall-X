@@ -40,7 +40,7 @@ WRAP_WATCOM_FFUNC4(long, obj_create_list, long, tile, long, elev, long, objType,
 WRAP_WATCOM_FFUNC3(long, object_under_mouse, long, crSwitch, long, inclDude, long, elevation)
 WRAP_WATCOM_FFUNC4(void, qsort, void*, base, long, number, long, elSize, DWORD, comp)
 WRAP_WATCOM_FFUNC3(long, scr_get_local_var, long, sid, long, varId, long*, value)
-WRAP_WATCOM_FFUNC3(long, scr_set_local_var, long, sid, long, varId, long, value) 
+WRAP_WATCOM_FFUNC3(long, scr_set_local_var, long, sid, long, varId, long, value)
 WRAP_WATCOM_FFUNC3(long, tile_num_in_direction, long, tile, long, rotation,long, distance)
 
 // stdcall
@@ -169,13 +169,14 @@ WRAP_WATCOM_FUNC2(long, skill_dec_point_force, GameObject*, critter, long, skill
 WRAP_WATCOM_FUNC2(long, skill_inc_point_force, GameObject*, critter, long, skill)
 WRAP_WATCOM_FUNC1(long, skill_is_tagged, long, skill)
 WRAP_WATCOM_FUNC2(long, skill_level, GameObject*, critter, long, statID)
-WRAP_WATCOM_FUNC2(long, tile_dist, long, scrTile, long, dstTile)
 WRAP_WATCOM_FUNC2(long, stat_get_base_direct, GameObject*, critter, long, statID)
 WRAP_WATCOM_FUNC2(long, stat_get_bonus, GameObject*, critter, long, statID)
 WRAP_WATCOM_FUNC3(long, stat_set_bonus, GameObject*, critter, long, statID, long, amount)
 // adds experience points to PC
 WRAP_WATCOM_FUNC1(void, stat_pc_add_experience, long, amount)
 WRAP_WATCOM_FUNC1(long, text_font, long, fontNum)
+WRAP_WATCOM_FUNC2(long, tile_dist, long, scrTile, long, dstTile)
+WRAP_WATCOM_FUNC2(long, tile_dir, long, scrTile, long, dstTile)
 // redraws the whole screen
 WRAP_WATCOM_FUNC0(void, tile_refresh_display)
 // redraws the given rectangle on screen

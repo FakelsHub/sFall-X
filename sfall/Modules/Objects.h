@@ -16,6 +16,9 @@ public:
 	void init();
 
 	static long uniqueID;
+	static char sfallProcessSeenState;
+
+	static void __fastcall sf_obj_process_seen(long tileIndex);
 
 	static long __fastcall SetObjectUniqueID(fo::GameObject* obj);
 	static long __fastcall SetSpecialID(fo::GameObject* obj);

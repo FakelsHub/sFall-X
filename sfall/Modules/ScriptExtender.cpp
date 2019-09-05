@@ -33,6 +33,7 @@
 #include "HookScripts.h"
 #include "LoadGameHook.h"
 #include "MainLoopHook.h"
+#include "Objects.h"
 #include "Worldmap.h"
 
 #include "Scripting\Arrays.h"
@@ -605,7 +606,10 @@ static DWORD _stdcall HandleMapUpdateForScripts(const DWORD procId) {
 		for (SfallProgsMap::iterator it = sfallProgsMap.begin(); it != sfallProgsMap.end(); it++) {
 			fo::func::runProgram(it->second.ptr);
 		}
-	} else if (procId == fo::ScriptProc::map_exit_p_proc) onMapExit.invoke();
+	} else if (procId == fo::ScriptProc::map_exit_p_proc) {
+		Objects::sfallProcessSeenState &= ~2; // unset 2-bit
+		onMapExit.invoke();
+	}
 
 	RunGlobalScriptsAtProc(procId); // gl* scripts of types 0 and 3
 	RunHookScriptsAtProc(procId);   // all hs_ scripts

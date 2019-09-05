@@ -10,6 +10,8 @@ namespace sfall
 static int unjamTimeState;
 static int maxCountLoadProto = 512;
 
+char Objects::sfallProcessSeenState = 0; // set 1-bit: allowed, 2-bit: run process
+
 long Objects::uniqueID = UniqueID::Start; // current counter id, saving to sfallgv.sav
 
 // Assigns a new unique identifier to an object if it has not been previously assigned
@@ -198,9 +200,113 @@ skip:
 	}
 }
 
+// Alternative implementation of the engine function obj_process_seen_ (with the "Line of Sight" function)
+void __fastcall Objects::sf_obj_process_seen(long tileIndex) {
+	long sIndex = tileIndex - 400;
+	if (sIndex < 0) sIndex = 0;
+	long eIndex = tileIndex + 400;
+	if (eIndex > 5000) eIndex = 5000;
+
+	// clear seen check region
+	long s_seen = FO_VAR_obj_seen_check + sIndex;
+	long e_seen = FO_VAR_obj_seen_check + eIndex;
+	size_t size = e_seen - s_seen;
+	std::memset((void*)s_seen, 0, size);
+
+	long index = sIndex;
+	while (index <= eIndex) {
+		if (index >= 0 && index < 5001) {
+			((char*)FO_VAR_obj_seen_check)[index] = -1;
+			if (index >= 1) {
+				((char*)FO_VAR_obj_seen_check)[index - 1] = -1;
+				if (index != 1) {
+					((char*)FO_VAR_obj_seen_check)[index - 2] = -1;
+					if (index <= 4999) {
+						((char*)FO_VAR_obj_seen_check)[index + 1] = -1;
+						if (index != 4999) ((char*)FO_VAR_obj_seen_check)[index + 2] = -1;
+					}
+				}
+			}
+		}
+		index += 25;
+	}
+	long tileTable = (sIndex > 0) ? sIndex * 8 : 0;
+	do {
+		if (((char*)FO_VAR_obj_seen_check)[sIndex]) {
+			long dist = 0;
+			do {
+				long tile = tileTable + dist;
+				if (tile >= 40000) return;
+				DWORD* objptr = fo::var::objectTable[tile];
+				while (objptr)
+				{
+					fo::GameObject* obj = (fo::GameObject*)*objptr;
+					if (obj->elevation == fo::var::obj_dude->elevation) {
+						fo::GameObject* object = nullptr;
+						// check the line of sight from obj_dude to tile object, only critters and items
+						if (obj->Type() <= fo::ObjType::OBJ_TYPE_CRITTER) object = fo::LineOfSight(obj);
+						if (object == nullptr) obj->flags |= fo::ObjectFlag::Seen;
+					}
+					objptr = (DWORD*)*++objptr;
+				}
+			} while (++dist < 8);
+		}
+		tileTable += 8;
+	} while (++sIndex <= eIndex);
+}
+
+static void __declspec(naked) obj_process_seen_hack() {
+	using namespace fo;
+	using namespace ObjectFlag;
+	using namespace Fields;
+	__asm {
+		jnz  end; // obj.elev != dude.elev
+		mov  ebx, edx;
+		mov  edx, [edx + protoId];
+		shr  edx, 24;
+		and  dl,  0x0F;
+		cmp  dl,  OBJ_TYPE_CRITTER;
+		ja   skip;
+		push ecx;
+		push eax;
+		mov  ecx, ebx;
+		call LineOfSight;
+		test eax, eax;
+		pop  eax;
+		pop  ecx;
+		jnz  end;
+skip:
+		or   [ebx + flags + 3], Seen >> 24;
+end:
+		retn;
+	}
+}
+
+static void __declspec(naked) map_place_dude_and_mouse_hook() {
+	__asm {
+		cmp dword ptr [esp + 0x0C + 4], 0x483082;
+		jnz skip;
+		or  Objects::sfallProcessSeenState, 2; // set 2-bit
+skip:
+		jmp fo::funcoffs::dude_stand_;
+	}
+}
+
 void Objects::init() {
 	LoadGameHook::OnGameReset() += []() {
 		RestoreObjUnjamAllLocks();
+		sfallProcessSeenState = 0;
+	};
+
+	LoadGameHook::OnBeforeGameStart() += []() {
+		if (hrpIsEnabled) {
+			if (hrpVersionValid) {
+				bool hrpFogIsEnabled = *(DWORD*)0x100683D4 != 0;
+				sfallProcessSeenState = !hrpFogIsEnabled;
+			}
+		} else {
+			sfallProcessSeenState = 1;
+		}
 	};
 
 	HookCall(0x4A38A5, new_obj_id_hook);
@@ -217,6 +323,11 @@ void Objects::init() {
 	// Placed some objects on the tile to the lower z-layer
 	MakeCall(0x48D918, obj_insert_hack, 1);
 
+	// Adds the "Line of Sight" function for items and critters object
+	MakeCall(0x48C889, obj_process_seen_hack, 1);
+	if (hrpIsEnabled == false || hrpVersionValid) {
+		HookCall(0x4841D6, map_place_dude_and_mouse_hook); // enable seen process
+	}
 }
 
 }

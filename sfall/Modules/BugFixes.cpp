@@ -3,6 +3,7 @@
 #include "..\FalloutEngine\Fallout2.h"
 #include "Drugs.h"
 #include "LoadGameHook.h"
+#include "Objects.h"
 #include "ScriptExtender.h"
 
 #include "BugFixes.h"
@@ -1423,15 +1424,23 @@ mapLeave:
 static void __declspec(naked) obj_move_to_tile_hack_seen() {
 	__asm {
 		cmp  ds:[FO_VAR_loadingGame], 0;         // loading saved game
-		jnz  fix;
+		jnz  end; // fix
 		// if (map_state <= 0 && mapEntranceTileNum != -1) then fix
 		cmp  dword ptr ds:[FO_VAR_map_state], 0; // map number, -1 exit to worldmap
 		jle  skip;
 		cmp  dword ptr ds:[FO_VAR_mapEntranceTileNum], -1;
-		jne  fix;
+		jne  end; // fix
 skip:
-		or  byte ptr ds:[FO_VAR_obj_seen][eax], dl;
-fix:
+		or   byte ptr ds:[FO_VAR_obj_seen][eax], dl;
+		////// Sets _Seen flag to objects ///////
+		cmp  Objects::sfallProcessSeenState, 3;
+		jnz  end;
+		test dl, dl;
+		jz   end;
+		mov  ecx, eax;
+		jmp  Objects::sf_obj_process_seen;
+		/////////////////////////////////////////
+end:
 		retn;
 	}
 }

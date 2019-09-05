@@ -86,7 +86,9 @@ namespace sfall
 {
 
 bool isDebug = false;
+
 bool hrpIsEnabled = false;
+bool hrpVersionValid = false; // HRP validation version 4.1.8
 
 const char ddrawIni[] = ".\\ddraw.ini";
 static char ini[65]   = ".\\";
@@ -292,6 +294,7 @@ defaultIni:
 	modifiedIni = GetConfigInt("Main", "ModifiedIni", 0);
 
 	hrpIsEnabled = (*(DWORD*)0x4E4480 != 0x278805C7); // check enabled HRP
+	if (hrpIsEnabled && strncmp((const char*)0x10039940, "4.1.8", 5) == 0) hrpVersionValid = true;
 
 	InitModules();
 }
