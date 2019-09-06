@@ -411,6 +411,39 @@ void _stdcall ForceAimedShots(DWORD pid) {
 	forcedAS.push_back(pid);
 }
 
+const DWORD bodypartAddr[] = {
+	0x425562,                     // combat_display_
+	0x42A68F, 0x42A739,           // ai_called_shot_
+	0x429E82, 0x429EC2, 0x429EFF, // ai_pick_hit_mode_
+	0x423231, 0x423268,           // check_ranged_miss_
+	0x4242D4,                     // attack_crit_failure_
+	// for combat_ctd_init_ func
+	0x412E9C,                     // action_explode_
+	0x413519,                     // action_dmg_
+	0x421656, 0x421675,           // combat_safety_invalidate_weapon_func_
+	0x421CC0,                     // combat_begin_extra_
+	0x4229A9,                     // combat_turn_
+	0x42330E, 0x4233AB,           // shoot_along_path_
+	0x423E25, 0x423E2A,           // compute_explosion_on_extras_
+	0x425F83,                     // combat_anim_finished_
+	0x42946D,                     // ai_best_weapon_
+	0x46FCC8,                     // exit_inventory_
+	0x49C00C,                     // protinstTestDroppedExplosive_
+};
+
+void BodypartHitChances() {
+	using fo::var::hit_location_penalty;
+	hit_location_penalty[0] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Head", -40));
+	hit_location_penalty[1] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Left_Arm", -30));
+	hit_location_penalty[2] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Right_Arm", -30));
+	hit_location_penalty[3] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Torso", 0));
+	hit_location_penalty[4] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Right_Leg", -20));
+	hit_location_penalty[5] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Left_Leg", -20));
+	hit_location_penalty[6] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Eyes", -60));
+	hit_location_penalty[7] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Groin", -30));
+	hit_location_penalty[8] = static_cast<long>(GetConfigInt("Misc", "BodyHit_Torso_Uncalled", 0));
+}
+
 static void ResetOnGameLoad() {
 	baseHitChance.SetDefault();
 	mTargets.clear();
@@ -443,6 +476,13 @@ void Combat::init() {
 	if (GetConfigInt("Misc", "DisablePunchKnockback", 0)) {
 		MakeCall(0x424AD7, compute_damage_hack_knockback, 1);
 	}
+
+	// Remove the dependency of Body_Torso from Body_Uncalled
+	SafeWrite8(0x423830, 0xEB); // compute_attack_
+	BlockCall(0x42303F); // block check Body_Torso (combat_attack_)
+	SafeWrite8(0x42A713, 7); // Body_Uncalled > Body_Groin (ai_called_shot_)
+	SafeWriteBatch<BYTE>(8, bodypartAddr); // Replaced Body_Torso to Body_Uncalled
+	LoadGameHook::OnBeforeGameStart() += BodypartHitChances; // set on start & load
 
 	LoadGameHook::OnGameReset() += ResetOnGameLoad;
 }
