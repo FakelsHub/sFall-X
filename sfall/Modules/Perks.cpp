@@ -1426,7 +1426,7 @@ void Perks::init() {
 		if (wHandlingMod >= 0 && wHandlingMod != 3) {
 			if (wHandlingMod > 10) wHandlingMod = 10;
 			SafeWrite8(0x424636, static_cast<char>(wHandlingMod));
-			SafeWrite8(0x4251CE, static_cast<char>(-wHandlingMod));
+			SafeWrite8(0x4251CE, static_cast<signed char>(-wHandlingMod));
 		}
 	}
 	LoadGameHook::OnGameReset() += PerksReset;

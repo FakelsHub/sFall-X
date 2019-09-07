@@ -471,7 +471,7 @@ void sf_inc_npc_level(OpcodeContext& ctx) {
 	//SafeWrite16(0x495C8C, 0x8D0F);
 	//SafeWrite32(0x495C8E, 0x000001BF);
 	data = 0x0130850F;
-	SafeWriteBytes(0x495C77, (BYTE*)&data, 6);
+	SafeWriteBytes(0x495CEC, (BYTE*)&data, 6);
 	if (!npcAutoLevelEnabled) {
 		SafeWrite8(0x495CFB, 0x74);
 	}

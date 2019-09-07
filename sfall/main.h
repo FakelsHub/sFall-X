@@ -93,6 +93,8 @@ std::string Translate(const char* section, const char* setting, const char* defa
 // Translates given string using Sfall translation INI file and puts the result into given buffer.
 size_t Translate(const char* section, const char* setting, const char* defaultValue, char* buffer, size_t bufSize = 128);
 
+DWORD HRPAddressOffset(DWORD offset);
+
 extern const char ddrawIni[];
 extern DWORD modifiedIni;
 
