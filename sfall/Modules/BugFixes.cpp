@@ -2327,6 +2327,7 @@ static void __declspec(naked) map_check_state_hook() {
 void BugFixes::init()
 {
 	#ifndef NDEBUG
+		LoadGameHook::OnBeforeGameClose() += PrintAddrList;
 		if (isDebug && (GetConfigInt("Debugging", "BugFixes", 1) == 0)) return;
 	#endif
 
