@@ -48,10 +48,6 @@ static const DWORD PutAwayWeapon[] = {
 	0x472996, // invenWieldFunc_
 };
 
-static const DWORD FastShotFixF1[] = {
-	0x478BB8, 0x478BC7, 0x478BD6, 0x478BEA, 0x478BF9, 0x478C08, 0x478C2F,
-};
-
 static const DWORD script_dialog_msgs[] = {
 	0x4A50C2, 0x4A5169, 0x4A52FA, 0x4A5302, 0x4A6B86, 0x4A6BE0, 0x4A6C37,
 };
@@ -76,18 +72,6 @@ static const long StatsDisplayTable[14] = {
 	fo::Stat::STAT_dmg_resist_explosion,
 	fo::Stat::STAT_dmg_resist_electrical
 };
-
-static void __declspec(naked) apply_damage_hack() {
-	__asm {
-		xor  edx, edx;
-		inc  edx               // COMBAT_SUBTYPE_WEAPON_USED
-		test [esi + 0x15], dl; // ctd.flags2Source & DAM_HIT_
-		jz   end;              // no hit
-		inc  edx;              // COMBAT_SUBTYPE_HIT_SUCCEEDED
-end:
-		retn;
-	}
-}
 
 static void __declspec(naked) WeaponAnimHook() {
 	__asm {
@@ -173,26 +157,6 @@ static void __declspec(naked) ScienceCritterCheckHook() {
 		retn;
 end:
 		jmp fo::funcoffs::critter_kill_count_type_;
-	}
-}
-
-static const DWORD FastShotTraitFixEnd1 = 0x478E7F;
-static const DWORD FastShotTraitFixEnd2 = 0x478E7B;
-static void __declspec(naked) FastShotTraitFix() {
-	__asm {
-		test eax, eax;				// does player have Fast Shot trait?
-		je ajmp;				// skip ahead if no
-		mov edx, ecx;				// argument for item_w_range_: hit_mode
-		mov eax, ebx;				// argument for item_w_range_: pointer to source_obj (always dude_obj due to code path)
-		call fo::funcoffs::item_w_range_;			// get weapon's range
-		cmp eax, 0x2;				// is weapon range less than or equal 2 (i.e. melee/unarmed attack)?
-		jle ajmp;				// skip ahead if yes
-		xor eax, eax;				// otherwise, disallow called shot attempt
-		jmp bjmp;
-ajmp:
-		jmp FastShotTraitFixEnd1;		// continue processing called shot attempt
-bjmp:
-		jmp FastShotTraitFixEnd2;		// clean up and exit function item_w_called_shot
 	}
 }
 
@@ -583,24 +547,6 @@ void ScienceOnCrittersPatch() {
 	}
 }
 
-void FashShotTraitFix() {
-	switch (GetConfigInt("Misc", "FastShotFix", 1)) {
-	case 1:
-		dlog("Applying Fast Shot Trait Fix.", DL_INIT);
-		MakeJump(0x478E75, FastShotTraitFix);
-		dlogr(" Done", DL_INIT);
-		break;
-	case 2:
-		dlog("Applying Fast Shot Trait Fix. (Fallout 1 version)", DL_INIT);
-		SafeWrite16(0x478C9F, 0x9090);
-		for (int i = 0; i < sizeof(FastShotFixF1) / 4; i++) {
-			HookCall(FastShotFixF1[i], (void*)0x478C7D);
-		}
-		dlogr(" Done", DL_INIT);
-		break;
-	}
-}
-
 void BoostScriptDialogLimitPatch() {
 	if (GetConfigInt("Misc", "BoostScriptDialogLimit", 0)) {
 		const int scriptDialogCount = 10000;
@@ -652,14 +598,6 @@ void DontTurnOffSneakIfYouRunPatch() {
 		SafeWrite8(0x418135, 0xEB);
 		dlogr(" Done", DL_INIT);
 	}
-}
-
-void CombatProcFix() {
-	//Ray's combat_p_proc fix
-	dlog("Applying Ray's combat_p_proc patch.", DL_INIT);
-	MakeCall(0x424DD9, apply_damage_hack);
-	SafeWrite16(0x424DC6, 0x9090);
-	dlogr(" Done", DL_INIT);
 }
 
 void MultiPatchesPatch() {
@@ -899,6 +837,15 @@ void UseWalkDistancePatch() {
 	}
 }
 
+void F1EngineBehaviorPatch() {
+	if (GetConfigInt("Misc", "EngineBehavior", 0)) {
+		dlog("Applying Fallout 1 engine behavior patch.", DL_INIT);
+		BlockCall(0x4A4343); // disable playing the final movie/credits of the game after the slide showing
+		SafeWrite8(0x477C71, 0xEB); // disable weight division for power armor items
+		dlogr(" Done", DL_INIT);
+	}
+}
+
 void MiscPatches::init() {
 	mapName[64] = 0;
 	if (GetConfigString("Misc", "StartingMap", "", mapName, 64)) {
@@ -967,12 +914,10 @@ void MiscPatches::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	SimplePatch<DWORD>(0x424FA7, "Misc", "KnockoutTime", 35, 35, 100);
-
 	// Increase text capacity in the description window of statistics and perks
 	SafeWriteBatch<BYTE>(150, {0x43ACD5, 0x43DD37});
 
-	CombatProcFix();
+	F1EngineBehaviorPatch();
 	DialogueFix();
 
 	AdditionalWeaponAnimsPatch();
@@ -992,7 +937,6 @@ void MiscPatches::init() {
 
 	OverrideMusicDirPatch();
 	NpcStage6Fix();
-	FashShotTraitFix();
 	BoostScriptDialogLimitPatch();
 	MotionScannerFlagsPatch();
 	EncounterTableSizePatch();
