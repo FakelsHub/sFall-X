@@ -838,7 +838,7 @@ void UseWalkDistancePatch() {
 }
 
 void F1EngineBehaviorPatch() {
-	if (GetConfigInt("Misc", "EngineBehavior", 0)) {
+	if (GetConfigInt("Misc", "Fallout1Behavior", 0)) {
 		dlog("Applying Fallout 1 engine behavior patch.", DL_INIT);
 		BlockCall(0x4A4343); // disable playing the final movie/credits of the game after the slide showing
 		SafeWrite8(0x477C71, 0xEB); // disable weight division for power armor items
