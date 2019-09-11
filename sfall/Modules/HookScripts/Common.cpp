@@ -63,7 +63,7 @@ bool LoadHookScriptFile(std::string filePath, const char* name, int id, bool ful
 			HookScript hook;
 			hook.prog = prog;
 			hook.callback = -1;
-			hook.isGlobalScript = false;
+			hook.isGlobalScript = 0;
 			hooks[id].push_back(hook);
 			AddProgramToMap(prog);
 		} else {
@@ -115,7 +115,7 @@ static void _stdcall RunSpecificHookScript(HookScript *hook) {
 	if (hook->callback != -1) {
 		fo::func::executeProcedure(hook->prog.ptr, hook->callback);
 	} else {
-		RunScriptProc(&hook->prog, fo::ScriptProc::start);
+		hook->callback = RunScriptStartProc(&hook->prog); // run start
 	}
 }
 

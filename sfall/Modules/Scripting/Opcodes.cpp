@@ -181,7 +181,7 @@ static SfallOpcodeInfo opcodeInfoArray[] = {
 	{0x25f, "reg_anim_take_out",         sf_reg_anim_take_out,         3, false, {ARG_OBJECT, ARG_INT, ARG_INT}},
 	{0x260, "reg_anim_turn_towards",     sf_reg_anim_turn_towards,     3, false, {ARG_OBJECT, ARG_INT, ARG_INT}},
 	{0x261, "metarule2_explosions",      sf_explosions_metarule,       3, true,  {ARG_INT, ARG_INT, ARG_INT}},
-	{0x262, "register_hook_proc",        sf_register_hook,             2, false, {ARG_INT, ARG_ANY}},
+	{0x262, "register_hook_proc",        sf_register_hook,             2, false, {ARG_INT, ARG_INT}},
 	{0x263, "power",                     sf_power,                     2, true,  {ARG_NUMBER, ARG_NUMBER}},
 	{0x264, "log",                       sf_log,                       1, true,  {ARG_NUMBER}},
 	{0x265, "exponent",                  sf_exponent,                  1, true,  {ARG_NUMBER}},
@@ -208,7 +208,7 @@ static SfallOpcodeInfo opcodeInfoArray[] = {
 	{0x27b, "sfall_func5", HandleMetarule, 6, true},
 	{0x27c, "sfall_func6", HandleMetarule, 7, true}, // if you need more arguments - use arrays
 
-	{0x27d, "register_hook_proc_spec",   sf_register_hook,             2, false, {ARG_INT, ARG_ANY}},
+	{0x27d, "register_hook_proc_spec",   sf_register_hook,             2, false, {ARG_INT, ARG_INT}},
 };
 
 // A hash-table for opcode info, indexed by opcode.

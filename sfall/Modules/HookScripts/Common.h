@@ -20,7 +20,7 @@ const int maxRets = 8;
 struct HookScript {
 	ScriptProgram prog;
 	int callback;        // proc number in script's proc table
-	bool isGlobalScript; // false for hs_* scripts, true for gl* scripts
+	char isGlobalScript; // 0 for hs_* scripts, 1/2 type for gl* scripts
 };
 
 // All currently registered hook scripts

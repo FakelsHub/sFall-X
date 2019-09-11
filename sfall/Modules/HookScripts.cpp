@@ -48,7 +48,7 @@ struct HooksInjectInfo {
 };
 
 static struct HooksPositionInfo {
-	long hsPosition    = 0; // index of the hs_ * script, or the beginning of the position for registering scripts using the register_hook function
+	long hsPosition    = 0; // index of the hs_* script, or the beginning of the position for registering scripts using the register_hook function
 	long positionShift = 0; // offset to the last registered script by the register_hook function
 	bool hasHsScript   = false;
 } hooksInfo[HOOK_COUNT];
@@ -94,6 +94,7 @@ static HooksInjectInfo injectHooks[] = {
 	{HOOK_SUBCOMBATDAMAGE,  Inject_SubCombatDamageHook,  false}, // replacements the code logic
 	{HOOK_SETLIGHTING,      Inject_SetLightingHook,      false},
 	{HOOK_SNEAK,            Inject_SneakCheckHook,       false},
+	{HOOK_STDPROCEDURE,     Inject_ScriptProcedureHook,  false},
 };
 
 bool newHookRegister = true;
@@ -183,13 +184,13 @@ void RegisterHook(fo::Program* script, int id, int procNum, bool specReg) {
 	for (std::vector<HookScript>::iterator it = hooks[id].begin(); it != hooks[id].end(); ++it) {
 		if (it->prog.ptr == script) {
 			if (procNum == 0) {
-				long index = std::distance(hooks[id].begin(), it);
-				if (it->callback != -1) {
-					if (hooksInfo[id].hsPosition && hooksInfo[id].hsPosition > index) hooksInfo[id].hsPosition--; // for spec
-				} else {
-					if (hooksInfo[id].hasHsScript && hooksInfo[id].hsPosition == index) {
-						hooksInfo[id].hasHsScript = false; // unregister hs_ script
-					} else if (hooksInfo[id].positionShift) hooksInfo[id].positionShift--; // for register_hook
+				if (newHookRegister) {
+					long index = std::distance(hooks[id].begin(), it);
+					if (hooksInfo[id].hsPosition > index) {
+						hooksInfo[id].hsPosition--;        // for register_hook_proc_spec
+					} else if (hooksInfo[id].hasHsScript && hooksInfo[id].hsPosition == index) {
+						hooksInfo[id].hasHsScript = false; // for unregister hs_ script
+					} else if (hooksInfo[id].positionShift && it->isGlobalScript == 2) hooksInfo[id].positionShift--; // for register_hook
 				}
 				hooks[id].erase(it); // unregister
 			}
@@ -204,7 +205,7 @@ void RegisterHook(fo::Program* script, int id, int procNum, bool specReg) {
 		HookScript hook;
 		hook.prog = *prog;
 		hook.callback = procNum;
-		hook.isGlobalScript = true;
+		hook.isGlobalScript = (procNum == -1) ? 2 : 1;
 
 		auto c_it = hooks[id].cend();
 		if (specReg) {
