@@ -637,11 +637,11 @@ int     ret2 - overrides the duration time for the current check
 
 HOOK_STDPROCEDURE (hs_stdprocedure.int)
 
-Runs every time before executed the standard procedure(handler) in script of the object.
+Runs every time before executed the standard procedure (handler) in script of an object.
 
-int     arg1 - number of the standard script handler (see define.h, except: start, map_update_p_proc and critter_p_proc)
-Obj     arg2 - the object to which the executed script belongs
-Obj     arg3 - the object that called this handler(maybe 0)
+int     arg1 - number of the standard script handler (see define.h, except: start, map_update_p_proc, timed_event_proc and critter_p_proc)
+Obj     arg2 - the object that owns the executed handler
+Obj     arg3 - the object that called this handler (can be 0)
 
-int     ret1 - pass -1 to cancel the execute of the handler
+int     ret1 - pass -1 to cancel the execution of the handler
 

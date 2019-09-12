@@ -6,7 +6,8 @@
 
 #include "..\scripting\headers\lib.arrays.h"
 #include "..\scripting\headers\lib.strings.h"
-// #include "..\scripting\headers\lib.inven.h"
+#include "..\scripting\headers\lib.inven.h"
+
 
 variable ini := "sfall-mods.ini";
 variable translationIni;

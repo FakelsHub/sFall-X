@@ -135,7 +135,8 @@ procedure KeyPressHandler begin
 
    if (pressed) then begin
       mode := get_game_mode;
-       // Close inventory when re-pressing the 'I' key
+      if (mode bwand (COUNTERWIN)) then return;
+      // Close inventory when re-pressing the 'I' key
       if (keyDX == DIK_I and (mode bwand INVENTORY)) then begin
          tap_key(DIK_ESCAPE);
       end
@@ -145,17 +146,20 @@ procedure KeyPressHandler begin
       else if (keyDX == DIK_Z and (mode bwand PIPBOY)) then begin
          tap_key(DIK_ESCAPE);
       end
+      if (mode == (BARTER + DIALOG) and (keyDX == DIK_SPACE or keyDX == DIK_RETURN)) then begin
+         tap_key(DIK_M);
+      end
       else if (keyDX == pickupKey and (mode == 0)) then begin
          call pickup_ground_items;
       end
-      else if (keyMod and keyDX == DIK_A and (mode bwand (COMBAT bwor PCOMBAT))) then begin
-         if get_cursor_mode != CURSOR_TARGETING then
-            set_cursor_mode(CURSOR_TARGETING);
-         else
-            set_cursor_mode(CURSOR_MOVEMENT);
-      end
-      else if (keyMod and keyDX == DIK_E and (mode bwand (COMBAT bwor PCOMBAT))) then begin
-            tap_key(DIK_RETURN);
+      else if (keyMod and (mode == (PCOMBAT + COMBAT))) then begin
+         if (keyDX == DIK_A) then begin
+            if get_cursor_mode != CURSOR_TARGETING then
+               set_cursor_mode(CURSOR_TARGETING);
+            else
+               set_cursor_mode(CURSOR_MOVEMENT);
+         end
+         else if (keyDX == DIK_E) then tap_key(DIK_RETURN);
       end
    end
 end

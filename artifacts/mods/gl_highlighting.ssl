@@ -13,7 +13,7 @@
    NOTE: this script requires compiler from sfall modderspack with -s option
    (short circuit evaluation)
 
-   version 1.1
+   version 1.2
 
 **/
 
@@ -34,9 +34,9 @@
                                     set_flags(obj, (get_flags(obj) bwor FLAG_USED));       \
                                  else set_flags(obj, (get_flags(obj) bwor FLAG_CRT_LOOK))
 
-#define FLAG_DISCOVER            (0x100000) // unused flag #21
-#define SET_OBJ_DISCOVER(obj)    set_flags(obj, (get_flags(obj) bwor FLAG_DISCOVER))
-#define CHECK_OBJ_DISCOVER(obj)  (get_flags(obj) bwand FLAG_DISCOVER)
+//#define FLAG_DISCOVER            (0x100000) // unused flag #21
+#define SET_OBJ_DISCOVER(obj)    set_flags(obj, (get_flags(obj) bwor FLAG_SEEN))
+#define CHECK_OBJ_DISCOVER(obj)  (get_flags(obj) bwand FLAG_SEEN)
 
 #define NeedCharges              (motionScanner >= 2)
 
@@ -47,7 +47,8 @@ variable begin
    highlightKey;
    alsoContainer;
    alsoCorpse;
-   checkLOS;
+   checkLOS := 2;
+   fogEnabled;
    motionScanner;
 
    highlightFailMsg1;
@@ -87,8 +88,8 @@ procedure start begin
       highlightKey := GetConfig(configSection, "Key", 42);
       alsoContainer := GetConfig(configSection, "Containers", 1);
       alsoCorpse := GetConfig(configSection, "Corpses", 1);
-      checkLOS := GetConfig(configSection, "CheckLOS", 1);
-
+      fogEnabled := GetIniConfig("Maps", "Fog_of_War", 0, "f2_res.ini");
+      if (fogEnabled == false) then checkLOS := GetConfig(configSection, "CheckLOS", 1);
       outlineColor := GetConfig(configSection, "OutlineColor", 16);
       defOutlineColor := GetConfig(configSection, "DefaultOutlineColor", 32);
       lookOutlineColor := GetConfig(configSection, "LookOutlineColor", 64);
@@ -211,7 +212,7 @@ procedure ToggleHighlightObject(variable obj, variable enable, variable containe
 
    if (obj) then begin
       if (((checkLOS >= 2) or (container and checkLOS == 1)) and not(motionScanner)) and not(CHECK_OBJ_DISCOVER(obj)) then begin
-         if CheckLineOfSight(obj) then
+         if (fogEnabled == false and CheckLineOfSight(obj)) then
             SET_OBJ_DISCOVER(obj);
          else
             return;
@@ -259,7 +260,7 @@ end
 procedure CheckLineOfSight(variable object) begin
    variable tile, result := true;
 
-   if (tile_distance_objs(dude_obj, object) > 3) then begin
+   if (tile_distance_objs(dude_obj, object) > 2) then begin
       tile := tile_num(object);
       if (obj_blocking_tile(tile, dude_elevation, BLOCKING_TYPE_SIGHT)) then
          tile := tile_num_in_direction(tile, rotation_to_tile(tile, dude_tile), 1);
