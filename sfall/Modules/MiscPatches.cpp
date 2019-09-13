@@ -804,7 +804,8 @@ void PartyMemberSkillPatch() {
 }
 
 void SkipLoadingGameSettingsPatch() {
-	int skipLoading = GetConfigInt("Misc", "SkipLoadingGameSetting", 0);
+	int skipLoading = GetConfigInt("Misc", "SkipLoadingGameSettings", -1);
+	if (skipLoading == -1) GetConfigInt("Misc", "SkipLoadingGameSetting", 0); // TODO: delete
 	if (skipLoading) {
 		dlog("Applying skip loading game settings from a saved game patch.", DL_INIT);
 		BlockCall(0x493421);

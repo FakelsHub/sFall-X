@@ -146,7 +146,7 @@ procedure KeyPressHandler begin
       else if (keyDX == DIK_Z and (mode bwand PIPBOY)) then begin
          tap_key(DIK_ESCAPE);
       end
-      if (mode == (BARTER + DIALOG) and (keyDX == DIK_SPACE or keyDX == DIK_RETURN)) then begin
+      if ((mode bwand BARTER) and (keyDX == DIK_SPACE or keyDX == DIK_RETURN)) then begin
          tap_key(DIK_M);
       end
       else if (keyDX == pickupKey and (mode == 0)) then begin

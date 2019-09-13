@@ -2940,6 +2940,9 @@ void BugFixes::init()
 
 	// Place the player on a nearby empty tile if the entrance tile is blocked by another object when entering a map
 	HookCall(0x4836F8, map_check_state_hook);
+
+	// Remove dublicate code for intface_redraw_ function
+	BlockCall(0x45EBBF);
 }
 
 }

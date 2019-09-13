@@ -319,7 +319,8 @@ Some utility/math functions are available:
 - see "hookscripts.txt" for more details
 
 > void register_hook_proc_spec(int hook, procedure proc)
-- works just like "register_hook_proc", but allows to register a script at the end of the hook script execution chain (i.e. the hook will be executed after all previously registered hook scripts).
+- works just like "register_hook_proc", but allows to register a script at the end of the hook script execution chain (i.e. the hook will be executed after all previously registered hook scripts for the same hook, including the hs_*.int script).
+- to unregister hook script from current global script, use the register_hook_proc function
 
 > string message_str_game(int fileId, int messageId)
 - works exactly the same as message_str, except you get messages from files in "text\<current_lang>\game\" folder
