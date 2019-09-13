@@ -29,7 +29,7 @@ static long compute_spray_center_div;
 static long compute_spray_target_mult;
 static long compute_spray_target_div;
 
-static long _fastcall ComputeSpray(DWORD* roundsLeftOut, DWORD* roundsRightOut, DWORD totalRounds, DWORD* roundsCenterOut) {
+static long __fastcall ComputeSpray(DWORD* roundsLeftOut, DWORD* roundsRightOut, DWORD totalRounds, DWORD* roundsCenterOut) {
 
 	// roundsCenter = totalRounds * mult / div
 	long result = totalRounds * compute_spray_center_mult;
@@ -41,7 +41,6 @@ static long _fastcall ComputeSpray(DWORD* roundsLeftOut, DWORD* roundsRightOut, 
 
 	long roundsLeft = (totalRounds - roundsCenter) / 2;
 	*roundsLeftOut = roundsLeft;
-
 	*roundsRightOut = totalRounds - roundsCenter - roundsLeft;
 
 	// roundsMainTarget = roundsCenter * mult / div

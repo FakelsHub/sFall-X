@@ -24,11 +24,11 @@
 namespace sfall
 {
 
-//static char elevFile[MAX_PATH] = ".\\";
-
 static const int exitsPerElevator = 4;
 static const int vanillaElevatorCount = 24;
 static const int elevatorCount = 50;
+
+//static char elevFile[MAX_PATH] = ".\\";
 
 static DWORD elevatorType[elevatorCount] = {0};
 static fo::ElevatorExit elevatorExits[elevatorCount][exitsPerElevator] = {0}; // _retvals
@@ -61,14 +61,16 @@ skip:
 	}
 }
 
-/*static void __declspec(naked) UnknownHook2() {
+/*
+static void __declspec(naked) UnknownHook2() {
 	__asm {
 		lea  edx, elevatorType;
 		shl  eax, 2;
 		mov  eax, [edx + eax];
 		jmp  fo::funcoffs::elevator_end_;
 	}
-}*/
+}
+*/
 
 static void __declspec(naked) GetNumButtonsHook1() {
 	__asm {

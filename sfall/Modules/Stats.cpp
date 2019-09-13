@@ -29,7 +29,7 @@
 namespace sfall
 {
 
-static long* _fastcall GetProto(fo::GameObject*);
+static long* __fastcall GetProto(fo::GameObject*);
 
 struct ProtoMem {
 	long* proto;
@@ -149,7 +149,6 @@ static void __declspec(naked) stat_set_base_hack_check() {
 	__asm {
 		cmp esi, dword ptr ds:[FO_VAR_obj_dude];
 		jz  pc;
-
 		cmp ebx, statMinimumsNPC[eax];
 		jl  failMin;
 		cmp ebx, statMaximumsNPC[eax];
@@ -311,7 +310,7 @@ static long ApplyAllStatsToProto(const protoMem_iterator &iter, long* &proto_out
 }
 
 // Returns the prototype NPC located in memory
-static long* _fastcall GetProto(fo::GameObject* critter) {
+static long* __fastcall GetProto(fo::GameObject* critter) {
 	if (protoMem.empty() || critter->protoId == fo::PID_Player) return nullptr;
 	if (lastGetProtoID.id == critter->id) return lastGetProtoID.proto;
 
@@ -319,7 +318,7 @@ static long* _fastcall GetProto(fo::GameObject* critter) {
 	auto it = protoMem.find(critter->id);
 	if (it != protoMem.end() && it->second.pid == critter->protoId) {
 		proto = it->second.proto;
-		if (!proto) { // there is no prototype in memory, create a new from the default prototype
+		if (!proto) { // there is no prototype in memory, create a new one from the default prototype
 			it->second.sharedCount = ApplyAllStatsToProto(it, proto);
 			it->second.proto = proto;
 		}
@@ -365,7 +364,7 @@ static void AddStatToProto(long stat, fo::GameObject* critter, long amount, long
 
 	for (auto itStat = vec.begin(); itStat != vec.end(); itStat++) {
 		if (itStat->objID == critter->id && itStat->objPID == critter->protoId && itStat->stat == stat) {
-			if (amount == itStat->defval) { // set value and value in default prototype is match
+			if (amount == itStat->defval) { // set value and value in default prototype are matched
 				long* proto = ReleaseProtoMem(itStat);
 				if (proto) SetStatValue(proto, offset, amount);
 				// removal of a vector element, without re-moving other elements
@@ -384,7 +383,7 @@ static void AddStatToProto(long stat, fo::GameObject* critter, long amount, long
 	SetStatValue(vec.back().s_proto, offset, amount); // set value to individuals prototype
 }
 
-static void _fastcall SetStatToProto(long stat, fo::GameObject* critter, long amount, long* protoBase, long offset, bool isSaved) {
+static void __fastcall SetStatToProto(long stat, fo::GameObject* critter, long amount, long* protoBase, long offset, bool isSaved) {
 	if (critter->protoId != fo::PID_Player) {
 		if (isNotPartyMemberPid == critter->protoId || !IsPartyMember(critter)) {
 			isNotPartyMemberPid = critter->protoId;
@@ -603,12 +602,12 @@ void Stats::init() {
 		StatsReset();
 		StatsProtoReset();
 		//Reset some settable game values back to the defaults
-		//Exp mod
+		//XP mod
 		SafeWrite8(0x4AFAB8, 0x53);
 		SafeWrite32(0x4AFAB9, 0x55575651);
 		//HP bonus
 		SafeWrite8(0x4AFBC1, 2);
-		//SkillPoints per level mod
+		//skill points per level mod
 		SafeWrite8(0x43C27A, 5);
 	};
 

@@ -52,8 +52,8 @@ typedef struct {
 	char initialized;
 } ScriptProgram;
 
-void _fastcall SetGlobalScriptRepeat(fo::Program* script, int frames);
-void _fastcall SetGlobalScriptType(fo::Program* script, int type);
+void __fastcall SetGlobalScriptRepeat(fo::Program* script, int frames);
+void __fastcall SetGlobalScriptType(fo::Program* script, int type);
 bool _stdcall IsGameScript(const char* filename);
 
 void RunGlobalScriptsAtProc(DWORD procId);
@@ -64,6 +64,7 @@ void SaveGlobals(HANDLE h);
 int GetNumGlobals();
 void GetGlobals(GlobalVar* globals);
 void SetGlobals(GlobalVar* globals);
+
 long SetGlobalVar(const char* var, int val);
 void SetGlobalVarInt(DWORD var, int val);
 
@@ -71,7 +72,7 @@ long GetGlobalVar(const char* var);
 long GetGlobalVarInt(DWORD var);
 long GetGlobalVarInternal(__int64 val);
 
-void _fastcall SetSelfObject(fo::Program* script, fo::GameObject* obj);
+void __fastcall SetSelfObject(fo::Program* script, fo::GameObject* obj);
 
 bool _stdcall ScriptHasLoaded(fo::Program* script);
 

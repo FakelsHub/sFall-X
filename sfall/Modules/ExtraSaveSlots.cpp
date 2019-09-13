@@ -213,7 +213,7 @@ static long __fastcall CheckPage(long button) {
 	switch (button) {
 		case 0x14B:                        // left button
 			if (LSPageOffset >= 10) LSPageOffset -= 10;
-			_asm call fo::funcoffs::gsound_red_butt_press_;
+			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
 		case 0x149:                        // fast left PGUP button
 			if (LSPageOffset < 100) {
@@ -221,11 +221,11 @@ static long __fastcall CheckPage(long button) {
 			} else {
 				LSPageOffset -= 100;
 			}
-			_asm call fo::funcoffs::gsound_red_butt_press_;
+			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
 		case 0x14D:                        // right button
 			if (LSPageOffset <= 9980) LSPageOffset += 10;
-			_asm call fo::funcoffs::gsound_red_butt_press_;
+			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
 		case 0x151:                        // fast right PGDN button
 			if (LSPageOffset > 9890) {
@@ -233,7 +233,7 @@ static long __fastcall CheckPage(long button) {
 			} else {
 				LSPageOffset += 100;
 			}
-			_asm call fo::funcoffs::gsound_red_butt_press_;
+			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
 		case 'p':                          // p/P button pressed - start SetPageNum func
 		case 'P':
@@ -400,7 +400,7 @@ void EnableSuperSaving() {
 	// load saved page and list positions from file
 	MakeCalls(load_page_offsets, {0x47B82B});
 
-	//Add Load/Save page offset to Load/Save folder number/////////////////
+	// Add Load/Save page offset to Load/Save folder number
 	MakeCalls(AddPageOffset01, {
 		0x47B929, 0x47D8DB, 0x47D9B0, 0x47DA34, 0x47DABF, 0x47DB58, 0x47DBE9,
 		0x47DC9C, 0x47EC77, 0x47F5AB, 0x47F694, 0x47F6EB, 0x47F7FB, 0x47F892,
@@ -430,7 +430,6 @@ static void GetSaveFileTime(char* filename, FILETIME* ftSlot) {
 
 static const char* commentFmt = "%02d/%02d/%d - %02d:%02d:%02d";
 static void CreateSaveComment(char* bufstr) {
-
 	SYSTEMTIME stUTC, stLocal;
 	GetSystemTime(&stUTC);
 	SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);
@@ -440,13 +439,13 @@ static void CreateSaveComment(char* bufstr) {
 	strcpy(bufstr, buf);
 }
 
-static DWORD autoQuickSave = 0;
+static long autoQuickSave = 0;
 static long quickSavePage = 0;
 static FILETIME ftPrevSlot;
 
 static DWORD __stdcall QuickSaveGame(fo::DbFile* file, char* filename) {
 
-	unsigned int currSlot = fo::var::slot_cursor;
+	long currSlot = fo::var::slot_cursor;
 
 	if (file) { // This slot is not empty
 		fo::func::db_fclose(file);
@@ -509,6 +508,7 @@ void ExtraSaveSlots::init() {
 
 	autoQuickSave = GetConfigInt("Misc", "AutoQuickSave", 0);
 	if (autoQuickSave > 0) {
+		dlog("Applying auto quick save patch.", DL_INIT);
 		if (autoQuickSave > 10) autoQuickSave = 10;
 		autoQuickSave--; // reserved slot count
 
@@ -523,6 +523,7 @@ void ExtraSaveSlots::init() {
 			SafeWrite32(0x47B924, 0x5193B83D); // mov [slot_cursor], edi = 0
 		}
 		MakeJump(0x47B984, SaveGame_hack0);
+		dlogr(" Done", DL_INIT);
 	}
 }
 

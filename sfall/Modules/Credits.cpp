@@ -85,13 +85,13 @@ static DWORD ExtraLineCount = sizeof(ExtraLines) / 4;
 static void __declspec(naked) ShowCreditsHook() {
 	InCredits = 1;
 	CreditsLine = 0;
-	//_asm mov  eax, creditsFile;
-	_asm call fo::funcoffs::credits_;
+	//__asm mov  eax, creditsFile;
+	__asm call fo::funcoffs::credits_;
 	InCredits = 0;
-	_asm retn;
+	__asm retn;
 }
 
-static DWORD _fastcall CreditsNextLine(char* buf, DWORD* font, DWORD* colour) {
+static DWORD __fastcall CreditsNextLine(char* buf, DWORD* font, DWORD* colour) {
 	if (!InCredits || CreditsLine >= ExtraLineCount) return 0;
 	const char* line = ExtraLines[CreditsLine++];
 	if (strlen(line)) {
@@ -142,7 +142,6 @@ static void __declspec(naked) CreditsNextLineHook_Bottom() {
 		pop  edx;
 		pop  eax;
 		jnz  morelines;               // if not the end yet, skip custom code
-
 		pushadc;
 		push ebx;
 		mov  ecx, eax;
@@ -159,7 +158,7 @@ morelines:
 }
 
 void Credits::init() {
-	HookCalls(ShowCreditsHook, { 0x480C49, 0x43F881 });
+	HookCalls(ShowCreditsHook, {0x480C49, 0x43F881});
 	if (GetConfigInt("Misc", "CreditsAtBottom", 0)) {
 		HookCall(0x42CB49, CreditsNextLineHook_Bottom);
 	} else {

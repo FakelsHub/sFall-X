@@ -1,4 +1,4 @@
-﻿/*
+/*
  *    sfall
  *    Copyright (C) 2011  Timeslip
  *
@@ -64,7 +64,6 @@ void InventoryKeyPressedHook(DWORD dxKey, bool pressed) {
 /////////////////////////////////////////////////////////////////
 
 DWORD __stdcall sf_item_total_size(fo::GameObject* critter) {
-
 	int totalSize = fo::func::item_c_curr_size(critter);
 
 	if (critter->TypeFid() == fo::OBJ_TYPE_CRITTER) {
@@ -87,7 +86,6 @@ DWORD __stdcall sf_item_total_size(fo::GameObject* critter) {
 }
 
 static int __stdcall CritterGetMaxSize(fo::GameObject* critter) {
-
 	if (critter == fo::var::obj_dude) return invSizeMaxLimit;
 
 	if (sizeLimitMode != 3) { // selected mode 1 or 2
@@ -125,7 +123,6 @@ end:
 }
 
 static int __fastcall CanAddedItems(fo::GameObject* critter, fo::GameObject* item, int count) {
-
 	int sizeMax = CritterGetMaxSize(critter);
 	if (sizeMax > 0) {
 		int itemsSize = fo::func::item_size(item) * count;
@@ -171,7 +168,6 @@ fail:
 }
 
 static int __fastcall BarterAttemptTransaction(fo::GameObject* critter, fo::GameObject* table) {
-
 	int size = CritterGetMaxSize(critter);
 	if (size == 0) return 1;
 
@@ -187,7 +183,7 @@ static const DWORD BarterAttemptTransactionPCRet  = 0x474CA8;
 static __declspec(naked) void barter_attempt_transaction_hack_pc() {
 	__asm {
 		/* cmp  eax, edx */
-		jg   fail;    // if is no free weight
+		jg   fail;    // if there's no available weight
 		//------
 		mov  ecx, edi;                   // source (pc)
 		mov  edx, ebp;                   // npc table
@@ -206,7 +202,7 @@ static const DWORD BarterAttemptTransactionPMRet  = 0x474D01;
 static __declspec(naked) void barter_attempt_transaction_hack_pm() {
 	__asm {
 		/* cmp  eax, edx */
-		jg   fail;    // if is no free weight
+		jg   fail;    // if there's no available weight
 		//------
 		mov  ecx, ebx;                  // target (npc)
 		mov  edx, esi;                  // pc table
@@ -246,7 +242,6 @@ static const char* InvenFmt2 = "%s %d/%d";
 static const char* InvenFmt3 = "%d/%d | %d/%d";
 
 static void __cdecl DisplaySizeStats(fo::GameObject* critter, const char* &message, DWORD &size, DWORD &sizeMax) {
-
 	int limitMax = CritterGetMaxSize(critter);
 	if (limitMax == 0) {
 		strcpy(InvenFmt, InvenFmt2); // default fmt
@@ -283,7 +278,6 @@ static __declspec(naked) void display_stats_hack() {
 
 static char SizeMsgBuf[32];
 static const char* _stdcall SizeInfoMessage(fo::GameObject* item) {
-
 	int size = fo::func::item_size(item);
 	if (size == 1) {
 		const char* message = fo::MessageSearch(&fo::var::proto_main_msg_file, 543);
@@ -334,7 +328,9 @@ static void __declspec(naked) gdControlUpdateInfo_hack() {
 
 static std::string superStimMsg;
 static int __fastcall SuperStimFix(fo::GameObject* item, fo::GameObject* target) {
-	if (item->protoId != fo::PID_SUPER_STIMPAK || !target || target->Type() != fo::OBJ_TYPE_CRITTER) return 0;
+	if (item->protoId != fo::PID_SUPER_STIMPAK || !target || target->Type() != fo::OBJ_TYPE_CRITTER) {
+		return 0;
+	}
 
 	long max_hp = fo::func::stat_level(target, fo::STAT_max_hit_points);
 	if (target->critter.health < max_hp) return 0;
@@ -661,7 +657,7 @@ static void __declspec(naked) do_move_timer_hack() {
 		mov  ebx, 1;
 		call GetLoopFlags;
 		test eax, BARTER;
-		cmovz ebx, ebp; // set max, exclude in barter
+		cmovz ebx, ebp; // set max when not in barter
 		retn;
 	}
 }
@@ -722,11 +718,11 @@ void Inventory::init() {
 		MakeJump(0x477271, item_add_mult_hack_container);
 		MakeCall(0x42E688, critterIsOverloaded_hack);
 
-		// Check capacity size of player when bartering
+		// Check player's capacity when bartering
 		SafeWrite16(0x474C7A, 0x9090);
 		MakeJump(0x474C7C, barter_attempt_transaction_hack_pc);
 
-		// Check the player capacity size for "Take All" button
+		// Check player's capacity when using "Take All" button
 		HookCall(0x47410B, loot_container_hook_btn);
 
 		// Display total weight/size on the inventory screen
@@ -742,11 +738,11 @@ void Inventory::init() {
 		HookCall(0x472FFE, inven_obj_examine_func_hook);
 
 		if (sizeLimitMode > 1) {
-			// Check capacity of party member when bartering
+			// Check party member's capacity when bartering
 			SafeWrite16(0x474CD1, 0x9090);
 			MakeJump(0x474CD3, barter_attempt_transaction_hack_pm);
 
-			// Display the current/max size for the party member in the control panel
+			// Display party member's current/max inventory size on the combat control panel
 			MakeJump(0x449125, gdControlUpdateInfo_hack);
 			SafeWrite32(0x44913E, (DWORD)InvenFmt3);
 			SafeWrite8(0x449145, 0x0C + 0x08);
@@ -784,7 +780,7 @@ void Inventory::init() {
 	itemFastMoveKey = GetConfigInt("Input", "ItemFastMoveKey", DIK_LCONTROL);
 	if (itemFastMoveKey > 0) {
 		HookCall(0x476897, do_move_timer_hook);
-		// Do not call the 'Move Items' window when drag and drop from containers
+		// Do not call the 'Move Items' window when taking items from containers or corpses
 		skipFromContainer = GetConfigInt("Input", "FastMoveFromContainer", 0);
 	}
 
@@ -792,7 +788,7 @@ void Inventory::init() {
 		MakeCall(0x4768A3, do_move_timer_hack);
 	}
 
-	// Move items out of bag/backpack and back into the main inventory list by dragging them to character's image (similar to Fallout 1 behavior)
+	// Move items from bag/backpack to the main inventory list by dragging them on the character portrait (similar to Fallout 1 behavior)
 	MakeCall(0x471452, inven_pickup_hack);
 
 	// Move items to player's main inventory instead of the opened bag/backpack when confirming a trade
@@ -805,8 +801,8 @@ void Inventory::init() {
 		fo::var::max = 100;
 	};
 
-	// Checking the DAM_KNOCKED_OUT flag for wield_obj_critter/inven_unwield script functions
-	// Note: for the function metarule(METARULE_INVEN_UNWIELD_WHO, x) the flag is not checking
+	// Check the DAM_KNOCKED_OUT flag for wield_obj_critter/inven_unwield script functions
+	// Note: the flag is not checked for the metarule(METARULE_INVEN_UNWIELD_WHO, x) function
 	HookCall(0x45B0CE, op_inven_unwield_hook);
 	HookCall(0x45693C, op_wield_obj_critter_hook);
 }

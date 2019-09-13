@@ -244,7 +244,7 @@ end:
 	}
 }
 
-static int _fastcall xfread(sFile* file, int elsize, void* buf, int count) {
+static int __fastcall xfread(sFile* file, int elsize, void* buf, int count) {
 	for (int i = 0; i < count; i++) {
 		if (file->openFile->pos + elsize > file->openFile->file->length) return i;
 
@@ -286,7 +286,7 @@ skip:
 	}
 }
 
-static int _fastcall xfwrite(sFile* file, int elsize, const void* buf, int count) {
+static int __fastcall xfwrite(sFile* file, int elsize, const void* buf, int count) {
 	return 0;
 }
 
@@ -375,7 +375,7 @@ end:
 }
 
 static int _stdcall xfeof(sFile* file) {
-	if(file->openFile->pos >= file->openFile->file->length) {
+	if (file->openFile->pos >= file->openFile->file->length) {
 		return 1;
 	}
 	return 0;
@@ -424,9 +424,9 @@ static void FileSystemReset() {
 	for (DWORD i = loadedFiles; i < files.size(); i++) {
 		if (files[i].data) delete[] files[i].data;
 	}
-	if (!loadedFiles)
+	if (!loadedFiles) {
 		files.clear();
-	else {
+	} else {
 		files.erase(files.begin() + loadedFiles, files.end() - 1);
 	}
 }
@@ -478,8 +478,7 @@ static void __declspec(naked) FSLoadHook() {
 	}
 }
 
-static void FileSystemInit() {
-
+static void FileSystemOverride() {
 	HookCalls(asm_xfclose, {0x4C5DBD, 0x4C5EA5, 0x4C5EB4});
 	HookCalls(asm_xfopen, {0x4C5DA9, 0x4C5E16, 0x4C5EC8});
 
@@ -712,7 +711,7 @@ bool FileSystem::IsEmpty() {
 
 void FileSystem::init() {
 	if (GetConfigInt("Misc", "UseFileSystemOverride", 0)) {
-		FileSystemInit();
+		FileSystemOverride();
 		UsingFileSystem = true;
 	}
 	MakeJump(0x47CCE2, FSLoadHook); // LoadGame_

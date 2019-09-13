@@ -30,8 +30,8 @@ using namespace fo;
 
 int DamageMod::formula;
 
+// Damage Fix v5 (with v5.1 Damage Multiplier tweak) by Glovz 2014.04.16.xx.xx
 // TODO: rewrite in C++
-// Damage Fix v5(with v5.1 Damage Multiplier tweak) by Glovz 2014.04.16.xx.xx
 void DamageMod::DamageGlovz(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamage, int rounds, int armorDT, int armorDR, int bonusRangedDamage, int multiplyDamage, int difficulty) {
 
 	if (rounds <= 0) return;
@@ -262,8 +262,7 @@ void DamageMod::DamageYAAM(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamag
 	int ammoDT = fo::func::item_w_dr_adjust(ctd.weapon);    // Retrieve ammo DT (well, it's really Retrieve ammo DR, but since we're treating ammo DR as ammo DT...)
 
 	// Start of damage calculation loop
-	for (int i = 0; i < rounds; i++)                        // Is number of hits
-	{
+	for (int i = 0; i < rounds; i++) {                      // Check number of hits
 		int rawDamage = fo::func::item_w_damage(ctd.attacker, ctd.hitMode); // Retrieve Raw Damage
 		rawDamage += bonusRangedDamage;                     // Raw Damage = Raw Damage + Bonus Ranged Damage
 
@@ -301,10 +300,10 @@ void DamageMod::DamageYAAM(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamag
 		resistedDamage /= 100;                              // Resisted Damage = Resisted Damage / 100
 		rawDamage -= resistedDamage;                        // Raw Damage = Raw Damage - Resisted Damage
 
-		if (rawDamage > 0) accumulatedDamage += rawDamage; // Accumulated Damage = Accumulated Damage + Raw Damage
+		if (rawDamage > 0) accumulatedDamage += rawDamage;  // Accumulated Damage = Accumulated Damage + Raw Damage
 	}
 }
-////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 static __declspec(naked) void MeleeDmgDisplayPrintFix_hook() {
 	__asm {
@@ -326,7 +325,7 @@ static __declspec(naked) void CommonDmgRngDispFix_hook() {
 		call fo::funcoffs::stat_level_;                // Get Melee Damage
 		xchg ebx, eax;                                 // Store Melee Damage value
 		mov  edx, PERK_bonus_hth_damage;               // perk_level_ argument: PERK_bonus_hth_damage
-		call fo::funcoffs::perk_level_;                // Otherwise, get rank of Bonus HtH Damage
+		call fo::funcoffs::perk_level_;                // Get rank of Bonus HtH Damage
 		shl  eax, 1;                                   // Multiply by 2
 		sub  ebx, eax;                                 // Subtract from Melee Damage
 		mov  eax, ebx;                                 // Move back to eax in preparation of push
@@ -403,7 +402,7 @@ static void __declspec(naked) DisplayBonusHtHDmg2_hack() {
 		shl  eax, 1;
 		add  eax, 1;
 		push eax;                                      // min dmg + bonus
-		mov  ecx, dword ptr[esp + 0x98 + 0x4];
+		mov  ecx, dword ptr [esp + 0x98 + 0x4];
 		push ecx;                                      // message
 		push 0x509EDC;                                 // '%s %d-%d'
 		lea  eax, [esp + 0x0C + 0x4];
@@ -430,8 +429,8 @@ void DamageMod::init() {
 		}
 	}
 
-	int DisplayBonusDmg = GetConfigInt("Misc", "DisplayBonusDamage", 0);
 	int BonusHtHDmgFix = GetConfigInt("Misc", "BonusHtHDamageFix", 1);
+	int DisplayBonusDmg = GetConfigInt("Misc", "DisplayBonusDamage", 0);
 	if (BonusHtHDmgFix) {
 		dlog("Applying Bonus HtH Damage Perk fix.", DL_INIT);
 		if (!DisplayBonusDmg) {                               // Subtract damage from perk bonus (vanilla displaying)

@@ -78,7 +78,7 @@ void Criticals::ResetCriticalTable(DWORD critter, DWORD bodypart, DWORD slot, DW
 
 static int CritTableLoad() {
 	if (mode == 1) {
-		dlog("\n  Setting up critical hit table using CriticalOverrides.ini file", DL_CRITICALS);
+		dlog("\n  Setting up critical hit table using CriticalOverrides.ini file (old fmt)", DL_CRITICALS);
 		char section[16];
 		for (DWORD critter = 0; critter < 20; critter++) {
 			for (DWORD part = 0; part < 9; part++) {

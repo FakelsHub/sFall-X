@@ -116,14 +116,14 @@ static void ReadExtraGameMsgFiles() {
 	}
 }
 
-long Message::AddExtraMsgFile(const char* nameMsg, long msgNumber) {
+long Message::AddExtraMsgFile(const char* msgName, long msgNumber) {
 	if (msgNumber) {
 		if (msgNumber < 0x2000 || msgNumber > 0x2FFF) return -1;
 		if (gExtraGameMsgLists.count(msgNumber)) return 0; // file has already been added
 	} else if (msgNumCounter > 0x3FFF) return -3;
 
 	std::string path("game\\");
-	path += nameMsg;
+	path += msgName;
 	fo::MessageList* list = new fo::MessageList();
 	if (!fo::func::message_load(list, path.c_str())) {
 		// change current language folder

@@ -315,7 +315,7 @@ static void __declspec(naked) CombatOverHook() {
 	}
 }
 
-void _fastcall SetGlobalScriptRepeat(fo::Program* script, int frames) {
+void __fastcall SetGlobalScriptRepeat(fo::Program* script, int frames) {
 	for (DWORD d = 0; d < globalScripts.size(); d++) {
 		if (globalScripts[d].prog.ptr == script) {
 			if (frames == -1) {
@@ -328,7 +328,7 @@ void _fastcall SetGlobalScriptRepeat(fo::Program* script, int frames) {
 	}
 }
 
-void _fastcall SetGlobalScriptType(fo::Program* script, int type) {
+void __fastcall SetGlobalScriptType(fo::Program* script, int type) {
 	if (type <= 3) {
 		for (size_t d = 0; d < globalScripts.size(); d++) {
 			if (globalScripts[d].prog.ptr == script) {
@@ -377,7 +377,7 @@ long GetGlobalVarInt(DWORD var) {
 	return GetGlobalVarInternal(var);
 }
 
-void _fastcall SetSelfObject(fo::Program* script, fo::GameObject* obj) {
+void __fastcall SetSelfObject(fo::Program* script, fo::GameObject* obj) {
 	std::unordered_map<fo::Program*, SelfOverrideObj>::iterator it = selfOverrideMap.find(script);
 	bool isFind = (it != selfOverrideMap.end());
 	if (obj) {
@@ -443,10 +443,9 @@ bool _stdcall IsGameScript(const char* filename) {
 
 static void LoadGlobalScriptsList() {
 	ScriptProgram prog;
-	for (auto& item : globalScriptFilesList)
-	{
+	for (auto& item : globalScriptFilesList) {
 		auto scriptFile = item.second;
-		dlog(">" + scriptFile, DL_SCRIPT);
+		dlog("> " + scriptFile, DL_SCRIPT);
 		isGlobalScriptLoading = 1;
 		LoadScriptProgram(prog, scriptFile.c_str(), true);
 		if (prog.ptr) {
@@ -466,8 +465,7 @@ static void LoadGlobalScriptsList() {
 
 static void PrepareGlobalScriptsListByMask() {
 	globalScriptFilesList.clear();
-	for (auto& fileMask : globalScriptPathList)
-	{
+	for (auto& fileMask : globalScriptPathList) {
 		char** filenames;
 		auto basePath = fileMask.substr(0, fileMask.find_last_of("\\/") + 1); // path to scripts without mask
 		int count = fo::func::db_get_file_list(fileMask.c_str(), &filenames);
@@ -477,14 +475,14 @@ static void PrepareGlobalScriptsListByMask() {
 
 			std::string baseName(name);
 			int lastDot = baseName.find_last_of('.');
-			if ((baseName.length() - lastDot) > 4) continue; // skip files of the wrong extension (bug in db_get_file_list fuction)
+			if ((baseName.length() - lastDot) > 4) continue; // skip files with invalid extension (bug in db_get_file_list fuction)
 			dlog_f("Found global script: %s\n", DL_INIT, name);
 
 			baseName = baseName.substr(0, lastDot); // script name without extension
 			if (basePath != fo::var::script_path_base || !IsGameScript(baseName.c_str())) {
 				std::string fullPath(basePath);
 				fullPath += name;
-				// preventing loading of global scripts the same name from different directories
+				// prevent loading global scripts with the same name from different directories
 				if (globalScriptFilesList.find(baseName) != globalScriptFilesList.end()) {
 					fo::func::debug_printf("\n[SFALL] Script: %s will not be executed. A script with the same name already exists in another directory.", fullPath);
 					continue;
@@ -510,7 +508,7 @@ static void LoadGlobalScripts() {
 		if (listIsPrepared) globalScriptPathList.clear(); // clear path list, it is no longer needed
 	}
 	LoadGlobalScriptsList();
-	dlogr("Finished loading global scripts", DL_SCRIPT|DL_INIT);
+	dlogr("Finished loading global scripts.", DL_SCRIPT|DL_INIT);
 }
 
 bool _stdcall ScriptHasLoaded(fo::Program* script) {
@@ -563,7 +561,9 @@ int RunScriptStartProc(ScriptProgram* prog) {
 
 static void RunScript(GlobalScript* script) {
 	script->count = 0;
-	if (script->startProc != -1) fo::func::executeProcedure(script->prog.ptr, script->startProc); // run "start"
+	if (script->startProc != -1) {
+		fo::func::executeProcedure(script->prog.ptr, script->startProc); // run "start"
+	}
 }
 
 /**
@@ -749,13 +749,13 @@ void ScriptExtender::init() {
 		bool pathSeparator = (c == '\\' || c == '/');
 		if (len > 62 || (len == 62 && !pathSeparator)) {
 			iniConfigFolder.clear();
-			dlogr("Error: IniConfigFolder contains too long a folder path.", DL_SCRIPT);
+			dlogr("Error: IniConfigFolder path is too long.", DL_SCRIPT);
 		} else if (!pathSeparator) {
 			iniConfigFolder += '\\';
 		}
 	}
 
-	alwaysFindScripts = isDebug && (GetPrivateProfileIntA("Debugging", "AlwaysFindScripts", 0, sfall::ddrawIni) != 0);
+	alwaysFindScripts = isDebug && (GetPrivateProfileIntA("Debugging", "AlwaysFindScripts", 0, ::sfall::ddrawIni) != 0);
 
 	MakeJump(0x4A390C, FindSidHack);
 	MakeJump(0x4A5E34, ScrPtrHack);
@@ -775,16 +775,16 @@ void ScriptExtender::init() {
 	HookCall(0x421B72, CombatBeginHook);
 	HookCall(0x421FC1, CombatOverHook);
 
-	// Reorder executing functions before exiting map
-	// Called saving party members prototypes and remove the drug effects for NPC after executed map_exit_p_proc script handlers
+	// Reorder the execution of functions before exiting the map
+	// Call saving party member prototypes and removing the drug effects for NPC after executing map_exit_p_proc procedure
 	HookCall(0x483CB4, map_save_in_game_hook);
 	HookCall(0x483CC3, (void*)fo::funcoffs::partyMemberSaveProtos_);
 	HookCall(0x483CC8, (void*)fo::funcoffs::partyMemberPrepLoad_);
 	HookCall(0x483CCD, (void*)fo::funcoffs::partyMemberPrepItemSaveAll_);
 
-	// Sets the DAM_BACKWASH flag for the attacker before calling compute_damage_
-	SafeWrite32(0x423DE7, 0x40164E80); // or [esi+ctd.flags3Source], DAM_BACKWASH
-	long idata =  0x146E09;            // or dword ptr [esi+ctd.flagsSource], ebp
+	// Set the DAM_BACKWASH flag for the attacker before calling compute_damage_
+	SafeWrite32(0x423DE7, 0x40164E80); // or [esi+ctd.flags3Source], DAM_BACKWASH_
+	long idata = 0x146E09;             // or dword ptr [esi+ctd.flagsSource], ebp
 	SafeWriteBytes(0x423DF0, (BYTE*)&idata, 3);
 	if (*(BYTE*)0x423DEB != 0xE8) { // not hook call
 		MakeCall(0x423DEB, (void*)fo::funcoffs::compute_damage_);
@@ -792,7 +792,7 @@ void ScriptExtender::init() {
 
 	InitNewOpcodes();
 
-	ScriptExtender::OnMapExit() += ClearEventsOnMapExit; // for reorder executing functions before exiting map
+	ScriptExtender::OnMapExit() += ClearEventsOnMapExit; // for reordering the execution of functions before exiting the map
 }
 
 Delegate<>& ScriptExtender::OnMapExit() {

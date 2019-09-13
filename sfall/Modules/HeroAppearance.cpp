@@ -181,8 +181,7 @@ static void GetAppearanceGlobals(int *race, int *style) {
 	*style = GetGlobalVar("HApStyle");
 }
 
-static _declspec(noinline) int _stdcall LoadHeroDat(unsigned int race, unsigned int style, bool flush = false) {
-
+static __declspec(noinline) int _stdcall LoadHeroDat(unsigned int race, unsigned int style, bool flush = false) {
 	if (flush) fo::func::art_flush();
 
 	if (heroPathPtr->pDat) { // unload previous Dats
@@ -200,12 +199,12 @@ static _declspec(noinline) int _stdcall LoadHeroDat(unsigned int race, unsigned 
 
 	sprintf_s(heroPathPtr->path, 64, appearancePathFmt, sex, race, style, ".dat");
 	int result = GetFileAttributes(heroPathPtr->path);
-	if (result != INVALID_FILE_ATTRIBUTES && !(result & FILE_ATTRIBUTE_DIRECTORY)) {   // check if Dat exists for selected appearance
+	if (result != INVALID_FILE_ATTRIBUTES && !(result & FILE_ATTRIBUTE_DIRECTORY)) { // check if Dat exists for selected appearance
 		heroPathPtr->pDat = LoadDat(heroPathPtr->path);
 		heroPathPtr->isDat = 1;
 	} else {
 		sprintf_s(heroPathPtr->path, 64, appearancePathFmt, sex, race, style, "");
-		if (GetFileAttributes(heroPathPtr->path) == INVALID_FILE_ATTRIBUTES)           // check if folder exists for selected appearance
+		if (GetFileAttributes(heroPathPtr->path) == INVALID_FILE_ATTRIBUTES) // check if folder exists for selected appearance
 			return -1;
 	}
 
@@ -285,7 +284,6 @@ static void AdjustHeroArmorArt(DWORD fid) {
 }
 
 static void _stdcall SetHeroArt(bool newArtFlag) {
-
 	fo::GameObject* hero = fo::var::obj_dude; // hero state struct
 	long heroFID = hero->artFid;              // get hero FrmID
 	DWORD fidBase = heroFID & 0xFFF;          // mask out current weapon flag
@@ -359,7 +357,6 @@ static void DrawPC() {
 
 // scan inventory items for armor and weapons currently being worn or wielded and setup matching FrmID for PC
 void UpdateHeroArt() {
-
 	auto iD = fo::var::inven_dude;
 	auto iR = fo::var::i_rhand;
 	auto iL = fo::var::i_lhand;
@@ -373,8 +370,7 @@ void UpdateHeroArt() {
 	int invenSize = fo::var::obj_dude->invenSize;
 	//fo::var::pud = invenSize;
 
-	for (int itemNum = 0; itemNum < invenSize; itemNum++)
-	{
+	for (int itemNum = 0; itemNum < invenSize; itemNum++) {
 		fo::GameObject* item = fo::var::obj_dude->invenTable[itemNum].object; // PC inventory item list + itemListOffset
 
 		if (item->flags & fo::ObjectFlag::Right_Hand) {
@@ -398,7 +394,6 @@ void UpdateHeroArt() {
 }
 
 void _stdcall RefreshPCArt() {
-
 	fo::func::proto_dude_update_gender(); // refresh PC base model art
 
 	UpdateHeroArt();
@@ -441,7 +436,6 @@ void _stdcall SetHeroStyle(int newStyleVal) {
 
 // op_set_hero_race
 void _stdcall SetHeroRace(int newRaceVal) {
-
 	if (!HeroAppearance::appModEnabled || newRaceVal == currentRaceVal) return;
 
 	if (LoadHeroDat(newRaceVal, 0, true) != 0) {          // if new race fails with style at 0
@@ -517,7 +511,6 @@ static void DrawBody(DWORD critNum, BYTE* surface) {
 }
 
 static void DrawPCConsole() {
-
 	DWORD NewTick = *(DWORD*)0x5709C4;  // char scrn gettickcount ret
 	DWORD RotSpeed = *(DWORD*)0x47066B; // get rotation speed - inventory rotation speed
 
@@ -539,7 +532,7 @@ static void DrawPCConsole() {
 		BYTE *ConSurface = new BYTE [70 * 102];
 		sub_draw(70, 102, 640, 480, 338, 78, charScrnBackSurface, 70, 102, 0, 0, ConSurface, 0);
 
-		//DWORD ñritNum = fo::var::art_vault_guy_num; // pointer to current base hero critter FrmId
+		//DWORD critNum = fo::var::art_vault_guy_num; // pointer to current base hero critter FrmId
 		DWORD critNum = fo::var::obj_dude->artFid;    // pointer to current armored hero critter FrmId
 		DrawBody(critNum, ConSurface);
 
@@ -555,10 +548,10 @@ static void DrawPCConsole() {
 /*
 void DrawCharNote(DWORD LstNum, char *TitleTxt, char *AltTitleTxt, char *Message) {
 	__asm {
-		mov  ecx, message      //dword ptr ds:[fo_var_folder_card_desc]
-		mov  ebx, alttitletxt  //dword ptr ds:[fo_var_folder_card_title2]
-		mov  edx, titletxt     //dword ptr ds:[fo_var_folder_card_title]
-		mov  eax, lstnum       //dword ptr ds:[fo_var_folder_card_fid]
+		mov  ecx, message      //dword ptr ds:[FO_VAR_folder_card_desc]
+		mov  ebx, alttitletxt  //dword ptr ds:[FO_VAR_folder_card_title2]
+		mov  edx, titletxt     //dword ptr ds:[FO_VAR_folder_card_title]
+		mov  eax, lstnum       //dword ptr ds:[FO_VAR_folder_card_fid]
 		call fo::funcoffs::drawcard_
 	}
 }
@@ -1025,8 +1018,7 @@ endFunc:
 	}
 }
 
-static void _fastcall HeroGenderChange(long gender) {
-
+static void __fastcall HeroGenderChange(long gender) {
 	// get PC stat current gender
 	long newGender = fo::func::stat_level(fo::var::obj_dude, fo::STAT_gender);
 	if (newGender == gender) return;      // check if gender has been changed
@@ -1076,7 +1068,7 @@ NoVaultSuit:
 	}
 }
 
-// Create race and style selection buttons when creating a hero
+// Create race and style selection buttons when creating a character (hero)
 static void __declspec(naked) AddCharScrnButtons() {
 	__asm {
 		pushad; // prolog
@@ -1124,7 +1116,7 @@ static void __declspec(naked) AddCharScrnButtons() {
 			fo::func::win_register_button(WinRef, 348, 37, 20, 18, -1, -1, -1, 0x511, newButtonSurface, newButtonSurface + (20 * 18), 0, 0x20);
 			fo::func::win_register_button(WinRef, 373, 37, 20, 18, -1, -1, -1, 0x513, newButtonSurface + (20 * 18 * 2), newButtonSurface + (20 * 18 * 3), 0, 0x20);
 		}
-		// check if Data exists for other style male or female, and if so enable race selection buttons
+		// check if Data exists for other styles male or female, and if so enable style selection buttons
 		if (GetFileAttributes("Appearance\\hmR00S01") != INVALID_FILE_ATTRIBUTES || GetFileAttributes("Appearance\\hfR00S01") != INVALID_FILE_ATTRIBUTES ||
 			GetFileAttributes("Appearance\\hmR00S01.dat") != INVALID_FILE_ATTRIBUTES || GetFileAttributes("Appearance\\hfR00S01.dat") != INVALID_FILE_ATTRIBUTES) {
 			// style selection buttons
@@ -1142,7 +1134,7 @@ static void __declspec(naked) AddCharScrnButtons() {
 	}
 }
 
-// Loading or creating a background image for the hero creation/editing interface
+// Loading or creating a background image for the character creation/editing interface
 static void __declspec(naked) FixCharScrnBack() {
 	__asm {
 		mov  dword ptr ds:[FO_VAR_bckgnd], eax; // surface ptr for char scrn back
@@ -1302,7 +1294,8 @@ static void __declspec(naked) FixCharScrnSaveNPrint() {
 		call RefreshPCArt
 		ret
 	}
-}*/
+}
+*/
 
 static void __declspec(naked) FixPcCriticalHitMsg() {
 	__asm {
@@ -1324,7 +1317,7 @@ static void __declspec(naked) op_obj_art_fid_hack() {
 		pop  ecx;
 		cmp  eax, edi; // object is dude?
 		jnz  skip;
-		sub  esi, critterListSize; // fix dude fid
+		sub  esi, critterListSize; // fix hero FrmID
 skip:
 		jmp  op_obj_art_fid_Ret;
 	}
@@ -1333,7 +1326,7 @@ skip:
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Load Appearance data from GCD file
-static void _fastcall LoadGCDAppearance(fo::DbFile* fileStream) {
+static void __fastcall LoadGCDAppearance(fo::DbFile* fileStream) {
 	currentRaceVal = 0;
 	currentStyleVal = 0;
 	DWORD temp;
@@ -1357,7 +1350,7 @@ static void _fastcall LoadGCDAppearance(fo::DbFile* fileStream) {
 }
 
 // Save Appearance data to GCD file
-static void _fastcall SaveGCDAppearance(fo::DbFile *FileStream) {
+static void __fastcall SaveGCDAppearance(fo::DbFile *FileStream) {
 	if (fo::func::db_fwriteInt(FileStream, (DWORD)currentRaceVal) != -1) {
 		fo::func::db_fwriteInt(FileStream, (DWORD)currentStyleVal);
 	}
@@ -1496,8 +1489,8 @@ void HeroAppearance::init() {
 	if (heroAppearanceMod > 0) {
 		dlog("Setting up Appearance Char Screen buttons.", DL_INIT);
 		EnableHeroAppearanceMod();
-		// Hero FID fix for obj_art_fid script funcrion
-		if (heroAppearanceMod == 1) MakeJump(0x45C5C3, op_obj_art_fid_hack);
+		// Hero FrmID fix for obj_art_fid script function
+		if (heroAppearanceMod != 2) MakeJump(0x45C5C3, op_obj_art_fid_hack);
 
 		LoadGameHook::OnAfterNewGame() += []() {
 			SetNewCharAppearanceGlobals();

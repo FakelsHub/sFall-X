@@ -1,3 +1,21 @@
+/*
+ *    sfall
+ *    Copyright (C) 2008-2019  The sfall team
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "Graphics.h"
@@ -120,7 +138,7 @@ static void __declspec(naked) wmInterfaceInit_text_font_hook() {
 #define WMAP_WIN_HEIGHT   (720)
 #define WMAP_TOWN_BUTTONS (15)
 
-static DWORD wmTownMapSubButtonIds[WMAP_TOWN_BUTTONS + 1]; // _wmTownMapSubButtonIds replaced (index 0 - unsed element)
+static DWORD wmTownMapSubButtonIds[WMAP_TOWN_BUTTONS + 1]; // replace _wmTownMapSubButtonIds (index 0 - unused element)
 static int worldmapInterface;
 static long wmapWinWidth = 640;
 
@@ -255,7 +273,7 @@ skipX:
 		sar  eax, 1;
 		test eax, eax;
 		jz   skipY;
-		sub  eax, 5; // y adjust
+		sub  eax, 5;   // y adjust
 skipY:
 		add  dword ptr [esp + 8], eax; // ypos * 1.5
 		pop  eax;
@@ -280,7 +298,7 @@ static void __declspec(naked) wmTownMapInit_hook() {
 static void WorldmapViewportPatch() {
 	if (Graphics::GetGameHeightRes() < WMAP_WIN_HEIGHT || Graphics::GetGameWidthRes() < WMAP_WIN_WIDTH) return;
 	if (!fo::func::db_access("art\\intrface\\worldmap.frm")) return;
-	dlog("Applying world map interface patch.", DL_INIT);
+	dlog("Applying expanded world map interface patch.", DL_INIT);
 
 	wmapWinWidth = WMAP_WIN_WIDTH;
 	mapSlotsScrollMax -= 216;
@@ -289,22 +307,22 @@ static void WorldmapViewportPatch() {
 	fo::var::wmViewportRightScrlLimit = (350 * fo::var::wmNumHorizontalTiles) - (WMAP_WIN_WIDTH - (640 - 450));
 	fo::var::wmViewportBottomtScrlLimit = (300 * (fo::var::wmMaxTileNum / fo::var::wmNumHorizontalTiles)) - (WMAP_WIN_HEIGHT - (480 - 443));
 
-	SafeWriteBatch<DWORD>(135, {0x4C23BD, 0x4C2408}); // use unused worldmap.frm for new worldmap interface (wmInterfaceInit_)
+	SafeWriteBatch<DWORD>(135, {0x4C23BD, 0x4C2408}); // use unused worldmap.frm for new world map interface (wmInterfaceInit_)
 
-	// offset x/y axis of interface window
+	// x/y axis offset of interface window
 	MakeJump(0x4C23A2, wmInterfaceInit_hack);
 	// size of the created window/buffer
 	SafeWriteBatch<DWORD>(WMAP_WIN_WIDTH, wmWinWidth); // width
 	SafeWrite32(0x4C238B, WMAP_WIN_HEIGHT);            // height (wmInterfaceInit_)
 
-	// Mouse scrolling region (wmMouseBkProc_)
+	// Mouse scrolling area (wmMouseBkProc_)
 	SafeWrite32(0x4C331D, WMAP_WIN_WIDTH - 1);
 	SafeWrite32(0x4C3337, WMAP_WIN_HEIGHT - 1);
 
 	MakeCall(0x4C41A4, wmInterfaceDrawSubTileList_hack);   // 640 * 21
 	MakeCall(0x4C4082, wmInterfaceDrawCircleOverlay_hack); // 640 * y
 	MakeCall(0x4C4452, wmDrawCursorStopped_hack1);
-	MakeCalls(wmDrawCursorStopped_hack0, { 0x4C43BB, 0x4C42E1 });
+	MakeCalls(wmDrawCursorStopped_hack0, {0x4C43BB, 0x4C42E1});
 	MakeCall(0x4C5325, wmRefreshTabs_hook);
 
 	HookCall(0x4C4BFF, wmTownMapRefresh_hook);
@@ -312,13 +330,13 @@ static void WorldmapViewportPatch() {
 		HookCall(0x4C4CD5, wmTownMapRefresh_hook_textpos);
 		HookCall(0x4C4B8F, wmTownMapInit_hook);
 	}
-	// towns scroll up/down buttons (wmInterfaceInit_)
+	// up/down buttons of the location list (wmInterfaceInit_)
 	SafeWriteBatch<DWORD>(WMAP_WIN_WIDTH - (640 - 480), { // offset by X (480)
 		0x4C2D3C,
 		0x4C2D7A
 	});
 
-	// button city/worldmap (wmInterfaceInit_)
+	// town/world button (wmInterfaceInit_)
 	SafeWrite32(0x4C2B9B, WMAP_WIN_HEIGHT - (480 - 439)); // offset by Y (439)
 	SafeWrite32(0x4C2BAF, WMAP_WIN_WIDTH - (640 - 519));  // offset by X (508)
 
@@ -338,7 +356,7 @@ static void WorldmapViewportPatch() {
 	});
 	// right limit of the viewport (450)
 	SafeWriteBatch<DWORD>(WMAP_WIN_WIDTH - (640 - 450), wmViewportEndRight);   // 890 - 190 = 700 + 22 = 722
-	// bottom limit of viewport (443)
+	// bottom limit of the viewport (443)
 	SafeWriteBatch<DWORD>(WMAP_WIN_HEIGHT - (480 - 443), wmViewportEndBottom); // 720 - 37 = 683 + 21 = 704
 
 	// Night/Day frm (wmRefreshInterfaceDial_)
@@ -387,8 +405,8 @@ static void WorldmapViewportPatch() {
 	// WMTBEDGE.frm (wmRefreshTabs_)
 	BlockCall(0x4C55BF);
 
-	// Town frm images (wmTownMapRefresh_)
-	SafeWrite32(0x4C4BE4, (WMAP_WIN_WIDTH * 21) + 22); // start offset for town image (13462)
+	// Town map frm images (wmTownMapRefresh_)
+	SafeWrite32(0x4C4BE4, (WMAP_WIN_WIDTH * 21) + 22); // start offset for town map image (13462)
 	dlogr(" Done", DL_INIT);
 }
 
@@ -423,11 +441,11 @@ static void WorldMapInterfacePatch() {
 		HookCall(0x4C2343, wmInterfaceInit_text_font_hook);
 		dlogr(" Done", DL_INIT);
 	}
-	// Fixes images for up/down buttons
-	SafeWrite32(0x4C2C0A, 199); // index UPARWOFF.FRM
-	SafeWrite8(0x4C2C7C, 0x43); // dec ebx >> inc ebx
-	SafeWrite32(0x4C2C92, 181); // index DNARWOFF.FRM
-	SafeWrite8(0x4C2D04, 0x46); // dec esi >> inc esi
+	// Fix images for up/down buttons
+	SafeWrite32(0x4C2C0A, 199); // index of UPARWOFF.FRM
+	SafeWrite8(0x4C2C7C, 0x43); // dec ebx > inc ebx
+	SafeWrite32(0x4C2C92, 181); // index of DNARWOFF.FRM
+	SafeWrite8(0x4C2D04, 0x46); // dec esi > inc esi
 
 	//if(GetConfigInt("Misc", "WorldMapCitiesListFix", 0)) {
 	dlog("Applying world map cities list patch.", DL_INIT);
@@ -449,7 +467,7 @@ static void WorldMapInterfacePatch() {
 
 	if (hrpIsEnabled && hrpVersionValid) {
 		if (worldmapInterface = GetConfigInt("Interface", "ExpandWorldMap", 0)) {
-			LoadGameHook::OnAfterGameInit() += WorldmapViewportPatch; // Note: Must be applyling after WorldMapSlots patch
+			LoadGameHook::OnAfterGameInit() += WorldmapViewportPatch; // Note: must be applied after WorldMapSlots patch
 		}
 	}
 	// Car fuel indicator graphics patch

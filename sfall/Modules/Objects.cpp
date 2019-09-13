@@ -1,3 +1,21 @@
+/*
+ *    sfall
+ *    Copyright (C) 2008-2018  The sfall team
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "LoadGameHook.h"
@@ -67,7 +85,7 @@ pickNewID: // skip PM range (18000 - 83535)
 	}
 }
 
-// Reassignment of ID values to all critters upon first loading the map
+// Reassigns object IDs to all critters upon first loading a map
 static void map_fix_critter_id() {
 	long npcStartID = 4096;
 	fo::GameObject* obj = fo::func::obj_find_first();
@@ -88,9 +106,9 @@ mapVirgin:
 		jl   skip; // check map index > -1
 		call fo::funcoffs::wmMapIsSaveable_;
 		test eax, eax;
-		jnz  savedable;
+		jnz  saveable;
 		retn;
-savedable:
+saveable:
 		call map_fix_critter_id;
 skip:
 		xor  eax, eax; // set ZF
@@ -111,7 +129,7 @@ static void __declspec(naked) queue_add_hack() {
 fix:
 		mov  eax, [edi + protoId];
 		and  eax, 0x0F000000;
-		jnz  notItem; // object it's not item?
+		jnz  notItem; // object is not an item?
 		push ecx;
 		push edx;
 		mov  ecx, edi;
@@ -131,7 +149,7 @@ notItem:
 		pop  edx;
 		pop  ecx;
 end:
-		xor  edi, edi; // fix don't set 'Used' flag for critter object
+		xor  edi, edi; // fix: don't set "Used" flag for non-item objects
 		retn;
 	}
 }
@@ -191,7 +209,7 @@ static void __declspec(naked) obj_insert_hack() {
 		jnz  insert;
 		retn;
 insert:
-		mov  esi, [ecx]; // esi - insert object
+		mov  esi, [ecx]; // esi - inserted object
 		cmp  dword ptr [esi + protoId], PID_CORPSE_BLOOD;
 		jnz  skip;
 		xor  edi, edi;
@@ -308,17 +326,17 @@ void Objects::init() {
 	};
 
 	HookCall(0x4A38A5, new_obj_id_hook);
-	SafeWrite8(0x4A38B3, 0x90); // fix increment ID
+	SafeWrite8(0x4A38B3, 0x90); // fix ID increment
 
-	MakeCall(0x477A0E, item_identical_hack); // item with unique ID don't put to items stack
+	MakeCall(0x477A0E, item_identical_hack); // don't put item with unique ID to items stack
 
-	// Fixes mapper bug with assign id's to critters (applies to maps not yet visited)
+	// Fix mapper bug by reassigning object IDs to critters (for unvisited maps)
 	MakeCall(0x482E6B, map_load_file_hack);
 	SafeWrite8(0x482E71, 0x85); // jz > jnz
-	// Additional fixes ID for queue events
+	// Additionally fix object IDs for queued events
 	MakeCall(0x4A25BA, queue_add_hack);
 
-	// Placed some objects on the tile to the lower z-layer
+	// Place some objects on the tile to the lower z-layer
 	MakeCall(0x48D918, obj_insert_hack, 1);
 
 	// Adds the "Line of Sight" function for items and critters object

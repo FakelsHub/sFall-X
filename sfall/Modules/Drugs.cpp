@@ -1,6 +1,6 @@
 /*
  *    sfall
- *    Copyright (C) 2008, 2009  The sfall team
+ *    Copyright (C) 2008-2019  The sfall team
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ long Drugs::addictionGvarCount = 0;
 
 sDrugs *drugs = nullptr;
 
-static long _fastcall FindDrugVar(DWORD pid) {
+static long __fastcall FindDrugVar(DWORD pid) {
 	for (int i = 0; i < drugsCount; i++) {
 		if (drugs[i].drugPid == pid) {
 			//if (drugs[i].gvarID == 0) break;
@@ -63,7 +63,7 @@ end:	// force exit func
 	}
 }
 
-static long _fastcall AllowUseDrug(fo::GameObject* critter, DWORD pid) {
+static long __fastcall AllowUseDrug(fo::GameObject* critter, DWORD pid) {
 	for (int i = 0; i < drugsCount; i++) {
 		if (drugs[i].drugPid == pid) {
 			if (drugs[i].numEffects == -1) break; // use NumEffects value from engine
@@ -121,7 +121,7 @@ static void __declspec(naked) perform_withdrawal_start_hack() {
 	}
 }
 
-static long _fastcall PrintAddictionList(long isSeparator) {
+static long __fastcall PrintAddictionList(long isSeparator) {
 	long isSelect = 0;
 	for (int i = 0; i < drugsCount; i++) {
 		if (drugs[i].gvarID > 0 && fo::var::game_global_vars[drugs[i].gvarID]) {
@@ -299,7 +299,7 @@ void Drugs::init() {
 					} else {
 						drugs[drugsCount].numEffects = drugs[drugsCount].iniNumEffects = max(0, ef);
 						int gvar = GetPrivateProfileIntA(section, "GvarID", 0, iniDrugs);
-						drugs[drugsCount].gvarID = max(0, gvar); // not allowed negative values
+						drugs[drugsCount].gvarID = max(0, gvar); // not allow negative values
 						if (gvar) {
 							int msg = GetPrivateProfileIntA(section, "TextID", -1, iniDrugs);
 							drugs[drugsCount].msgID = (msg > 0) ? msg : -1;

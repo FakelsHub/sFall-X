@@ -238,7 +238,7 @@ static long SetMaxSlots() {
 	return scrWidth;
 }
 
-static long _fastcall GetOffsetX(int width) {
+static long __fastcall GetOffsetX(int width) {
 	int x_offset = 0;
 	if (SetMaxSlots() > 640 && width > ifaceWidth) {
 		x_offset -= (width - ifaceWidth) / 2;
@@ -315,10 +315,12 @@ long BarBoxes::AddExtraBox() {
 	if (totalBoxCount > 126) return -1; // limit is exceeded
 
 	void* data;
-	_asm mov  eax, 2730;
-	_asm call fo::funcoffs::mem_malloc_;
-	_asm mov  data, eax;
-	if (data == nullptr) return -1;   // error allocate memory
+	__asm {
+		mov  eax, 2730;
+		call fo::funcoffs::mem_malloc_;
+		mov  data, eax;
+	}
+	if (data == nullptr) return -1;   // error on memory allocation
 	memcpy(data, boxes[1].mem, 2730); // copy image box to a new allocated memory
 
 	sBox* boxes_new = new sBox[totalBoxCount + 1];
@@ -351,13 +353,13 @@ bool BarBoxes::GetBox(int i) {
 void BarBoxes::AddBox(int i) {
 	if (i < 5 || i > BarBoxes::MaxBox()) return;
 	boxText[i - 5].isActive = true;
-	_asm call fo::funcoffs::refresh_box_bar_win_;
+	__asm call fo::funcoffs::refresh_box_bar_win_;
 }
 
 void BarBoxes::RemoveBox(int i) {
 	if (i < 5 || i > BarBoxes::MaxBox()) return;
 	boxText[i - 5].isActive = false;
-	_asm call fo::funcoffs::refresh_box_bar_win_;
+	__asm call fo::funcoffs::refresh_box_bar_win_;
 }
 
 void BarBoxes::exit() {

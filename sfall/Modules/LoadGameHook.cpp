@@ -258,7 +258,7 @@ errorLoad:
 
 // called whenever game is being reset (prior to loading a save or when returning to main menu)
 static bool _stdcall GameReset(DWORD isGameLoad) {
-	if (mapLoaded) { // preventing resetting when a new game not been started(loading saved game from main menu)
+	if (mapLoaded) { // prevent resetting when a new game has not been started (loading saved game from main menu)
 		onGameReset.invoke();
 		if (isDebug) {
 			char* str = (isGameLoad) ? "on Load" : "on Exit";
@@ -510,7 +510,7 @@ success:
 		call PerksAcceptCharScreen;
 end:
 		_InLoop2(0, CHARSCREEN);
-		mov tagSkill4LevelBase, -1; // for fixed exploit perk Tag
+		mov tagSkill4LevelBase, -1; // for fixing Tag! perk exploit
 		popadc;
 		retn;
 	}
@@ -567,7 +567,7 @@ static void __declspec(naked) LootContainerHook() {
 		_InLoop(1, INTFACELOOT);
 		call fo::funcoffs::loot_container_;
 		_InLoop(0, INTFACELOOT);
-		jmp  ResetBodyState; // reset object pointer after trading/exchanging, is used in calculating the weight/size of the equipment and hidden items of the NPC
+		jmp  ResetBodyState; // reset object pointer used in calculating the weight/size of equipped and hidden items on NPCs after exiting loot/barter screens
 		//retn;
 	}
 }
@@ -675,7 +675,7 @@ void LoadGameHook::init() {
 	HookCalls(EscMenuHook2, {0x4433BE});
 	HookCalls(OptionsMenuHook, {0x48FCE4, 0x48FD17, 0x48FD4D, 0x48FD6A, 0x48FD87, 0x48FDB3});
 	HookCalls(HelpMenuHook, {0x443A50});
-	HookCalls(CharacterHook, {0x443320}); // 0x4A73EB, 0x4A740A for create character
+	HookCalls(CharacterHook, {0x443320}); // 0x4A73EB, 0x4A740A for character creation
 	HookCalls(DialogHook, {0x445748});
 	HookCalls(PipboyHook, {0x443463, 0x443605});
 	HookCalls(SkilldexHook, {0x4434AC, 0x44C7BD});

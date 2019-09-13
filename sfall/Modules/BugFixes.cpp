@@ -1,4 +1,3 @@
-
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "Drugs.h"
@@ -21,11 +20,11 @@ static char tempBuffer[355];
 
 std::list<int> drugsPid;
 
-static void _fastcall DrugPidPush(int pid) {
+static void __fastcall DrugPidPush(int pid) {
 	drugsPid.push_back(pid);
 }
 
-static int _fastcall DrugPidPop() {
+static int __fastcall DrugPidPop() {
 	if (drugsPid.empty()) return 0;
 	int pid = drugsPid.front();
 	drugsPid.pop_front();
@@ -58,9 +57,9 @@ bool BugFixes::DrugsLoadFix(HANDLE file) {
 }
 
 void ResetBodyState() {
-	_asm mov critterBody, 0;
-	_asm mov sizeOnBody, 0;
-	_asm mov weightOnBody, 0;
+	__asm mov critterBody, 0;
+	__asm mov sizeOnBody, 0;
+	__asm mov weightOnBody, 0;
 }
 
 static void Initialization() {
@@ -78,9 +77,9 @@ static void __declspec(naked) NegateFixHack() {
 		retn;
 isFloat:
 		push ebx;
-		fld[esp];
+		fld  [esp];
 		fchs;
-		fstp[esp];
+		fstp [esp];
 		pop  ebx;
 		call fo::funcoffs::pushLongStack_;
 		mov  edx, VAR_TYPE_FLOAT;
@@ -233,7 +232,7 @@ skip:
 	}
 }
 
-static void __declspec(naked) item_d_check_addict_hack() { // replacement engine function
+static void __declspec(naked) item_d_check_addict_hack() { // replace engine function
 	__asm {
 		push 0x47A6A1;                            // return addr
 		mov  edx, 2;                              // type = addiction
@@ -273,18 +272,18 @@ end:
 
 static void __declspec(naked) item_d_take_drug_hack() {
 	__asm {
-		cmp  dword ptr [eax], 0                   // queue_addict.init
-		jne  skip                                 // Addiction is not active yet
-		mov  edx, PERK_add_jet
-		mov  eax, esi
-		call fo::funcoffs::perform_withdrawal_end_
+		cmp  dword ptr [eax], 0;                  // queue_addict.init
+		jne  skip;                                // Addiction is not active yet
+		mov  edx, PERK_add_jet;
+		mov  eax, esi;
+		call fo::funcoffs::perform_withdrawal_end_;
 skip:
-		mov  dword ptr ds:[FO_VAR_wd_obj], esi
-		mov  eax, 2                               // type = addiction
-		mov  edx, offset RemoveJetAddictFunc
-		call fo::funcoffs::queue_clear_type_
-		push 0x479FD1
-		retn
+		mov  dword ptr ds:[FO_VAR_wd_obj], esi;
+		mov  eax, 2;                              // type = addiction
+		mov  edx, offset RemoveJetAddictFunc;
+		call fo::funcoffs::queue_clear_type_;
+		push 0x479FD1;
+		retn;
 	}
 }
 
@@ -663,8 +662,8 @@ static void __declspec(naked) item_total_weight_hack() {
 		//------
 		cmp eax, dword ptr ds:[FO_VAR_obj_dude]; // eax - source
 		jz  skip;
-		cmp critterBody, eax;                    // if condition is true, then at the moment carried out is exchanged/barter with source object
-		cmovz esi, weightOnBody;                 // Accounting for weight of target's equipped armor and weapon
+		cmp critterBody, eax;                    // if condition is true, then now it's exchanging/bartering with source object
+		cmovz esi, weightOnBody;                 // take the weight of target's equipped items into account
 skip:
 		retn;
 	}
@@ -679,8 +678,8 @@ static void __declspec(naked) item_c_curr_size_hack() {
 		//------
 		cmp eax, dword ptr ds:[FO_VAR_obj_dude]; // eax - source
 		jz  skip;
-		cmp critterBody, eax;                    // if condition is true, then at the moment carried out is exchanged/barter with source object
-		cmovz edi, sizeOnBody;                   // Accounting for size of target's equipped armor and weapon
+		cmp critterBody, eax;                    // if condition is true, then now it's exchanging/bartering with source object
+		cmovz edi, sizeOnBody;                   // take the size of target's equipped items into account
 skip:
 		retn;
 	}
@@ -819,7 +818,7 @@ static void __declspec(naked) op_wield_obj_critter_adjust_ac_hook() {
 	}
 }
 
-// Haenlomal: Check path to critter for attack
+// Haenlomal
 static void __declspec(naked) MultiHexFix() {
 	__asm {
 		xor  ecx, ecx;                      // argument value for make_path_func: ecx=0 (rotation data arg)
@@ -973,11 +972,11 @@ fix:
 		test byte ptr [eax + damageFlags], DAM_KNOCKED_DOWN;
 		jz   clear;   // No
 		push eax;
-		xor  ecx, ecx
-		mov  edx, eax // object
-		mov  ebx, ecx // extramem null
-		mov  eax, ecx // time = 0
-		inc  ecx      // type = 1
+		xor  ecx, ecx;
+		mov  edx, eax; // object
+		mov  ebx, ecx; // extramem null
+		mov  eax, ecx; // time = 0
+		inc  ecx;      // type = 1
 		call fo::funcoffs::queue_add_; // run stand up anim
 		pop  eax;
 clear:
@@ -1931,7 +1930,7 @@ static void __declspec(naked) op_use_obj_on_obj_hack() {
 		shr  edx, 24;
 		cmp  dword ptr [esp + 4], eax; // target != source
 		jne  skip;
-		xor  edx, edx; // for call obj_use_item_on_ instead of action_use_an_item_on_object_
+		xor  edx, edx; // for calling obj_use_item_on_ instead of action_use_an_item_on_object_
 skip:
 		retn;
 fail:
@@ -2122,7 +2121,7 @@ dude:
 }
 
 static char pickupMessageBuf[65] = {0};
-static const char* _fastcall GetPickupMessage(const char* name) {
+static const char* __fastcall GetPickupMessage(const char* name) {
 	if (pickupMessageBuf[0] == 0) {
 		Translate("sfall", "NPCPickupFail", "%s cannot pick up the item.", pickupMessageBuf, 64);
 	}
@@ -2157,7 +2156,7 @@ static void __declspec(naked) anim_move_to_tile_hook() {
 		retn;
 isDude:
 		test eax, eax;
-		jnz  skip; // tile is blocking
+		jnz  skip; // tile is blocked
 		mov  ebx, dword ptr [esp + 0x18 - 0x10 + 4]; // distance
 		test ebx, ebx;
 		jl   skip; // dist < 0
@@ -2228,7 +2227,7 @@ largeLoc:
 		pop  eax;
 		pop  edx;
 		mov  ebx, [esp];
-		mov  ebx, [ebx + 0x18]; // sub tile state
+		mov  ebx, [ebx + 0x18]; // sub-tile state
 		test ebx, ebx;
 		jnz  skip;
 		inc  ebx; // 1
@@ -2298,17 +2297,17 @@ skip:
 	}
 }
 
-static long __fastcall GetFreeTilePlacement(long elev, long _tile) {
+static long __fastcall GetFreeTilePlacement(long elev, long tile) {
 	long count = 0, dist = 1;
-	long tile = _tile;
+	long checkTile = tile;
 	long rotation = fo::var::rotation;
-	while (fo::func::obj_blocking_at(0, tile, elev))
+	while (fo::func::obj_blocking_at(0, checkTile, elev))
 	{
-		tile = fo::func::tile_num_in_direction(tile, rotation, dist);
-		if (++count > 5 && ++dist > 5) return _tile;
+		checkTile = fo::func::tile_num_in_direction(checkTile, rotation, dist);
+		if (++count > 5 && ++dist > 5) return tile;
 		if (++rotation > 5) rotation = 0;
 	}
-	return tile;
+	return checkTile; // free tile
 }
 
 static void __declspec(naked) map_check_state_hook() {
@@ -2344,10 +2343,10 @@ void BugFixes::init()
 	SafeWrite16(0x46A566, 0x04DB);
 	SafeWrite16(0x46A4E7, 0x04DB);
 
-	//if(GetConfigInt("Misc", "SpecialUnarmedAttacksFix", 1)) {
-	dlog("Applying Special Unarmed Attacks fix.", DL_INIT);
-	MakeJump(0x42394D, compute_attack_hack);
-	dlogr(" Done", DL_INIT);
+	//if (GetConfigInt("Misc", "SpecialUnarmedAttacksFix", 1)) {
+		dlog("Applying Special Unarmed Attacks fix.", DL_INIT);
+		MakeJump(0x42394D, compute_attack_hack);
+		dlogr(" Done", DL_INIT);
 	//}
 
 	//if (GetConfigInt("Misc", "SharpshooterFix", 1)) {
@@ -2451,7 +2450,7 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	//}
 
-	// Corrects "Weight of items" text element width to be 64 (and not 80), which matches container element width
+	// Corrects the max text width of the item weight in trading interface to be 64 (was 80), which matches the table width
 	SafeWrite8(0x475541, 64);
 	SafeWrite8(0x475789, 64);
 
@@ -2529,7 +2528,7 @@ void BugFixes::init()
 
 	//if (GetConfigInt("Misc", "MultiHexPathingFix", 1)) {
 		dlog("Applying MultiHex Pathing Fix.", DL_INIT);
-		MakeCalls(MultiHexFix, { 0x42901F, 0x429170 });
+		MakeCalls(MultiHexFix, {0x42901F, 0x429170});
 		// Fix for multihex critters moving too close and overlapping their targets in combat
 		MakeCall(0x42A14F, MultiHexCombatRunFix, 1);
 		MakeCall(0x42A178, MultiHexCombatMoveFix, 1);
@@ -2554,16 +2553,16 @@ void BugFixes::init()
 	// Fix for "NPC turns into a container" bug
 	//if (GetConfigInt("Misc", "NPCTurnsIntoContainerFix", 1)) {
 		dlog("Applying fix for \"NPC turns into a container\" bug.", DL_INIT);
-		HookCall(0x4949B2, partyMemberPrepLoadInstance_hook);
 		MakeJump(0x42E46E, critter_wake_clear_hack);
 		MakeCall(0x488EF3, obj_load_func_hack, 1);
+		HookCall(0x4949B2, partyMemberPrepLoadInstance_hook);
 		MakeCall(0x421F64, combat_over_hack, 1);
 		dlogr(" Done", DL_INIT);
 	//}
-	// Fix for knockout
+	// Fix for multiple knockout events being added to the queue
 	HookCall(0x424F9A, set_new_results_hack);
-	// Fix the lack of animation of stand up at the end of the combat when the was set DAM_LOSE_TURN and DAM_KNOCKED_DOWN flags
-	// and remove reloading weapons for dead NPCs
+	// Fix for knocked down critters not playing stand up animation when the combat ends
+	// and prevent dead NPCs from reloading their weapons
 	HookCall(0x421F30, combat_over_hook);
 
 	dlog("Applying fix for explosives bugs.", DL_INIT);
@@ -2575,9 +2574,9 @@ void BugFixes::init()
 	MakeCall(0x4130E5, action_explode_hack1);
 	dlogr(" Done", DL_INIT);
 
-	// Fix for unable to sell used geiger counters or stealth boys
+	// Fix for being unable to sell used geiger counters or stealth boys
 	if (GetConfigInt("Misc", "CanSellUsedGeiger", 1)) {
-		dlog("Applying fix for unable to sell used geiger counters or stealth boys.", DL_INIT);
+		dlog("Applying fix for being unable to sell used geiger counters or stealth boys.", DL_INIT);
 		SafeWrite8(0x478115, 0xBA);
 		SafeWrite8(0x478138, 0xBA);
 		MakeJump(0x474D22, barter_attempt_transaction_hack);
@@ -2749,7 +2748,7 @@ void BugFixes::init()
 	SafeWrite8(0x4C1015, 0x90);
 	HookCall(0x4C1042, wmSetupRandomEncounter_hook);
 
-	// Fix for unable to sell/give items in the barter screen when the player/party member is overloaded
+	// Fix for being unable to sell/give items in the barter screen when the player/party member is overloaded
 	HookCalls(barter_attempt_transaction_hook_weight, {0x474C73, 0x474CCA});
 
 	// Fix item_count function returning incorrect value when there is a container-item inside
@@ -2767,20 +2766,21 @@ void BugFixes::init()
 	HookCall(0x43D7DD, Add4thTagSkill_hook);
 	dlogr(" Done", DL_INIT);
 
-	// Fix of the ai_retrieve_object engine function, when instead of the specified object returned another item of inventory with the same ID
-	dlog("Applying fix the ai_retrieve_object engine function.", DL_INIT);
+	// Fix for ai_retrieve_object_ engine function not returning the requested object when there are different objects
+	// with the same ID
+	dlog("Applying ai_retrieve_object engine function fix.", DL_INIT);
 	HookCall(0x429D7B, ai_retrieve_object_hook);
 	MakeCall(0x472708, inven_find_id_hack);
 	dlogr(" Done", DL_INIT);
 
-	// Fix argument 'mood' for opcode start_gdialog, the argument value for the talking head was not taken into account
+	// Fix for the "mood" argument of start_gdialog function being ignored for talking heads
 	if (GetConfigInt("Misc", "StartGDialogFix", 0)) {
 		dlog("Applying start_gdialog argument fix.", DL_INIT);
 		MakeCall(0x456F08, op_start_gdialog_hack);
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Fix nullification of unused perks
+	// Fix loss of unused perks
 	SafeWrite16(0x43C369, 0x0DFE);   // replaces mov byte ptr ds:[0x570A29], dh > dec byte ptr ds:[0x570A29]
 	// If there are unused perks, then call the selection window of perks
 	SafeWrite8(0x43C370, 0xB1);      // jump 0x43C322
@@ -2796,7 +2796,7 @@ void BugFixes::init()
 	// Display a pop-up messages box about death from radiation
 	HookCall(0x42D733, process_rads_hook);
 
-	// Fix the priority of drugs use for the NPC
+	// Fix for AI not taking chem_primary_desire in AI.txt as drug use preference when using drugs in their inventory
 	if (GetConfigInt("Misc", "AIDrugUsePerfFix", 0)) {
 		dlog("Applying AI drug use preference fix.", DL_INIT);
 		MakeCall(0x42869D, ai_check_drugs_hack_break);
@@ -2807,14 +2807,15 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Fix getting values (for chem_primary_desire), the function could not get the values, if the config was set to less than the required values
+	// Fix for config_get_values_ engine function not getting the last value in a list if the list has less than the requested
+	// number of values (for chem_primary_desire)
 	MakeJump(0x42C12C, config_get_values_hack);
 
 	// Fix returned result value when the file is missing
 	HookCall(0x4C6162, db_freadInt_hook);
 
 	// Fixes the unused arguments called_shot/num_attack of the attack_complex function, also changes the behavior for the flags arguments
-	// called_shot - additional damage, num_attack - bonus to action points
+	// Fix for critter_mod_skill taking a negative amount value as a positive
 	// flag_attacker - not used, must be 0, or not equal to the flag_target argument when want to specify flags for the target
 	if (GetConfigInt("Misc", "AttackComplexFix", 0)) {
 		dlog("Applying attack_complex fix.", DL_INIT);
@@ -2861,18 +2862,18 @@ void BugFixes::init()
 	// Fix the return value of has_skill function for incorrect skill numbers
 	SafeWrite32(0x4AA56B, 0);
 
-	// Fix reloading of melee/unarmed weapons when the NPC has no ammo
+	// Fix for NPC stuck in a loop of reloading melee/unarmed weapons when out of ammo
 	dlog("Applying fix for NPC stuck in a loop of reloading melee/unarmed weapons.", DL_INIT);
 	HookCall(0x429A2B, ai_search_inven_weap_hook);
 	dlogr(" Done", DL_INIT);
 
-	// Fix to the critters not self healing when entering the map, if the 'dead_bodies_age=No' option is set
-	dlog("Applying fix the critters self healing when entering the map.", DL_INIT);
+	// Fix for critters not being healed over time when entering the map if 'dead_bodies_age=No' is set in maps.txt
+	dlog("Applying fix for the self-healing of critters when entering the map.", DL_INIT);
 	MakeCall(0x483356, map_age_dead_critters_hack);
 	SafeWrite32(0x4832A0, 0x9090C189); // mov ecx, eax (keep dead_bodies_age flag)
-	dlogr(" Done", DL_INIT);
-	// also fix a non-initializing zero value of a local variable to correct time remove corpses and blood
+	// also fix the zero initialization of a local variable to correct time for removing corpses and blood
 	SafeWrite32(0x4832A4, 0x0C245489); // mov [esp + var_30], edx
+	dlogr(" Done", DL_INIT);
 
 	// Fix for the removal of party member's corpse when loading the map
 	MakeCall(0x495769, partyFixMultipleMembers_hack, 1);
@@ -2896,42 +2897,48 @@ void BugFixes::init()
 	BlockCall(0x48D675);
 	BlockCall(0x48D69D);
 
-	// Fix for the correct calling of the 'start' script procedure, in the absence of a standard handler procedure
+	// Fix for the start procedure not being called correctly if the required standard script procedure is missing
 	MakeCall(0x4A4926, exec_script_proc_hack);
 	MakeCall(0x4A4979, exec_script_proc_hack1);
 
 	// Fix the argument value of dialogue_reaction function
 	HookCall(0x456FFA, op_dialogue_reaction_hook);
 
-	// Fix an bug when the NPC could not pickup the item, when he does not have enough space in the inventory and displayed the wrong message
+	// Fix for NPC stuck in a loop of picking up items in combat and the incorrect message being displayed when the NPC cannot pick
+	// up an item due to not enough space in the inventory
 	HookCall(0x49B6E7, obj_pickup_hook);
 	HookCall(0x49B71C, obj_pickup_hook_message);
 
-	// Fix for anim_move_to_tile_ engine function ignoring the distance argument for dude
+	// Fix for anim_move_to_tile_ engine function ignoring the distance argument for the player
 	HookCall(0x416D44, anim_move_to_tile_hook);
 	HookCall(0x416DD2, anim_move_to_tile_hook_tile);
 
 	// Fix for the player's movement in combat being interrupted when trying to use objects with Bonus Move APs available
 	MakeCall(0x411FD6, action_use_an_item_on_object_hack);
-	MakeCall(0x411DF7, action_climb_ladder_hack); // bug originated after anim_move_to_tile_ fix
+	MakeCall(0x411DF7, action_climb_ladder_hack); // bug caused by anim_move_to_tile_ fix
 
-	// Fix the influence of the Scout perk when setting the visibility of locations on the world map (using the mark_area_known function)
-	// also correcting the wrong coordinates for small and medium circles of city in the highlight of the sub-tiles to the location
+	// Fix for Scout perk being taken into account when setting the visibility of locations with mark_area_known function
+	// also fix the incorrect coordinates for small/medium location circles that the engine uses to highlight their sub-tiles
+	// and fix visited tiles on the world map being darkened again when a location is added next to them
 	MakeJump(0x4C466F, wmAreaMarkVisitedState_hack);
-	SafeWrite8(0x4C46AB, 0x58); // esi >> ebx
+	SafeWrite8(0x4C46AB, 0x58); // esi > ebx
+
 	// Fix the position of the target marker for small/medium location circles
 	MakeCall(0x4C03AA, wmWorldMap_hack, 2);
 
-	// Fix for the automatic termination combat mode when there are no hostile critters
+	// Fix for combat not ending automatically when there are no hostile critters
 	MakeCall(0x422CF3, combat_should_end_hack);
 	SafeWrite16(0x422CEA, 0x0C74); // jz 0x422CF8 (skip party members)
 
-	// Fix the losing of the car when entering using the Town button (sets GVAR_CAR_PLACED_TILE (633) to -1 on exit to worldmap)
+	// Fix for the car being lost when entering a location via the Town/World button and then leaving on foot
+	// (sets GVAR_CAR_PLACED_TILE (633) to -1 on exit to the world map)
 	if (GetConfigInt("Misc", "CarPlacedTileFix", 1)) {
+		dlog("Applying car placed tile fix.", DL_INIT);
 		MakeCall(0x4C2367,  wmInterfaceInit_hack);
+		dlogr(" Done", DL_INIT);
 	}
 
-	// Placement the player's on a nearby empty tile when the entrance tile is blocked by another object when entering the map
+	// Place the player on a nearby empty tile if the entrance tile is blocked by another object when entering a map
 	HookCall(0x4836F8, map_check_state_hook);
 }
 

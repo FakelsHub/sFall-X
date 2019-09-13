@@ -78,7 +78,7 @@ static void __declspec(naked) MainMenuTextHook() {
 		call FontColour;
 		mov  [esp + 4], eax;          // colour
 		mov  eax, esi;
-		mov  esi, edx;                // keep buff fallout
+		mov  esi, edx;                // keep fallout buff
 		call fo::funcoffs::win_print_;
 		// sfall print
 		mov  eax, esi;

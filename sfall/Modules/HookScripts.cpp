@@ -48,7 +48,7 @@ struct HooksInjectInfo {
 };
 
 static struct HooksPositionInfo {
-	long hsPosition    = 0; // index of the hs_* script, or the beginning of the position for registering scripts using the register_hook function
+	long hsPosition    = 0; // index of the hs_* script, or the beginning of the position for registering scripts using register_hook
 	long positionShift = 0; // offset to the last registered script by the register_hook function
 	bool hasHsScript   = false;
 } hooksInfo[HOOK_COUNT];
@@ -91,7 +91,7 @@ static HooksInjectInfo injectHooks[] = {
 	{HOOK_DESCRIPTIONOBJ,   Inject_DescriptionObjHook,   false},
 	{HOOK_USESKILLON,       Inject_UseSkillOnHook,       false},
 	{HOOK_ONEXPLOSION,      Inject_OnExplosionHook,      false},
-	{HOOK_SUBCOMBATDAMAGE,  Inject_SubCombatDamageHook,  false}, // replacements the code logic
+	{HOOK_SUBCOMBATDAMAGE,  Inject_SubCombatDamageHook,  false}, // replace the code logic
 	{HOOK_SETLIGHTING,      Inject_SetLightingHook,      false},
 	{HOOK_SNEAK,            Inject_SneakCheckHook,       false},
 	{HOOK_STDPROCEDURE,     Inject_ScriptProcedureHook,  false},
@@ -197,7 +197,7 @@ void RegisterHook(fo::Program* script, int id, int procNum, bool specReg) {
 			return;
 		}
 	}
-	if (procNum == 0) return; // prevent registration to first location procedure when reused "unregister" method
+	if (procNum == 0) return; // prevent registration to first location in procedure when reusing "unregister" method
 
 	ScriptProgram *prog = GetGlobalScriptProgram(script);
 	if (prog) {
@@ -238,16 +238,16 @@ static void HookScriptInit() {
 	if (!hooksFilesLoaded) { // hook files are already put to list
 		HookScripts::hookScriptFilesList.clear();
 
-		InitCombatHookScripts();
-		InitDeathHookScripts();
-		InitHexBlockingHookScripts();
-		InitInventoryHookScripts();
-		InitObjectHookScripts();
-		InitMiscHookScripts();
+	InitCombatHookScripts();
+	InitDeathHookScripts();
+	InitHexBlockingHookScripts();
+	InitInventoryHookScripts();
+	InitObjectHookScripts();
+	InitMiscHookScripts();
 
-		LoadHookScript("hs_keypress", HOOK_KEYPRESS);
-		LoadHookScript("hs_mouseclick", HOOK_MOUSECLICK);
-		LoadHookScript("hs_gamemodechange", HOOK_GAMEMODECHANGE);
+	LoadHookScript("hs_keypress", HOOK_KEYPRESS);
+	LoadHookScript("hs_mouseclick", HOOK_MOUSECLICK);
+	LoadHookScript("hs_gamemodechange", HOOK_GAMEMODECHANGE);
 
 		hooksFilesLoaded = !alwaysFindScripts;
 	} else {
@@ -311,7 +311,7 @@ void HookScripts::init() {
 		}
 	}
 
-	HookScripts::injectAllHooks = isDebug && (GetPrivateProfileIntA("Debugging", "InjectAllGameHooks", 0, sfall::ddrawIni) != 0);
+	HookScripts::injectAllHooks = isDebug && (GetPrivateProfileIntA("Debugging", "InjectAllGameHooks", 0, ::sfall::ddrawIni) != 0);
 }
 
 }

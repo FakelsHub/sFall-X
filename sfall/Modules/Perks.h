@@ -32,7 +32,7 @@ public:
 	static bool load(HANDLE file);
 
 	static void SetSelectablePerk(const char* name, int active, int image, const char* desc, int npcID = 0);
-	static void SetFakePerk(const char* name, int level, int image, const char* desc, int npcID = 0 );
+	static void SetFakePerk(const char* name, int level, int image, const char* desc, int npcID = 0);
 	static void SetFakeTrait(const char* name, int active, int image, const char* desc, int npcID = 0);
 
 	static DWORD HasFakePerk(const char* name, long perkId);

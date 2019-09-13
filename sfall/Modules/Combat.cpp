@@ -51,7 +51,7 @@ static const DWORD bodypartAddr[] = {
 	0x49C00C,                     // protinstTestDroppedExplosive_
 };
 
-static struct BodyPart {
+static struct BodyParts {
 	long Head;
 	long Left_Arm;
 	long Right_Arm;
@@ -157,11 +157,11 @@ static DWORD __fastcall divide_burst_rounds_by_ammo_cost(fo::GameObject* weapon,
 	DWORD rounds = 1; // default multiply
 
 	if (HookScripts::IsInjectHook(HOOK_AMMOCOST)) {
-		rounds = burstRounds;             // rounds in burst (количество патронов израсходуемое в очереди)
+		rounds = burstRounds;             // rounds in burst (РєРѕР»РёС‡РµСЃС‚РІРѕ РїР°С‚СЂРѕРЅРѕРІ РёР·СЂР°СЃС…РѕРґСѓРµРјРѕРµ РІ РѕС‡РµСЂРµРґРё)
 		AmmoCostHook_Script(2, weapon, rounds);
 	}
 
-	DWORD cost = burstRounds * rounds;    // so much ammo is required for this burst (количество патронов в очереди умноженное на 1 или на значения возвращаемое из скрипта)
+	DWORD cost = burstRounds * rounds;    // so much ammo is required for this burst (РєРѕР»РёС‡РµСЃС‚РІРѕ РїР°С‚СЂРѕРЅРѕРІ РІ РѕС‡РµСЂРµРґРё СѓРјРЅРѕР¶РµРЅРЅРѕРµ РЅР° 1 РёР»Рё РЅР° Р·РЅР°С‡РµРЅРёСЏ РІРѕР·РІСЂР°С‰Р°РµРјРѕРµ РёР· СЃРєСЂРёРїС‚Р°)
 	if (cost > currAmmo) cost = currAmmo; // if cost ammo more than current ammo, set it to current
 
 	return (cost / rounds);               // divide back to get proper number of rounds for damage calculations
@@ -174,7 +174,7 @@ static void __declspec(naked) compute_spray_hack() {
 		xchg ecx, edx;
 		push eax;         // eax - rounds in burst attack, need to set ebp
 		call divide_burst_rounds_by_ammo_cost;
-		mov  ebp, eax;    // overwriten code (в ebp устанавливаем правильное значение)
+		mov  ebp, eax;    // overwriten code (РІ ebp СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј РїСЂР°РІРёР»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ)
 		pop  ecx;
 		pop  edx;
 		retn;
@@ -199,7 +199,7 @@ static double ApplyModifiers(std::vector<KnockbackModifier>* mods, fo::GameObjec
 	return val;
 }
 
-static DWORD _fastcall CalcKnockbackMod(int knockValue, int damage, fo::GameObject* weapon, fo::GameObject* attacker, fo::GameObject* target) {
+static DWORD __fastcall CalcKnockbackMod(int knockValue, int damage, fo::GameObject* weapon, fo::GameObject* attacker, fo::GameObject* target) {
 	double result = (double)damage / (double)knockValue;
 	if (weapon) result = ApplyModifiers(&mWeapons, weapon, result);
 	if (attacker) result = ApplyModifiers(&mAttackers, attacker, result);
@@ -275,7 +275,7 @@ static void __declspec(naked) determine_to_hit_func_hack() {
 	}
 }
 
-static long _fastcall CheckDisableBurst(fo::GameObject* critter) {
+static long __fastcall CheckDisableBurst(fo::GameObject* critter) {
 	for (size_t i = 0; i < noBursts.size(); i++) {
 		if (noBursts[i] == critter->id) {
 			return 10; // Disable Burst (area_attack_mode - non-existent value)
@@ -384,7 +384,7 @@ void _stdcall SetNoBurstMode(fo::GameObject* critter, bool on) {
 	if (on) noBursts.push_back(id);
 }
 
-static int _fastcall AimedShotTest(DWORD pid) {
+static int __fastcall AimedShotTest(DWORD pid) {
 	if (pid) pid = ((fo::GameObject*)pid)->protoId;
 	for (DWORD i = 0; i < disabledAS.size(); i++) {
 		if (disabledAS[i] == pid) return -1;
@@ -472,7 +472,7 @@ static void BodypartHitReadConfig() {
 static void __declspec(naked) apply_damage_hack() {
 	__asm {
 		xor  edx, edx;
-		inc  edx               // COMBAT_SUBTYPE_WEAPON_USED
+		inc  edx;              // COMBAT_SUBTYPE_WEAPON_USED
 		test [esi + 0x15], dl; // ctd.flags2Source & DAM_HIT_
 		jz   end;              // no hit
 		inc  edx;              // COMBAT_SUBTYPE_HIT_SUCCEEDED
@@ -513,8 +513,8 @@ void Combat::init() {
 	MakeCall(0x429E44, ai_pick_hit_mode_hack, 1);   // NoBurst
 
 	if (GetConfigInt("Misc", "CheckWeaponAmmoCost", 0)) {
-		HookCall(0x4266E9, combat_check_bad_shot_hook);
 		MakeCall(0x4234B3, compute_spray_hack, 1);
+		HookCall(0x4266E9, combat_check_bad_shot_hook);
 		HookCall(0x429A37, ai_search_inven_weap_hook);
 		HookCall(0x42A95D, ai_try_attack_hook); // jz func
 	}
@@ -529,9 +529,9 @@ void Combat::init() {
 
 	// Remove the dependency of Body_Torso from Body_Uncalled
 	SafeWrite8(0x423830, 0xEB); // compute_attack_
-	BlockCall(0x42303F); // block check Body_Torso (combat_attack_)
+	BlockCall(0x42303F); // block Body_Torso check (combat_attack_)
 	SafeWrite8(0x42A713, 7); // Body_Uncalled > Body_Groin (ai_called_shot_)
-	SafeWriteBatch<BYTE>(8, bodypartAddr); // Replaced Body_Torso to Body_Uncalled
+	SafeWriteBatch<BYTE>(8, bodypartAddr); // replace Body_Torso with Body_Uncalled
 
 	LoadGameHook::OnGameReset() += ResetOnGameLoad;
 }

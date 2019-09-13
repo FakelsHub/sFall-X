@@ -237,7 +237,7 @@ noScroll:
 static void TalkingHeadsInit() {
 	if (!Graphics::GPUBlt) return;
 
-	HookCalls(TransTalkHook, { 0x44AFB4, 0x44B00B });
+	HookCalls(TransTalkHook, {0x44AFB4, 0x44B00B});
 	MakeJump(0x44AD01, gdDisplayFrame_hack); // Draw Frm
 	MakeJump(0x4472F8, gdDestroyHeadWindow_hack);
 	HookCall(0x44768B, gdPlayTransition_hook);
@@ -263,7 +263,7 @@ static void TalkingHeadsInit() {
 }
 
 void TalkingHeads::init() {
-	// Disable scroll to center if NPC have head image
+	// Disable centering the screen if NPC has talking head
 	HookCall(0x445224, gdialogInitFromScript_hook);
 
 	if (Graphics::mode && GetConfigInt("Graphics", "Use32BitHeadGraphics", 0)) {

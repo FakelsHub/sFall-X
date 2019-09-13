@@ -36,7 +36,7 @@ struct sBook {
 
 static sBook* books = nullptr;
 
-static sBook* _fastcall FindBook(DWORD pid) {
+static sBook* __fastcall FindBook(DWORD pid) {
 	for (int i = BooksCount; i >= 0; i--) {
 		if (books[i].bookPid == pid) {
 			return &books[i];

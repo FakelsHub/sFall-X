@@ -196,7 +196,7 @@ static void __declspec(naked) iso_init_hook() {
 	}
 }
 
-static long _fastcall SquareLoadCheck(TilesData* data) {
+static long __fastcall SquareLoadCheck(TilesData* data) {
 	for (DWORD y = 0; y < 100; y++) {
 		for (DWORD x = 0; x < 100; x++) {
 			for (DWORD z = 0; z < 2; z++) {

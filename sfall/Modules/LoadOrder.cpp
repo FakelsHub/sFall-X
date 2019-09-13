@@ -103,23 +103,23 @@ static void __declspec(naked) gnw_main_hack() {
 }
 
 static fo::PathNode* __fastcall RemoveDatabase(const char* pathPatches) {
-	auto paths = fo::var::paths; // curr.node (beginning chain of paths)
+	auto paths = fo::var::paths; // curr.node (beginning of the chain of paths)
 	auto _paths = paths;         // prev.node
 
 	while (paths) {
 		if (_stricmp(paths->path, pathPatches) == 0) { // found path
 			fo::PathNode* nextPaths = paths->next;     // pointer to the node of the next path
-// TODO: need to check this condition, did i use it correctly?
+// TODO: need to check if this condition is used correctly
 			if (paths != _paths)
 				_paths->next = nextPaths;              // replace the pointer in the previous node, removing the current(found) path from the chain
 			else                                       // if the current node is equal to the previous node
-				fo::var::paths = nextPaths;            // set the next node as the beginning of the chain
+				fo::var::paths = nextPaths;            // set the next node at the beginning of the chain
 			return paths;                              // return the pointer of the current removed node (save the pointer)
 		}
 		_paths = paths;      // prev.node <- curr.node
 		paths = paths->next; // take a pointer to the next path from the current node
 	}
-	return nullptr; // it is possible that this will create an exceptional situation for the game, although such a situation should not arise
+	return nullptr; // it's possible that this will create an exceptional situation for the game, although such a situation should not arise
 }
 
 // Remove master_patches from the chain
@@ -130,7 +130,7 @@ static void __declspec(naked) game_init_databases_hack1() {
 		mov  ecx, [esp + 0x104 + 4]; // path_patches
 		call RemoveDatabase;
 skip:
-		mov  ds:[FO_VAR_master_db_handle], eax; // pointer of the master_patches node will be saved here
+		mov  ds:[FO_VAR_master_db_handle], eax;   // the pointer of master_patches node will be saved here
 		retn;
 	}
 }
@@ -144,11 +144,11 @@ static void __declspec(naked) game_init_databases_hack2() {
 		mov  eax, [eax];                          // eax = master_patches.path
 		call fo::funcoffs::xremovepath_;
 		dec  eax;                                 // remove path (critter_patches == master_patches)?
-		jz   end;                                 // yes (jump if 0)
+		jz   end;                                 // Yes (jump if 0)
 		mov  ecx, [esp + 0x104 + 4];              // path_patches
 		call RemoveDatabase;
 end:
-		mov  ds:[FO_VAR_critter_db_handle], eax;  // the pointer of the critter_patches node will be saved here
+		mov  ds:[FO_VAR_critter_db_handle], eax;  // the pointer of critter_patches node will be saved here
 		retn;
 	}
 }
@@ -164,19 +164,19 @@ static void __stdcall InitExtraPatches() {
 
 static void __fastcall game_init_databases_hook() {
 	fo::PathNode* master_patches;
-	_asm mov master_patches, eax;         // eax = _master_db_handle
+	__asm mov master_patches, eax;        // eax = _master_db_handle
 
 	if (!patchFiles.empty()) InitExtraPatches();
 
 	fo::PathNode* critter_patches = (fo::PathNode*)fo::var::critter_db_handle;
-	fo::PathNode* paths = fo::var::paths; // beginning chain of paths
-	// insert master_patches/critter_patches at the beginning of the path chain
+	fo::PathNode* paths = fo::var::paths; // beginning of the chain of paths
+	// insert master_patches/critter_patches at the beginning of the chain of paths
 	if (critter_patches) {
 		critter_patches->next = paths;    // critter_patches.next -> paths
 		paths = critter_patches;
 	}
 	master_patches->next = paths;         // master_patches.next -> paths
-	fo::var::paths = master_patches;      // set master_patches node to the beginning of the chain of paths
+	fo::var::paths = master_patches;      // set master_patches node at the beginning of the chain of paths
 }
 
 static bool NormalizePath(std::string &path) {
@@ -187,7 +187,7 @@ static bool NormalizePath(std::string &path) {
 		if (pos != std::string::npos) path[pos] = '\\';
 	} while (pos != std::string::npos);
 	if (path.find(".\\") != std::string::npos || path.find("..\\") != std::string::npos) return false;
-	while (path.front() == '\\') path.erase(0, 1); // removes firsts '\'
+	while (path.front() == '\\') path.erase(0, 1); // remove firsts '\'
 	return true;
 }
 
@@ -197,7 +197,7 @@ static void GetExtraPatches() {
 		if (searchPath.back() != '\\') searchPath += "\\";
 
 		std::string path(".\\" + searchPath + "*.dat");
-		dlog("Found custom patches:\n", DL_MAIN);
+		dlogr("Found custom patches:", DL_MAIN);
 		WIN32_FIND_DATA findData;
 		HANDLE hFind = FindFirstFile(path.c_str(), &findData);
 		if (hFind != INVALID_HANDLE_VALUE) {
@@ -206,8 +206,7 @@ static void GetExtraPatches() {
 				if ((name.length() - name.find_last_of('.')) > 4) continue;
 				dlog_f(" > %s\n", DL_MAIN, name.c_str());
 				patchFiles.push_back(name);
-			}
-			while (FindNextFile(hFind, &findData));
+			} while (FindNextFile(hFind, &findData));
 			FindClose(hFind);
 			//std::reverse(patchFiles.begin() + 1, patchFiles.end());
 		}
@@ -230,7 +229,7 @@ static void GetExtraPatches() {
 	}
 }
 
-///////////////////////////// SAVE PARTY MEMBER PROTOTYPES //////////////////////////////
+////////////////////////////// SAVE PARTY MEMBER PROTOTYPES //////////////////////////////
 
 static void __fastcall AddSavPrototype(long pid) {
 	for (const auto& _pid : savPrototypes) {
@@ -369,7 +368,7 @@ static void RemoveSavFiles() {
 }
 
 void LoadOrder::init() {
-	// Load external sfall resource file (located before patchXXX.dat)
+	// Load external sfall resource file (load order is before patchXXX.dat)
 	patchFiles.push_back("sfall.dat");
 
 	GetExtraPatches();

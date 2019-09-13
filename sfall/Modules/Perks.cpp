@@ -77,8 +77,8 @@ struct FakePerk {
 	char Name[maxNameLen];
 	char Desc[maxDescLen];
 	char reserve[506]; // empty block
-	int  ownerId;      // 0 = dude, or number ID of party member NPC
-	short id; // perk id (used last bytes of the description under the ID value for compatibility)
+	int  ownerId;      // 0 = the player, or ID number of party member NPC
+	short id; // perk id (use last bytes of the description under the ID value for compatibility)
 
 	FakePerk() {}
 
@@ -153,7 +153,7 @@ static long _stdcall LevelUp() {
 		}
 	}
 
-	int level = fo::var::Level_; // Get players level
+	int level = fo::var::Level_; // Get player's level
 	if (!((level + 1) % eachLevel)) fo::var::free_perk++; // Increment the number of perks owed
 	return level;
 }
@@ -241,7 +241,7 @@ void Perks::SetFakePerk(const char* name, int level, int image, const char* desc
 				return;
 			}
 		}
-	} else { // adds or changes the existing fake perk in fakePerks
+	} else { // add or change the existing fake perk in fakePerks
 		for (size_t i = 0; i < size; i++) {
 			if (IsNotOwnedFake(fakePerks[i].ownerId, npcID)) continue;
 			if (!strcmp(name, fakePerks[i].Name)) {
@@ -289,23 +289,23 @@ static DWORD _stdcall HaveFakePerks() {
 	return fakePerks.size();
 }
 
-static long _fastcall GetFakePerkLevel(int id) {
+static long __fastcall GetFakePerkLevel(int id) {
 	int i = id - PERK_count;
 	return IsOwnedFake(fakePerks[i].ownerId) ? fakePerks[i].Level : 0;
 }
 
-static long _fastcall GetFakePerkImage(int id) {
+static long __fastcall GetFakePerkImage(int id) {
 	return fakePerks[id - PERK_count].Image;
 }
 
-static FakePerk* _fastcall GetFakePerk(int id) {
+static FakePerk* __fastcall GetFakePerk(int id) {
 	return &fakePerks[id - PERK_count];
 }
 
 // Get level of taken perk
-static DWORD _fastcall GetFakeSelectPerkLevel(int id) {
+static DWORD __fastcall GetFakeSelectPerkLevel(int id) {
 	if (id < startFakeID) {
-		if (!PartyControl::IsNpcControlled()) { // extras perks are not available for controlled NPC
+		if (!PartyControl::IsNpcControlled()) { // extra perks are not available for controlled NPC
 			for (DWORD i = 0; i < fakePerks.size(); i++) {
 				if (fakePerks[i].id == id) return fakePerks[i].Level;
 			}
@@ -324,7 +324,7 @@ static DWORD _fastcall GetFakeSelectPerkLevel(int id) {
 	return 0;
 }
 
-static long _fastcall GetFakeSelectPerkImage(int id) {
+static long __fastcall GetFakeSelectPerkImage(int id) {
 	if (id < startFakeID) {
 		int i = PerkSearchID(id);
 		return (i != -1) ? extPerks[i].data.image : i;
@@ -332,7 +332,7 @@ static long _fastcall GetFakeSelectPerkImage(int id) {
 	return fakeSelectablePerks[id - startFakeID].Image;
 }
 
-static FakePerk* _fastcall GetFakeSelectPerk(int id) {
+static FakePerk* __fastcall GetFakeSelectPerk(int id) {
 	if (id < startFakeID) {
 		int i = PerkSearchID(id);
 		if (i < 0) i = 0; // if id is not found
@@ -356,7 +356,7 @@ static DWORD HandleFakeTraits(int isSelect) {
 	return isSelect;
 }
 
-static long _fastcall PlayerHasPerk(int &isSelectPtr) {
+static long __fastcall PlayerHasPerk(int &isSelectPtr) {
 	isSelectPtr = HandleFakeTraits(isSelectPtr);
 
 	for	(int i = 0; i < PERK_count; i++) {
@@ -367,7 +367,7 @@ static long _fastcall PlayerHasPerk(int &isSelectPtr) {
 			: 0x434446; // skip print perks
 }
 
-static DWORD _fastcall HaveFakeTraits(int &isSelectPtr) {
+static DWORD __fastcall HaveFakeTraits(int &isSelectPtr) {
 	return (fakeTraits.empty()) ? PlayerHasPerk(isSelectPtr) : 0x43425B; // print traits
 }
 
@@ -456,9 +456,9 @@ static void __declspec(naked) EndPerkLoopHack() {
 	__asm {
 		jl   cLoop;           // if ebx < 119
 		push ecx;
-		call HaveFakePerks;   // return count perks (fake + ext)
+		call HaveFakePerks;   // return perks count (fake + ext)
 		pop  ecx;
-		add  eax, PERK_count; // total = count perks + vanilla count
+		add  eax, PERK_count; // total = perks count + vanilla count
 		cmp  ebx, eax;        // if perkId < total then continue
 		jl   cLoop;
 		jmp  EndPerkLoopExit; // exit loop
@@ -470,7 +470,7 @@ cLoop:
 // Build a table of perks ID numbers available for selection, data buffer has limited size for 119 perks
 static DWORD _stdcall HandleExtraSelectablePerks(DWORD available, DWORD* data) {
 	size_t count;
-	if (!PartyControl::IsNpcControlled()) { // extras perks are not available for controlled NPC
+	if (!PartyControl::IsNpcControlled()) { // extra perks are not available for controlled NPC
 		count = extPerks.size();
 		for (size_t i = 0; i < count; i++) {
 			if (available >= 119) return available; // exit if the buffer is overfull
@@ -494,7 +494,7 @@ static void __declspec(naked) GetAvailablePerksHook() {
 		push edx; // arg data
 		cmp  IgnoringDefaultPerks, 0;
 		jnz  skipDefaults;
-		call fo::funcoffs::perk_make_list_; // return count available
+		call fo::funcoffs::perk_make_list_; // return available count
 		jmp  next;
 skipDefaults:
 		xor  eax, eax;
@@ -611,7 +611,7 @@ static void ApplyPerkEffect(long index, fo::GameObject* critter, long type) {
 static long _stdcall AddFakePerk(DWORD perkID) {
 	size_t count;
 	bool matched = false;
-	if (perkID < startFakeID) { // extra perk can only be added to the dude
+	if (perkID < startFakeID) { // extra perk can only be added to the player
 		count = fakePerks.size();
 		for (size_t d = 0; d < count; d++) {
 			if (fakePerks[d].id == perkID) {
@@ -621,7 +621,7 @@ static long _stdcall AddFakePerk(DWORD perkID) {
 				break;
 			}
 		}
-		if (!matched) { // adding to fakePerks
+		if (!matched) { // add to fakePerks
 			int index = PerkSearchID(perkID);
 			if (index < 0) return -1;
 			RemovePerkID.push_back(count); // index of the added perk
@@ -658,7 +658,7 @@ static long _stdcall AddFakePerk(DWORD perkID) {
 				break;
 			}
 		}
-		if (!matched) { // adding to fakePerks
+		if (!matched) { // add to fakePerks
 			RemovePerkID.push_back(count); // index of the added perk
 			fakePerks.push_back(fakeSelectablePerks[perkID]);
 		}
@@ -697,7 +697,7 @@ end:
 }
 
 // Checks player statistics to add perk in selection listing
-static PerkInfo* _fastcall CanAddPerk(DWORD perkID) {
+static PerkInfo* __fastcall CanAddPerk(DWORD perkID) {
 	int index = PerkSearchID(perkID);
 	if (index != -1) {
 		int ranks = extPerks[index].data.ranks;
@@ -733,7 +733,7 @@ end:
 	}
 }
 
-static PerkInfo* _fastcall PerkData(DWORD perkID, fo::GameObject* critter, long type) {
+static PerkInfo* __fastcall PerkData(DWORD perkID, fo::GameObject* critter, long type) {
 	int index = PerkSearchID(perkID);
 	if (index != -1) {
 		ApplyPerkEffect(index, critter, type); // apply ext. perk to critter
@@ -807,7 +807,6 @@ lower:
 }
 
 static bool perkHeaveHoModFix = false;
-
 void _stdcall ApplyHeaveHoFix() { // This not really a fix
 	MakeJump(0x478AC4, HeaveHoHook);
 	perks[PERK_heave_ho].strengthMin = 0;
@@ -822,35 +821,35 @@ static void PerkEngineInit() {
 	HookCall(0x43440D, GetPerkImageHook);
 	HookCall(0x434432, GetPerkDescHook);
 	MakeJump(0x434440, EndPerkLoopHack, 1);
-	HookCalls(GetPerkNameHook, { 0x4343C1, 0x4343DF, 0x43441B });
+	HookCalls(GetPerkNameHook, {0x4343C1, 0x4343DF, 0x43441B});
 
 	// GetPlayerAvailablePerks (ListDPerks_)
 	HookCall(0x43D127, GetAvailablePerksHook);
 	HookCall(0x43D17D, GetPerkSNameHook);
-	HookCalls(GetPerkSLevelHook, { 0x43D25E, 0x43D275 });
+	HookCalls(GetPerkSLevelHook, {0x43D25E, 0x43D275});
 
 	// ShowPerkBox (perks_dialog_)
-	HookCalls(GetPerkSLevelHook, { 0x43C82E, 0x43C85B });
-	HookCalls(GetPerkSDescHook,  { 0x43C888, 0x43C8D1 });
-	HookCalls(GetPerkSNameHook,  { 0x43C8A6, 0x43C8EF });
+	HookCalls(GetPerkSLevelHook, {0x43C82E, 0x43C85B});
+	HookCalls(GetPerkSDescHook,  {0x43C888, 0x43C8D1});
+	HookCalls(GetPerkSNameHook,  {0x43C8A6, 0x43C8EF});
 	HookCall(0x43C90F, GetPerkSImageHook);
 	HookCall(0x43C952, AddPerkHook);
 
 	// PerkboxSwitchPerk (RedrwDPrks_)
-	HookCalls(GetPerkSLevelHook, { 0x43C3F1, 0x43C41E });
-	HookCalls(GetPerkSNameHook,  { 0x43C469, 0x43C4B2 });
-	HookCalls(GetPerkSDescHook,  { 0x43C44B, 0x43C494 });
+	HookCalls(GetPerkSLevelHook, {0x43C3F1, 0x43C41E});
+	HookCalls(GetPerkSNameHook,  {0x43C469, 0x43C4B2});
+	HookCalls(GetPerkSDescHook,  {0x43C44B, 0x43C494});
 	HookCall(0x43C4D2, GetPerkSImageHook);
 
 	// perk_owed hooks
-	MakeCall(0x4AFB2F, LevelUpHack, 1); // replaces 'mov edx, ds:[PlayerLevel]
+	MakeCall(0x4AFB2F, LevelUpHack, 1); // replaces 'mov edx, ds:[PlayerLevel]'
 	SafeWrite8(0x43C2EC, 0xEB);         // skip the block of code which checks if the player has gained a perk (now handled in level up code)
 }
 
 static void PerkSetup() {
 	if (!perksReInit) {
 		// _perk_data
-		SafeWriteBatch<DWORD>((DWORD)perks, { 0x496669, 0x496837, 0x496BAD, 0x496C41, 0x496D25 });
+		SafeWriteBatch<DWORD>((DWORD)perks, {0x496669, 0x496837, 0x496BAD, 0x496C41, 0x496D25});
 		SafeWrite32(0x496696, (DWORD)perks + 4);
 		SafeWrite32(0x496BD1, (DWORD)perks + 4);
 		SafeWrite32(0x496BF5, (DWORD)perks + 8);
@@ -1105,7 +1104,7 @@ static void __declspec(naked) BlockedTrait() {
 }
 
 static void TraitSetup() {
-	// Replaced functions
+	// Replace functions
 	MakeJump(0x4B3C7C, TraitAdjustStatHack);  // trait_adjust_stat_
 	MakeJump(0x4B40FC, TraitAdjustSkillHack); // trait_adjust_skill_
 
@@ -1233,7 +1232,7 @@ static const DWORD FastShotFixF1[] = {
 	0x478BB8, 0x478BC7, 0x478BD6, 0x478BEA, 0x478BF9, 0x478C08, 0x478C2F,
 };
 
-void FastShotTraitFix() {
+static void FastShotTraitFix() {
 	switch (GetConfigInt("Misc", "FastShotFix", 1)) {
 	case 1:
 		dlog("Applying Fast Shot Trait Fix.", DL_INIT);
@@ -1250,6 +1249,7 @@ void FastShotTraitFix() {
 		break;
 	}
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void _stdcall SetPerkValue(int id, int value, DWORD offset) {
@@ -1438,7 +1438,6 @@ void PerksAcceptCharScreen() {
 }
 
 void Perks::init() {
-
 	FastShotTraitFix();
 
 	for (int i = STAT_st; i <= STAT_lu; i++) SafeWrite8(GainStatPerks[i][0], (BYTE)GainStatPerks[i][1]);
@@ -1450,26 +1449,26 @@ void Perks::init() {
 		perksFile[1] = '\\';
 		HookCall(0x44272E, TraitInitWrapper); // game_init_
 
-		// Engine perks setting
+		// Engine perks settings
 		long wScopeRangeMod = GetPrivateProfileIntA("PerksTweak", "WeaponScopeRangePenalty", -1, perksFile);
 		if (wScopeRangeMod >= 0 && wScopeRangeMod != 8) SafeWrite32(0x42448E, wScopeRangeMod);
 		wScopeRangeMod = GetPrivateProfileIntA("PerksTweak", "WeaponScopeRangeBonus", -1, perksFile);
 		if (wScopeRangeMod >= 2 && wScopeRangeMod != 5) SafeWrite32(0x424489, wScopeRangeMod);
 
-		long wLongRangeMod = GetPrivateProfileIntA("PerksTweak", "WeaponLongRangeBonus", -1, perksFile);
-		if (wLongRangeMod >= 2 && wLongRangeMod != 4) SafeWrite32(0x424474, wLongRangeMod);
+		long enginePerkMod = GetPrivateProfileIntA("PerksTweak", "WeaponLongRangeBonus", -1, perksFile);
+		if (enginePerkMod >= 2 && enginePerkMod != 4) SafeWrite32(0x424474, enginePerkMod);
 
-		long wAccurateMod = GetPrivateProfileIntA("PerksTweak", "WeaponAccurateBonus", -1, perksFile);
-		if (wAccurateMod >= 0 && wAccurateMod != 20) {
-			if (wAccurateMod > 200) wAccurateMod = 200;
-			SafeWrite8(0x42465D, static_cast<BYTE>(wAccurateMod));
+		enginePerkMod = GetPrivateProfileIntA("PerksTweak", "WeaponAccurateBonus", -1, perksFile);
+		if (enginePerkMod >= 0 && enginePerkMod != 20) {
+			if (enginePerkMod > 200) enginePerkMod = 200;
+			SafeWrite8(0x42465D, static_cast<BYTE>(enginePerkMod));
 		}
 
-		long wHandlingMod = GetPrivateProfileIntA("PerksTweak", "WeaponHandlingBonus", -1, perksFile);
-		if (wHandlingMod >= 0 && wHandlingMod != 3) {
-			if (wHandlingMod > 10) wHandlingMod = 10;
-			SafeWrite8(0x424636, static_cast<char>(wHandlingMod));
-			SafeWrite8(0x4251CE, static_cast<signed char>(-wHandlingMod));
+		enginePerkMod = GetPrivateProfileIntA("PerksTweak", "WeaponHandlingBonus", -1, perksFile);
+		if (enginePerkMod >= 0 && enginePerkMod != 3) {
+			if (enginePerkMod > 10) enginePerkMod = 10;
+			SafeWrite8(0x424636, static_cast<char>(enginePerkMod));
+			SafeWrite8(0x4251CE, static_cast<signed char>(-enginePerkMod));
 		}
 	}
 	LoadGameHook::OnGameReset() += PerksReset;

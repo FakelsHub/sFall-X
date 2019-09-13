@@ -226,30 +226,28 @@ really_end:
 }
 
 static const DWORD NPCStage6Fix1End = 0x493D16;
-static const DWORD NPCStage6Fix2End = 0x49423A;
 static void __declspec(naked) NPCStage6Fix1() {
 	__asm {
-		mov eax,0xcc;				// set record size to 204 bytes
-		imul eax,edx;				// multiply by number of NPC records in party.txt
-		call fo::funcoffs::mem_malloc_;			// malloc the necessary memory
-		mov edx,dword ptr ds:[FO_VAR_partyMemberMaxCount];	// retrieve number of NPC records in party.txt
-		mov ebx,0xcc;				// set record size to 204 bytes
-		imul ebx,edx;				// multiply by number of NPC records in party.txt
-		jmp NPCStage6Fix1End;			// call memset to set all malloc'ed memory to 0
+		mov  eax, 204;                  // set record size to 204 bytes
+		imul eax, edx;                  // multiply by number of NPC records in party.txt
+		mov  ebx, eax;                  // copy total record size for later memset
+		call fo::funcoffs::mem_malloc_; // malloc the necessary memory
+		jmp  NPCStage6Fix1End;          // call memset to set all malloc'ed memory to 0
 	}
 }
 
+static const DWORD NPCStage6Fix2End = 0x49423A;
 static void __declspec(naked) NPCStage6Fix2() {
 	__asm {
-		mov eax,0xcc;				// record size is 204 bytes
-		imul edx,eax;				// multiply by NPC number as listed in party.txt
-		mov eax,dword ptr ds:[FO_VAR_partyMemberAIOptions];	// get starting offset of internal NPC table
-		jmp NPCStage6Fix2End;			// eax+edx = offset of specific NPC record
+		mov  eax, 204;                  // record size is 204 bytes
+		imul edx, eax;                  // multiply by NPC number as listed in party.txt
+		mov  eax, dword ptr ds:[FO_VAR_partyMemberAIOptions]; // get starting offset of internal NPC table
+		jmp  NPCStage6Fix2End;          // eax+edx = offset of specific NPC record
 	}
 }
 
-static const DWORD ScannerHookRet=0x41BC1D;
-static const DWORD ScannerHookFail=0x41BC65;
+static const DWORD ScannerHookRet  = 0x41BC1D;
+static const DWORD ScannerHookFail = 0x41BC65;
 static void __declspec(naked) ScannerAutomapHook() {
 	using fo::PID_MOTION_SENSOR;
 	__asm {
@@ -272,7 +270,7 @@ static void __declspec(naked) op_obj_can_see_obj_hook() {
 		mov  ecx, dword ptr [esp + 0x0C];            // buf **ret_objStruct
 		push ecx;
 		xor  ecx, ecx;
-		call fo::funcoffs::make_straight_path_func_; // EAX *objStruct, EDX hexNum1, EBX hexNum2, ECX 0, stack1 **ret_objStruct, stack2 flags, stack3 *check_hex_objs_func
+		call fo::funcoffs::make_straight_path_func_; // (EAX *objStruct, EDX hexNum1, EBX hexNum2, ECX 0, stack1 **ret_objStruct, stack2 flags, stack3 *check_hex_objs_func)
 		retn 8;
 	}
 }
@@ -355,7 +353,7 @@ skip:
 		jz end;
 		retn;
 end:
-		mov dword ptr[esp], 0x4715B7;
+		mov dword ptr [esp], 0x4715B7;
 		retn;
 	}
 }
@@ -630,8 +628,8 @@ void NpcStage6Fix() {
 	if (GetConfigInt("Misc", "NPCStage6Fix", 0)) {
 		dlog("Applying NPC Stage 6 Fix.", DL_INIT);
 		MakeJump(0x493CE9, NPCStage6Fix1);
-		SafeWrite8(0x494063, 0x06);		// loop should look for a potential 6th stage
-		SafeWrite8(0x4940BB, 0xCC);		// move pointer by 204 bytes instead of 200
+		SafeWrite8(0x494063, 6);   // loop should look for a potential 6th stage
+		SafeWrite8(0x4940BB, 204); // move pointer by 204 bytes instead of 200
 		MakeJump(0x494224, NPCStage6Fix2);
 		dlogr(" Done", DL_INIT);
 	}
@@ -792,17 +790,17 @@ void KeepWeaponSelectModePatch() {
 
 void PartyMemberSkillPatch() {
 	// Fixed getting distance from source to target when using skills
-	// Note: You need to use the Doctor/First-Aid skill on the player, this will cause the party member to apply his skill,
-	// but the engine function is not implemented completely so using this fix without overriding the Doctor/First-Aid
-	// functions in the global script is impractical, so this should be disabled by default
+	// Note: this will cause the party member to apply his/her skill when you use First Aid/Doctor skill on the player, but only if
+	// the player is standing next to the party member. Because the related engine function is not fully implemented, enabling
+	// this option without a global script that overrides First Aid/Doctor functions has very limited usefulness
 	if (GetConfigInt("Misc", "PartyMemberSkillFix", 0) != 0) {
 		dlog("Applying party member using First Aid/Doctor skill patch.", DL_INIT);
 		HookCall(0x412836, action_use_skill_on_hook);
 		dlogr(" Done", DL_INIT);
 	}
-	// Small code fix (change obj_dude to source)
+	// Small code patch for HOOK_USESKILLON (change obj_dude to source)
 	SafeWrite32(0x4128F3, 0x90909090);
-	SafeWrite16(0x4128F7, 0xFE39); // cmp esi, _obj_dude to cmp esi, edi
+	SafeWrite16(0x4128F7, 0xFE39); // cmp esi, _obj_dude -> cmp esi, edi
 }
 
 void SkipLoadingGameSettingsPatch() {
@@ -822,9 +820,11 @@ void SkipLoadingGameSettingsPatch() {
 
 void InterfaceDontMoveOnTopPatch() {
 	if (GetConfigInt("Misc", "InterfaceDontMoveOnTop", 0)) {
-		SafeWrite8(0x46ECE9, fo::WinFlags::Exclusive);  // Player Inteface/Loot/UseOn
-		//SafeWrite8(0x445978, fo::WinFlags::Exclusive);  // DialogReView (need fix)
-		SafeWrite8(0x41B966, fo::WinFlags::Exclusive);  // Automap
+		dlog("Applying InterfaceDontMoveOnTop patch.", DL_INIT);
+		SafeWrite8(0x46ECE9, fo::WinFlags::Exclusive); // Player Inventory/Loot/UseOn
+		//SafeWrite8(0x445978, fo::WinFlags::Exclusive); // DialogReView (need fix)
+		SafeWrite8(0x41B966, fo::WinFlags::Exclusive); // Automap
+		dlogr(" Done", DL_INIT);
 	}
 }
 
@@ -832,7 +832,7 @@ void UseWalkDistancePatch() {
 	int distance = GetConfigInt("Misc", "UseWalkDistance", 3) + 2;
 	if (distance > 1 && distance < 5) {
 		dlog("Applying walk distance for using objects patch.", DL_INIT);
-		SafeWriteBatch<BYTE>(distance, walkDistanceAddr); // 5 default
+		SafeWriteBatch<BYTE>(distance, walkDistanceAddr); // default is 5
 		dlogr(" Done", DL_INIT);
 	}
 }
@@ -840,8 +840,8 @@ void UseWalkDistancePatch() {
 void F1EngineBehaviorPatch() {
 	if (GetConfigInt("Misc", "Fallout1Behavior", 0)) {
 		dlog("Applying Fallout 1 engine behavior patch.", DL_INIT);
-		BlockCall(0x4A4343); // disable playing the final movie/credits of the game after the slide showing
-		SafeWrite8(0x477C71, 0xEB); // disable weight division for power armor items
+		BlockCall(0x4A4343); // disable playing the final movie/credits after the endgame slideshow
+		SafeWrite8(0x477C71, 0xEB); // disable halving the weight for power armor items
 		dlogr(" Done", DL_INIT);
 	}
 }
@@ -907,19 +907,18 @@ void MiscPatches::init() {
 
 	SimplePatch<DWORD>(0x440C2A, "Misc", "SpecialDeathGVAR", fo::GVAR_MODOC_SHITTY_DEATH);
 
-	// Removal hardcoding for maps with indexes 19 and 37
+	// Remove hardcoding for maps with IDs 19 and 37
 	if (GetConfigInt("Misc", "DisableSpecialMapIDs", 0)) {
 		dlog("Applying disable special map IDs patch.", DL_INIT);
 		SafeWriteBatch<BYTE>(0, {0x4836D6, 0x4836DB});
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Increase text capacity in the description window of statistics and perks
+	// Increase the max text width of the information card in the character screen
 	SafeWriteBatch<BYTE>(150, {0x43ACD5, 0x43DD37});
 
 	F1EngineBehaviorPatch();
 	DialogueFix();
-
 	AdditionalWeaponAnimsPatch();
 	MultiPatchesPatch();
 	PlayIdleAnimOnReloadPatch();

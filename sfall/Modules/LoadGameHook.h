@@ -32,7 +32,7 @@ public:
 	// Invoked before game initialization (game_init_ was called).
 	static Delegate<>& OnGameInit();
 
-	// Invoked when the game has initialized
+	// Invoked when the game has been initialized
 	static Delegate<>& OnAfterGameInit();
 
 	// Invoked when the game exits to main menu
@@ -89,7 +89,7 @@ enum LoopFlag : unsigned long {
 	BARTER      = 1 << 17, // 0x20000
 	HEROWIN     = 1 << 18, // 0x40000 Hero Appearance mod
 	DIALOGVIEW  = 1 << 19, // 0x80000
-	COUNTERWIN  = 1 << 20, // 0x100000 // Window for input the number of moved items or setting a timer
+	COUNTERWIN  = 1 << 20, // 0x100000 Counter window for moving multiple items or setting a timer
 
 	// RESERVED    = 1 << 31
 };

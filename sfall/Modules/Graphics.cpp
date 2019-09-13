@@ -536,7 +536,7 @@ public:
 
 	HRESULT _stdcall SetEntries(DWORD, DWORD b, DWORD c, LPPALETTEENTRY destPal) {
 		if (!windowInit || c == 0 || b + c > 256) return DDERR_INVALIDPARAMS;
-		
+
 		CopyMemory(&palette[b], destPal, c * 4);
 		if (Graphics::GPUBlt) {
 			if (gpuPalette) {

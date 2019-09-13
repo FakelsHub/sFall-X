@@ -1,20 +1,20 @@
 /*
-*    sfall
-*    Copyright (C) 2008-2017  The sfall team
-*
-*    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU General Public License as published by
-*    the Free Software Foundation, either version 3 of the License, or
-*    (at your option) any later version.
-*
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU General Public License for more details.
-*
-*    You should have received a copy of the GNU General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ *    sfall
+ *    Copyright (C) 2008-2017  The sfall team
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <unordered_map>
 #include <math.h>
@@ -70,7 +70,7 @@ end:
 }
 
 static void TimerReset() {
-	_asm push ecx;
+	__asm push ecx;
 
 	const DWORD time = fo::TicksTime::ONE_GAME_YEAR * 13;
 	fo::var::fallout_game_time -= time;
@@ -86,7 +86,7 @@ static void TimerReset() {
 		}
 		queue = queue->next;
 	}
-	_asm pop ecx;
+	__asm pop ecx;
 }
 
 static __declspec(naked) void script_chk_timed_events_hack() {
@@ -127,7 +127,7 @@ static void __stdcall WorldmapLoopHook() {
 static void __declspec(naked) WorldMapFpsPatch() {
 	__asm {
 		push dword ptr ds:[FO_VAR_last_buttons];
-		push dword ptr ds:[0x6AC7B0]; // _mouse_button
+		push dword ptr ds:[0x6AC7B0]; // _mouse_buttons
 		mov  esi, worldMapTicks;
 		mov  ebx, esi;                // previous ticks
 loopDelay:
@@ -144,7 +144,7 @@ subLoop:
 		cmp  edx, worldMapDelay;
 		jb   loopDelay;    // elapsed < worldMapDelay
 
-		pop  dword ptr ds:[0x6AC7B0]; // _mouse_button
+		pop  dword ptr ds:[0x6AC7B0]; // _mouse_buttons
 		pop  dword ptr ds:[FO_VAR_last_buttons];
 		call ds:[sf_GetTickCount];
 		mov  worldMapTicks, eax;
@@ -223,7 +223,7 @@ static void __declspec(naked) wmTownMapFunc_hack() {
 		mov  [esi], edx
 		retn;
 end:
-		add  esp, 4; // destroy return address
+		add  esp, 4; // destroy the return address
 		mov  eax, 0x4C4976;
 		jmp  eax;
 	}
@@ -420,8 +420,8 @@ void WorldmapFpsPatch() {
 void PathfinderFixInit() {
 	//if(GetConfigInt("Misc", "PathfinderFix", 0)) {
 	dlog("Applying Pathfinder patch.", DL_INIT);
-	SafeWrite16(0x4C1FF6, 0x9090);     //wmPartyWalkingStep_
-	HookCall(0x4C1C78, PathfinderFix); //wmGameTimeIncrement_
+	SafeWrite16(0x4C1FF6, 0x9090);     // wmPartyWalkingStep_
+	HookCall(0x4C1C78, PathfinderFix); // wmGameTimeIncrement_
 	mapMultiMod = (double)GetConfigInt("Misc", "WorldMapTimeMod", 100) / 100.0;
 	dlogr(" Done", DL_INIT);
 	//}
@@ -552,17 +552,17 @@ void Worldmap::SetRestMode(DWORD mode) {
 	if (!restMode) return;
 
 	if (mode & 1) { // bit1 - disable resting on all maps
-		SafeWrite8(0x49952C, 0x31);        // test to xor
+		SafeWrite8(0x49952C, 0x31); // test to xor
 		SafeWrite8(0x497557, 0x31);
 		return;
 	}
 	if (mode & 2) { // bit2 - disable resting on maps with "can_rest_here=No" in Maps.txt, even if there are no other critters
 		SafeWrite8(0x42E587, 0xE9);
-		SafeWrite32(0x42E588, 0x94);       // jmp  0x42E620
+		SafeWrite32(0x42E588, 0x94); // jmp  0x42E620
 	}
 	if (mode & 4) { // bit3 - disable healing during resting
 		SafeWrite16(0x499FD4, 0x9090);
-		SafeWrite16(0x499E93, 0x8FEB);     // jmp  0x499E24
+		SafeWrite16(0x499E93, 0x8FEB); // jmp  0x499E24
 	}
 }
 

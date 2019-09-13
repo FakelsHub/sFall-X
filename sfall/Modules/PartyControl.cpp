@@ -132,12 +132,12 @@ static void SaveRealDudeState() {
 
 	if (skipCounterAnim) SafeWriteBatch<BYTE>(0, {0x422BDE, 0x4229EC}); // no animate
 
-	if (isDebug) fo::func::debug_printf("\n[SFALL] Save dude state!");
+	if (isDebug) fo::func::debug_printf("\n[SFALL] Save dude state.");
 }
 
 // take control of the NPC
 static void SetCurrentDude(fo::GameObject* npc) {
-	if (isDebug) fo::func::debug_printf("\n[SFALL] Take control to critter.");
+	if (isDebug) fo::func::debug_printf("\n[SFALL] Take control of critter.");
 
 	// remove skill tags
 	long tagSkill[4];
@@ -147,7 +147,7 @@ static void SetCurrentDude(fo::GameObject* npc) {
 	// reset traits
 	fo::var::pc_trait[0] = fo::var::pc_trait[1] = -1;
 
-	// copy exist party members perks or reset list for non-party members NPC
+	// copy existing party member perks or reset list for non-party member NPC
 	long isPartyMember = fo::IsPartyMemberByPid(npc->protoId);
 	if (isPartyMember) {
 		memcpy(fo::var::perkLevelDataList, fo::var::perkLevelDataList + (fo::PERK_count * (isPartyMember - 1)), sizeof(DWORD) * fo::PERK_count);
@@ -181,7 +181,7 @@ static void SetCurrentDude(fo::GameObject* npc) {
 	} else {
 		fo::var::itemCurrentItem = fo::ActiveSlot::Right;
 	}
-	// restoring selected weapons mode
+	// restore selected weapon mode
 	size_t count = weaponState.size();
 	for (size_t i = 0; i < count; i++) {
 		if (weaponState[i].npcID == npc->id) {
@@ -519,7 +519,7 @@ static void __declspec(naked) gdControlUpdateInfo_hook() {
 static void NpcAutoLevelPatch() {
 	npcAutoLevelEnabled = GetConfigInt("Misc", "NPCAutoLevel", 0) != 0;
 	if (npcAutoLevelEnabled) {
-		dlog("Applying NPC disable random level patch.", DL_INIT);
+		dlog("Applying NPC autolevel patch.", DL_INIT);
 		SafeWrite8(0x495CFB, 0xEB); // jmps 0x495D28 (skip random check)
 		dlogr(" Done", DL_INIT);
 	}
@@ -549,7 +549,7 @@ void PartyControl::init() {
 		HookCall(0x449570, gdControl_hook_armor);
 	}
 
-	// Show current level & AC & addict flag
+	// Display party member's current level & AC & addict flag
 	if (GetConfigInt("Misc", "PartyMemberExtraInfo", 0)) {
 		dlog("Applying display NPC extra info patch.", DL_INIT);
 		HookCall(0x44926F, gdControlUpdateInfo_hook);

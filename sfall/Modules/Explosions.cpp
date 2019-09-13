@@ -164,6 +164,7 @@ static void __declspec(naked) fire_dance_lighting_fix1() {
 		jmp  fire_dance_lighting_back; // jump back
 	}
 }
+
 //-----------------------------------------------------------------
 
 static DWORD __fastcall CheckExplosives(DWORD register pid) {
@@ -293,7 +294,7 @@ end:
 	}
 }
 
-static void apply_hack() {
+static void apply_expl_hack() {
 	MakeCall(0x49BCC7, obj_use_explosive_hack);        // check explosives
 	MakeCall(0x49BD56, obj_use_explosive_active_hack); // set active explosive
 	MakeCall(0x4A2865, queue_do_explosion_hack);       // set damage explosive
@@ -312,12 +313,12 @@ void Explosions::AddToExplosives(DWORD pid, DWORD activePid, DWORD minDmg, DWORD
 	explosives.push_back({ pid, activePid, minDmg, maxDmg });
 
 	if (!onlyOnce) {
-		apply_hack();
+		apply_expl_hack();
 		onlyOnce = true;
 	}
 }
 
-//----------------------------------------------------------------------------
+//-----------------------------------------------------------------
 
 static const DWORD explosion_dmg_check_adr[] = {0x411709, 0x4119FC, 0x411C08, 0x4517C1, 0x423BC8, 0x42381A};
 static const DWORD explosion_art_adr[] = {0x411A19, 0x411A29, 0x411A35, 0x411A3C};
@@ -325,10 +326,10 @@ static const DWORD explosion_art_defaults[] = {10, 2, 31, 29};
 static const DWORD explosion_radius_grenade = 0x479183;
 static const DWORD explosion_radius_rocket  = 0x47918B;
 
-static const DWORD addr_dynamite_min_dmg = 0x4A2878;
-static const DWORD addr_dynamite_max_dmg = 0x4A2873;
-static const DWORD addr_plastic_min_dmg  = 0x4A2884;
-static const DWORD addr_plastic_max_dmg  = 0x4A287F;
+static const DWORD dynamite_min_dmg_addr = 0x4A2878;
+static const DWORD dynamite_max_dmg_addr = 0x4A2873;
+static const DWORD plastic_min_dmg_addr  = 0x4A2884;
+static const DWORD plastic_max_dmg_addr  = 0x4A287F;
 
 // default values
 static DWORD dynamite_minDmg;
@@ -350,12 +351,12 @@ static void SetExplosionDamage(int pid, int min, int max) {
 	explosionsDamageReset = true;
 	switch (pid) {
 		case fo::ProtoId::PID_DYNAMITE:
-			SafeWrite32(addr_dynamite_min_dmg, min);
-			SafeWrite32(addr_dynamite_max_dmg, max);
+			SafeWrite32(dynamite_min_dmg_addr, min);
+			SafeWrite32(dynamite_max_dmg_addr, max);
 			break;
 		case fo::ProtoId::PID_PLASTIC_EXPLOSIVES:
-			SafeWrite32(addr_plastic_min_dmg, min);
-			SafeWrite32(addr_plastic_max_dmg, max);
+			SafeWrite32(plastic_min_dmg_addr, min);
+			SafeWrite32(plastic_max_dmg_addr, max);
 			break;
 	}
 }
@@ -364,12 +365,12 @@ static int GetExplosionDamage(int pid) {
 	DWORD min = 0, max = 0;
 	switch (pid) {
 		case fo::ProtoId::PID_DYNAMITE:
-			min = *(DWORD*)addr_dynamite_min_dmg;
-			max = *(DWORD*)addr_dynamite_max_dmg;
+			min = *(DWORD*)dynamite_min_dmg_addr;
+			max = *(DWORD*)dynamite_max_dmg_addr;
 			break;
 		case fo::ProtoId::PID_PLASTIC_EXPLOSIVES:
-			min = *(DWORD*)addr_plastic_min_dmg;
-			max = *(DWORD*)addr_plastic_max_dmg;
+			min = *(DWORD*)plastic_min_dmg_addr;
+			max = *(DWORD*)plastic_max_dmg_addr;
 			break;
 		default:
 			GetDamage(pid, min, max);
@@ -461,7 +462,7 @@ void ResetExplosionSettings() {
 	for (int i = 0; i < numDmgChecks; i++) {
 		SafeWrite8(explosion_dmg_check_adr[i], fo::DamageType::DMG_explosion);
 	}
-	// explosion max count targets
+	// explosion max target count
 	if (explosionMaxTargetReset) {
 		SafeWrite8(0x423C93, 6);
 		explosionMaxTargetReset = false;
@@ -478,10 +479,10 @@ static void ResetExplosionDamage() {
 	if (!explosives.empty()) explosives.clear();
 
 	if (!explosionsDamageReset) return;
-	SafeWrite32(addr_dynamite_min_dmg, dynamite_minDmg);
-	SafeWrite32(addr_dynamite_max_dmg, dynamite_maxDmg);
-	SafeWrite32(addr_plastic_min_dmg, plastic_minDmg);
-	SafeWrite32(addr_plastic_max_dmg, plastic_maxDmg);
+	SafeWrite32(dynamite_min_dmg_addr, dynamite_minDmg);
+	SafeWrite32(dynamite_max_dmg_addr, dynamite_maxDmg);
+	SafeWrite32(plastic_min_dmg_addr, plastic_minDmg);
+	SafeWrite32(plastic_max_dmg_addr, plastic_maxDmg);
 	explosionsDamageReset = false;
 }
 
@@ -497,11 +498,11 @@ void Explosions::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	// set damage from config
-	dynamite_maxDmg = SimplePatch<DWORD>(addr_dynamite_max_dmg, "Misc", "Dynamite_DmgMax", 50, 0, 9999);
-	dynamite_minDmg = SimplePatch<DWORD>(addr_dynamite_min_dmg, "Misc", "Dynamite_DmgMin", 30, 0, dynamite_maxDmg);
-	plastic_maxDmg = SimplePatch<DWORD>(addr_plastic_max_dmg, "Misc", "PlasticExplosive_DmgMax", 80, 0, 9999);
-	plastic_minDmg = SimplePatch<DWORD>(addr_plastic_min_dmg, "Misc", "PlasticExplosive_DmgMin", 40, 0, plastic_maxDmg);
+	// initialize explosives
+	dynamite_maxDmg = SimplePatch<DWORD>(dynamite_max_dmg_addr, "Misc", "Dynamite_DmgMax", 50, 0, 9999);
+	dynamite_minDmg = SimplePatch<DWORD>(dynamite_min_dmg_addr, "Misc", "Dynamite_DmgMin", 30, 0, dynamite_maxDmg);
+	plastic_maxDmg = SimplePatch<DWORD>(plastic_max_dmg_addr, "Misc", "PlasticExplosive_DmgMax", 80, 0, 9999);
+	plastic_minDmg = SimplePatch<DWORD>(plastic_min_dmg_addr, "Misc", "PlasticExplosive_DmgMin", 40, 0, plastic_maxDmg);
 
 	// after each combat attack, reset metarule_explosions settings
 	MainLoopHook::OnAfterCombatAttack() += ResetExplosionSettings;

@@ -38,7 +38,7 @@ public:
 	void init();
 	void exit() override;
 
-	static long AddExtraMsgFile(const char* nameMsg, long msgNumber);
+	static long AddExtraMsgFile(const char* msgName, long msgNumber);
 };
 
 fo::MessageNode *GetMsgNode(fo::MessageList *msgList, int msgRef);

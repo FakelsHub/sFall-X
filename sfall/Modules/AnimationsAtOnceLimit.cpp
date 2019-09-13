@@ -161,7 +161,7 @@ static DWORD __fastcall AnimCombatFix(fo::GameObject* src, BYTE combatFlag) {
 	}
 
 	if (combatFlag & 2) { // combat flag is set
-		_asm call fo::funcoffs::combat_anim_finished_;
+		__asm call fo::funcoffs::combat_anim_finished_;
 	}
 	return animAddr;
 }
@@ -247,6 +247,8 @@ void ApplyAnimationsAtOncePatches(signed char aniMax) {
 	SafeWriteBatch<DWORD>(animRecordSize * aniMax, animMaxSizeCheck);
 
 	//divert old animation structure list pointers to newly allocated memory
+
+	//struct array 1///////////////////
 
 	//old addr 0x54C1B4
 	SafeWriteBatch<DWORD>(animSetAddr, { 0x413A9E });

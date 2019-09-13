@@ -78,7 +78,7 @@ energy:
 	}
 }
 
-static int _fastcall PickpocketMod(int base, fo::GameObject* critter) {
+static int __fastcall PickpocketMod(int base, fo::GameObject* critter) {
 	for (DWORD i = 0; i < pickpocketMods.size(); i++) {
 		if (critter->id == pickpocketMods[i].id) {
 			return min(base + pickpocketMods[i].mod, pickpocketMods[i].maximum);
@@ -92,7 +92,7 @@ static void __declspec(naked) skill_check_stealing_hack() {
 		push edx;
 		push ecx;
 		mov  edx, esi;          // critter
-		mov  ecx, eax;          // base (calculate chance)
+		mov  ecx, eax;          // base (calculated chance)
 		call PickpocketMod;
 		pop  ecx;
 		pop  edx;
@@ -100,7 +100,7 @@ static void __declspec(naked) skill_check_stealing_hack() {
 	}
 }
 
-static int _fastcall CheckSkillMax(fo::GameObject* critter, int base) {
+static int __fastcall CheckSkillMax(fo::GameObject* critter, int base) {
 	for (DWORD i = 0; i < skillMaxMods.size(); i++) {
 		if (critter->id == skillMaxMods[i].id) {
 			return min(base, skillMaxMods[i].maximum);
@@ -109,13 +109,13 @@ static int _fastcall CheckSkillMax(fo::GameObject* critter, int base) {
 	return min(base, baseSkillMax.maximum);
 }
 
-static int _fastcall SkillNegative(fo::GameObject* critter, int base, int skill) {
+static int __fastcall SkillNegative(fo::GameObject* critter, int base, int skill) {
 	int rawPoints = skillNegPoints;
 	if (rawPoints) {
 		if (rawPoints < SKILL_MIN_LIMIT) rawPoints = SKILL_MIN_LIMIT;
 		rawPoints *= fo::var::skill_data[skill].skillPointMulti;
 		if (fo::func::skill_is_tagged(skill)) rawPoints *= 2;
-		base += rawPoints; // subtract the negative skill value after calculating the skill level
+		base += rawPoints; // add the negative skill points after calculating the skill level
 		if (base < 0) return max(-999, base);
 	}
 	return CheckSkillMax(critter, base);
@@ -185,7 +185,7 @@ static void __declspec(naked) skill_inc_point_hack() {
 	}
 }
 
-static int _fastcall GetStatBonus(fo::GameObject* critter, const fo::SkillInfo* info, int skill, int points) {
+static int __fastcall GetStatBonus(fo::GameObject* critter, const fo::SkillInfo* info, int skill, int points) {
 	double result = 0;
 	for (int i = 0; i < 7; i++) {
 		result += fo::func::stat_level(critter, i) * multipliers[skill * 7 + i];
@@ -314,9 +314,9 @@ void Skills::init() {
 	MakeCall(0x4AA847, skill_inc_point_force_hack);
 	MakeCall(0x4AA725, skill_inc_point_hack);
 
-	// fix for negative base value
+	// fix for negative skill points
 	HookCall(0x4AA574, skill_level_hook);
-	// change the lower limit of the negative value
+	// change the lower limit for negative skill points
 	MakeCall(0x4AAA84, skill_dec_point_hack_limit);
 	SafeWrite8(0x4AA91B,  SKILL_MIN_LIMIT);
 	SafeWrite8(0x4AAA1A,  SKILL_MIN_LIMIT);
@@ -326,9 +326,9 @@ void Skills::init() {
 	SafeWrite8(0x4ABC67, 0x89);                     // mov [esp + 0x54], eax
 	SafeWrite32(0x4ABC6B, 0x90909090);
 
-	// Adds an additional Energy Gun flag to the weapons flags (offset 0õ0018)
+	// Add an additional 'Energy Weapon' flag to the weapon flags (offset 0x0018)
 	// Weapon Flags:
-	// 0x00000400 – Energy Gun (weapons forcibly used energy skill)
+	// 0x00000400 - Energy Weapon (forces weapon to use Energy Weapons skill)
 	HookCall(0x47831E, item_w_skill_hook);
 
 	char buf[512], key[16];
@@ -401,7 +401,7 @@ void Skills::init() {
 		MakeJump(0x4AA59D, skill_level_hack_bonus, 1);
 		MakeJump(0x4AA738, skill_inc_point_hack_cost);
 		MakeJump(0x4AA940, skill_dec_point_hack_cost, 1);
-		HookCalls(skill_dec_point_hook_cost, { 0x4AA9E1, 0x4AA9F1 });
+		HookCalls(skill_dec_point_hook_cost, {0x4AA9E1, 0x4AA9F1});
 
 		basedOnPoints = GetPrivateProfileIntA("Skills", "BasedOnPoints", 0, file);
 		if (basedOnPoints) HookCall(0x4AA9EC, (void*)fo::funcoffs::skill_points_); // skill_dec_point_
