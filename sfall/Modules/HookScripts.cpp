@@ -238,16 +238,16 @@ static void HookScriptInit() {
 	if (!hooksFilesLoaded) { // hook files are already put to list
 		HookScripts::hookScriptFilesList.clear();
 
-	InitCombatHookScripts();
-	InitDeathHookScripts();
-	InitHexBlockingHookScripts();
-	InitInventoryHookScripts();
-	InitObjectHookScripts();
-	InitMiscHookScripts();
+		InitCombatHookScripts();
+		InitDeathHookScripts();
+		InitHexBlockingHookScripts();
+		InitInventoryHookScripts();
+		InitObjectHookScripts();
+		InitMiscHookScripts();
 
-	LoadHookScript("hs_keypress", HOOK_KEYPRESS);
-	LoadHookScript("hs_mouseclick", HOOK_MOUSECLICK);
-	LoadHookScript("hs_gamemodechange", HOOK_GAMEMODECHANGE);
+		LoadHookScript("hs_keypress", HOOK_KEYPRESS);
+		LoadHookScript("hs_mouseclick", HOOK_MOUSECLICK);
+		LoadHookScript("hs_gamemodechange", HOOK_GAMEMODECHANGE);
 
 		hooksFilesLoaded = !alwaysFindScripts;
 	} else {
