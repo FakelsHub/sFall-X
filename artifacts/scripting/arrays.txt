@@ -212,9 +212,11 @@ use macros sort_array, sort_array_reverse, reverse_array, shuffle_array from sfa
 - always returns 0
 
 > void save_array(mixed key, int arrayID):
+- makes the array savedable, this will save the array in the file when saving the game
 - arrayID is associated with given "key"
 - array becomes permanent (if it was temporary) and "saved"
 - key can be of any type (int, float or string)
+- if you specify 0 as the key for the array ID, this will make an array of the unsaved
 
 > int load_array(mixed key):
 - load array from savegame data by the same key provided in "save_array"
