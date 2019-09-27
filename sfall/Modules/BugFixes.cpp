@@ -18,6 +18,10 @@ static DWORD weightOnBody = 0;
 
 static char tempBuffer[355];
 
+/*
+	Saving a list of PIDs for saved drug effects
+	Note: the sequence of saving and loading the list is very important!
+*/
 std::list<int> drugsPid;
 
 static void __fastcall DrugPidPush(int pid) {
@@ -55,6 +59,7 @@ bool BugFixes::DrugsLoadFix(HANDLE file) {
 	}
 	return false;
 }
+///////////////////////////////////////////////////////////////////////////////
 
 void ResetBodyState() {
 	__asm mov critterBody, 0;
@@ -815,6 +820,26 @@ static void __declspec(naked) op_wield_obj_critter_adjust_ac_hook() {
 		call fo::funcoffs::adjust_ac_;
 		xor  eax, eax;                      // not animated
 		jmp  fo::funcoffs::intface_update_ac_;
+	}
+}
+
+static const DWORD partyMember_init_End = 0x493D16;
+static void __declspec(naked) NPCStage6Fix1() {
+	__asm {
+		mov  eax, 204;                      // set record size to 204 bytes
+		mul  edx;                           // multiply by number of NPC records in party.txt
+		mov  ebx, eax;                      // copy record size for later memset
+		call fo::funcoffs::mem_malloc_;     // malloc the necessary memory
+		jmp  partyMember_init_End;          // call memset to set all malloc'ed memory to 0
+	}
+}
+
+static const DWORD partyMemberGetAIOptions_End = 0x49423A;
+static void __declspec(naked) NPCStage6Fix2() {
+	__asm {
+		imul edx, 204;                      // multiply record size 204 bytes by NPC number as listed in party.txt
+		mov  eax, dword ptr ds:[FO_VAR_partyMemberAIOptions]; // get starting offset of internal NPC table
+		jmp  partyMemberGetAIOptions_End;   // eax + edx = offset of specific NPC record
 	}
 }
 
@@ -2467,9 +2492,19 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	//}
 
+	// Fix party members with level 6 protos to reach level 6
+	//if (GetConfigInt("Misc", "NPCStage6Fix", 0)) {
+		dlog("Applying NPC Stage 6 Fix.", DL_INIT);
+		MakeJump(0x493CE9, NPCStage6Fix1); // partyMember_init_
+		MakeJump(0x494224, NPCStage6Fix2); // partyMemberGetAIOptions_
+		SafeWrite8(0x494063, 6);   // loop should look for a potential 6th stage (partyMember_init_)
+		SafeWrite8(0x4940BB, 204); // move pointer by 204 bytes instead of 200
+		dlogr(" Done", DL_INIT);
+	//}
+
 	//if (GetConfigInt("Misc", "NPCLevelFix", 1)) {
 		dlog("Applying NPC level fix.", DL_INIT);
-		HookCall(0x495BC9, (void*)0x495E51);
+		HookCall(0x495BC9, (void*)0x495E51); // jz 0x495E7F >> jz 0x495E51
 		dlogr(" Done", DL_INIT);
 	//}
 
