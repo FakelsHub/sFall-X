@@ -11,6 +11,7 @@ namespace sfall
 {
 using namespace fo;
 using namespace Fields;
+using namespace ObjectFlag;
 
 static DWORD critterBody = 0;
 static DWORD sizeOnBody = 0;
@@ -393,7 +394,7 @@ nextArmor:
 		call fo::funcoffs::inven_worn_
 		test eax, eax
 		jz   noArmor
-		and  byte ptr [eax+0x27], 0xFB            // Unset the flag of equipped armor
+		and  byte ptr [eax + flags+3], ~Worn >> 24; // Unset the flag of equipped armor
 		jmp  nextArmor
 noArmor:
 		mov  eax, esi
@@ -403,16 +404,52 @@ noArmor:
 
 static void __declspec(naked) correctFidForRemovedItem_hook_adjust_ac() {
 	__asm {
-		call fo::funcoffs::adjust_ac_
+		call fo::funcoffs::adjust_ac_;
 nextArmor:
-		mov  eax, esi
-		call fo::funcoffs::inven_worn_
-		test eax, eax
-		jz   end
-		and  byte ptr [eax+0x27], 0xFB            // Unset flag of equipped armor
-		jmp  nextArmor
+		mov  eax, esi;
+		call fo::funcoffs::inven_worn_;
+		test eax, eax;
+		jz   end;
+		and  byte ptr [eax + flags+3], ~Worn >> 24; // Unset flag of equipped armor
+		jmp  nextArmor;
 end:
-		retn
+		retn;
+	}
+}
+
+static void __declspec(naked) op_move_obj_inven_to_obj_hook() {
+	__asm {
+		jz   skip;                     // source == dude
+		mov  eax, edx;
+		call fo::funcoffs::isPartyMember_;
+		test eax, eax;                 // source is party member?
+		jnz  skip;
+		retn;                          // must be eax = 0
+skip:
+		mov  eax, edx;
+		call fo::funcoffs::inven_worn_;
+		cmp  edx, ecx;                 // source(edx) == dude(ecx)
+		jz   dudeFix;
+		test eax, eax;
+		jz   end;
+		mov  ecx, edx;
+		xor  ebx, ebx;                 // new armor
+		xchg eax, edx;                 // set: eax - source, edx - remove armor
+		call fo::funcoffs::adjust_ac_; // fix for party member
+		mov  edx, ecx;
+		xor  eax, eax;
+end:
+		retn;                          // must be eax = 0
+dudeFix:
+		test eax, eax;
+		jz   equipped;                 // no armor
+		// additional check flag of equipped armor for dude
+		test byte ptr [eax + flags+3], Worn >> 24;
+		jnz  equipped;
+		xor  eax, eax;
+equipped:
+		or   cl, 1;                    // reset ZF
+		retn;
 	}
 }
 
@@ -826,8 +863,7 @@ static void __declspec(naked) op_wield_obj_critter_adjust_ac_hook() {
 static const DWORD partyMember_init_End = 0x493D16;
 static void __declspec(naked) NPCStage6Fix1() {
 	__asm {
-		mov  eax, 204;                      // set record size to 204 bytes
-		mul  edx;                           // multiply by number of NPC records in party.txt
+		imul eax, edx, 204;                 // multiply record size to 204 bytes by number of NPC records in party.txt
 		mov  ebx, eax;                      // copy record size for later memset
 		call fo::funcoffs::mem_malloc_;     // malloc the necessary memory
 		jmp  partyMember_init_End;          // call memset to set all malloc'ed memory to 0
@@ -2432,6 +2468,10 @@ void BugFixes::init()
 		dlog("Applying fix for armor reducing NPC original stats when removed.", DL_INIT);
 		HookCall(0x495F3B, partyMemberCopyLevelInfo_hook_stat_level);
 		HookCall(0x45419B, correctFidForRemovedItem_hook_adjust_ac);
+		// fix for op_move_obj_inven_to_obj
+		HookCall(0x45C49A, op_move_obj_inven_to_obj_hook);
+		SafeWrite16(0x45C496, 0x9090);
+		SafeWrite8(0x45C4A3, 0x75); // jmp >> jnz
 		dlogr(" Done", DL_INIT);
 	//}
 
@@ -2554,9 +2594,10 @@ void BugFixes::init()
 	// Fix for op_lookup_string_proc_ engine function not searching the last procedure in a script
 	SafeWrite8(0x46C7AC, 0x76); // jb > jbe
 
+	// Update the counter AC
 	//if (GetConfigInt("Misc", "WieldObjCritterFix", 1)) {
 		dlog("Applying wield_obj_critter fix.", DL_INIT);
-		SafeWrite8(0x456912, 0x1E);
+		SafeWrite8(0x456912, 0x1E); // jnz 0x456931
 		HookCall(0x45697F, op_wield_obj_critter_adjust_ac_hook);
 		dlogr(" Done", DL_INIT);
 	//}

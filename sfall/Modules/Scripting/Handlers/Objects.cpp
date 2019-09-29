@@ -226,7 +226,7 @@ void sf_make_straight_path(OpcodeContext& ctx) {
 	DWORD tileTo = ctx.arg(1).asInt(),
 		  type = ctx.arg(2).asInt();
 
-	long flag = (type == BLOCKING_TYPE_SHOOT) ? 32 : 0;
+	long flag = (type == BLOCKING_TYPE_SHOOT) ? 32 : 0; // TODO: Maybe need to use a different 4/16 value instead of zero
 	DWORD resultObj = 0;
 	fo::func::make_straight_path_func(objFrom, objFrom->tile, tileTo, 0, &resultObj, flag, (void*)getBlockingFunc(type));
 	ctx.setReturn(resultObj, DataType::INT);
@@ -435,13 +435,23 @@ void sf_get_loot_object(OpcodeContext& ctx) {
 }
 
 void sf_get_object_data(OpcodeContext& ctx) {
-	BYTE* object_ptr = (BYTE*)ctx.arg(0).asObject();
-	ctx.setReturn(*(long*)(object_ptr + ctx.arg(1).asInt()), DataType::INT);
+	DWORD result = 0;
+	DWORD* object_ptr = (DWORD*)ctx.arg(0).rawValue();
+	if (*(object_ptr - 1) != 0xFEEDFACE) {
+		ctx.printOpcodeError("%s() - invalid object pointer.", ctx.getMetaruleName());
+	} else {
+		result = *(long*)((BYTE*)object_ptr + ctx.arg(1).rawValue());
+	}
+	ctx.setReturn(result, DataType::INT);
 }
 
 void sf_set_object_data(OpcodeContext& ctx) {
-	BYTE* object_ptr = (BYTE*)ctx.arg(0).asObject();
-	*(long*)(object_ptr + ctx.arg(1).asInt()) = ctx.arg(2).asInt();
+	DWORD* object_ptr = (DWORD*)ctx.arg(0).rawValue();
+	if (*(object_ptr - 1) != 0xFEEDFACE) {
+		ctx.printOpcodeError("%s() - invalid object pointer.", ctx.getMetaruleName());
+	} else {
+		*(long*)((BYTE*)object_ptr + ctx.arg(1).rawValue()) = ctx.arg(2).rawValue();
+	}
 }
 
 void sf_get_object_ai_data(OpcodeContext& ctx) {
