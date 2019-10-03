@@ -465,7 +465,7 @@ static fo::GameObject* __fastcall PartyMemberBestArmor(register fo::GameObject* 
 	fo::GameObject* bestItem = fo::func::ai_search_inven_armor(partyMember);
 
 	if ((wornItem && bestItem == nullptr) || (bestItem && wornItem && bestItem->protoId == wornItem->protoId)) {
-		if (CorrectFidForRemovedItem_HookRun(partyMember, wornItem) == 0) {
+		if (CorrectFidForRemovedItem_wHook(partyMember, wornItem, fo::ObjectFlag::Worn) == 0) {
 			return nullptr; // unwield behavior
 		}
 	}
