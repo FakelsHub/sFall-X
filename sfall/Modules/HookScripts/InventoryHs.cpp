@@ -448,13 +448,14 @@ static void __declspec(naked) CorrectFidForRemovedItemHook() {
 }
 
 void __declspec(naked) item_drop_all_hack() {
-	using namespace fo;
-	using namespace ObjectFlag;
+	using namespace fo::ObjectFlag;
 	__asm {
+		mov  ecx, 1;
 		push eax;
-		push 1;  // remove event
-		push 0;  // unwield event
-		mov  ecx, INVEN_TYPE_LEFT_HAND;
+		mov  [esp + 0x40 - 0x2C + 8], ecx; // itemIsEquipped
+		push ecx; // remove event
+		push 0;   // unwield event
+		inc  ecx; // INVEN_TYPE_LEFT_HAND (2)
 		test ah, Left_Hand >> 24;
 		jnz  skip;
 		test ah, Worn >> 24;
@@ -464,7 +465,7 @@ skip:
 		mov  edx, esi; // item
 		mov  ecx, edi; // critter
 		call InvenWieldHook_Script;
-		mov  [esp + 0x40 - 0x2C + 8], eax; // itemIsEquipped (hook return result)
+		//mov  [esp + 0x40 - 0x2C + 8], eax; // itemIsEquipped (eax - hook return result)
 		pop  eax;
 		retn;
 	}
@@ -639,7 +640,7 @@ void Inject_InvenWieldHook() {
 }
 
 // internal function implementation with hook
-long __fastcall CorrectFidForRemovedItem_wHook(fo::GameObject* critter, fo::GameObject* item, long flags) {
+long CorrectFidForRemovedItem_wHook(fo::GameObject* critter, fo::GameObject* item, long flags) {
 	long result = 0;
 	if (!hooks[HOOK_INVENWIELD].empty()) {
 		long slot = fo::INVEN_TYPE_WORN;

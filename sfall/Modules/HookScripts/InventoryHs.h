@@ -13,7 +13,7 @@ void Inject_SwitchHandHook();
 void Inject_InventoryMoveHook();
 void Inject_InvenWieldHook();
 
-long __fastcall CorrectFidForRemovedItem_wHook(fo::GameObject* critter, fo::GameObject* item, long flags);
+long CorrectFidForRemovedItem_wHook(fo::GameObject* critter, fo::GameObject* item, long flags);
 void InvenUnwield_HookDrop();
 void InvenUnwield_HookMove();
 

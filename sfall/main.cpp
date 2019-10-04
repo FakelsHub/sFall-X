@@ -34,6 +34,7 @@
 #include "Modules\CRC.h"
 #include "Modules\Credits.h"
 #include "Modules\Criticals.h"
+#include "Modules\CritterStats.h"
 #include "Modules\DamageMod.h"
 #include "Modules\DebugEditor.h"
 #include "Modules\Drugs.h"
@@ -159,6 +160,7 @@ static void InitModules() {
 	manager.add<PlayerModel>();
 	manager.add<Worldmap>();
 	manager.add<Stats>();
+	manager.add<CritterStats>();
 	manager.add<Perks>();
 	manager.add<Combat>();
 	manager.add<Skills>();
