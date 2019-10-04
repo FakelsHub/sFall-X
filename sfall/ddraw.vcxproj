@@ -415,7 +415,7 @@
     <ClInclude Include="Modules\Scripting\Handlers\Worldmap.h" />
     <ClInclude Include="Modules\ScriptShaders.h" />
     <ClInclude Include="SimplePatch.h" />
-    <ClInclude Include="Modules\CRC.h" />
+    <ClInclude Include="CRC.h" />
     <ClInclude Include="Modules\Credits.h" />
     <ClInclude Include="Modules\Criticals.h" />
     <ClInclude Include="Modules\DebugEditor.h" />
@@ -486,7 +486,7 @@
     <ClCompile Include="Modules\BugFixes.cpp" />
     <ClCompile Include="Modules\BurstMods.cpp" />
     <ClCompile Include="Modules\Console.cpp" />
-    <ClCompile Include="Modules\CRC.cpp" />
+    <ClCompile Include="CRC.cpp" />
     <ClCompile Include="Modules\Credits.cpp" />
     <ClCompile Include="Modules\Criticals.cpp" />
     <ClCompile Include="ddraw.cpp" />

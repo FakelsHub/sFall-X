@@ -549,6 +549,7 @@ skip:
 		sub  ebx, edx;
 		push ebx;      // slot: INVEN_TYPE_LEFT_HAND or INVEN_TYPE_RIGHT_HAND
 		mov  edx, eax; // weapon
+		mov  ebx, ecx; // keep source
 		call InvenWieldHook_Script; // ecx - source
 		// engine handler is not overridden
 noweapon:
@@ -559,7 +560,8 @@ noweapon:
 		push 1;   // remove event
 		push eax; // unwield event
 		push eax; // slot: INVEN_TYPE_WORN
-		call InvenWieldHook_Script; // ecx - source
+		mov  ecx, ebx; // source
+		call InvenWieldHook_Script;
 		// engine handler is not overridden
 noArmor:
 		pop  edx;
