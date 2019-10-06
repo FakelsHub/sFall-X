@@ -552,7 +552,7 @@ skip:
 		mov  ebx, ecx; // keep source
 		call InvenWieldHook_Script; // ecx - source
 		// engine handler is not overridden
-noweapon:
+noWeapon:
 		mov  edx, [esp + 0x30 - 0x20 + 12]; // armor
 		test edx, edx;
 		jz   noArmor;
@@ -643,7 +643,7 @@ void Inject_InvenWieldHook() {
 
 // internal function implementation with hook
 long CorrectFidForRemovedItem_wHook(fo::GameObject* critter, fo::GameObject* item, long flags) {
-	long result = 0;
+	long result = 1;
 	if (!hooks[HOOK_INVENWIELD].empty()) {
 		long slot = fo::INVEN_TYPE_WORN;
 		if (flags & fo::ObjectFlag::Right_Hand) {       // right hand slot
@@ -653,7 +653,7 @@ long CorrectFidForRemovedItem_wHook(fo::GameObject* critter, fo::GameObject* ite
 		}
 		result = InvenWieldHook_Script(critter, item, slot, 0, 0);
 	}
-	fo::func::correctFidForRemovedItem(critter, item, flags);
+	if (result) fo::func::correctFidForRemovedItem(critter, item, flags);
 	return result;
 }
 
