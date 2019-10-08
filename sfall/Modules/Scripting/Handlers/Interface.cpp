@@ -496,11 +496,14 @@ void sf_unwield_slot(OpcodeContext& ctx) {
 			if (!item) {
 				item = fo::func::inven_worn(critter);
 			} else {
+				fo::var::i_worn = nullptr;
 				forceAdd = true;
 			}
 			if (item) {
-				if (!CorrectFidForRemovedItem_wHook(critter, item, fo::ObjectFlag::Worn)) return;
-				if (forceAdd) fo::var::i_worn = nullptr;
+				if (!CorrectFidForRemovedItem_wHook(critter, item, fo::ObjectFlag::Worn)) {
+					if (forceAdd) fo::var::i_worn = item;
+					return;
+				}
 				if (isDude) fo::func::intface_update_ac(0);
 			}
 		}
