@@ -1,8 +1,6 @@
 
 #include "main.h"
 
-#pragma warning(disable:4996)
-
 namespace sfall
 {
 
