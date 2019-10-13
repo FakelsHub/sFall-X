@@ -472,6 +472,7 @@ static void PrepareGlobalScriptsListByMask() {
 
 		for (int i = 0; i < count; i++) {
 			char* name = _strlwr(filenames[i]); // name of the script in lower case
+			if (name[0] != 'g' || name[1] != 'l') continue; // fix bug db_get_file_list engine fuction (if the script name begin with non a Latin characters)
 
 			std::string baseName(name);
 			int lastDot = baseName.find_last_of('.');

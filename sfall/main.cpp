@@ -102,16 +102,20 @@ DWORD HRPAddressOffset(DWORD offset) {
 	return (hrpDLLBaseAddr + offset);
 }
 
-unsigned int GetConfigInt(const char* section, const char* setting, int defaultValue) {
-	return GetPrivateProfileIntA(section, setting, defaultValue, ini);
+size_t iniGetString(const char* section, const char* setting, const char* defaultValue, char* buf, size_t bufSize, const char* iniFile) {
+	return GetPrivateProfileStringA(section, setting, defaultValue, buf, bufSize, iniFile);
+}
+
+int iniGetInt(const char* section, const char* setting, int defaultValue, const char* iniFile) {
+	return GetPrivateProfileIntA(section, setting, defaultValue, iniFile);
 }
 
 std::string GetIniString(const char* section, const char* setting, const char* defaultValue, size_t bufSize, const char* iniFile) {
 	char* buf = new char[bufSize];
-	GetPrivateProfileStringA(section, setting, defaultValue, buf, bufSize, iniFile);
+	iniGetString(section, setting, defaultValue, buf, bufSize, iniFile);
 	std::string str(buf);
 	delete[] buf;
-	return trim(str);
+	return str;
 }
 
 std::vector<std::string> GetIniList(const char* section, const char* setting, const char* defaultValue, size_t bufSize, char delimiter, const char* iniFile) {
@@ -120,12 +124,19 @@ std::vector<std::string> GetIniList(const char* section, const char* setting, co
 	return list;
 }
 
+/*
+	For ddraw.ini config
+*/
+unsigned int GetConfigInt(const char* section, const char* setting, int defaultValue) {
+	return iniGetInt(section, setting, defaultValue, ini);
+}
+
 std::string GetConfigString(const char* section, const char* setting, const char* defaultValue, size_t bufSize) {
-	return GetIniString(section, setting, defaultValue, bufSize, ini);
+	return trim(GetIniString(section, setting, defaultValue, bufSize, ini));
 }
 
 size_t GetConfigString(const char* section, const char* setting, const char* defaultValue, char* buf, size_t bufSize) {
-	return GetPrivateProfileStringA(section, setting, defaultValue, buf, bufSize, ini);
+	return iniGetString(section, setting, defaultValue, buf, bufSize, ini);
 }
 
 std::vector<std::string> GetConfigList(const char* section, const char* setting, const char* defaultValue, size_t bufSize) {
@@ -137,7 +148,7 @@ std::string Translate(const char* section, const char* setting, const char* defa
 }
 
 size_t Translate(const char* section, const char* setting, const char* defaultValue, char* buffer, size_t bufSize) {
-	return GetPrivateProfileStringA(section, setting, defaultValue, buffer, bufSize, translationIni);
+	return iniGetString(section, setting, defaultValue, buffer, bufSize, translationIni);
 }
 
 static void InitModules() {
@@ -262,8 +273,8 @@ inline void SfallInit() {
 			is64bit=0;
 		FreeLibrary(h);
 
-		CompatModeCheck(HKEY_CURRENT_USER, filepath, is64bit?KEY_WOW64_64KEY:0);
-		CompatModeCheck(HKEY_LOCAL_MACHINE, filepath, is64bit?KEY_WOW64_64KEY:0);
+		CompatModeCheck(HKEY_CURRENT_USER, filepath, is64bit ? KEY_WOW64_64KEY : 0);
+		CompatModeCheck(HKEY_LOCAL_MACHINE, filepath, is64bit ? KEY_WOW64_64KEY : 0);
 	}
 
 	// ini file override
