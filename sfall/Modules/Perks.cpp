@@ -29,6 +29,8 @@ namespace sfall
 {
 using namespace fo;
 
+long Perks::PerkLevelMod = 0;
+
 constexpr int maxNameLen = 64;   // don't change size
 constexpr int maxDescLen = 512;  // don't change size
 static const int descLen = 256;  // maximum text length for interface
@@ -1287,9 +1289,11 @@ void PerksReset() {
 
 	// Reset some settable game values back to the defaults
 	// Perk level mod
-	SafeWrite32(0x496880, 0x019078);
+	Perks::PerkLevelMod = 0;
 	// Pyromaniac bonus
 	SafeWrite8(0x424AB6, 5);
+	// Swift Learner bonus
+	SafeWrite32(0x4AFAE2, 100);
 	// Restore 'Heave Ho' modify fix
 	if (perkHeaveHoModFix) {
 		SafeWrite8(0x478AC4, 0xBA);
@@ -1438,15 +1442,19 @@ void PerksAcceptCharScreen() {
 }
 
 void Perks::init() {
+	LoadGameHook::OnGameReset() += PerksReset;
+
 	FastShotTraitFix();
 
 	for (int i = STAT_st; i <= STAT_lu; i++) SafeWrite8(GainStatPerks[i][0], (BYTE)GainStatPerks[i][1]);
 
 	PerkEngineInit();
 	HookCall(0x442729, PerkInitWrapper);      // game_init_
+
 	if (GetConfigString("Misc", "PerksFile", "", &perksFile[2], MAX_PATH - 3)) {
 		perksFile[0] = '.';
 		perksFile[1] = '\\';
+		if (GetFileAttributes(perksFile) == INVALID_FILE_ATTRIBUTES) return;
 
 		perksEnable = iniGetInt("Perks", "Enable", 1, perksFile);
 		if (iniGetInt("Traits", "Enable", 1, perksFile)) {
@@ -1475,7 +1483,6 @@ void Perks::init() {
 			SafeWrite8(0x4251CE, static_cast<signed char>(-enginePerkMod));
 		}
 	}
-	LoadGameHook::OnGameReset() += PerksReset;
 }
 
 }
