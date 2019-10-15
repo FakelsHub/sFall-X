@@ -2412,6 +2412,43 @@ static void __declspec(naked) map_check_state_hook() {
 	}
 }
 
+static void __declspec(naked) op_critter_rm_trait_hook() {
+	__asm {
+		mov  ebx, [esp + 0x34 - 0x34 + 4]; // amount
+		test ebx, ebx;
+		jz   skip;
+		call fo::funcoffs::perk_level_;
+		test eax, eax;
+		jz   end;
+		dec  dword ptr [esp + 0x34 - 0x34 + 4];
+		test ebx, ebx;
+		jnz  end; // continue if amount != 0
+skip:
+		xor  eax, eax; // exit loop
+end:
+		retn;
+	}
+}
+
+static void __declspec(naked) op_critter_add_trait_hook() {
+	__asm {
+		mov  edi, edx; // perk id
+		mov  ebp, eax; // source
+		mov  ebx, [esp + 0x34 - 0x34 + 4]; // amount
+addLoop:
+		call fo::funcoffs::perk_add_force_;
+		test eax, eax;
+		jnz  end; // can't add
+		mov  edx, edi;
+		mov  eax, ebp;
+		dec  ebx;
+		jnz  addLoop;
+		xor  eax, eax;
+end:
+		retn;
+	}
+}
+
 void BugFixes::init()
 {
 	#ifndef NDEBUG
@@ -3049,6 +3086,12 @@ void BugFixes::init()
 
 	// Remove dublicate code for intface_redraw_ function
 	BlockCall(0x45EBBF);
+
+	// Fixed 'amount' argument of the critter_rm_trait/critter_add_trait script functions does not takes account of the value this argument
+	// Note: pass to negative amount value for critter_rm_trait to remove all level of perks (vanilla behavior)
+	HookCall(0x458CDB, op_critter_rm_trait_hook);
+	HookCall(0x458B3D, op_critter_add_trait_hook);
+
 }
 
 }
