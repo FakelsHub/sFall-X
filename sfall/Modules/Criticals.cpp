@@ -79,6 +79,7 @@ void Criticals::ResetCriticalTable(DWORD critter, DWORD bodypart, DWORD slot, DW
 static int CritTableLoad() {
 	if (mode == 1) {
 		dlog("\n  Setting up critical hit table using CriticalOverrides.ini file (old fmt)", DL_CRITICALS);
+		if (GetFileAttributes(critTableFile.c_str()) == INVALID_FILE_ATTRIBUTES) return 1;
 		char section[16];
 		for (DWORD critter = 0; critter < 20; critter++) {
 			for (DWORD part = 0; part < 9; part++) {
@@ -88,7 +89,7 @@ static int CritTableLoad() {
 					fo::CritInfo& newEffect = baseCritTable[newCritter][part][crit];
 					fo::CritInfo& defaultEffect = fo::var::crit_succ_eff[critter][part][crit];
 					for (int i = 0; i < 7; i++) {
-						newEffect.values[i] = GetPrivateProfileIntA(section, critNames[i], defaultEffect.values[i], critTableFile.c_str());
+						newEffect.values[i] = iniGetInt(section, critNames[i], defaultEffect.values[i], critTableFile.c_str());
 						if (isDebug) {
 							char logmsg[256];
 							if (newEffect.values[i] != defaultEffect.values[i]) {
@@ -110,15 +111,16 @@ static int CritTableLoad() {
 
 		if (mode == 3) {
 			dlog(" and CriticalOverrides.ini file", DL_CRITICALS);
+			if (GetFileAttributes(critTableFile.c_str()) == INVALID_FILE_ATTRIBUTES) return 1;
 			char buf[32], buf2[32], buf3[32];
 			for (int critter = 0; critter < Criticals::critTableCount; critter++) {
 				sprintf_s(buf, "c_%02d", critter);
 				int all;
-				if (!(all = GetPrivateProfileIntA(buf, "Enabled", 0, critTableFile.c_str()))) continue;
+				if (!(all = iniGetInt(buf, "Enabled", 0, critTableFile.c_str()))) continue;
 				for (int part = 0; part < 9; part++) {
 					if (all < 2) {
 						sprintf_s(buf2, "Part_%d", part);
-						if (!GetPrivateProfileIntA(buf, buf2, 0, critTableFile.c_str())) continue;
+						if (!iniGetInt(buf, buf2, 0, critTableFile.c_str())) continue;
 					}
 
 					sprintf_s(buf2, "c_%02d_%d", critter, part);
@@ -137,13 +139,13 @@ static int CritTableLoad() {
 									} catch (...) {
 										char msgbuff[128];
 										sprintf_s(msgbuff, "Incorrect value of the EffectFlags parameter in the section [%s] of the table.", buf2);
-										MessageBoxA(0, msgbuff, "Critical table file", MB_TASKMODAL);
+										MessageBoxA(0, msgbuff, "Critical table file", MB_TASKMODAL | MB_ICONERROR);
 										return -1;
 									}
 								}
 								effect.values[i] = value;
 							} else {
-								effect.values[i] = GetPrivateProfileIntA(buf2, buf3, effect.values[i], critTableFile.c_str());
+								effect.values[i] = iniGetInt(buf2, buf3, effect.values[i], critTableFile.c_str());
 							}
 						}
 					}

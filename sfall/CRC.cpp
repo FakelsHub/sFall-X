@@ -83,7 +83,7 @@ void CRC(const char* filepath) {
 	DWORD size = GetFileSize(h, 0), crc;
 	bool sizeMatch = (size == ExpectedSize);
 
-	if (!sizeMatch && GetPrivateProfileIntA("Debugging", "SkipSizeCheck", 0, ::sfall::ddrawIni)) {
+	if (!sizeMatch && iniGetInt("Debugging", "SkipSizeCheck", 0, ::sfall::ddrawIni)) {
 		sizeMatch = true;
 	}
 
