@@ -739,7 +739,7 @@ void DisplayElectricalStatPatch() {
 	if (displayElectricalStat) {
 		dlog("Applying display of the electrical resist stat of armor patch.", DL_INIT);
 		Translate("sfall", "DisplayStatHP", "HP:", hitPointMsg, 8); // short variant
-		Translate("sfall", "DisplayStatEL", "  Electric", electricalMsg, 10);
+		Translate("sfall", "DisplayStatEL", " Electr.", electricalMsg, 10);
 		HookCall(0x471E55, display_stats_hook_hp);
 		HookCall(0x471FA7, display_stats_hook_electrical);
 		SafeWrite32(0x471D72, (DWORD)&StatsDisplayTable);

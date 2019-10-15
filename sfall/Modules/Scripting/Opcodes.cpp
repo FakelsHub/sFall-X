@@ -86,7 +86,7 @@ static SfallOpcodeInfo opcodeInfoArray[] = {
 	{0x19e, "get_sfall_global_int",      sf_get_sfall_global_int,      1, true,  {ARG_INTSTR}},
 	{0x19f, "get_sfall_global_float",    sf_get_sfall_global_float,    1, true,  {ARG_INTSTR}},
 	{0x1a5, "inc_npc_level",             sf_inc_npc_level,             1, false, {ARG_INTSTR}},
-	{0x1aa, "op_set_xp_mod",             sf_set_xp_mod,                1, false, {ARG_INT}},
+	{0x1aa, "set_xp_mod",                sf_set_xp_mod,                1, false, {ARG_INT}},
 	{0x1ac, "get_ini_setting",           sf_get_ini_setting,           1, true,  {ARG_STRING}},
 
 	{0x1bb, "set_fake_perk",             sf_set_fake_perk,             4, false, {ARG_STRING, ARG_INT, ARG_INT, ARG_STRING}},
