@@ -55,7 +55,7 @@ void __declspec(naked) op_remove_script() {
 		cmp eax, 0xffffffff;
 		jz end;
 		call fo::funcoffs::scr_remove_;
-		mov dword ptr[edx + 0x78], 0xffffffff;
+		mov dword ptr [edx + 0x78], 0xffffffff;
 end:
 		pop edx;
 		pop ecx;
@@ -91,7 +91,7 @@ void __declspec(naked) op_set_script() {
 		mov eax, esi;
 		call fo::funcoffs::scr_remove_;
 		pop eax;
-		mov dword ptr[eax + 0x78], 0xffffffff;
+		mov dword ptr [eax + 0x78], 0xffffffff;
 newscript:
 		mov esi, 1;
 		test ebx, 0x80000000;
@@ -435,7 +435,7 @@ void sf_get_loot_object(OpcodeContext& ctx) {
 	ctx.setReturn((GetLoopFlags() & INTFACELOOT) ? LoadGameHook::LootTarget : 0);
 }
 
-static const char* failedLoad = "%s() - failed to load a prototype id: %d";
+static const char* failedLoad = "%s() - failed to load a prototype ID: %d";
 static bool protoMaxLimitPatch = false;
 
 void sf_get_proto_data(OpcodeContext& ctx) {

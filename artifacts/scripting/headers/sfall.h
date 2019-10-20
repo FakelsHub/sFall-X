@@ -19,7 +19,7 @@
 #define BARTER      (0x20000)
 #define HEROWIN     (0x40000)
 #define DIALOGVIEW  (0x80000)
-#define COUNTERWIN  (0x100000) // window input the number of moved items or setting a timer
+#define COUNTERWIN  (0x100000) // counter window for moving multiple items or setting a timer
 
 //Valid arguments to register_hook
 #define HOOK_TOHIT            (0)
@@ -76,7 +76,7 @@
 
 //Valid flags for force_encounter_with_flags
 #define ENCOUNTER_FLAG_NO_CAR   (1)
-#define ENCOUNTER_FLAG_LOCK     (2) // block new forced encounter by the next executes function until the current specified encounter occurs
+#define ENCOUNTER_FLAG_LOCK     (2) // block new forced encounter by the next function call until the current specified encounter occurs
 
 //The attack types returned by get_attack_type
 #define ATKTYPE_LWEP1           (0)
@@ -250,6 +250,7 @@
 // sfall_funcX macros
 #define add_extra_msg_file(name)                        sfall_func1("add_extra_msg_file", name)
 #define add_iface_tag                                   sfall_func0("add_iface_tag")
+#define add_trait(traitId)                              sfall_func1("add_trait", traitId)
 #define art_cache_clear                                 sfall_func0("art_cache_clear")
 #define attack_is_aimed                                 sfall_func0("attack_is_aimed")
 #define car_gas_amount                                  sfall_func0("car_gas_amount")
@@ -309,7 +310,7 @@
 #define spatial_radius(obj)                             sfall_func1("spatial_radius", obj)
 #define tile_refresh_display                            sfall_func0("tile_refresh_display")
 #define unjam_lock(obj)                                 sfall_func1("unjam_lock", obj)
-#define unwield_slot(npc, slot)                         sfall_func2("unwield_slot", obj, slot)
+#define unwield_slot(critter, slot)                     sfall_func2("unwield_slot", critter, slot)
 
 #define set_fake_perk_npc(npc, perk, level, image, desc)        sfall_func5("set_fake_perk_npc", npc, perk, level, image, desc)
 #define set_fake_trait_npc(npc, trait, active, image, desc)     sfall_func5("set_fake_trait_npc", npc, trait, active, image, desc)
