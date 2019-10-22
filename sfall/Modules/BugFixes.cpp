@@ -2457,7 +2457,7 @@ void BugFixes::init()
 	#endif
 
 	// Missing game initialization
-	LoadGameHook::OnGameInit() += Initialization;
+	LoadGameHook::OnBeforeGameInit() += Initialization;
 
 	// Fix vanilla negate operator on float values
 	MakeCall(0x46AB68, NegateFixHack);
