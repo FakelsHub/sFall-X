@@ -310,6 +310,23 @@ hide:
 	}
 }
 
+static char* debugMsg0 = "Error: file not found: %s\n";
+static void __declspec(naked) art_data_size_hook() {
+	__asm {
+		test edi, edi;
+		jz   artNotExist;
+		retn;
+artNotExist:
+		mov  eax, [esp + 0x124 - 0x1C + 4]; // filename
+		push eax;
+		push debugMsg0;
+		call fo::funcoffs::debug_printf_;
+		add  esp, 8;
+		int  3; // break program
+		retn;
+	}
+}
+
 static void __declspec(naked) win_debug_hook() {
 	__asm {
 		call fo::funcoffs::debug_log_;
@@ -345,6 +362,9 @@ void DebugModePatch() {
 		if (iniGetInt("Debugging", "HideObjIsNullMsg", 0, ::sfall::ddrawIni)) {
 			MakeJump(0x453FD2, dbg_error_hack);
 		}
+		// interrupts game execution and adds a debug message about missing art file for critters
+		HookCall(0x419B65, art_data_size_hook);
+
 		dlogr(" Done", DL_INIT);
 	}
 }

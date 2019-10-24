@@ -219,7 +219,7 @@ static void InitModules() {
 static const DWORD loadFunc = 0x4FE1D0;
 static void LoadingHRPModule() {
 	HMODULE dll;
-	_asm call loadFunc; // loading HRP dll
+	_asm call loadFunc; // get HRP loading address 
 	_asm mov  dll, eax;
 	if (dll != NULL) hrpDLLBaseAddr = (DWORD)dll;
 	dlog_f("Loaded f2_res.dll library at the memory address: 0x%x\n", DL_MAIN, dll);
@@ -322,7 +322,6 @@ defaultIni:
 
 	hrpIsEnabled = (*(DWORD*)0x4E4480 != 0x278805C7); // check enabled HRP
 	if (hrpIsEnabled) {
-		BlockCall(0x4E4480);
 		LoadingHRPModule();
 		if (strncmp((const char*)HRPAddressOffset(0x39940), "4.1.8", 5) == 0) hrpVersionValid = true;
 	}
