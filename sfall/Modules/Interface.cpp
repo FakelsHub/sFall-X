@@ -140,7 +140,7 @@ skip:
 	}
 }
 
-static void ActionPointDrawNumbers() {
+static void DrawActionPointsNumber() {
 	MakeCall(0x4604B0, intface_redraw_items_hack_0);
 	MakeCall(0x460504, intface_redraw_items_hack_1);
 	SafeWrite16(0x4604D4, 0x9052); // push 10 > push edx
@@ -522,12 +522,53 @@ static void WorldMapInterfacePatch() {
 	SafeWrite8(0x4C5289, 12);
 }
 
+static void __declspec(naked) intface_rotate_numbers_hack() {
+	__asm {
+		push edi;
+		push ebp;
+		sub  esp, 0x54;
+		mov  edi, 0x460BA6;
+		// ebx - old value, ecx - new value
+		cmp  ebx, ecx;
+		je   end;
+		mov  ebx, ecx;
+		jg   decrease;
+		dec  ebx;
+end:
+		jmp  edi;
+decrease:
+		test ecx, ecx;
+		jl   negative;
+		inc  ebx;
+		jmp  edi;
+negative:
+		xor  ebx, ebx;
+		jmp  edi;
+	}
+}
+
+void SpeedInterfaceCounterAnimsPatch() {
+	switch (GetConfigInt("Misc", "SpeedInterfaceCounterAnims", 0)) {
+	case 1:
+		dlog("Applying SpeedInterfaceCounterAnims patch.", DL_INIT);
+		MakeJump(0x460BA1, intface_rotate_numbers_hack);
+		dlogr(" Done", DL_INIT);
+		break;
+	case 2:
+		dlog("Applying SpeedInterfaceCounterAnims patch. (Instant)", DL_INIT);
+		SafeWrite32(0x460BB6, 0xDB319090); // xor ebx, ebx
+		dlogr(" Done", DL_INIT);
+		break;
+	}
+}
+
 void Interface::init() {
 	if (GetConfigInt("Interface", "ActionPointsBar", 0)) {
 		ActionPointsBarPatch();
 	}
-	ActionPointDrawNumbers();
+	DrawActionPointsNumber();
 	WorldMapInterfacePatch();
+	SpeedInterfaceCounterAnimsPatch();
 }
 
 void Interface::exit() {
