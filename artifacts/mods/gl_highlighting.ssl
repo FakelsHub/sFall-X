@@ -50,6 +50,7 @@ variable begin
    checkLOS := 2;
    fogEnabled;
    motionScanner;
+   allowUnsafeScripting;
 
    highlightFailMsg1;
    highlightFailMsg2;
@@ -84,6 +85,8 @@ procedure start begin
       if (sfall_ver_major < 4) then return;
 
       call InitConfigs;
+
+      allowUnsafeScripting := GetIniConfig("Debugging", "AllowUnsafeScripting", 0, "ddraw.ini");
 
       highlightKey := GetConfig(configSection, "Key", 42);
       alsoContainer := GetConfig(configSection, "Containers", 1);
@@ -204,7 +207,9 @@ procedure ToggleHighlight(variable enable) begin
       end
    end
    // set _Flat and remove _TransNone flags
-   if (enable) then write_short(0x48F404, 0x4008); else write_short(0x48F404, 0xC000);
+   if (allowUnsafeScripting) then begin
+      if (enable) then write_short(0x48F404, 0x4008); else write_short(0x48F404, 0xC000);
+   end
    tile_refresh_display;
 end
 

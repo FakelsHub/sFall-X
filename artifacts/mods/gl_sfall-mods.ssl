@@ -147,6 +147,7 @@ procedure KeyPressHandler begin
          tap_key(DIK_ESCAPE);
       end
       if ((mode bwand BARTER) and (keyDX == DIK_SPACE or keyDX == DIK_RETURN)) then begin
+         play_sfx("IB2P1XX1");
          tap_key(DIK_M);
       end
       else if (keyDX == pickupKey and (mode == 0)) then begin

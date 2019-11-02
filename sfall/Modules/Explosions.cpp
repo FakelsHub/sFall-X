@@ -117,10 +117,10 @@ static void __declspec(naked) explosion_lighting_fix2() {
 	}
 }
 
-DWORD _stdcall LogThis(DWORD value1, DWORD value2, DWORD value3) {
-	dlog_f("anim_set_check__light_fix: object 0x%X, something 0x%X, radius 0x%X", DL_MAIN, value1, value2, value3);
-	return value1;
-}
+//DWORD _stdcall LogThis(DWORD value1, DWORD value2, DWORD value3) {
+//	dlog_f("anim_set_check_light_fix: object 0x%X, something 0x%X, radius 0x%X", DL_MAIN, value1, value2, value3);
+//	return value1;
+//}
 
 static const DWORD anim_set_check_light_back = 0x415A4C;
 static void __declspec(naked) anim_set_check_light_fix() {
@@ -471,8 +471,7 @@ void ResetExplosionSettings() {
 }
 
 void ResetExplosionRadius() {
-	if (set_expl_radius_grenade != 2 || set_expl_radius_rocket != 3)
-		SetExplosionRadius(2, 3);
+	if (set_expl_radius_grenade != 2 || set_expl_radius_rocket != 3) SetExplosionRadius(2, 3);
 }
 
 static void ResetExplosionDamage() {
