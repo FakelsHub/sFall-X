@@ -484,7 +484,6 @@ scroll:
 targetDown:
 		mov  esi, 0x191;                          // target_down
 		jmp  end;
-
 notTargetScroll:
 		mov  ebx, ebp;
 		mov  ecx, edi;
@@ -502,7 +501,6 @@ notTargetScroll:
 barterTargetDown:
 		mov  esi, 0x176;                          // target_barter_down
 		jmp  end;
-
 notTargetBarter:
 		mov  ebx, ebp;
 		mov  ecx, edi;
@@ -549,7 +547,7 @@ end:
 		retn;
 skip:
 		call fo::funcoffs::inven_unwield_;
-		// update iterface slot
+		// update interface slot
 		cmp  ebx, ds:[FO_VAR_obj_dude];
 		jne  end;
 		xor  eax, eax; // no animate
@@ -811,7 +809,7 @@ void Inventory::init() {
 
 	// Check the DAM_KNOCKED_OUT flag for wield_obj_critter/inven_unwield script functions
 	// Note: the flag is not checked for the metarule(METARULE_INVEN_UNWIELD_WHO, x) function
-	HookCall(0x45B0CE, op_inven_unwield_hook); // with fixed update interface slot after unwield
+	HookCall(0x45B0CE, op_inven_unwield_hook); // with fix to update interface slot after unwielding
 	HookCall(0x45693C, op_wield_obj_critter_hook);
 }
 

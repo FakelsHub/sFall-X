@@ -157,7 +157,7 @@ static DWORD __fastcall divide_burst_rounds_by_ammo_cost(fo::GameObject* weapon,
 	DWORD rounds = 1; // default multiply
 
 	if (HookScripts::IsInjectHook(HOOK_AMMOCOST)) {
-		rounds = burstRounds;             // rounds in burst (количество патронов израсходуемое в очереди)
+		rounds = burstRounds;             // rounds in burst (количество патронов расходуемые в очереди)
 		AmmoCostHook_Script(2, weapon, rounds);
 	}
 

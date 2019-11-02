@@ -27,7 +27,7 @@ class Stats : public Module {
 public:
 	const char* name() { return "Stats"; }
 	void init();
-	
+
 	static float experienceMod;
 	static DWORD standardApAcBonus;
 	static DWORD extraApAcBonus;

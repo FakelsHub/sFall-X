@@ -103,7 +103,7 @@ static void ActionPointsBarPatch() {
 }
 
 static long costAP = -1;
-static void __declspec(naked) intface_redraw_items_hack_0() {
+static void __declspec(naked) intface_redraw_items_hack0() {
 	__asm {
 		sub  eax, esi;
 		shl  eax, 4;
@@ -129,7 +129,7 @@ noShift:
 	}
 }
 
-static void __declspec(naked) intface_redraw_items_hack_1() {
+static void __declspec(naked) intface_redraw_items_hack1() {
 	__asm {
 		mov  edx, 10;
 		cmp  costAP, edx;
@@ -141,13 +141,13 @@ skip:
 }
 
 static void DrawActionPointsNumber() {
-	MakeCall(0x4604B0, intface_redraw_items_hack_0);
-	MakeCall(0x460504, intface_redraw_items_hack_1);
+	MakeCall(0x4604B0, intface_redraw_items_hack0);
+	MakeCall(0x460504, intface_redraw_items_hack1);
 	SafeWrite16(0x4604D4, 0x9052); // push 10 > push edx
 	SafeWrite8(0x46034B, 20);      // draw up to 19 AP
 }
 
-////////////////////////////////////// WORLDMAP INTERFACE /////////////////////////////////////////
+////////////////////////////// WORLDMAP INTERFACE //////////////////////////////
 
 static int mapSlotsScrollMax = 27 * (17 - 7);
 static int mapSlotsScrollLimit = 0;
@@ -204,7 +204,7 @@ static const DWORD wmWinWidth[] = {
 	// wmRefreshInterfaceOverlay_
 	0x4C50FD, 0x4C51CF, 0x4C51F8, 0x4C517F,
 	// wmInterfaceRefreshCarFuel_
-	0x4C52AA, /*0x4C528B, 0x4C529F, - Conflict with indicator patch */
+	0x4C52AA, /*0x4C528B, 0x4C529F, - Conflict with fuel gauge patch*/
 	// wmInterfaceDrawSubTileList_
 	0x4C41C1, 0x4C41D2,
 	// wmTownMapRefresh_
@@ -492,10 +492,10 @@ static void WorldMapInterfacePatch() {
 	SafeWrite32(0x4C2C92, 181); // index of DNARWOFF.FRM
 	SafeWrite8(0x4C2D04, 0x46); // dec esi > inc esi
 
-	//if(GetConfigInt("Misc", "WorldMapCitiesListFix", 0)) {
-	dlog("Applying world map cities list patch.", DL_INIT);
-	HookCalls(ScrollCityListFix, {0x4C04B9, 0x4C04C8, 0x4C4A34, 0x4C4A3D});
-	dlogr(" Done", DL_INIT);
+	//if (GetConfigInt("Misc", "WorldMapCitiesListFix", 0)) {
+		dlog("Applying world map cities list patch.", DL_INIT);
+		HookCalls(ScrollCityListFix, {0x4C04B9, 0x4C04C8, 0x4C4A34, 0x4C4A3D});
+		dlogr(" Done", DL_INIT);
 	//}
 
 	DWORD wmSlots = GetConfigInt("Interface", "WorldMapSlots", -1);
@@ -515,7 +515,7 @@ static void WorldMapInterfacePatch() {
 			LoadGameHook::OnAfterGameInit() += WorldmapViewportPatch; // Note: must be applied after WorldMapSlots patch
 		}
 	}
-	// Car fuel indicator graphics patch
+	// Car fuel gauge graphics patch
 	MakeCall(0x4C528A, wmInterfaceRefreshCarFuel_hack_empty);
 	MakeCall(0x4C529E, wmInterfaceRefreshCarFuel_hack);
 	SafeWrite8(0x4C52A8, 197);
@@ -547,7 +547,7 @@ negative:
 	}
 }
 
-void SpeedInterfaceCounterAnimsPatch() {
+static void SpeedInterfaceCounterAnimsPatch() {
 	switch (GetConfigInt("Misc", "SpeedInterfaceCounterAnims", 0)) {
 	case 1:
 		dlog("Applying SpeedInterfaceCounterAnims patch.", DL_INIT);
@@ -555,7 +555,7 @@ void SpeedInterfaceCounterAnimsPatch() {
 		dlogr(" Done", DL_INIT);
 		break;
 	case 2:
-		dlog("Applying SpeedInterfaceCounterAnims patch. (Instant)", DL_INIT);
+		dlog("Applying SpeedInterfaceCounterAnims patch (Instant).", DL_INIT);
 		SafeWrite32(0x460BB6, 0xDB319090); // xor ebx, ebx
 		dlogr(" Done", DL_INIT);
 		break;

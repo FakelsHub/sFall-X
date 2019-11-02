@@ -331,12 +331,12 @@ skip:
 /* Common InvenWield script hooks */
 static long __fastcall InvenWieldHook_Script(fo::GameObject* critter, fo::GameObject* item, long slot, long isWield, long isRemove) {
 	if (!isWield) {
-		// for the critter, always the active is the right slot
+		// for the critter, the right slot is always the active slot
 		if (slot == fo::INVEN_TYPE_LEFT_HAND && critter != fo::var::obj_dude) return 1;
-		// check the current active slot for player
+		// check the current active slot for the player
 		if (slot != fo::INVEN_TYPE_WORN && critter == fo::var::obj_dude) {
 			long _slot = (slot != fo::INVEN_TYPE_LEFT_HAND);
-			if (_slot != fo::var::itemCurrentItem) return 1; // item in not active slot
+			if (_slot != fo::var::itemCurrentItem) return 1; // item in non-active slot
 		}
 	}
 	BeginHook();
@@ -439,7 +439,7 @@ static void __declspec(naked) CorrectFidForRemovedItemHook() {
 	} else {
 		args[2] = fo::INVEN_TYPE_WORN;                // armor slot
 	}
-	InvenWieldHook_ScriptPart(0, 1); // unwield flag (armor by default)
+	InvenWieldHook_ScriptPart(0, 1); // unwield event (armor by default)
 	// engine handler is not overridden
 	__asm {
 		popadc;
@@ -447,7 +447,7 @@ static void __declspec(naked) CorrectFidForRemovedItemHook() {
 	}
 }
 
-void __declspec(naked) item_drop_all_hack() {
+static void __declspec(naked) item_drop_all_hack() {
 	using namespace fo::ObjectFlag;
 	__asm {
 		mov  ecx, 1;
@@ -521,7 +521,7 @@ runHook:
 	}
 }
 
-// called when unweld dude weapon and armor
+// called when unwelding dude weapon and armor
 static void __declspec(naked) op_move_obj_inven_to_obj_hook() {
 	using namespace fo;
 	using namespace ObjectFlag;
@@ -533,7 +533,7 @@ runHook:
 		push eax;
 		push edx;
 		mov  ecx, eax; // keep source
-		mov  edx, ds:[FO_VAR_itemCurrentItem]; // get player active slot
+		mov  edx, ds:[FO_VAR_itemCurrentItem]; // get player's active slot
 		test edx, edx;
 		jz   left;
 		call fo::funcoffs::inven_right_hand_;

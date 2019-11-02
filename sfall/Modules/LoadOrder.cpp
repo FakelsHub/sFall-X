@@ -196,7 +196,7 @@ static void GetExtraPatches() {
 		if (searchPath.back() != '\\') searchPath += "\\";
 
 		std::string path(".\\" + searchPath + "*.dat");
-		dlogr("Found custom patches:", DL_MAIN);
+		dlogr("Loading custom patches:", DL_MAIN);
 		WIN32_FIND_DATA findData;
 		HANDLE hFind = FindFirstFile(path.c_str(), &findData);
 		if (hFind != INVALID_HANDLE_VALUE) {
@@ -228,7 +228,7 @@ static void GetExtraPatches() {
 	}
 }
 
-void MultiPatchesPatch() {
+static void MultiPatchesPatch() {
 	//if (GetConfigInt("Misc", "MultiPatches", 0)) {
 		dlog("Applying load multiple patches patch.", DL_INIT);
 		SafeWrite8(0x444354, 0x90); // Change step from 2 to 1

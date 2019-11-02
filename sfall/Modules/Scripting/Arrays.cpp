@@ -156,7 +156,7 @@ void sArrayVar::clearRange( int from, int to /*= -1*/ )
 
 void sArrayVar::clearAll()
 {
-	for (auto it = val.begin(); it != val.end(); ++it) {
+	for (std::vector<sArrayElement>::iterator it = val.begin(); it != val.end(); ++it) {
 		it->clearData();
 	}
 }
@@ -296,7 +296,7 @@ void SaveArrays(HANDLE h) {
 			++it;
 		}
 	}
-	WriteFile(h, &count, 4, &unused, 0); // count save arrays
+	WriteFile(h, &count, 4, &unused, 0); // count saved arrays
 	if (count == 0) return;
 	for (it = savedArrays.begin(); it != savedArrays.end(); ++it) {
 		arrayIt = arrays.find(it->second);
@@ -586,7 +586,7 @@ static void MapSort(sArrayVar& arr, int type) {
 	arr.val.clear();
 	arr.keyHash.clear();
 	for (size_t i = 0; i < vmap.size(); ++i) {
-		auto el = arr.val.size();
+		size_t el = arr.val.size();
 		if (sortByValue) {
 			arr.val.emplace_back(vmap[i].second); // map value > key
 			arr.val.emplace_back(vmap[i].first);  // map key > value
@@ -615,7 +615,7 @@ long ResizeArray(DWORD id, int newlen) {
 				if ((itHash = arr.keyHash.find(*itVal)) != arr.keyHash.end())
 					arr.keyHash.erase(itHash);
 			}
-			if (actualLen == 0 )
+			if (actualLen == 0)
 				arr.clearAll();
 			else
 				arr.clearRange(actualLen);
@@ -704,7 +704,7 @@ void SaveArray(const ScriptValue& key, DWORD id) {
 			// if another array is saved under the same key, clear it
 			ArrayKeysMap::iterator savedIt = savedArrays.find(sArrayElement(key.rawValue(), key.type()));
 			if (savedIt != savedArrays.end()) {
-				if (savedIt->second == id) return; // exit, array is already savedabled
+				if (savedIt->second == id) return; // exit, array is already saveable
 				// arrays have different ID, search the ID of the "saved" array in collection of arrays
 				if ((it = arrays.find(savedIt->second)) != arrays.end()) {
 					// array exists, delete key value
@@ -712,7 +712,7 @@ void SaveArray(const ScriptValue& key, DWORD id) {
 					it->second.key.unset();
 				}
 			}
-			// make "saved" array
+			// make array "saved"
 			itArray->second.key.setByType(key.rawValue(), key.type());
 			savedArrays.emplace(itArray->second.key, id); // savedArrays[itArray->second.key] = id;
 		} else { // key is 0(int) used to "unsave" array without destroying it

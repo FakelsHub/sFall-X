@@ -342,7 +342,6 @@ static void __declspec(naked) pc_flag_toggle_hook() {
 }
 
 static void __declspec(naked) intface_toggle_items_hack() {
-	using namespace fo::Fields;
 	__asm {
 //		cmp  isControllingNPC, 0;
 //		jne  checkArt;
@@ -594,7 +593,7 @@ void PartyControl::init() {
 	HookCall(0x454218, stat_pc_add_experience_hook); // call inside op_give_exp_points_hook
 	HookCalls(pc_flag_toggle_hook, { 0x4124F1, 0x41279A });
 	MakeCall(0x45F47C, intface_toggle_items_hack);
-	HookCalls(inven_pickup_hook, {
+	HookCalls(inven_pickup_hook, { // will be overwritten if HOOK_INVENTORYMOVE is injected
 		0x4712E3, // left slot
 		0x47136D  // right slot
 	});

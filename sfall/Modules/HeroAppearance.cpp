@@ -242,7 +242,7 @@ static __declspec(noinline) int _stdcall LoadHeroDat(unsigned int race, unsigned
 			return 0;
 		}
 
-		heroPathPtr[0 + heroDatIsExist]->next = racePathPtr[1 - folderIsExist];  // set path for selected race base appearance
+		heroPathPtr[0 + heroDatIsExist]->next = racePathPtr[1 - folderIsExist]; // set path for selected race base appearance
 		racePathPtr[0 + raceDatIsExist]->next = &fo::var::paths[0]; // insert racePathPtr in chain path: heroPathPtr[] >> racePathPtr[] >> foPaths
 	}
 	return 0;
@@ -309,7 +309,7 @@ static void _stdcall SetHeroArt(bool newArtFlag) {
 
 	if (fidBase > critterListSize) {          // check if critter LST index is in Hero range
 		if (!newArtFlag) {
-			heroFID -= critterListSize;         // shift index down into normal critter range
+			heroFID -= critterListSize;       // shift index down into normal critter range
 			hero->artFid = heroFID;
 		}
 	} else if (newArtFlag) {
@@ -353,8 +353,8 @@ static long _stdcall AddHeroCritNames() { // art_init_
 	auto &critterArt = fo::var::art[fo::OBJ_TYPE_CRITTER];
 	critterListSize = critterArt.total / 2;
 	if (critterListSize > 2048) {
-		MessageBoxA(0, "Cannot be used this mod, exceeded the maximum limit of the FID count in the critters.lst\n"
-					   "Disable the mod and start the game again.", "Hero Appearance mod", 0x10);
+		MessageBoxA(0, "This mod cannot be used because the maximum limit of the FID count in the critters.lst is exceeded.\n"
+					   "Please disable the mod and restart the game.", "Hero Appearance mod", MB_TASKMODAL | MB_ICONERROR);
 		ExitProcess(-1);
 	}
 	critterArraySize = critterListSize * 13;
@@ -1134,11 +1134,11 @@ static void __declspec(naked) AddCharScrnButtons() {
 		}
 		if (raceButtons) { // race selection buttons
 			fo::func::win_register_button(WinRef, 348, 37, 20, 18, -1, -1, -1, 0x511, newButtonSurface, newButtonSurface + (20 * 18), 0, 0x20);
-			fo::func::win_register_button(WinRef, 373, 37, 20, 18, -1, -1, -1, 0x513, newButtonSurface + (20 * 18 * 2), newButtonSurface + (20 * 18 * 3), 0, 0x20);
+			fo::func::win_register_button(WinRef, 374, 37, 20, 18, -1, -1, -1, 0x513, newButtonSurface + (20 * 18 * 2), newButtonSurface + (20 * 18 * 3), 0, 0x20);
 		}
 		if (styleButtons) { // style selection buttons
 			fo::func::win_register_button(WinRef, 348, 199, 20, 18, -1, -1, -1, 0x512, newButtonSurface, newButtonSurface + (20 * 18), 0, 0x20);
-			fo::func::win_register_button(WinRef, 373, 199, 20, 18, -1, -1, -1, 0x514, newButtonSurface + (20 * 18 * 2), newButtonSurface + (20 * 18 * 3), 0, 0x20);
+			fo::func::win_register_button(WinRef, 374, 199, 20, 18, -1, -1, -1, 0x514, newButtonSurface + (20 * 18 * 2), newButtonSurface + (20 * 18 * 3), 0, 0x20);
 		}
 	}
 
@@ -1189,7 +1189,7 @@ static void __declspec(naked) FixCharScrnBack() {
 			DWORD FrmObj, FrmMaskObj; // frm objects for char screen Appearance button
 			BYTE *FrmSurface, *FrmMaskSurface;
 
-			FrmSurface = fo::func::art_ptr_lock_data(BuildFrmId(fo::OBJ_TYPE_INTRFACE, 113), 0, 0, &FrmObj); // use item on window
+			FrmSurface = fo::func::art_ptr_lock_data(BuildFrmId(fo::OBJ_TYPE_INTRFACE, 113), 0, 0, &FrmObj); // "Use Item On" window
 			sub_draw(81, 132, 292, 376, 163, 20, FrmSurface, 640, 480, 331, 63, charScrnBackSurface, 0);  // char view win
 			sub_draw(79, 31, 292, 376, 154, 228, FrmSurface, 640, 480, 331, 32, charScrnBackSurface, 0);  // upper  char view win
 			sub_draw(79, 30, 292, 376, 158, 236, FrmSurface, 640, 480, 331, 195, charScrnBackSurface, 0); // lower  char view win

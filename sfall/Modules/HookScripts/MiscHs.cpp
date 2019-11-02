@@ -296,7 +296,7 @@ static void __declspec(naked) PerceptionRangeSeeHook() {
 		cmp  eax, 2;
 		jne  nevermind; // normal return
 		dec  eax;
-		mov  dword ptr[esp + 0x2C - 0x1C + 4], eax; // set 1, skip blocking check
+		mov  dword ptr [esp + 0x2C - 0x1C + 4], eax; // set 1, skip blocking check
 		dec  eax;
 nevermind:
 		retn;
@@ -528,10 +528,10 @@ end:
 void Inject_BarterPriceHook() {
 	HookCalls(BarterPriceHook, {
 		0x474D4C, // barter_attempt_transaction_ (offers button)
-		0x475735, // display_table_inventories_  (for PM)
+		0x475735, // display_table_inventories_ (for party members)
 		0x475762  // display_table_inventories_
 	});
-	HookCalls(PC_BarterPriceHook, {0x47551A, 0x4754F4}); // display_table_inventories_
+	HookCalls(PC_BarterPriceHook, {0x4754F4, 0x47551A}); // display_table_inventories_
 	HookCall(0x474D3F, OverrideCost_BarterPriceHook);    // barter_attempt_transaction_ (just overrides cost of offered goods)
 }
 

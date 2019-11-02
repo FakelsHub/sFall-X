@@ -36,7 +36,7 @@ static CityRep* repList = nullptr;
 
 void Reputations::init() {
 	auto cityRepList = GetConfigList("Misc", "CityRepsList", "", 512);
-	auto count = cityRepList.size();
+	size_t count = cityRepList.size();
 	if (count) {
 		repList = new CityRep[count];
 		std::vector<std::string> pair;

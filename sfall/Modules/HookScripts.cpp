@@ -232,7 +232,7 @@ void RegisterHook(fo::Program* script, int id, int procNum, bool specReg) {
 }
 
 static void HookScriptInit() {
-	dlogr("Loading hook scripts", DL_HOOK|DL_INIT);
+	dlogr("Loading hook scripts:", DL_HOOK|DL_INIT);
 
 	static bool hooksFilesLoaded = false;
 	if (!hooksFilesLoaded) { // hook files are already put to list
@@ -312,6 +312,7 @@ void HookScripts::init() {
 	}
 
 	HookScripts::injectAllHooks = isDebug && (iniGetInt("Debugging", "InjectAllGameHooks", 0, ::sfall::ddrawIni) != 0);
+	if (HookScripts::injectAllHooks) dlogr("Injecting all game hooks", DL_HOOK);
 }
 
 }

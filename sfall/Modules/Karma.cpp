@@ -77,7 +77,7 @@ void Karma::DisplayKarma(int value) {
 	fo::func::display_print(buf);
 }
 
-void ApplyDisplayKarmaChangesPatch() {
+static void ApplyDisplayKarmaChangesPatch() {
 	displayKarmaChanges = GetConfigInt("Misc", "DisplayKarmaChanges", 0) != 0;
 	if (displayKarmaChanges) {
 		dlog("Applying display karma changes patch.", DL_INIT);
@@ -88,7 +88,7 @@ void ApplyDisplayKarmaChangesPatch() {
 	}
 }
 
-void ApplyKarmaFRMsPatch() {
+static void ApplyKarmaFRMsPatch() {
 	auto karmaFrmList = GetConfigList("Misc", "KarmaFRMs", "", 512);
 	size_t countFrm = karmaFrmList.size();
 	if (countFrm) {

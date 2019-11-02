@@ -359,7 +359,7 @@ void Skills::init() {
 						case 'a': multipliers[i * 7 + 5] = m; break;
 						case 'l': multipliers[i * 7 + 6] = m; break;
 						default:
-							MessageBoxA(0, "Error: Used invalid 's.p.e.c.i.a.l' stats character.", "Skills file config", MB_TASKMODAL);
+							MessageBoxA(0, "Error: Used invalid 's.p.e.c.i.a.l' stats character.", "Skills file config", MB_TASKMODAL | MB_ICONERROR);
 						}
 					}
 					tok = strtok(0, "|");

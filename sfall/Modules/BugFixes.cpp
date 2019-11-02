@@ -400,15 +400,15 @@ static void __declspec(naked) partyMemberCopyLevelInfo_hack() {
 static void __declspec(naked) partyMemberCopyLevelInfo_hook_stat_level() {
 	__asm {
 nextArmor:
-		mov  eax, esi
-		call fo::funcoffs::inven_worn_
-		test eax, eax
-		jz   noArmor
-		and  byte ptr [eax][flags + 3], ~Worn >> 24; // Unset the flag of equipped armor
-		jmp  nextArmor
+		mov  eax, esi;
+		call fo::funcoffs::inven_worn_;
+		test eax, eax;
+		jz   noArmor;
+		and  byte ptr [eax][flags + 3], ~Worn >> 24; // Unset flag of equipped armor
+		jmp  nextArmor;
 noArmor:
-		mov  eax, esi
-		jmp  fo::funcoffs::stat_level_
+		mov  eax, esi;
+		jmp  fo::funcoffs::stat_level_;
 	}
 }
 
@@ -432,7 +432,7 @@ static void __declspec(naked) op_move_obj_inven_to_obj_hook() {
 		jz   skip;                     // source == dude
 		mov  eax, edx;
 		call fo::funcoffs::isPartyMember_;
-		test eax, eax;                 // source is party member?
+		test eax, eax;                 // is source a party member?
 		jnz  skip;
 		retn;                          // must be eax = 0
 skip:
@@ -443,11 +443,11 @@ skip:
 		test eax, eax;
 		jz   end;
 		// fix for party member
-		call InvenUnwield_HookMove;    // run HOOK_INVENWIELD before move item
+		call InvenUnwield_HookMove;    // run HOOK_INVENWIELD before moving item
 		push ebx;
 		mov  ecx, edx;
 		xor  ebx, ebx;                 // new armor
-		xchg eax, edx;                 // set: eax - source, edx - remove armor
+		xchg eax, edx;                 // set: eax - source, edx - removed armor
 		call fo::funcoffs::adjust_ac_;
 		mov  edx, ecx;
 		pop  ebx;
@@ -457,7 +457,7 @@ end:
 dudeFix:
 		test eax, eax;
 		jz   equipped;                 // no armor
-		// additional check flag of equipped armor for dude
+		// additionally check flag of equipped armor for dude
 		test byte ptr [eax][flags + 3], Worn >> 24;
 		jnz  equipped;
 		xor  eax, eax;
@@ -471,7 +471,7 @@ static void __declspec(naked) obj_drop_hook() {
 	__asm {
 		test byte ptr [edx][flags + 3], (Worn | Right_Hand | Left_Hand) >> 24;
 		jz   skipHook;
-		call InvenUnwield_HookDrop;    // run HOOK_INVENWIELD before drop item
+		call InvenUnwield_HookDrop;    // run HOOK_INVENWIELD before dropping item
 skipHook:
 		test byte ptr [edx][flags + 3], Worn >> 24;
 		jnz  fixArmorStat;
@@ -482,7 +482,7 @@ fixArmorStat:
 		jz   skip;
 		mov  eax, ecx;
 		xor  ebx, ebx;                 // new armor
-		call fo::funcoffs::adjust_ac_; // eax - source, edx - remove armor
+		call fo::funcoffs::adjust_ac_; // eax - source, edx - removed armor
 		mov  edx, esi;
 skip:
 		mov  eax, ecx;
@@ -629,7 +629,7 @@ static void __declspec(naked) StatButtonDown_hook() {
 		call fo::funcoffs::stat_level_
 		cmp  eax, 1
 		jg   end
-		add  esp, 4;                                  // Destroy the return address
+		add  esp, 4                               // Destroy the return address
 		xor  eax, eax
 		inc  eax
 		mov  [esp+0xC], eax
@@ -900,8 +900,8 @@ static void __declspec(naked) op_wield_obj_critter_adjust_ac_hook() {
 static const DWORD partyMember_init_End = 0x493D16;
 static void __declspec(naked) NPCStage6Fix1() {
 	__asm {
-		imul eax, edx, 204;                 // multiply record size to 204 bytes by number of NPC records in party.txt
-		mov  ebx, eax;                      // copy record size for later memset
+		imul eax, edx, 204;                 // multiply record size 204 bytes by number of NPC records in party.txt
+		mov  ebx, eax;                      // copy total record size for later memset
 		call fo::funcoffs::mem_malloc_;     // malloc the necessary memory
 		jmp  partyMember_init_End;          // call memset to set all malloc'ed memory to 0
 	}
@@ -932,13 +932,13 @@ end:
 static const DWORD ai_move_steps_closer_move_object_ret = 0x42A192;
 static void __declspec(naked) MultiHexCombatMoveFix() {
 	__asm {
-		test [edi + flags + 1], 0x08; // target is multihex?
+		test [edi + flags + 1], 0x08; // is target multihex?
 		jnz  multiHex;
-		test [esi + flags + 1], 0x08; // source is multihex?
+		test [esi + flags + 1], 0x08; // is source multihex?
 		jz   moveTile;
 multiHex:
-		mov  edx, [esp + 4];          // source goto tile
-		cmp  [edi + tile], edx;       // target tile
+		mov  edx, [esp + 4];          // source's destination tilenum
+		cmp  [edi + tile], edx;       // target's tilenum
 		jnz  moveTile;
 		add  esp, 4;
 		jmp  ai_move_steps_closer_move_object_ret;
@@ -950,13 +950,13 @@ moveTile:
 static const DWORD ai_move_steps_closer_run_object_ret = 0x42A169;
 static void __declspec(naked) MultiHexCombatRunFix() {
 	__asm {
-		test [edi + flags + 1], 0x08; // target is multihex?
+		test [edi + flags + 1], 0x08; // is target multihex?
 		jnz  multiHex;
-		test [esi + flags + 1], 0x08; // source is multihex?
+		test [esi + flags + 1], 0x08; // is source multihex?
 		jz   runTile;
 multiHex:
-		mov  edx, [esp + 4];          // source goto tile
-		cmp  [edi + tile], edx;       // target tile
+		mov  edx, [esp + 4];          // source's destination tilenum
+		cmp  [edi + tile], edx;       // target's tilenum
 		jnz  runTile;
 		add  esp, 4;
 		jmp  ai_move_steps_closer_run_object_ret;
@@ -1066,9 +1066,9 @@ fix:
 		cmp  edi, OBJ_TYPE_CRITTER << 24;
 		jne  skip;
 		test byte ptr [eax + damageFlags], DAM_KNOCKED_OUT;
-		jnz  clear;   // Yes
+		jnz  clear;    // Yes
 		test byte ptr [eax + damageFlags], DAM_KNOCKED_DOWN;
-		jz   clear;   // No
+		jz   clear;    // No
 		push eax;
 		xor  ecx, ecx;
 		mov  edx, eax; // object
@@ -1104,7 +1104,7 @@ static void __declspec(naked) combat_over_hook() {
 	__asm {
 		test byte ptr [eax + damageFlags], DAM_DEAD;
 		jz   fix;
-		retn; // dead cannot reload their weapon
+		retn; // the dead cannot reload their weapons
 fix:
 		test byte ptr [eax + damageFlags], DAM_KNOCKED_DOWN;
 		jz   skip;
@@ -2580,11 +2580,11 @@ void BugFixes::init()
 		dlog("Applying fix for armor reducing NPC original stats when removed.", DL_INIT);
 		HookCall(0x495F3B, partyMemberCopyLevelInfo_hook_stat_level);
 		HookCall(0x45419B, correctFidForRemovedItem_hook_adjust_ac);
-		// fix for op_move_obj_inven_to_obj
+		// Fix for move_obj_inven_to_obj function
 		HookCall(0x45C49A, op_move_obj_inven_to_obj_hook);
 		SafeWrite16(0x45C496, 0x9090);
 		SafeWrite8(0x45C4A3, 0x75); // jmp > jnz
-		// fix for op_drop_obj
+		// Fix for drop_obj function
 		HookCall(0x49B965, obj_drop_hook);
 		dlogr(" Done", DL_INIT);
 	//}
@@ -2633,6 +2633,9 @@ void BugFixes::init()
 	SafeWrite8(0x475541, 64);
 	SafeWrite8(0x475789, 64);
 
+	// Corrects the max text width of the player name in inventory to be 140 (was 80), which matches the width for item name
+	SafeWrite32(0x471E48, 140);
+
 	//if (GetConfigInt("Misc", "InventoryDragIssuesFix", 1)) {
 		dlog("Applying inventory reverse order issues fix.", DL_INIT);
 		// Fix for minor visual glitch when picking up solo item from the top of inventory
@@ -2658,7 +2661,7 @@ void BugFixes::init()
 
 	//if (GetConfigInt("Misc", "NPCLevelFix", 1)) {
 		dlog("Applying NPC level fix.", DL_INIT);
-		HookCall(0x495BC9, (void*)0x495E51); // jz 0x495E7F >> jz 0x495E51
+		HookCall(0x495BC9, (void*)0x495E51); // jz 0x495E7F > jz 0x495E51
 		dlogr(" Done", DL_INIT);
 	//}
 
@@ -2708,7 +2711,7 @@ void BugFixes::init()
 	// Fix for op_lookup_string_proc_ engine function not searching the last procedure in a script
 	SafeWrite8(0x46C7AC, 0x76); // jb > jbe
 
-	// Update the counter AC
+	// Update the AC counter
 	//if (GetConfigInt("Misc", "WieldObjCritterFix", 1)) {
 		dlog("Applying wield_obj_critter fix.", DL_INIT);
 		SafeWrite8(0x456912, 0x1E); // jnz 0x456931
@@ -2751,8 +2754,8 @@ void BugFixes::init()
 	//}
 	// Fix for multiple knockout events being added to the queue
 	HookCall(0x424F9A, set_new_results_hack);
-	// Fix for knocked down critters not playing stand up animation when the combat ends (when set DAM_LOSE_TURN and DAM_KNOCKED_DOWN flags)
-	// and prevent dead NPCs from reloading their weapons
+	// Fix for knocked down critters not playing stand up animation when the combat ends (when DAM_LOSE_TURN and DAM_KNOCKED_DOWN
+	// flags are set) and prevent dead NPCs from reloading their weapons
 	HookCall(0x421F30, combat_over_hook);
 
 	dlog("Applying fix for explosives bugs.", DL_INIT);
@@ -2859,7 +2862,7 @@ void BugFixes::init()
 	// Fix for player's base EMP DR not being properly initialized when creating a new character and then starting the game
 	HookCall(0x4A22DF, ResetPlayer_hook);
 
-	// Fix for add_mult_objs_to_inven only adding 500 of an object when the value of "count" argument is over 99999
+	// Fix for add_mult_objs_to_inven only adding 500 of an object when the value of the "count" argument is over 99999
 	SafeWrite32(0x45A2A0, 0x1869F); // 99999
 
 	// Fix for being at incorrect hex after map change when the exit hex in source map is at the same position as
@@ -2947,10 +2950,7 @@ void BugFixes::init()
 	// Fix draw line, correction of the line position if the items name is carry to a new line
 	MakeCall(0x472F5F, inven_obj_examine_func_hack, 1);
 
-	// Fix the width of the displayed player name in inventory
-	SafeWrite32(0x471E48, 140);
-
-	// Fix the exploit of skill points when getting a perk Tag
+	// Fix for the exploit that allows you to gain excessive skill points from Tag! perk before leaving the character screen
 	dlog("Applying fix for Tag! exploit.", DL_INIT);
 	HookCall(0x43B463, SliderBtn_hook_down);
 	HookCall(0x43D7DD, Add4thTagSkill_hook);
@@ -3004,9 +3004,11 @@ void BugFixes::init()
 	// Fix returned result value when the file is missing
 	HookCall(0x4C6162, db_freadInt_hook);
 
-	// Fixes the unused arguments called_shot/num_attack of the attack_complex function, also changes the behavior for the flags arguments
-	// Fix for critter_mod_skill taking a negative amount value as a positive
-	// flag_attacker - not used, must be 0, or not equal to the flag_target argument when want to specify flags for the target
+	// Fix and repurpose the unused called_shot/num_attack arguments of attack_complex function
+	// also change the behavior of the result flags arguments
+	// called_shot - additional damage, when the damage received by the target is above the specified minimum
+	// num_attacks - the number of free action points on the first turn only
+	// attacker_results - unused, must be 0 or not equal to the target_results argument when specifying result flags for the target
 	if (GetConfigInt("Misc", "AttackComplexFix", 0)) {
 		dlog("Applying attack_complex fix.", DL_INIT);
 		HookCall(0x456D4A, op_attack_hook);
@@ -3016,16 +3018,17 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Fix the attack_complex script function that causes minimal damage to the target when the attacker misses
+	// Fix for attack_complex still causing minimum damage to the target when the attacker misses
 	MakeCall(0x422FE5, combat_attack_hack, 1);
 
-	// Fix the critter_mod_skill script function for a negative amount value
-	dlog("Applying critter_mod_skill script function fix.", DL_INIT);
+	// Fix for critter_mod_skill taking a negative amount value as a positive
+	dlog("Applying critter_mod_skill fix.", DL_INIT);
 	SafeWrite8(0x45B910, 0x7E); // jbe > jle
 	dlogr(" Done", DL_INIT);
 
-	// Fix a crash for use_obj/use_obj_on_obj script functions, when functions are incorrectly called without using set_self in global scripts
-	// also change the behavior of the use_obj_on_obj function, if the object uses the item on self, then the another function is called (this is not a bug fix)
+	// Fix crash when calling use_obj/use_obj_on_obj without using set_self in global scripts
+	// also change the behavior of use_obj_on_obj function
+	// if the object uses the item on itself, then another function is called (not a bug fix)
 	MakeCall(0x45C376, op_use_obj_on_obj_hack, 1);
 	MakeCall(0x456A92, op_use_obj_hack, 1);
 
@@ -3131,17 +3134,17 @@ void BugFixes::init()
 	// Place the player on a nearby empty tile if the entrance tile is blocked by another object when entering a map
 	HookCall(0x4836F8, map_check_state_hook);
 
-	// Remove dublicate code for intface_redraw_ function
+	// Remove duplicate code from intface_redraw_ engine function
 	BlockCall(0x45EBBF);
 
-	// Fixed 'amount' argument of the critter_rm_trait/critter_add_trait script functions does not takes account of the value this argument
-	// Note: pass to negative amount value for critter_rm_trait to remove all level of perks (vanilla behavior)
+	// Fix for critter_add/rm_trait functions ignoring the value of the "amount" argument
+	// Note: pass negative amount values to critter_rm_trait to remove all ranks of the perk (vanilla behavior)
 	HookCall(0x458CDB, op_critter_rm_trait_hook);
 	HookCall(0x458B3D, op_critter_add_trait_hook);
 
-	// Fix for prevent corpses from blocking line of fire
-	//if (GetConfigInt("Misc", "CorpseLineOfFireFix", 0)) {
-		dlog("Applying the critter corpse blocking line of fire fix.", DL_INIT);
+	// Fix to prevent corpses from blocking line of fire
+	//if (GetConfigInt("Misc", "CorpseLineOfFireFix", 1)) {
+		dlog("Applying fix for corpses blocking line of fire.", DL_INIT);
 		MakeJump(0x48B994, obj_shoot_blocking_at_hack0);
 		MakeJump(0x48BA04, obj_shoot_blocking_at_hack1);
 		dlogr(" Done", DL_INIT);

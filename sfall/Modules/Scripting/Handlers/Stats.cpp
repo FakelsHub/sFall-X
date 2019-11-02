@@ -879,7 +879,7 @@ static void __declspec(naked) statPCAddExperienceCheckPMs_hack() {
 		fmul Stats::experienceMod;
 		fistp xpTemp;
 		mov  eax, xpTemp;
-		sub  esp, 0xC; // instead 0x10
+		sub  esp, 0xC; // instead of 0x10
 		mov  edi, eax;
 		jmp  ebp;
 	}

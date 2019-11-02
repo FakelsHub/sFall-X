@@ -35,7 +35,7 @@ static DWORD ForceEncounterMapID = -1;
 static DWORD ForceEncounterFlags;
 
 DWORD ForceEncounterRestore() {
-	long long data = 0x672E043D83; // cmp ds:_Meet_Frank_Horrigan
+	long long data = 0x672E043D83; // cmp ds:_Meet_Frank_Horrigan, 0
 	SafeWriteBytes(0x4C06D1, (BYTE*)&data, 5);
 	ForceEncounterFlags = 0;
 	DWORD mapID = ForceEncounterMapID;
@@ -58,7 +58,7 @@ noCar:
 		call ForceEncounterRestore;
 		//pop  ecx;
 		push 0x4C0721; // return addr
-		jmp  fo::funcoffs::map_load_idx_; // eax - mapId
+		jmp  fo::funcoffs::map_load_idx_; // eax - mapID
 	}
 }
 
@@ -77,7 +77,7 @@ void sf_force_encounter(OpcodeContext& cxt) {
 	if (cxt.numArgs() > 1) {
 		flags = cxt.arg(1).rawValue();
 		if (flags & 2) { // _Lock flag
-			flags |= (1 << 31); // set 31-bit
+			flags |= (1 << 31); // set bit 31
 		} else {
 			flags &= ~(1 << 31);
 		}

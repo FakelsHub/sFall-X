@@ -481,7 +481,7 @@ void Graphics::SetHeadTex(IDirect3DTexture9* tex, int width, int height, int xof
 	gpuBltEffect->SetTexture(gpuBltHead, tex);
 
 	float size[2];
-	size[0] = (float)width *  rcpres[0];
+	size[0] = (float)width  * rcpres[0];
 	size[1] = (float)height * rcpres[1];
 	gpuBltEffect->SetFloatArray(gpuBltHeadSize, size, 2);
 
@@ -997,7 +997,8 @@ void Graphics::init() {
 #define _DLL_NAME "d3dx9_43.dll"
 		HMODULE h = LoadLibraryEx(_DLL_NAME, 0, LOAD_LIBRARY_AS_DATAFILE);
 		if (!h) {
-			MessageBoxA(0, "You have selected graphics mode 4 or 5, but " _DLL_NAME " is missing\nSwitch back to mode 0, or install an up to date version of DirectX", "Error", 0);
+			MessageBoxA(0, "You have selected graphics mode 4 or 5, but " _DLL_NAME " is missing.\n"
+						   "Switch back to mode 0, or install an up to date version of DirectX.", "Error", MB_TASKMODAL | MB_ICONERROR);
 			ExitProcess(-1);
 		} else {
 			FreeLibrary(h);

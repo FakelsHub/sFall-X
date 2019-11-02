@@ -276,8 +276,10 @@ proceedNormal:
 // this hook prevents sfall scripts from being removed after switching to another map, since normal script engine re-loads completely
 static void _stdcall FreeProgram(fo::Program* progPtr) {
 	if (isGameLoading || (sfallProgsMap.find(progPtr) == sfallProgsMap.end())) { // only delete non-sfall scripts or when actually loading the game
-		_asm mov  eax, progPtr;
-		_asm call fo::funcoffs::interpretFreeProgram_;
+		__asm {
+			mov  eax, progPtr;
+			call fo::funcoffs::interpretFreeProgram_;
+		}
 	}
 }
 
@@ -472,7 +474,7 @@ static void PrepareGlobalScriptsListByMask() {
 
 		for (int i = 0; i < count; i++) {
 			char* name = _strlwr(filenames[i]); // name of the script in lower case
-			if (name[0] != 'g' || name[1] != 'l') continue; // fix bug db_get_file_list engine fuction (if the script name begin with non a Latin characters)
+			if (name[0] != 'g' || name[1] != 'l') continue; // fix bug in db_get_file_list fuction (if the script name begins with a non-Latin character)
 
 			std::string baseName(name);
 			int lastDot = baseName.find_last_of('.');

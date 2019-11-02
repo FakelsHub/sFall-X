@@ -841,13 +841,13 @@ static void PerkEngineInit() {
 
 	// PerkboxSwitchPerk (RedrwDPrks_)
 	HookCalls(GetPerkSLevelHook, {0x43C3F1, 0x43C41E});
-	HookCalls(GetPerkSNameHook,  {0x43C469, 0x43C4B2});
 	HookCalls(GetPerkSDescHook,  {0x43C44B, 0x43C494});
+	HookCalls(GetPerkSNameHook,  {0x43C469, 0x43C4B2});
 	HookCall(0x43C4D2, GetPerkSImageHook);
 
 	// perk_owed hooks
 	MakeCall(0x4AFB2F, LevelUpHack, 1); // replaces 'mov edx, ds:[PlayerLevel]'
-	SafeWrite8(0x43C2EC, 0xEB);         // skip the block of code which checks if the player has gained a perk (now handled in level up code)
+	SafeWrite8(0x43C2EC, 0xEB); // skip the block of code which checks if the player has gained a perk (now handled in level up code)
 }
 
 static void PerkSetup() {

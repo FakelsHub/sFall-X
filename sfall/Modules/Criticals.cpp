@@ -262,7 +262,7 @@ static void CriticalTableOverride() {
 	}
 
 	if (CritTableLoad()) {
-		dlogr(". Failure initializing critical hit table from file.", DL_INIT);
+		dlogr(". Failed to initialize critical hit table from file.", DL_INIT);
 	} else {
 		dlogr(". Completed applying critical hit table.", DL_INIT);
 	}

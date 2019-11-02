@@ -29,10 +29,10 @@ public:
 	const char* name() { return "LoadGameHook"; }
 	void init();
 
-	// Invoked before game initialization (main_init_system_ called)
+	// Invoked before game initialization (main_init_system_ was called)
 	static Delegate<>& OnBeforeGameInit();
 
-	// Invoked while game initialization (game_init_ was called).
+	// Invoked during game initialization (game_init_ was called).
 	static Delegate<>& OnGameInit();
 
 	// Invoked when the game has been initialized

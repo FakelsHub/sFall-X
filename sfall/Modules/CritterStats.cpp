@@ -116,7 +116,7 @@ std::vector<StatModify> s_baseStatProto;
 
 static long isNotPartyMemberPid;
 
-/////////////////////////////////////////// CRITTERS  STATS ///////////////////////////////////////////
+//////////////////////////////// CRITTERS STATS ////////////////////////////////
 static long GetBaseStatValue(long* proto, long stat) {
 	return proto[OffsetStat::base + stat];
 }
@@ -330,7 +330,7 @@ long* __fastcall CritterStats::GetProto(fo::GameObject* critter) {
 		}
 		return itMem->second.proto;
 	}
-	return nullptr; // no prototype in memory with this ID, will be used regular prototype
+	return nullptr; // no prototype in memory with this ID, regular prototype will be used
 }
 
 // set_proto_data - sets stats to regular prototype and all individual NPC prototypes (the same PID)
