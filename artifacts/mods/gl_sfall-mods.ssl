@@ -27,10 +27,11 @@ procedure pickup_clear();
 procedure distance_sort(variable array);
 procedure weapon_drop;
 procedure DeathAmimHandler;
+procedure GameModeHandler;
 
-variable quickAmmoReload, pickupKey, keyMod, pickupItem, temp;
+variable quickAmmoReload, pickupKey, keyMod, hideIfaceKey;
+variable pickupItem, temp, pickupMessage, hideIface := false;
 variable deathNpcArray, countDeath;
-variable pickupMessage;
 
 procedure start begin
    variable sfall_version;
@@ -56,6 +57,11 @@ procedure start begin
          deathNpcArray := create_array_list(8);
       end
       keyMod := GetConfig("Misc", "CombatKeyMod", 0);
+
+      if (GetIniConfig("IFACE", "IFACE_BAR_MODE", 0, "f2_res.ini") == 1) then begin
+         hideIfaceKey := GetConfig("Misc", "HideInterfaceKey", 0);
+         if (hideIfaceKey) then register_hook_proc(HOOK_GAMEMODECHANGE, GameModeHandler);
+      end
 
       // Fix the lighting of the map from the night vision perk when loading the game
       if has_trait(TRAIT_PERK, dude_obj, PERK_night_vision) then begin
@@ -131,10 +137,20 @@ procedure KeyPressHandler begin
 */
    variable pressed := get_sfall_arg,
             keyDX   := get_sfall_arg,
-            mode;
+            mode    := get_game_mode;
 
+   if (keyDX == hideIfaceKey and (mode == 0 or mode == (COMBAT + PCOMBAT))) then begin
+      if (pressed) then begin
+         intface_hide;
+         hideIface := true;
+      end
+      else if (hideIface) then begin
+         intface_show;
+         hideIface := false;
+      end
+      return;
+   end
    if (pressed) then begin
-      mode := get_game_mode;
       if (mode bwand (COUNTERWIN)) then return;
       // Close inventory when re-pressing the 'I' key
       if (keyDX == DIK_I and (mode bwand INVENTORY)) then begin
@@ -253,5 +269,13 @@ procedure DeathAmimHandler begin
       deathNpcArray[countDeath] := args[2];
       countDeath++;
       if (countDeath == 1) then call weapon_drop in 1; // delay event
+   end
+end
+
+procedure GameModeHandler begin
+   if (hideIface == false or get_sfall_arg) then return;
+   if (intface_is_hidden) then begin
+      intface_show;
+      hideIface := false;
    end
 end

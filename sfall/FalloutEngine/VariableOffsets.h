@@ -53,6 +53,7 @@
 #define FO_VAR_dialog_target              0x518848
 #define FO_VAR_dialog_target_is_party     0x51884C
 #define FO_VAR_displayMapList             0x41B560
+#define FO_VAR_display_win                0x631E4C
 #define FO_VAR_dropped_explosive          0x5190E0
 #define FO_VAR_drugInfoList               0x5191CC
 #define FO_VAR_editor_message_file        0x56FCA8
@@ -149,6 +150,7 @@
 #define FO_VAR_name_sort_list             0x56FCB0
 #define FO_VAR_num_game_global_vars       0x5186C4
 #define FO_VAR_num_map_global_vars        0x519574
+#define FO_VAR_num_windows                0x6ADF24
 #define FO_VAR_card_old_fid1              0x5709EC
 #define FO_VAR_obj_dude                   0x6610B8
 #define FO_VAR_obj_seen                   0x662445
@@ -233,6 +235,7 @@
 #define FO_VAR_trait_data                 0x51DB84
 #define FO_VAR_view_page                  0x664520
 #define FO_VAR_wd_obj                     0x59E98C
+#define FO_VAR_window                     0x6ADE58
 #define FO_VAR_wmAreaInfoList             0x51DDF8
 #define FO_VAR_wmLastRndTime              0x51DEA0
 #define FO_VAR_wmMaxMapNum                0x51DE10

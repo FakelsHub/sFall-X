@@ -317,7 +317,7 @@ void Objects::init() {
 	LoadGameHook::OnBeforeGameStart() += []() {
 		if (hrpIsEnabled) {
 			if (hrpVersionValid) {
-				bool hrpFogIsEnabled = *(DWORD*)HRPAddressOffset(0x683D4) != 0;
+				bool hrpFogIsEnabled = *(DWORD*)HRPAddress(0x100683D4) != 0;
 				sfallProcessSeenState = !hrpFogIsEnabled;
 			}
 		} else {
