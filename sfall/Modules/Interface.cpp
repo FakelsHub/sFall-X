@@ -593,8 +593,8 @@ static void __declspec(naked) gmouse_bk_process_hook() {
 		retn;
 checkFlag:
 		call fo::funcoffs::GNW_find_;
-		cmp  [eax + 4], Hidden; // window flags
-		jnz  skip;
+		test [eax + 4], Hidden; // window flags
+		jz   skip;
 		mov  eax, ds:[FO_VAR_display_win]; // window is hidden, so return the number of the display_win
 skip:
 		retn;

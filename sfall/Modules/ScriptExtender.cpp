@@ -547,6 +547,7 @@ static void ClearGlobalScripts() {
 	globalScripts.clear();
 	selfOverrideMap.clear();
 	globalExportedVars.clear();
+	timerEventScripts.clear();
 	HookScriptClear();
 }
 
