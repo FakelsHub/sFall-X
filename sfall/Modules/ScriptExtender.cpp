@@ -16,9 +16,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cassert>
 //#include <unordered_set>
-#include <string>
 #include <unordered_map>
 #include <map>
 
@@ -85,6 +83,18 @@ struct SelfOverrideObj {
 	}
 };
 
+struct TimedEvent {
+	ScriptProgram* script;
+	long time;
+	long fixed_param;
+
+	bool operator() (const TimedEvent &a, const TimedEvent &b) {
+		return a.time < b.time;
+	}
+} *timedEvent = nullptr;
+
+static std::list<TimedEvent> timerEventScripts;
+
 static std::vector<std::string> globalScriptPathList;
 static std::map<std::string, std::string> globalScriptFilesList;
 
@@ -133,6 +143,11 @@ static DWORD _stdcall FindSid(fo::Program* script) {
 	}
 	// this will allow to use functions like roll_vs_skill, etc without calling set_self (they don't really need self object)
 	if (sfallProgsMap.find(script) != sfallProgsMap.end()) {
+		if (timedEvent && timedEvent->script->ptr == script) {
+			overrideScriptStruct.fixedParam = timedEvent->fixed_param;
+		} else {
+			overrideScriptStruct.fixedParam = 0;
+		}
 		overrideScriptStruct.targetObject = overrideScriptStruct.selfObject = 0;
 		return -2; // override struct
 	}
@@ -624,6 +639,54 @@ static DWORD _stdcall HandleMapUpdateForScripts(const DWORD procId) {
 	return procId; // restore eax (don't delete)
 }
 
+static long HandleTimedEventScripts() {
+	long currentTime = fo::var::fallout_game_time;
+	bool wereRunning = false;
+	auto timerIt = timerEventScripts.cbegin();
+	for (; timerIt != timerEventScripts.cend(); timerIt++) {
+		if (currentTime >= timerIt->time) {
+			timedEvent = const_cast<TimedEvent*>(&(*timerIt));
+			fo::func::dev_printf("\n[TimedEventScripts] run event: %d", timerIt->time);
+			RunScriptProc(timerIt->script, fo::ScriptProc::timed_event_p_proc);
+			wereRunning = true;
+		} else {
+			break;
+		}
+	}
+	if (wereRunning) {
+		for (auto _it = timerEventScripts.cbegin(); _it != timerIt; _it++) {
+			fo::func::dev_printf("\n[TimedEventScripts] delete events: %d", _it->time);
+		}
+		timerEventScripts.erase(timerEventScripts.cbegin(), timerIt);
+	}
+	timedEvent = nullptr;
+	return currentTime;
+}
+
+void ScriptExtender::AddTimerEventScripts(fo::Program* script, long time, long param) {
+	ScriptProgram* scriptProg = &(sfallProgsMap.find(script)->second);
+	TimedEvent timer;
+	timer.script = scriptProg;
+	timer.fixed_param = param;
+	timer.time = fo::var::fallout_game_time + time;
+	timerEventScripts.push_back(std::move(timer));
+	timerEventScripts.sort(TimedEvent());
+}
+
+void ScriptExtender::RemoveTimerEventScripts(fo::Program* script, long param) {
+	ScriptProgram* scriptProg = &(sfallProgsMap.find(script)->second);
+	timerEventScripts.remove_if([scriptProg, param] (TimedEvent timer) {
+		return timer.script == scriptProg && timer.fixed_param == param;
+	});
+}
+
+void ScriptExtender::RemoveTimerEventScripts(fo::Program* script) {
+	ScriptProgram* scriptProg = &(sfallProgsMap.find(script)->second);
+	timerEventScripts.remove_if([scriptProg] (TimedEvent timer) {
+		return timer.script == scriptProg;
+	});
+}
+
 // run all global scripts of types 0 and 3 at specific procedure (if exist)
 void RunGlobalScriptsAtProc(DWORD procId) {
 	for (DWORD d = 0; d < globalScripts.size(); d++) {
@@ -760,9 +823,9 @@ void ScriptExtender::init() {
 
 	alwaysFindScripts = isDebug && (iniGetInt("Debugging", "AlwaysFindScripts", 0, ::sfall::ddrawIni) != 0);
 
-	MakeJump(0x4A390C, FindSidHack);
+	MakeJump(0x4A390C, FindSidHack); // scr_find_sid_from_program_
 	MakeJump(0x4A5E34, ScrPtrHack);
-
+	HookCall(0x4A26D6, HandleTimedEventScripts); // queue_process_
 	MakeJump(0x4A67F0, ExecMapScriptsHack);
 
 	// this patch makes it possible to export variables from sfall global scripts
