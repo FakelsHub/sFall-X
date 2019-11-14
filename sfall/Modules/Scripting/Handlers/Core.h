@@ -58,8 +58,6 @@ void sf_add_timer_event(OpcodeContext&);
 
 void sf_remove_timer_event(OpcodeContext&);
 
-void sf_reg_anim_callback(OpcodeContext&);
-
 void sf_sfall_ver_major(OpcodeContext&);
 
 void sf_sfall_ver_minor(OpcodeContext&);

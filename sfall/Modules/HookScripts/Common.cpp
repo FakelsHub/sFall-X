@@ -65,7 +65,7 @@ bool LoadHookScriptFile(std::string filePath, const char* name, int id, bool ful
 			hook.callback = -1;
 			hook.isGlobalScript = 0;
 			hooks[id].push_back(hook);
-			AddProgramToMap(prog);
+			ScriptExtender::AddProgramToMap(prog);
 		} else {
 			dlogr(" Error!", DL_HOOK);
 		}

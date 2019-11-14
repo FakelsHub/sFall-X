@@ -19,6 +19,7 @@
 #include "..\..\..\FalloutEngine\Fallout2.h"
 #include "..\..\..\SafeWrite.h"
 #include "..\..\Explosions.h"
+#include "..\..\ScriptExtender.h"
 #include "..\OpcodeContext.h"
 
 #include "Anims.h"
@@ -114,6 +115,22 @@ void sf_reg_anim_turn_towards(OpcodeContext& ctx) {
 
 		fo::func::register_object_turn_towards(obj, tile, nothing);
 	}
+}
+
+static void __declspec(naked) ExecuteCallback() {
+	__asm {
+		call fo::funcoffs::executeProcedure_;
+		jmp  ScriptExtender::GetResetScriptReturnValue;
+	}
+}
+
+void sf_reg_anim_callback(OpcodeContext& ctx) {
+	fo::func::register_object_call(
+		reinterpret_cast<long*>(ctx.program()),
+		reinterpret_cast<long*>(ctx.arg(0).rawValue()), // callback procedure
+		reinterpret_cast<void*>(ExecuteCallback),
+		-1
+	);
 }
 
 void sf_explosions_metarule(OpcodeContext& ctx) {

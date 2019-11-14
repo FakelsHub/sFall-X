@@ -197,15 +197,6 @@ void sf_remove_timer_event(OpcodeContext& ctx) {
 	}
 }
 
-void sf_reg_anim_callback(OpcodeContext& ctx) {
-	fo::func::register_object_call(
-		reinterpret_cast<long*>(ctx.program()),
-		reinterpret_cast<long*>(ctx.arg(0).rawValue()),// callback procedure
-		reinterpret_cast<void*>(fo::funcoffs::executeProcedure_),
-		-1
-	);
-}
-
 void sf_sfall_ver_major(OpcodeContext& ctx) {
 	ctx.setReturn(VERSION_MAJOR);
 }

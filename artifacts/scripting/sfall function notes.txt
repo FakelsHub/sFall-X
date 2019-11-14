@@ -218,6 +218,9 @@ Some additional reg_anim_* functions were introduced. They all work in the same 
 > void reg_anim_turn_towards(object, tile/target, delay)
 - makes object change its direction to face given tile num or target object.
 
+> void reg_anim_callback(procedure proc)
+- registers the specified procedure in the list of animation sequences and executes it in the registered sequence.
+
 > int/array metarule2_explosions(int arg1, int arg2, int arg3)
 was made as a dirty easy hack to allow dynamically change some explosion parameters (ranged attack). All changed parameters are reset to vanilla state automatically after each attack action. Following macros are available in sfall.h:
 
@@ -634,9 +637,9 @@ optional argument:
 > int sfall_func0("get_inven_ap_cost")
 - returns the current AP cost to access the inventory in combat
 
-> void sfall_func2("add_timer_event", int time, int param)
-- adds a timer event by calling the timed_event_p_proc handler of the global script in which the function is executed
-- time: the number of ticks, after which the event timer is triggered
+> void sfall_func2("add_g_timer_event", int time, int param)
+- adds a timer event that calls the timed_event_p_proc handler in the current global script
+- time: the number of ticks after which the event timer is triggered
 - param: the value that is passed to the timed_event_p_proc handler for the fixed_param function
 
 > void sfall_func0("remove_timer_event")
