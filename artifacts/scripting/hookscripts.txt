@@ -29,6 +29,7 @@ The hook script equivalent of game_loaded; it returns 2 when the script is first
 
 > mixed get_sfall_arg()
 Gets the next argument from sfall. Each time it's called it returns the next argument, or otherwise it returns 0 if there are no more arguments left.
+You can arbitrarily get the value of the required argument using the sfall_func1("get_sfall_arg_at", argument) function.
 
 > array get_sfall_args()
 Returns all hook arguments as a new temp array.
