@@ -63,6 +63,7 @@
 #define HOOK_SETLIGHTING      (38)
 #define HOOK_SNEAK            (39)
 #define HOOK_STDPROCEDURE     (40)
+#define HOOK_STDPROCEDURE_END (41)
 
 //Valid arguments to list_begin
 #define LIST_CRITTERS    (0)
