@@ -570,11 +570,12 @@ void DialogueFix() {
 	}
 }
 
-/*void RemoveWindowRoundingPatch() {
-	if(GetConfigInt("Misc", "RemoveWindowRounding", 0)) {
-		SafeWrite16(0x4B8090, 0x04EB);            // jmps 0x4B8096
+void RemoveWindowRoundingPatch() {
+	if(GetConfigInt("Interface", "RemoveWindowRounding", 1)) {
+		SafeWriteBatch<BYTE>(0xEB, {0x4D6EDD, 0x4D6F12});
+		//SafeWrite16(0x4B8090, 0x04EB); // jmps 0x4B8096 (old)
 	}
-}*/
+}
 
 void InventoryCharacterRotationSpeedPatch() {
 	DWORD setting = GetConfigInt("Misc", "SpeedInventoryPCRotation", 166);
@@ -744,7 +745,7 @@ void MiscPatches::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (GetConfigInt("Misc", "SingleCore", 1)) {
+	if (GetConfigInt("System", "SingleCore", 1)) {
 		dlog("Applying single core patch.", DL_INIT);
 		HANDLE process = GetCurrentProcess();
 		SetProcessAffinityMask(process, 1);
@@ -752,7 +753,7 @@ void MiscPatches::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (GetConfigInt("Misc", "OverrideArtCacheSize", 0)) {
+	if (GetConfigInt("System", "OverrideArtCacheSize", 0)) {
 		dlog("Applying override art cache size patch.", DL_INIT);
 		SafeWrite32(0x418867, 0x90909090);
 		SafeWrite32(0x418872, 256);
@@ -791,7 +792,7 @@ void MiscPatches::init() {
 	PlayIdleAnimOnReloadPatch();
 
 	SkilldexImagesPatch();
-	//RemoveWindowRoundingPatch();
+	RemoveWindowRoundingPatch();
 
 	ScienceOnCrittersPatch();
 	InventoryCharacterRotationSpeedPatch();
