@@ -574,7 +574,7 @@ static long gmouse_handle_event_hook() {
 		if ((win->wID == ifaceWin || (win->flags & fo::WinFlags::ScriptWindow && !(win->flags & fo::WinFlags::Transparent))) // also check the script windows
 			&& !(win->flags & fo::WinFlags::Hidden)) {
 			RECT *rect = &win->wRect;
-			if (fo::func::mouse_click_in(rect->left, rect->top, rect->right, rect->bottom)) return 0; // 0- block, click in the window region
+			if (fo::func::mouse_click_in(rect->left, rect->top, rect->right, rect->bottom)) return 0; // 0 - block, click in the window region
 		}
 	}
 	if (IFACE_BAR_MODE) return 1;
@@ -585,19 +585,9 @@ static long gmouse_handle_event_hook() {
 }
 
 static void __declspec(naked) gmouse_bk_process_hook() {
-	using namespace fo::WinFlags;
 	__asm {
-		call fo::funcoffs::win_get_top_win_;
-		cmp  eax, ds:[FO_VAR_display_win];
-		jnz  checkFlag;
-		retn;
-checkFlag:
-		call fo::funcoffs::GNW_find_;
-		test [eax + 4], Hidden; // window flags
-		jz   skip;
-		mov  eax, ds:[FO_VAR_display_win]; // window is hidden, so return the number of the display_win
-skip:
-		retn;
+		mov ecx, eax;
+		jmp fo::GetTopWindowID;
 	}
 }
 

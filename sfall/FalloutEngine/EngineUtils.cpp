@@ -192,6 +192,22 @@ fo::GameObject* __fastcall LineOfSight(fo::GameObject* obj) {
 	return object;
 }
 
+// Returns window ID by x/y coordinate (hidden windows are ignored)
+long __fastcall GetTopWindowID(long xPos, long yPos) {
+	fo::Window* win = nullptr;
+	long countWin = *(DWORD*)FO_VAR_num_windows - 1;
+	for (int n = countWin; n >= 0; n--)
+	{
+		win = fo::var::window[n];
+		if (xPos >= win->wRect.left && xPos <= win->wRect.right && yPos >= win->wRect.top && yPos <= win->wRect.bottom) {
+			if (!(win->flags & fo::WinFlags::Hidden)) {
+				break;
+			}
+		}
+	}
+	return win->wID;
+}
+
 //---------------------------------------------------------
 //print text to surface
 void PrintText(char *DisplayText, BYTE ColourIndex, DWORD Xpos, DWORD Ypos, DWORD TxtWidth, DWORD ToWidth, BYTE *ToSurface) {

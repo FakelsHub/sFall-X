@@ -80,6 +80,8 @@ long GetScriptLocalVars(long sid);
 
 fo::GameObject* __fastcall LineOfSight(fo::GameObject* obj);
 
+long __fastcall GetTopWindowID(long xPos, long yPos);
+
 // Print text to surface
 void PrintText(char *displayText, BYTE colorIndex, DWORD x, DWORD y, DWORD textWidth, DWORD destWidth, BYTE *surface);
 // gets the height of the currently selected font
