@@ -559,11 +559,14 @@ void sf_set_drugs_data(OpcodeContext& ctx) {
 		ctx.printOpcodeError("%s() - invalid value for type argument.", ctx.getMetaruleName());
 		return;
 	}
-	if (result) ctx.printOpcodeError("%s() - drug PID not found in the configuration file.", ctx.getMetaruleName());
+	if (result) {
+		ctx.printOpcodeError("%s() - drug PID not found in the configuration file.", ctx.getMetaruleName());
+		ctx.setReturn(-1);
+	}
 }
 
 void sf_set_unique_id(OpcodeContext& ctx) {
-	fo::GameObject* obj = ctx.arg(0).asObject();
+	fo::GameObject* obj = ctx.arg(0).object();
 	long id;
 	if (ctx.arg(1).rawValue() == -1) {
 		id = fo::func::new_obj_id();

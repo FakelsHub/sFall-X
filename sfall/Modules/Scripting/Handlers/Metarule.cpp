@@ -105,7 +105,7 @@ static const SfallMetarule metarules[] = {
 	{"lock_is_jammed",          sf_lock_is_jammed,          1, 1,  0, {ARG_OBJECT}},
 	{"loot_obj",                sf_get_loot_object,         0, 0},
 	{"metarule_exist",          sf_metarule_exist,          1, 1}, // no arg check
-	{"npc_engine_level_up",     sf_npc_engine_level_up,     1, 1,  0, {ARG_ANY}},
+	{"npc_engine_level_up",     sf_npc_engine_level_up,     1, 1},
 	{"obj_under_cursor",        sf_get_obj_under_cursor,    2, 2,  0, {ARG_INT, ARG_INT}},
 	{"outlined_object",         sf_outlined_object,         0, 0},
 	{"real_dude_obj",           sf_real_dude_obj,           0, 0},

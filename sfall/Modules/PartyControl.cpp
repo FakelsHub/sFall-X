@@ -484,7 +484,7 @@ fo::GameObject* PartyControl::RealDudeObject() {
 		: fo::var::obj_dude;
 }
 
-static fo::GameObject* __fastcall PartyMemberBestWeapon(register fo::GameObject* partyMember, register int slot, DWORD* backRet) {
+static fo::GameObject* __fastcall PartyMemberBestWeapon(fo::GameObject* partyMember, int slot, DWORD* backRet) {
 
 	fo::GameObject* handItem = fo::func::inven_right_hand(partyMember);
 	if (handItem == nullptr) return nullptr; // normal behavior
@@ -513,8 +513,8 @@ static void __declspec(naked) gdControl_hook_weapon() {
 	}
 }
 
-static fo::GameObject* __fastcall PartyMemberBestArmor(register fo::GameObject* partyMember) {
-
+static fo::GameObject* __fastcall PartyMemberBestArmor() {
+	fo::GameObject* partyMember = fo::var::dialog_target;
 	fo::GameObject* wornItem = fo::func::inven_worn(partyMember);
 	fo::GameObject* bestItem = fo::func::ai_search_inven_armor(partyMember);
 
@@ -526,19 +526,12 @@ static fo::GameObject* __fastcall PartyMemberBestArmor(register fo::GameObject* 
 	return bestItem; // normal behavior
 }
 
-static void __declspec(naked) gdControl_hook_armor() {
-	__asm {
-		mov ecx, eax; // ecx - partyMember
-		jmp PartyMemberBestArmor;
-	}
-}
-
 static char levelMsg[12], armorClassMsg[12], addictMsg[16];
 static void __fastcall PartyMemberPrintStat(BYTE* surface, DWORD toWidth) {
 	const char* fmt = "%s %d";
 	char lvlMsg[16], acMsg[16];
 
-	fo::GameObject* partyMember = (fo::GameObject*)fo::var::dialog_target;
+	fo::GameObject* partyMember = fo::var::dialog_target;
 	int xPos = 350;
 
 	int level = fo::func::partyMemberGetCurLevel(partyMember);
@@ -605,7 +598,7 @@ void PartyControl::init() {
 	// Party members buttons best weapon/armor - unwield behavior (from Crafty)
 	if (GetConfigInt("Misc", "PartyMemberTakeOffItem", 0)) {
 		HookCall(0x4494FC, gdControl_hook_weapon);
-		HookCall(0x449570, gdControl_hook_armor);
+		HookCall(0x449570, PartyMemberBestArmor); // gdControl_
 	}
 
 	// Display party member's current level & AC & addict flag
