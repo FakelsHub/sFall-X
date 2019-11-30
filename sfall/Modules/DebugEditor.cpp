@@ -310,23 +310,30 @@ hide:
 	}
 }
 
-static char* artDbgMsg = "\nError: file not found: %s\n";
+static char* artDbgMsg = "\nERROR: File not found: %s\n";
 static void __declspec(naked) art_data_size_hook() {
 	__asm {
 		test edi, edi;
 		jz   artNotExist;
 		retn;
 artNotExist:
-		mov  eax, [esp + 0x124 - 0x1C + 4]; // filename
-		push eax;
+		mov  edx, [esp + 0x124 - 0x1C + 4]; // filename
+		push edx;
 		push artDbgMsg;
 		call fo::funcoffs::debug_printf_;
-		add  esp, 8;
 		cmp  isDebug, 0;
-		jz   skip;
-		int  3; // break program
-skip:
+		jne  display;
+		add  esp, 8;
 		retn;
+display:
+		push edx; // filename
+		lea  eax, [esp + 0x124 - 0x124 + 16]; // buf
+		push artDbgMsg;
+		push eax;
+		call fo::funcoffs::sprintf_;
+		add  esp, 20;
+		lea  eax, [esp + 4];
+		jmp  fo::funcoffs::display_print_;
 	}
 }
 

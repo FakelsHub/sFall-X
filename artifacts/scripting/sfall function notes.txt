@@ -681,7 +681,10 @@ optional argument:
 - compares two strings case-insensitive, and returns True if the two strings is matched
 - codePage: code page number to properly compare national characters in the range 128-255 of the ASCII code table
   available encodings: 1250-1252, 866
-
+  
+> string sfall_func3("string_format", string format, any val1, any val2, ...)
+- formats given value using standard syntax of C printf function (google "printf" for format details). However it is limited to formatting up to 4 values.
+- formatting supported only for %s and %d, the format string not should exceed 1024 characters
 ------------------------
 ------ MORE INFO -------
 ------------------------
