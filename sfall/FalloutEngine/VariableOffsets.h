@@ -54,6 +54,7 @@
 #define FO_VAR_dialog_target_is_party     0x51884C
 #define FO_VAR_displayMapList             0x41B560
 #define FO_VAR_display_win                0x631E4C
+#define FO_VAR_debug_func                 0x51DF04
 #define FO_VAR_dropped_explosive          0x5190E0
 #define FO_VAR_drugInfoList               0x5191CC
 #define FO_VAR_editor_message_file        0x56FCA8

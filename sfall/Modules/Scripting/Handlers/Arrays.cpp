@@ -54,9 +54,8 @@ void sf_get_array(OpcodeContext& ctx) {
 		);
 	} else if (ctx.arg(0).isString()) {
 		if (ctx.arg(1).isInt()) {
-			size_t len = strlen(ctx.arg(0).strValue());
 			size_t index = ctx.arg(1).rawValue();
-			if (index < len) {
+			if (index < strlen(ctx.arg(0).strValue())) {
 				wchar_t c = ((unsigned char*)ctx.arg(0).strValue())[index];
 				((wchar_t*)ScriptExtender::gTextBuffer)[0] = c;
 			} else {

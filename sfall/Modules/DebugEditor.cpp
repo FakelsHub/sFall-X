@@ -346,6 +346,16 @@ static void __declspec(naked) win_debug_hook() {
 	}
 }
 
+static void __declspec(naked)op_display_msg_hook() {
+	__asm {
+		cmp  dword ptr ds:FO_VAR_debug_func, 0;
+		jne  debug;
+		retn;
+debug:
+		jmp fo::funcoffs::config_get_value_;
+	}
+}
+
 static void DebugModePatch() {
 	DWORD dbgMode = iniGetInt("Debugging", "DebugMode", 0, ::sfall::ddrawIni);
 	if (dbgMode) {
@@ -375,8 +385,14 @@ static void DebugModePatch() {
 		// prints a debug message about missing art file for critters and interrupts game execution
 		HookCall(0x419B65, art_data_size_hook);
 
+		// replaced calling debug_printf_ to _debug_func (to prevent a crash game if there have a '%' character in the printed message)
+		long long data = 0x51DF0415FFF08990; // mov eax, esi; call ds:_debug_func
+		SafeWriteBytes(0x455419, (BYTE*)&data, 8);
+
 		dlogr(" Done", DL_INIT);
 	}
+	// Just for speed (optional)
+	HookCall(0x455404, op_display_msg_hook);
 }
 
 static void DontDeleteProtosPatch() {
