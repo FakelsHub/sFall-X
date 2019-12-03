@@ -27,8 +27,8 @@ namespace sfall
 namespace script
 {
 
-#define START_VALID_ADDR	0x410000
-#define END_VALID_ADDR		0x6B403F
+#define START_VALID_ADDR    0x410000
+#define END_VALID_ADDR      0x6B403F
 
 void __declspec(naked) op_read_byte() {
 	__asm {
@@ -38,7 +38,7 @@ void __declspec(naked) op_read_byte() {
 		movzx edx, byte ptr ds:[eax]; // read memory
 result:
 		mov  eax, ebx;
-		J_RET_VAL_TYPE(VAR_TYPE_INT);
+		_J_RET_VAL_TYPE(VAR_TYPE_INT);
 //		retn;
 error:
 		xor  edx, edx;
@@ -54,7 +54,7 @@ void __declspec(naked) op_read_short() {
 		movzx edx, word ptr ds:[eax]; // read memory
 result:
 		mov  eax, ebx;
-		J_RET_VAL_TYPE(VAR_TYPE_INT);
+		_J_RET_VAL_TYPE(VAR_TYPE_INT);
 //		retn;
 error:
 		xor  edx, edx;
@@ -70,7 +70,7 @@ void __declspec(naked) op_read_int() {
 		mov  edx, dword ptr ds:[eax]; // read memory
 result:
 		mov  eax, ebx;
-		J_RET_VAL_TYPE(VAR_TYPE_INT);
+		_J_RET_VAL_TYPE(VAR_TYPE_INT);
 //		retn;
 error:
 		xor  edx, edx;
@@ -86,7 +86,7 @@ void __declspec(naked) op_read_string() {
 		mov  edx, eax;
 result:
 		mov  eax, ebx;
-		J_RET_VAL_TYPE(VAR_TYPE_STR);
+		_J_RET_VAL_TYPE(VAR_TYPE_STR);
 //		retn;
 error:
 		xor  edx, edx;
@@ -251,10 +251,10 @@ static void __fastcall CallOffsetInternal(fo::Program* script, DWORD func) {
 
 void __declspec(naked) op_call_offset() {
 	__asm {
-		push ecx;
+		mov  esi, ecx;
 		mov  ecx, eax;
 		call CallOffsetInternal; // edx - func
-		pop  ecx;
+		mov  ecx, esi;
 		retn;
 	}
 }

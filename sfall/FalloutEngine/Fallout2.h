@@ -78,7 +78,7 @@
 	__asm call fo::funcoffs::interpretPushShort_	\
 }
 
-#define J_RET_VAL_TYPE(type) __asm {				\
+#define _J_RET_VAL_TYPE(type) __asm {				\
 	__asm call fo::funcoffs::interpretPushLong_		\
 	__asm mov  edx, type							\
 	__asm mov  eax, ebx								\
