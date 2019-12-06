@@ -120,14 +120,14 @@ bool OpcodeContext::validateArguments(const OpcodeArgumentType argTypes[], const
 		if (actualType == DataType::NONE) break;
 		auto argType = argTypes[i];
 		switch (argType) {
-		case ARG_ANY:
-			continue;
+		case ARG_ANY: continue;
 		case ARG_INT:
 		case ARG_OBJECT:
 			if (actualType != DataType::INT) {
 				printOpcodeError("%s() - argument #%d is not an integer.", opcodeName, ++i);
 				return false;
-			} else if (argType == ARG_OBJECT && arg(i).rawValue() == 0) {
+			}
+			if (argType == ARG_OBJECT && arg(i).rawValue() == 0) {
 				printOpcodeError("%s() - argument #%d is null.", opcodeName, ++i);
 				return false;
 			}
@@ -184,16 +184,11 @@ void __stdcall OpcodeContext::handleOpcodeStatic(fo::Program* program, DWORD opc
 /*
 const char* OpcodeContext::getSfallTypeName(DWORD dataType) {
 	switch (dataType) {
-		case DataType::NONE:
-			return "(none)";
-		case DataType::STR:
-			return "string";
-		case DataType::FLOAT:
-			return "float";
-		case DataType::INT:
-			return "integer";
-		default:
-			return "(unknown)";
+		case DataType::NONE:  return "(none)";
+		case DataType::STR:   return "string";
+		case DataType::FLOAT: return "float";
+		case DataType::INT:   return "integer";
+		default:              return "(unknown)";
 	}
 }
 */

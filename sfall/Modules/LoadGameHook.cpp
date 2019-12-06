@@ -73,7 +73,7 @@ static bool pipBoyAvailableAtGameStart = false;
 static bool mapLoaded = false;
 
 bool IsMapLoaded() {
-	return mapLoaded;
+	return mapLoaded; // TODO: rename to gameLoaded/Started
 }
 
 DWORD InWorldMap() {

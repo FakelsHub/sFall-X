@@ -688,10 +688,9 @@ void SkipLoadingGameSettingsPatch() {
 }
 
 void InterfaceDontMoveOnTopPatch() {
-	if (GetConfigInt("Misc", "InterfaceDontMoveOnTop", 0)) {
+	if (GetConfigInt("Misc", "InterfaceDontMoveOnTop", 0)) { // TODO: Move to Interface section or remove option (obsolete)
 		dlog("Applying InterfaceDontMoveOnTop patch.", DL_INIT);
 		SafeWrite8(0x46ECE9, fo::WinFlags::Exclusive); // Player Inventory/Loot/UseOn
-		//SafeWrite8(0x445978, fo::WinFlags::Exclusive); // DialogReView (need fix)
 		SafeWrite8(0x41B966, fo::WinFlags::Exclusive); // Automap
 		dlogr(" Done", DL_INIT);
 	}

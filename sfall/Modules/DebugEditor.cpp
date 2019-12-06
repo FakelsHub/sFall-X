@@ -401,9 +401,9 @@ static void DebugModePatch() {
 			MakeCall(0x4C703F, debug_log_hack);
 			BlockCall(0x4C7044); // just nop code
 		}
-		// replaced calling debug_printf_ to _debug_func (optional)
+		// replaced calling debug_printf_ to _debug_func
 		long long data = 0x51DF0415FFF08990; // mov eax, esi; call ds:_debug_func
-		SafeWriteBytes(0x455419, (BYTE*)&data, 8);
+		SafeWriteBytes(0x455419, (BYTE*)&data, 8); // op_display_msg_
 
 		dlogr(" Done", DL_INIT);
 	}
