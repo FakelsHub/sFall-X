@@ -27,13 +27,10 @@ namespace sfall
 namespace script
 {
 
-//script control functions
 
-class OpcodeContext;
+void sf_remove_script(OpcodeContext&);
 
-void __declspec() op_remove_script();
-
-void __declspec() op_set_script();
+void sf_set_script(OpcodeContext&);
 
 void sf_create_spatial(OpcodeContext&);
 

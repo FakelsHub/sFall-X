@@ -325,7 +325,7 @@ static void __declspec(naked) FreeProgramHook() {
 }
 
 static void __declspec(naked) CombatBeginHook() {
-	using fo::ScriptProc::combat_is_starting_p_proc;
+	using namespace fo::Scripts;
 	__asm {
 		push eax;
 		call fo::funcoffs::scr_set_ext_param_;
@@ -336,7 +336,7 @@ static void __declspec(naked) CombatBeginHook() {
 }
 
 static void __declspec(naked) CombatOverHook() {
-	using fo::ScriptProc::combat_is_over_p_proc;
+	using namespace fo::Scripts;
 	__asm {
 		push eax;
 		call fo::funcoffs::scr_set_ext_param_;
@@ -437,7 +437,7 @@ void LoadScriptProgram(ScriptProgram &prog, const char* fileName, bool fullPath)
 		const char** procTable = fo::var::procTableStrs;
 		prog.ptr = scriptPtr;
 		// fill lookup table
-		for (int i = 0; i < fo::ScriptProc::count; ++i) {
+		for (int i = 0; i < fo::Scripts::ScriptProc::count; ++i) {
 			prog.procLookup[i] = fo::func::interpretFindProcedure(prog.ptr, procTable[i]);
 		}
 		prog.initialized = 0;
@@ -482,7 +482,7 @@ static void LoadGlobalScriptsList() {
 		if (prog.ptr) {
 			dlogr(" Done", DL_SCRIPT);
 			GlobalScript gscript = GlobalScript(prog);
-			gscript.startProc = prog.procLookup[fo::ScriptProc::start]; // get 'start' procedure position
+			gscript.startProc = prog.procLookup[fo::Scripts::ScriptProc::start]; // get 'start' procedure position
 			globalScripts.push_back(gscript);
 			ScriptExtender::AddProgramToMap(prog);
 			// initialize script (start proc will be executed for the first time) -- this needs to be after script is added to "globalScripts" array
@@ -574,7 +574,7 @@ void RunScriptProc(ScriptProgram* prog, const char* procName) {
 }
 
 void RunScriptProc(ScriptProgram* prog, long procId) {
-	if (procId > 0 && procId < fo::ScriptProc::count) {
+	if (procId > 0 && procId < fo::Scripts::ScriptProc::count) {
 		int procNum = prog->procLookup[procId];
 		if (procNum != -1) {
 			fo::func::executeProcedure(prog->ptr, procNum);
@@ -583,7 +583,7 @@ void RunScriptProc(ScriptProgram* prog, long procId) {
 }
 
 int RunScriptStartProc(ScriptProgram* prog) {
-	int procNum = prog->procLookup[fo::ScriptProc::start];
+	int procNum = prog->procLookup[fo::Scripts::ScriptProc::start];
 	if (procNum != -1) {
 		fo::func::executeProcedure(prog->ptr, procNum);
 	}
@@ -635,12 +635,12 @@ static void RunGlobalScriptsOnWorldMap() {
 }
 
 static DWORD _stdcall HandleMapUpdateForScripts(const DWORD procId) {
-	if (procId == fo::ScriptProc::map_enter_p_proc) {
+	if (procId == fo::Scripts::ScriptProc::map_enter_p_proc) {
 		// map changed, all game objects were destroyed and scripts detached, need to re-insert global scripts into the game
 		for (std::vector<GlobalScript>::const_iterator it = globalScripts.cbegin(); it != globalScripts.cend(); it++) {
 			fo::func::runProgram(it->prog.ptr);
 		}
-	} else if (procId == fo::ScriptProc::map_exit_p_proc) {
+	} else if (procId == fo::Scripts::ScriptProc::map_exit_p_proc) {
 		Objects::sfallProcessSeenState &= ~2; // unset 2-bit
 		onMapExit.invoke();
 	}
@@ -659,7 +659,7 @@ static long HandleTimedEventScripts() {
 		if (currentTime >= timerIt->time) {
 			timedEvent = const_cast<TimedEvent*>(&(*timerIt));
 			fo::func::dev_printf("\n[TimedEventScripts] run event: %d", timerIt->time);
-			RunScriptProc(timerIt->script, fo::ScriptProc::timed_event_p_proc);
+			RunScriptProc(timerIt->script, fo::Scripts::ScriptProc::timed_event_p_proc);
 			wereRunning = true;
 		} else {
 			break;
@@ -828,7 +828,7 @@ void ScriptExtender::init() {
 		bool pathSeparator = (c == '\\' || c == '/');
 		if (len > 62 || (len == 62 && !pathSeparator)) {
 			iniConfigFolder.clear();
-			dlogr("Error: IniConfigFolder path is too long.", DL_SCRIPT);
+			dlogr("Error: IniConfigFolder path is too long.", DL_INIT|DL_SCRIPT);
 		} else if (!pathSeparator) {
 			iniConfigFolder += '\\';
 		}

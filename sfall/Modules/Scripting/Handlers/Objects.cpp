@@ -36,129 +36,73 @@ namespace sfall
 namespace script
 {
 
-void __declspec(naked) op_remove_script() {
-	__asm {
-		push ebx;
-		push ecx;
-		push edx;
-		mov ecx, eax;
-		call fo::funcoffs::interpretPopShort_;
-		mov edx, eax;
-		mov eax, ecx;
-		call fo::funcoffs::interpretPopLong_;
-		cmp dx, VAR_TYPE_INT;
-		jnz end;
-		test eax, eax;
-		jz end;
-		mov edx, eax;
-		mov eax, [eax + 0x78];
-		cmp eax, 0xffffffff;
-		jz end;
-		call fo::funcoffs::scr_remove_;
-		mov dword ptr [edx + 0x78], 0xffffffff;
-end:
-		pop edx;
-		pop ecx;
-		pop ebx;
-		retn;
+#define exec_script_proc(script, stype) __asm { \
+	__asm mov  eax, script                      \
+	__asm mov  edx, stype                       \
+	__asm call fo::funcoffs::exec_script_proc_  \
+}
+
+void sf_remove_script(OpcodeContext& ctx) {
+	auto object = ctx.arg(0).object();
+	if (object->scriptId != 0xFFFFFFFF) {
+		fo::func::scr_remove(object->scriptId);
+		object->scriptId = 0xFFFFFFFF;
 	}
 }
 
-void __declspec(naked) op_set_script() {
-	__asm {
-		pushad;
-		mov ecx, eax;
-		call fo::funcoffs::interpretPopShort_;
-		mov edx, eax;
-		mov eax, ecx;
-		call fo::funcoffs::interpretPopLong_;
-		mov ebx, eax;
-		mov eax, ecx;
-		call fo::funcoffs::interpretPopShort_;
-		mov edi, eax;
-		mov eax, ecx;
-		call fo::funcoffs::interpretPopLong_;
-		cmp dx, VAR_TYPE_INT;
-		jnz end;
-		cmp di, VAR_TYPE_INT;
-		jnz end;
-		test eax, eax;
-		jz end;
-		mov esi, [eax + 0x78];
-		cmp esi, 0xffffffff;
-		jz newscript;
-		push eax;
-		mov eax, esi;
-		call fo::funcoffs::scr_remove_;
-		pop eax;
-		mov dword ptr [eax + 0x78], 0xffffffff;
-newscript:
-		mov esi, 1;
-		test ebx, 0x80000000;
-		jz execMapEnter;
-		xor esi, esi;
-		xor ebx, 0x80000000;
-execMapEnter:
-		mov ecx, eax;
-		mov edx, 3; // script_type_item
-		mov edi, [eax + 0x64];
-		shr edi, 24;
-		cmp edi, 1;
-		jnz notCritter;
-		inc edx; // 4 - "critter" type script
-notCritter:
-		dec ebx;
-		call fo::funcoffs::obj_new_sid_inst_;
-		mov eax, [ecx + 0x78];
-		mov edx, 1; // start
-		call fo::funcoffs::exec_script_proc_;
-		cmp esi, 1; // run map enter?
-		jnz end;
-		mov eax, [ecx + 0x78];
-		mov edx, 0xf; // map_enter_p_proc
-		call fo::funcoffs::exec_script_proc_;
-end:
-		popad;
-		retn;
+void sf_set_script(OpcodeContext& ctx) {
+	using fo::Scripts::start;
+	using fo::Scripts::map_enter_p_proc;
+
+	long scriptType;
+	auto object = ctx.arg(0).object();
+	DWORD scriptIndex = ctx.arg(1).rawValue();
+
+	if ((scriptIndex & ~0x80000000) == 0) {
+		ctx.printOpcodeError("%s() - the script index number is incorrect.", ctx.getOpcodeName());
+		return;
 	}
+	bool runMapEnter = (scriptIndex & 0x80000000) != 0;
+	scriptIndex ^= 0x80000000;
+	scriptIndex--;
+
+	if (object->scriptId != 0xFFFFFFFF) {
+		fo::func::scr_remove(object->scriptId);
+		object->scriptId = 0xFFFFFFFF;
+	}
+	if (object->Type() == fo::ObjType::OBJ_TYPE_CRITTER) {
+		scriptType = fo::Scripts::ScriptTypes::SCRIPT_CRITTER;
+	} else {
+		scriptType = fo::Scripts::ScriptTypes::SCRIPT_ITEM;
+	}
+	fo::func::obj_new_sid_inst(object, scriptType, scriptIndex);
+
+	long scriptId = object->scriptId;
+	exec_script_proc(scriptId, start);
+	if (runMapEnter) exec_script_proc(scriptId, map_enter_p_proc);
 }
 
 void sf_create_spatial(OpcodeContext& ctx) {
+	using fo::Scripts::start;
+
 	DWORD scriptIndex = ctx.arg(0).rawValue(),
 		tile = ctx.arg(1).rawValue(),
 		elevation = ctx.arg(2).rawValue(),
-		radius = ctx.arg(3).rawValue(),
-		scriptId, tmp, objectPtr,
-		scriptPtr;
-	__asm {
-		lea eax, scriptId;
-		mov edx, 1;
-		call fo::funcoffs::scr_new_;
-		mov tmp, eax;
-	}
-	if (tmp == -1) return;
-	__asm {
-		mov eax, scriptId;
-		lea edx, scriptPtr;
-		call fo::funcoffs::scr_ptr_;
-		mov tmp, eax;
-	}
-	if (tmp == -1) return;
-	// fill spatial script properties:
-	*(DWORD*)(scriptPtr + 0x14) = scriptIndex - 1;
-	*(DWORD*)(scriptPtr + 0x8) = (elevation << 29) & 0xE0000000 | tile;
-	*(DWORD*)(scriptPtr + 0xC) = radius;
+		radius = ctx.arg(3).rawValue();
+
+	long scriptId;
+	fo::ScriptInstance* scriptPtr;
+	if (fo::func::scr_new(&scriptId, fo::Scripts::ScriptTypes::SCRIPT_SPATIAL) == -1 || fo::func::scr_ptr(scriptId, &scriptPtr) == -1) return;
+
+	// set spatial script properties:
+	scriptPtr->scriptIdx = scriptIndex - 1;
+	scriptPtr->elevationAndTile = (elevation << 29) & 0xE0000000 | tile;
+	scriptPtr->spatialRadius = radius;
+
 	// this will load appropriate script program and link it to the script instance we just created:
-	__asm {
-		mov eax, scriptId;
-		mov edx, 1; // start_p_proc
-		call fo::funcoffs::exec_script_proc_;
-		mov eax, scriptPtr;
-		mov eax, [eax + 0x18]; // program pointer
-		call fo::funcoffs::scr_find_obj_from_program_;
-		mov objectPtr, eax;
-	}
-	ctx.setReturn(objectPtr);
+	exec_script_proc(scriptId, start);
+
+	ctx.setReturn(fo::func::scr_find_obj_from_program(scriptPtr->program));
 }
 
 void sf_spatial_radius(OpcodeContext& ctx) {
@@ -488,57 +432,28 @@ void sf_get_object_ai_data(OpcodeContext& ctx) {
 	fo::AIcap* cap = fo::func::ai_cap(ctx.arg(0).object());
 	DWORD arrayId, value = -1;
 	switch (ctx.arg(1).rawValue()) {
-	case 0:
-		value = cap->aggression;
-		break;
-	case 1:
-		value = cap->area_attack_mode;
-		break;
-	case 2:
-		value = cap->attack_who;
-		break;
-	case 3:
-		value = cap->best_weapon;
-		break;
-	case 4:
-		value = cap->chem_use;
-		break;
-	case 5:
-		value = cap->disposition;
-		break;
-	case 6:
-		value = cap->distance;
-		break;
-	case 7:
-		value = cap->max_dist;
-		break;
-	case 8:
-		value = cap->min_hp;
-		break;
-	case 9:
-		value = cap->min_to_hit;
-		break;
-	case 10:
-		value = cap->hurt_too_much; // DAM_BLIND/DAM_CRIP_* flags
-		break;
-	case 11:
-		value = cap->run_away_mode;
-		break;
-	case 12:
-		value = cap->secondary_freq;
-		break;
-	case 13:
-		value = cap->called_freq;
-		break;
-	case 14:
-		arrayId = TempArray(3, 0);
-		arrays[arrayId].val[0].set(cap->chem_primary_desire);
-		arrays[arrayId].val[1].set(cap->chem_primary_desire1);
-		arrays[arrayId].val[2].set(cap->chem_primary_desire2);
-		value = arrayId;
-		break;
-	default:
-		ctx.printOpcodeError("%s() - invalid value for AI argument.", ctx.getMetaruleName());
+		case 0:  value = cap->aggression;       break;
+		case 1:  value = cap->area_attack_mode; break;
+		case 2:  value = cap->attack_who;       break;
+		case 3:  value = cap->best_weapon;      break;
+		case 4:  value = cap->chem_use;         break;
+		case 5:  value = cap->disposition;      break;
+		case 6:  value = cap->distance;         break;
+		case 7:  value = cap->max_dist;         break;
+		case 8:  value = cap->min_hp;           break;
+		case 9:  value = cap->min_to_hit;       break;
+		case 10: value = cap->hurt_too_much;    break; // DAM_BLIND/DAM_CRIP_* flags
+		case 11: value = cap->run_away_mode;    break;
+		case 12: value = cap->secondary_freq;   break;
+		case 13: value = cap->called_freq;      break;
+		case 14:
+			arrayId = TempArray(3, 0);
+			arrays[arrayId].val[0].set(cap->chem_primary_desire);
+			arrays[arrayId].val[1].set(cap->chem_primary_desire1);
+			arrays[arrayId].val[2].set(cap->chem_primary_desire2);
+			value = arrayId;
+			break;
+		default: ctx.printOpcodeError("%s() - invalid value for AI argument.", ctx.getMetaruleName());
 	}
 	ctx.setReturn(value);
 }
