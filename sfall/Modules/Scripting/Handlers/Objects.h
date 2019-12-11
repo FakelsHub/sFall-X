@@ -27,7 +27,6 @@ namespace sfall
 namespace script
 {
 
-
 void sf_remove_script(OpcodeContext&);
 
 void sf_set_script(OpcodeContext&);
@@ -111,6 +110,8 @@ void sf_get_object_ai_data(OpcodeContext&);
 void sf_set_drugs_data(OpcodeContext&);
 
 void sf_set_unique_id(OpcodeContext&);
+
+void sf_get_objects_at_radius(OpcodeContext&);
 
 }
 }
