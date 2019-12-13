@@ -686,6 +686,17 @@ optional argument:
 > string sfall_func3("string_format", string format, any val1, any val2, ...)
 - formats given value using standard syntax of C printf function (google "printf" for format details). However it is limited to formatting up to 4 values.
 - formatting supported only for %s and %d, the format string not should exceed 1024 characters
+
+> array sfall_func3("objects_in_radius", int tile, int radius, int elevation)
+> array sfall_func4("objects_in_radius", int tile, int radius, int elevation, int type)
+- returns an array of objects of a type (see OBJ_TYPE_* constants in define_extra.h) within the specified radius from the given tile
+- passing -1 to the type argument will return all objects in the radius
+- the radius is limited to 50 hexes
+
+> int sfall_func2("tile_by_position", int x, int y)
+- returns the tile number at the x, y position relative to the top-left corner of the screen
+- if the position is outside the range of tiles, the function will return -1
+
 ------------------------
 ------ MORE INFO -------
 ------------------------

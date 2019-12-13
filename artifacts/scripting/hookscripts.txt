@@ -650,3 +650,15 @@ int     arg4 - set to 1 after procedure execution (for HOOK_STDPROCEDURE_END), 0
 
 int     ret1 - pass -1 to cancel the execution of the handler (only for HOOK_STDPROCEDURE)
 
+-------------------------------------------
+
+HOOK_TARGETOBJECT (hs_targetobject.int)
+
+Runs when the target mouse cursor aimed at the attacked object, or when the player tries to attack the target object.
+You can override the target object or prevent the player from attacking the chosen target.
+
+int     arg1 - event type: 0 - when the target cursor aimed on the object, 1 - when try attack to the target object
+int     arg2 - set to 1 when the target object is valid for attack, 0 otherwise
+Obj     arg3 - the target object
+
+mixed   ret1 - overrides the target object, or pass -1 to prevent the player attacking to the object
