@@ -232,12 +232,13 @@ procedure ToggleHighlightObject(variable obj, variable enable, variable containe
 end
 
 procedure GetHighlightColor(variable obj, variable container) begin
-   variable color;
+   variable color, isCorpse;
 
-   if container or obj_type(obj) == OBJ_TYPE_CRITTER then begin
+   if (container == false) then isCorpse := (obj_type(obj) == OBJ_TYPE_CRITTER);
+   if container or isCorpse then begin
       if (CheckObjectUsed(obj)) then begin
          if (OBJECT_IS_EMPTY(obj)) then
-            color := emptyOutlineColor;
+            color := emptyOutlineColor if (isCorpse == false and alsoCorpse == 2) else 0;
          else
             color := lookOutlineColor;
       end else
