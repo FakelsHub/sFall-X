@@ -58,7 +58,7 @@ static void* opcodes[opcodeCount];
 //    function handler,
 //    number of arguments (max 7),
 //    has return value,
-//    returned error value for validation arguments,
+//    returned error value for argument validation,
 //    { argument 1 type, argument 2 type, ...}
 // }
 static SfallOpcodeInfo opcodeInfoArray[] = {
@@ -221,7 +221,7 @@ static SfallOpcodeInfo opcodeInfoArray[] = {
 	{0x27e, "reg_anim_callback",         sf_reg_anim_callback,         1, false,  0, {ARG_INT}},
 };
 
-// A array for opcode info, indexed by opcode.
+// An array for opcode info, indexed by opcode.
 // Initialized at run time from the array above.
 static std::array<const SfallOpcodeInfo*, opcodeCount - sfallOpcodeStart> opcodeInfoTable;
 
@@ -363,6 +363,7 @@ void InitNewOpcodes() {
 	opcodes[0x1cc] = op_apply_heaveho_fix;
 	opcodes[0x1cd] = op_set_swiftlearner_mod;
 	opcodes[0x1ce] = op_set_hp_per_level_mod;
+
 	opcodes[0x1df] = op_get_bodypart_hit_modifier;
 	opcodes[0x1e0] = op_set_bodypart_hit_modifier;
 	opcodes[0x1e4] = op_get_sfall_arg;

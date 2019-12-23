@@ -178,17 +178,16 @@ void sf_register_hook(OpcodeContext& ctx) {
 	bool specReg = false;
 	int proc;
 	switch (ctx.opcode()) {
-	case 0x27d :
+	case 0x27d:
 		specReg = true;
-	case 0x262 :
+	case 0x262:
 		proc = ctx.arg(1).rawValue();
 		if (proc < 0 || (specReg && proc == 0)) return;
 		break;
 	default:
 		proc = -1;
 	}
-	int id = ctx.arg(0).rawValue();
-	RegisterHook(ctx.program(), id, proc, specReg);
+	RegisterHook(ctx.program(), ctx.arg(0).rawValue(), proc, specReg);
 }
 
 void sf_add_g_timer_event(OpcodeContext& ctx) {

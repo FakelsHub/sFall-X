@@ -34,34 +34,33 @@ namespace sfall
 namespace script
 {
 
-// compares strings case-insensitive with specificity for Fallout
+// compares strings case-insensitive with specifics for Fallout
 static bool FalloutStringCompare(const char* str1, const char* str2, long codePage) {
 	while (true) {
 		unsigned char c1 = *str1;
 		unsigned char c2 = *str2;
-		if (c1 == 0 && c2 == 0) return true;  // end - strings is equals
-		if (c1 == 0 || c2 == 0) return false; // strings is not equals
+		if (c1 == 0 && c2 == 0) return true;  // end - strings are equal
+		if (c1 == 0 || c2 == 0) return false; // strings are not equal
 		str1++;
 		str2++;
 		if (c1 == c2) continue;
 		if (codePage == 866) {
-			// replace russian 'x' to english (fallout specific)
+			// replace Russian 'x' to English (Fallout specific)
 			if (c1 == 229) c1 -= 229 - 'x';
 			if (c2 == 229) c2 -= 229 - 'x';
 		}
 
-		// 0 - 127 (standart ASCII)
+		// 0 - 127 (standard ASCII)
 		// upper to lower case
 		if (c1 >= 'A' && c1 <= 'Z') c1 |= 32;
 		if (c2 >= 'A' && c2 <= 'Z') c2 |= 32;
 		if (c1 == c2) continue;
 		if (c1 < 128 || c2 < 128) return false;
 
-		// 128 - 255 (international)
-		switch (codePage)
-		{
+		// 128 - 255 (international/extended)
+		switch (codePage) {
 		case 866:
-			if (c1 != 149 && c2 != 149) {
+			if (c1 != 149 && c2 != 149) { // code used for '•' char in Fallout font
 				// upper to lower case
 				if (c1 >= 0x80 && c1 <= 0x9F) {
 					c1 |= 32;
@@ -78,23 +77,23 @@ static bool FalloutStringCompare(const char* str1, const char* str2, long codePa
 					c2++;
 				}
 			}
-		break;
+			break;
 		case 1251:
 			// upper to lower case
 			if (c1 >= 0xC0 && c1 <= 0xDF) c1 |= 32;
 			if (c2 >= 0xC0 && c2 <= 0xDF) c2 |= 32;
 			if (c1 == 0xA8) c1 += 16;
 			if (c2 == 0xA8) c2 += 16;
-		break;
+			break;
 		case 1250:
 		case 1252:
 			if (c1 != 0xD7 && c1 != 0xF7 && c2 != 0xD7 && c2 != 0xF7) {
 				if (c1 >= 0xC0 && c1 <= 0xDE) c1 |= 32;
 				if (c2 >= 0xC0 && c2 <= 0xDE) c2 |= 32;
 			}
-		break;
+			break;
 		}
-		if (c1 != c2) return false; // strings is not equals
+		if (c1 != c2) return false; // strings are not equal
 	}
 }
 
@@ -204,7 +203,7 @@ static char* SubString(const char* str, int startPos, int length) {
 		length = abs(length); // length can't be negative
 	}
 	// check position
-	if (startPos >= len) return ""; // start position is out of string length, empty string returned
+	if (startPos >= len) return ""; // start position is out of string length, return empty string
 	if (length == 0 || length + startPos > len) {
 		length = len - startPos; // set the correct length, the length of characters goes beyond the end of the string
 	}
@@ -326,7 +325,7 @@ void sf_string_format(OpcodeContext& ctx) {
 		return;
 	}
 	if (fmtLen > 1024) {
-		ctx.printOpcodeError("%s() - the format string is too long, maximum 1024 characters.", ctx.getMetaruleName());
+		ctx.printOpcodeError("%s() - the format string exceeds maximum length of 1024 characters.", ctx.getMetaruleName());
 		ctx.setReturn("Error");
 	} else {
 		char* newFmt = new char[fmtLen + 1];
@@ -340,7 +339,7 @@ void sf_string_format(OpcodeContext& ctx) {
 				if (cf != '%') {
 					if (arg >= 0) {
 						arg++;
-						if (arg == totalArg) arg = -1; // format prefixes '%' in the format string exceed the number of passed value args
+						if (arg == totalArg) arg = -1; // format '%' prefixes in the format string exceed the number of passed value args
 					}
 					if (arg < 0) { // have % more than passed value args
 						c = '^';   // delete %

@@ -23,8 +23,6 @@
 #include "..\..\ScriptExtender.h"
 #include "..\..\ScriptShaders.h"
 
-//#include "..\OpcodeContext.h"
-
 #include "Graphics.h"
 
 namespace sfall

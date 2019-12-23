@@ -594,7 +594,7 @@ void __declspec(naked) op_set_skill_max() {
 		_GET_ARG_INT(end);
 		mov  ecx, 300;
 		cmp  eax, ecx;
-		cmova eax,ecx; // 0 - 300
+		cmova eax, ecx; // 0 - 300
 		push eax;
 		push 0xFFFFFFFF;
 		call SetSkillMax;

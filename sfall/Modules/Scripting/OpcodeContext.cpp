@@ -120,7 +120,8 @@ bool OpcodeContext::validateArguments(const OpcodeArgumentType argTypes[], const
 		if (actualType == DataType::NONE) break;
 		auto argType = argTypes[i];
 		switch (argType) {
-		case ARG_ANY: continue;
+		case ARG_ANY:
+			continue;
 		case ARG_INT:
 		case ARG_OBJECT:
 			if (actualType != DataType::INT) {

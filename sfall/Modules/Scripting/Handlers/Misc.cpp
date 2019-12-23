@@ -42,7 +42,7 @@ namespace sfall
 namespace script
 {
 
-const char* stringTooLong = "%s() - exceeded the length of the string, maximum 64 characters.";
+const char* stringTooLong = "%s() - the string exceeds maximum length of 64 characters.";
 
 void sf_set_dm_model(OpcodeContext& ctx) {
 	auto model = ctx.arg(0).strValue();
@@ -65,12 +65,12 @@ void sf_set_df_model(OpcodeContext& ctx) {
 void sf_set_movie_path(OpcodeContext& ctx) {
 	long movieID = ctx.arg(1).rawValue();
 	if (movieID < 0 || movieID >= MaxMovies) return;
-	auto model = ctx.arg(0).strValue();
-	if (strlen(model) > 64) {
+	auto fileName = ctx.arg(0).strValue();
+	if (strlen(fileName) > 64) {
 		ctx.printOpcodeError(stringTooLong, ctx.getOpcodeName());
 		return;
 	}
-	strcpy(&MoviePaths[movieID * 65], model);
+	strcpy(&MoviePaths[movieID * 65], fileName);
 }
 
 void sf_get_year(OpcodeContext& ctx) {
@@ -128,7 +128,6 @@ void __declspec(naked) op_get_kill_counter() {
 		mov edx, ds:[FO_VAR_pc_kill_counts+eax*4];
 		jmp end;
 fail:
-
 		xor edx, edx;
 end:
 		mov eax, ecx

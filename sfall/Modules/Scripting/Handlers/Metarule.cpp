@@ -57,7 +57,7 @@ static MetaruleTableType metaruleTable;
 		- name - name of function that will be used in scripts,
 		- handler - pointer to handler function (see examples below),
 		- minArgs/maxArgs - minimum and maximum number of arguments allowed for this function (max 6)
-		- returned error value for validation arguments,
+		- returned error value for argument validation,
 		- arg1, arg2, ... - argument types for automatic validation
 */
 static const SfallMetarule metarules[] = {

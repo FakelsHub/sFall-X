@@ -361,8 +361,9 @@ void sf_set_window_flag(OpcodeContext& ctx) {
 		case fo::WinFlags::Hidden:
 		case fo::WinFlags::Exclusive:
 		case fo::WinFlags::Transparent:
-		break;
-		default : return; // unsupported set flag
+			break;
+		default:
+			return; // unsupported set flag
 	}
 	bool mode = ctx.arg(2).asBool();
 	if (ctx.arg(0).isString()) {
