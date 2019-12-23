@@ -17,7 +17,6 @@
  */
 
 #include <math.h>
-#include <vector>
 
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
@@ -501,6 +500,7 @@ static void ResetOnGameLoad() {
 }
 
 void Combat::init() {
+
 	CombatProcFix();
 
 	MakeCall(0x424B76, compute_damage_hack, 2);     // KnockbackMod
