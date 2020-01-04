@@ -478,13 +478,15 @@ static bool backImageIsCopy = false;
 struct DotPosition {
 	long x;
 	long y;
+
+	DotPosition(long x, long y) : x(x), y(y) {}
 };
 static std::vector<DotPosition> dots;
 
 static long optionLenDot = 2;
 static long optionSpaceDot = 2;
 
-static unsigned char colorDot = 0; // index color in palette: R = 252, G = 0, B = 0
+static unsigned char colorDot = 0;
 static long spaceLen = 2;
 static long dotLen = 2;
 static long dot_xpos = 0;
@@ -501,13 +503,9 @@ static void AddNewDot() {
 		return;
 	}
 	dotLen--;
-
-	DotPosition dot;
-	dot.x = dot_xpos;
-	dot.y = dot_ypos;
-	dots.push_back(std::move(dot));
-
 	spaceLen = optionSpaceDot;
+
+	dots.emplace_back(dot_xpos, dot_ypos);
 }
 
 static void __declspec(naked) DrawingDots() {
@@ -697,7 +695,7 @@ static void WorldMapInterfacePatch() {
 	if (GetConfigInt("Interface", "WorldTravelMarkers", 0)) {
 		optionLenDot = GetConfigInt("Interface", "TravelMarkerLength", optionLenDot);
 		optionSpaceDot = GetConfigInt("Interface", "TravelMarkerSpaces", optionSpaceDot);
-		int color = GetConfigInt("Interface", "TravelMarkerColor", 133);
+		int color = GetConfigInt("Interface", "TravelMarkerColor", 133); // index color in palette: R = 252, G = 0, B = 0
 
 		if (color > 255) color = 255; else if (color < 1) color = 1;
 		colorDot = color;
