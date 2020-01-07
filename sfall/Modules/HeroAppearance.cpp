@@ -504,7 +504,7 @@ endFunc:
 }
 
 /////////////////////////////////////////////////////////////////INTERFACE FUNCTIONS/////////////////////////////////////////////////////////////////
-
+// TODO: remove unused fromHeight and toHeight args
 static void sub_draw(long subWidth, long subHeight, long fromWidth, long fromHeight, long fromX, long fromY, BYTE *fromBuff,
 					 long toWidth, long toHeight, long toX, long toY, BYTE *toBuff, int maskRef) {
 
