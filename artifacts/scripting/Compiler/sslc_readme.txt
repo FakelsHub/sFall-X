@@ -332,17 +332,27 @@ There are several changes in this version of sslc which may result in problems f
 =================
 
 > sslc v1.2:
-- added new logical operators 'AndAlso', 'OrElse' for short-circuit evaluation expression.
+- added new logical operators 'AndAlso', 'OrElse' for short-circuit evaluation of logical expressions
+- fixed compiler giving "assignment operator expected" error when a variable-like macro is not being defined properly
 
 > sslc v1.1:
-- added opcode reg_anim_callback. (for sfall 4.2.2/3.8.22)
+- added new opcode reg_anim_callback for sfall 4.2.2/3.8.22
+- the basic optimization is now enabled by default when not specifying any optimization options
+- unreferenced "critical" procedures and procedures with the names "Node998" and "Node999" are now removed by the optimizer
 
 > sslc v1.0:
-- added opcode register_hook_proc_spec. (for sfall 4.2/3.8.20)
-- added preprocessor option: -I specifies an additional directory to search for include files.
-- added preprocessor option: -m defines a macro with the specified name.
+- added new opcode register_hook_proc_spec for sfall 4.2/3.8.20
+- added -m<macro[=val]> option to define a macro named "macro" for conditional compilation
+- added -I<path> option to specify an additional directory to search for include files
+- now it is possible to run preprocess or optimization passes in backward compatibility mode
 
 =================
+> sfall 4.0:
+- enabled code for "ceil" math function
+- fixed missing argument for "how_much" function
+- added "desc_p_proc" (from Fallout 1) to protected procedures that should not be removed by the optimizer
+- fixed compiler giving "division by zero" error when using zero as the second factor in multiplication
+
 > sfall 3.6:
 - added python-style ternary operator (conditional expression)
 - added -s short-circuit evalution option for AND, OR expressions
