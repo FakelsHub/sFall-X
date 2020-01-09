@@ -697,7 +697,7 @@ static void WorldMapInterfacePatch() {
 		dlog("Applying world map travel markers patch.", DL_INIT);
 		optionLenDot = GetConfigInt("Interface", "TravelMarkerLength", optionLenDot);
 		optionSpaceDot = GetConfigInt("Interface", "TravelMarkerSpaces", optionSpaceDot);
-		int color = GetConfigInt("Interface", "TravelMarkerColor", 133); // index color in palette: R = 252, G = 0, B = 0
+		int color = GetConfigInt("Interface", "TravelMarkerColor", 134); // index color in palette: R = 224, G = 0, B = 0
 
 		if (color > 255) color = 255; else if (color < 1) color = 1;
 		colorDot = color;

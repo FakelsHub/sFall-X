@@ -60,6 +60,7 @@ static const char* ExtraLines[] = {
 	"Vennor",
 	"Oppen",
 	"Mr.Stalin",
+	"Ghosthack",
 	"",
 	"@Additional thanks to",
 	"Nirran",
@@ -68,7 +69,8 @@ static const char* ExtraLines[] = {
 	"Rain man",
 	"Continuum",
 	"Drobovik",
-	"Burn"
+	"Burn",
+	"LEXX"
 	"",
 	"@Anyone who has used sfall in their own mods",
 	"@The bug reporters and feature requesters",

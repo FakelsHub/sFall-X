@@ -110,7 +110,7 @@ old:
 NOTE: if your expression starts with a constant (eg. 2+2), enclose it in parentheses, otherwise compiler will be confused and give you errors.
 
 
-> Íexadecimal numerical constants: Simply prefix a number with 0x to create a hexadecimal. The numbers 0 to 9 and a-f are allowed in the number. The number may not have a decimal point.
+> Hexadecimal numerical constants: Simply prefix a number with 0x to create a hexadecimal. The numbers 0 to 9 and a-f are allowed in the number. The number may not have a decimal point.
 
 new:
   a := 0x1000;
@@ -340,7 +340,8 @@ There are several changes in this version of sslc which may result in problems f
 =================
 
 > sslc v1.2:
-- added new logical operators 'AndAlso', 'OrElse' for short-circuit evaluation of logical expressions
+- added new logical operators "AndAlso", "OrElse" for short-circuit evaluation of logical expressions
+- added an alternative (C/Java-style) assignment operator
 - fixed compiler giving "assignment operator expected" error when a variable-like macro is not being defined properly
 
 > sslc v1.1:
