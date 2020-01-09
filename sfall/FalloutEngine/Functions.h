@@ -30,7 +30,11 @@ namespace func
 {
 
 // Debug prints message to debug.log file for develop version
+#ifndef NDEBUG
 void dev_printf(const char* fmt, ...);
+#else
+void dev_printf(...);
+#endif
 
 /*
 	Add functions here if they have non-trivial wrapper implementation (like vararg functions or too many arguments, etc.)

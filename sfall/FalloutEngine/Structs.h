@@ -117,7 +117,7 @@ struct GameObject {
 			long damageLastTurn;
 			long aiPacket;
 			long teamNum;
-			long whoHitMe;
+			GameObject* whoHitMe;
 			long health;
 			long rads;
 			long poison;
