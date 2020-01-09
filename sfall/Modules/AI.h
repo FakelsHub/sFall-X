@@ -16,6 +16,8 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "..\FalloutEngine\Fallout2.h"
 
 #include "Module.h"
@@ -35,7 +37,5 @@ void _stdcall AICombatEnd();
 
 fo::GameObject* _stdcall AIGetLastAttacker(fo::GameObject* target);
 fo::GameObject* _stdcall AIGetLastTarget(fo::GameObject* source);
-
-void _stdcall AIBlockCombat(DWORD i);
 
 }

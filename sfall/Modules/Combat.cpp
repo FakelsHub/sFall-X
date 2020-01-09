@@ -25,6 +25,8 @@
 #include "LoadGameHook.h"
 #include "Objects.h"
 
+#include "SubModules\CombatBlock.h"
+
 #include "Combat.h"
 
 namespace sfall
@@ -501,6 +503,7 @@ static void ResetOnGameLoad() {
 
 void Combat::init() {
 
+	CombatBlockedInit();
 	CombatProcFix();
 
 	MakeCall(0x424B76, compute_damage_hack, 2);     // KnockbackMod
