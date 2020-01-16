@@ -21,6 +21,7 @@
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\FalloutEngine\EngineUtils.h"
+#include "..\Utils.h"
 #include "Graphics.h"
 #include "LoadGameHook.h"
 
@@ -462,10 +463,15 @@ static void WorldmapViewportPatch() {
 	dlogr(" Done", DL_INIT);
 }
 
-//////////////////////// FALLOUT 1 WORLDMAP FEATURES //////////////////////////
+///////////////////////// FALLOUT 1 WORLD MAP FEATURES /////////////////////////
+
+enum DotStyleDefault {
+	DotLen   = 2,
+	SpaceLen = 2
+};
 
 enum TerrainHoverImage {
-	width = 100,
+	width  = 100,
 	height = 15,
 	size = width * height
 };
@@ -482,27 +488,40 @@ struct DotPosition {
 };
 static std::vector<DotPosition> dots;
 
-static long optionLenDot = 2;
-static long optionSpaceDot = 2;
-
 static unsigned char colorDot = 0;
-static long spaceLen = 2;
-static long dotLen = 2;
+static long spaceLen = DotStyleDefault::SpaceLen;
+static long dotLen   = DotStyleDefault::DotLen;
 static long dot_xpos = 0;
 static long dot_ypos = 0;
+static size_t terrainCount = 0;
+
+static struct DotStyle {
+	long dotLen;
+	long spaceLen;
+} *dotStyle = nullptr;
 
 static void AddNewDot() {
-
 	dot_xpos = fo::var::world_xpos;
 	dot_ypos = fo::var::world_ypos;
 
+	long* terrain = *(long**)FO_VAR_world_subtile;
+	size_t id = (terrain) ? *terrain : 0;
+
+	// Reinitialize if current terrain has smaller values than previous
+	if (id < terrainCount) {
+		if (dotLen > dotStyle[id].dotLen) dotLen = dotStyle[id].dotLen;
+		if (spaceLen > dotStyle[id].spaceLen) spaceLen = dotStyle[id].spaceLen;
+	}
+
 	if (dotLen <= 0 && spaceLen) {
 		spaceLen--;
-		if (!spaceLen) dotLen = optionLenDot; // set dot length
+		if (!spaceLen) { // set dot length
+			dotLen = (id < terrainCount) ? dotStyle[id].dotLen : DotStyleDefault::DotLen;
+		};
 		return;
 	}
 	dotLen--;
-	spaceLen = optionSpaceDot;
+	spaceLen = (id < terrainCount) ? dotStyle[id].spaceLen : DotStyleDefault::SpaceLen;
 
 	dots.emplace_back(dot_xpos, dot_ypos);
 }
@@ -522,7 +541,7 @@ static void __declspec(naked) DrawingDots() {
 
 	for (const auto &dot : dots) // redraws all dots
 	{
-		if (dot.x < fo::var::wmWorldOffsetX || dot.y < fo::var::wmWorldOffsetY) continue; // the pixel is out viewport
+		if (dot.x < fo::var::wmWorldOffsetX || dot.y < fo::var::wmWorldOffsetY) continue; // the pixel is out of viewport
 		if (dot.x > fo::var::wmWorldOffsetX + wmapViewPortWidth || dot.y > fo::var::wmWorldOffsetY + wmapViewPortHeight) continue;
 
 		long wmPixelX = (dot.x + x_offset);
@@ -562,10 +581,10 @@ static void __declspec(naked) wmInterfaceRefresh_hook() {
 		if (fo::var::In_WorldMap) {
 			DrawingDots();
 		} else if (!fo::var::target_xpos && !fo::var::target_ypos) {
-			// player's stop move
+			// player stops moving
 			dots.clear();
-			dotLen = optionLenDot;
-			spaceLen = optionSpaceDot;
+			// Reinitialize on next AddNewDot
+			dotLen = spaceLen = 99;
 		}
 	}
 	if (isHoveringHotspot && !fo::var::In_WorldMap) {
@@ -596,7 +615,7 @@ static long __fastcall wmDetectHotspotHover(long wmMouseX, long wmMouseY) {
 			fo::MemCopyToWinBuffer(x_offset, y, TerrainHoverImage::width, TerrainHoverImage::height, wmapWinWidth, *(BYTE**)FO_VAR_wmBkWinBuf, wmTmpBuffer.data());
 			backImageIsCopy = false;
 		}
-		// redraw rectangle worldmap interface
+		// redraw rectangle on worldmap interface
 		RECT rect;
 		rect.top = y;
 		rect.left = x_offset;
@@ -609,14 +628,14 @@ static long __fastcall wmDetectHotspotHover(long wmMouseX, long wmMouseY) {
 
 static void __declspec(naked) wmWorldMap_hack() {
 	__asm {
-		cmp  ds:[FO_VAR_In_WorldMap], 1; // player's is moving
+		cmp  ds:[FO_VAR_In_WorldMap], 1; // player is moving
 		jne  checkHover;
 end:
 		mov  eax, dword ptr ds:[FO_VAR_wmWorldOffsetY];
 		retn;
 checkHover:
 		cmp  dword ptr ds:[FO_VAR_WorldMapCurrArea], -1;
-		jne  end; // player's on location
+		jne  end; // player is in a location circle
 		push ecx;
 		mov  ecx, [esp + 0x38 - 0x30 + 8]; // x
 		mov  edx, [esp + 0x38 - 0x34 + 8]; // y
@@ -626,7 +645,7 @@ checkHover:
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 static void __declspec(naked) wmInterfaceRefreshCarFuel_hack_empty() {
 	__asm {
@@ -654,7 +673,7 @@ static void __declspec(naked) wmInterfaceRefreshCarFuel_hack() {
 }
 
 static void WorldMapInterfacePatch() {
-	BlockCall(0x4C2380); // removed disable palette animations (can be used as a place to call a hack-procedure in wmInterfaceInit_)
+	BlockCall(0x4C2380); // Remove disabling palette animations (can be used as a place to call a hack function in wmInterfaceInit_)
 
 	if (GetConfigInt("Misc", "WorldMapFontPatch", 0)) {
 		dlog("Applying world map font patch.", DL_INIT);
@@ -691,19 +710,37 @@ static void WorldMapInterfacePatch() {
 		}
 	}
 
-	// Fallout 1 features, travel markers and displaying terrain type
+	// Fallout 1 features, travel markers and displaying terrain types
 	bool showTravelMarkers, showTerrainType;
 	if (showTravelMarkers = GetConfigInt("Interface", "WorldMapTravelMarkers", 0) != 0) {
 		dlog("Applying world map travel markers patch.", DL_INIT);
-		optionLenDot = GetConfigInt("Interface", "TravelMarkerLength", optionLenDot);
-		optionSpaceDot = GetConfigInt("Interface", "TravelMarkerSpaces", optionSpaceDot);
-		int color = GetConfigInt("Interface", "TravelMarkerColor", 134); // index color in palette: R = 224, G = 0, B = 0
 
+		int color = GetConfigInt("Interface", "TravelMarkerColor", 134); // color index in palette: R = 224, G = 0, B = 0
 		if (color > 255) color = 255; else if (color < 1) color = 1;
 		colorDot = color;
-		if (optionLenDot > 10) optionLenDot = 10; else if (optionLenDot < 1) optionLenDot = 1;
-		if (optionSpaceDot > 10) optionSpaceDot = 10; else if (optionSpaceDot < 1) optionSpaceDot = 1;
 
+		auto dotList = GetConfigList("Interface", "TravelMarkerStyles", "", 512);
+		if (!dotList.empty()) {
+			terrainCount = dotList.size();
+			dotStyle = new DotStyle[terrainCount];
+
+			std::vector<std::string> pair;
+			for (size_t i = 0; i < terrainCount; i++)
+			{
+				split(dotList[i], ':', std::back_inserter(pair), 2);
+				if (pair.size() >= 2) {
+					int len = atoi(pair[0].c_str());
+					if (len < 1) len = 1; else if (len > 10) len = 10;
+					dotStyle[i].dotLen = len;
+					len = atoi(pair[1].c_str());
+					if (len < 1) len = 1; else if (len > 10) len = 10;
+					dotStyle[i].spaceLen = len;
+				} else {
+					dotStyle[i] = { DotStyleDefault::DotLen, DotStyleDefault::SpaceLen };
+				}
+				pair.clear();
+			}
+		}
 		dots.reserve(512);
 		LoadGameHook::OnGameReset() += []() {
 			dots.clear();
@@ -776,14 +813,14 @@ static long gmouse_handle_event_hook() {
 		if ((win->wID == ifaceWin || (win->flags & fo::WinFlags::ScriptWindow && !(win->flags & fo::WinFlags::Transparent))) // also check the script windows
 			&& !(win->flags & fo::WinFlags::Hidden)) {
 			RECT *rect = &win->wRect;
-			if (fo::func::mouse_click_in(rect->left, rect->top, rect->right, rect->bottom)) return 0; // 0 - block, click in the window region
+			if (fo::func::mouse_click_in(rect->left, rect->top, rect->right, rect->bottom)) return 0; // 0 - block clicking in the window area
 		}
 	}
 	if (IFACE_BAR_MODE) return 1;
-	// if IFACE_BAR_MODE is not enabled, the display_win window area is checked
+	// if IFACE_BAR_MODE is not enabled, check the display_win window area
 	win = fo::func::GNW_find(*(DWORD*)FO_VAR_display_win);
 	RECT *rect = &win->wRect;
-	return fo::func::mouse_click_in(rect->left, rect->top, rect->right, rect->bottom); // 1 - click in the displayWin area
+	return fo::func::mouse_click_in(rect->left, rect->top, rect->right, rect->bottom); // 1 - click in the display window area
 }
 
 static void __declspec(naked) gmouse_bk_process_hook() {
@@ -813,6 +850,7 @@ void Interface::init() {
 
 void Interface::exit() {
 	if (ifaceFrm) delete ifaceFrm;
+	if (dotStyle) delete[] dotStyle;
 }
 
 }
