@@ -134,6 +134,7 @@ static const SfallMetarule metarules[] = {
 	{"spatial_radius",          sf_spatial_radius,          1, 1,  0, {ARG_OBJECT}},
 	{"string_compare",          sf_string_compare,          2, 3,  0, {ARG_STRING, ARG_STRING, ARG_INT}},
 	{"string_format",           sf_string_format,           2, 5,  0, {ARG_STRING, ARG_ANY, ARG_ANY, ARG_ANY, ARG_ANY}},
+	{"string_to_case",          sf_string_to_case,          2, 2, -1, {ARG_STRING, ARG_INT}},
 	{"tile_by_position",        sf_tile_by_position,        2, 2, -1, {ARG_INT, ARG_INT}},
 	{"tile_refresh_display",    sf_tile_refresh_display,    0, 0},
 	{"unjam_lock",              sf_unjam_lock,              1, 1, -1, {ARG_OBJECT}},

@@ -245,9 +245,9 @@
 #define party_member_list_all           party_member_list(1)
 
 // fake perks/traits add mode flags
-#define ADD_PERK_MODE_TRAIT     (1)  // add to the player traits list
-#define ADD_PERK_MODE_PERK      (2)  // add to the player perks list
-#define ADD_PERK_MODE_REMOVE    (4)  // remove from the list of selectable perks after added to player
+#define ADD_PERK_MODE_TRAIT     (1)  // add to the player's traits list
+#define ADD_PERK_MODE_PERK      (2)  // add to the player's perks list
+#define ADD_PERK_MODE_REMOVE    (4)  // remove from the list of selectable perks (after added to player)
 
 // sfall_funcX macros
 #define add_extra_msg_file(name)                        sfall_func1("add_extra_msg_file", name)
@@ -275,10 +275,11 @@
 #define get_ini_sections(file)                          sfall_func1("get_ini_sections", file)
 #define get_inven_ap_cost                               sfall_func0("get_inven_ap_cost")
 #define get_map_enter_position                          sfall_func0("get_map_enter_position")
-#define get_object_ai_data(obj, aiParametr)             sfall_func2("get_object_ai_data", obj, aiParametr)
+#define get_metarule_table                              sfall_func0("get_metarule_table")
+#define get_object_ai_data(obj, aiParam)                sfall_func2("get_object_ai_data", obj, aiParam)
 #define get_object_data(obj, offset)                    sfall_func2("get_object_data", obj, offset)
 #define get_outline(obj)                                sfall_func1("get_outline", obj)
-#define get_sfall_arg_at(argNumber)                     sfall_func1("get_sfall_arg_at", argNumber)
+#define get_sfall_arg_at(argNum)                        sfall_func1("get_sfall_arg_at", argNum)
 #define get_string_pointer(text)                        sfall_func1("get_string_pointer", text)
 #define get_text_width(text)                            sfall_func1("get_text_width", text)
 #define has_fake_perk_npc(npc, perk)                    sfall_func2("has_fake_perk_npc", npc, perk)
@@ -322,6 +323,8 @@
 #define string_compare(str1, str2)                      sfall_func2("string_compare", str1, str2)
 #define string_compare_locale(str1, str2, codePage)     sfall_func3("string_compare", str1, str2, codePage)
 #define string_format(format, a1, a2)                   sfall_func3("string_format", format, a1, a2)
+#define string_tolower(text)                            sfall_func2("string_to_case", text, 0)
+#define string_toupper(text)                            sfall_func2("string_to_case", text, 1)
 #define tile_by_position(x, y)                          sfall_func2("tile_by_position", x, y)
 #define tile_refresh_display                            sfall_func0("tile_refresh_display")
 #define unjam_lock(obj)                                 sfall_func1("unjam_lock", obj)

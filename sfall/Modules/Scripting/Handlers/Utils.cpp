@@ -234,7 +234,7 @@ void sf_string_compare(OpcodeContext& ctx) {
 	}
 }
 
-// A safer version of sprintf for using in user scripts. TODO: redone and fix
+// A safer version of sprintf for using in user scripts.
 static char* sprintf_lite(const char* format, ScriptValue value) {
 	int fmtlen = strlen(format);
 	int buflen = fmtlen + 1;
@@ -464,6 +464,15 @@ void sf_get_string_pointer(OpcodeContext& ctx) {
 
 void sf_get_text_width(OpcodeContext& ctx) {
 	ctx.setReturn(fo::GetTextWidth(ctx.arg(0).strValue()));
+}
+
+static std::string strToCase; // TODO: move to ScriptExtender module
+
+void sf_string_to_case(OpcodeContext& ctx) {
+	strToCase = ctx.arg(0).strValue();
+	std::transform(strToCase.begin(), strToCase.end(), strToCase.begin(), ctx.arg(1).rawValue() ? ::toupper : ::tolower);
+
+	ctx.setReturn(strToCase.c_str());
 }
 
 }
