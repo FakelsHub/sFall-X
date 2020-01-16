@@ -211,6 +211,7 @@
 #define FO_VAR_sound_music_path2          0x518E7C
 #define FO_VAR_square                     0x631E40
 #define FO_VAR_squares                    0x66BE08
+#define FO_VAR_subtitles                  0x663974
 #define FO_VAR_stack                      0x59E86C
 #define FO_VAR_stack_offset               0x59E844
 #define FO_VAR_stat_data                  0x51D53C

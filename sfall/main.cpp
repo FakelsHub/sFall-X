@@ -354,18 +354,20 @@ static bool LoadOriginalDll(DWORD dwReason) {
 				ddraw.DirectDrawEnumerateExA       = GetProcAddress(ddraw.dll, "DirectDrawEnumerateExA");
 				ddraw.DirectDrawEnumerateExW       = GetProcAddress(ddraw.dll, "DirectDrawEnumerateExW");
 				ddraw.DirectDrawEnumerateW         = GetProcAddress(ddraw.dll, "DirectDrawEnumerateW");
-				//ddraw.DllCanUnloadNow            = GetProcAddress(ddraw.dll, "DllCanUnloadNow");
-				//ddraw.DllGetClassObject          = GetProcAddress(ddraw.dll, "DllGetClassObject");
+				ddraw.DllCanUnloadNow              = GetProcAddress(ddraw.dll, "DllCanUnloadNow");
+				ddraw.DllGetClassObject            = GetProcAddress(ddraw.dll, "DllGetClassObject");
 				ddraw.GetDDSurfaceLocal            = GetProcAddress(ddraw.dll, "GetDDSurfaceLocal");
 				ddraw.GetOLEThunkData              = GetProcAddress(ddraw.dll, "GetOLEThunkData");
 				ddraw.GetSurfaceFromDC             = GetProcAddress(ddraw.dll, "GetSurfaceFromDC");
 				ddraw.RegisterSpecialCase          = GetProcAddress(ddraw.dll, "RegisterSpecialCase");
 				ddraw.ReleaseDDThreadLock          = GetProcAddress(ddraw.dll, "ReleaseDDThreadLock");
+				ddraw.SetAppCompatData             = GetProcAddress(ddraw.dll, "SetAppCompatData");
 			}
 			return true;
 		case DLL_PROCESS_DETACH:
 			if (ddraw.dll) FreeLibrary(ddraw.dll);
 			break;
+
 	}
 	return false;
 }
