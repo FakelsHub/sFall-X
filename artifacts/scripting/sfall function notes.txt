@@ -700,7 +700,10 @@ optional argument:
 > string sfall_func2("string_to_case", string text, int toCase)
 - converts all letters in the given string to the specified case
 - toCase: 0 - lowercase, 1 - uppercase
-NOTE: function working only for English letters of A-Z/a-z
+- NOTE: this function work only for English letters of A-Z/a-z
+
+> void sfall_func3("set_terrain_name", x, y, string name)
+- overrides the terrain type name for the sub tile by the specified coordinates on the world map
 
 ------------------------
 ------ MORE INFO -------

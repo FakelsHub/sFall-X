@@ -42,6 +42,8 @@ struct levelRest {
 };
 std::unordered_map<int, levelRest> mapRestInfo;
 
+std::vector<std::pair<long, std::string>> wmTerrainTypeNames; // pair frist: x + y * numbers of sub-tiles horizontally
+
 static bool restMap;
 static bool restMode;
 static bool restTime;
@@ -436,7 +438,7 @@ void StartingStatePatches() {
 	}
 	int month = GetConfigInt("Misc", "StartMonth", -1);
 	if (month >= 0) {
-		if (month > 11) month = 11; 
+		if (month > 11) month = 11;
 		dlog("Applying starting month patch.", DL_INIT);
 		SafeWrite32(0x4A3382, month);
 		dlogr(" Done", DL_INIT);
@@ -602,6 +604,36 @@ long __fastcall Worldmap::GetRestMapLevel(long elev, int mapId) {
 	return -1;
 }
 
+static const char* GetOverrideTerrainName(long x, long y) {
+	if (wmTerrainTypeNames.empty()) return nullptr;
+
+	long subTileID = x + y * (fo::var::wmNumHorizontalTiles * 7);
+	auto it = std::find_if(wmTerrainTypeNames.crbegin(), wmTerrainTypeNames.crend(),
+						  [=](const std::pair<long, std::string> &el)
+						  { return el.first == subTileID; }
+	);
+	return (it != wmTerrainTypeNames.crend()) ? it->second.c_str() : nullptr;
+}
+
+// x, y - position of the sub-tile on the world map
+void Worldmap::SetTerrainTypeName(long x, long y, const char* name) {
+	long subTileID = x + y * (fo::var::wmNumHorizontalTiles * 7);
+	wmTerrainTypeNames.push_back(std::make_pair(subTileID, name));
+}
+
+// TODO: that someone might need to know the name of a terrain type?
+const char* Worldmap::GetTerrainTypeName(long x, long y) {
+	//const char* name = GetOverrideTerrainName(x, y);
+	//return (name) ? name : fo::GetMessageStr(&fo::var::wmMsgFile, 1000 + fo::wmGetTerrainType(x, y));
+	return nullptr;
+}
+
+// Returns the name of the terrain type of the player's marker position on the world map
+const char* Worldmap::GetCurrentTerrainName() {
+	const char* name = GetOverrideTerrainName(fo::var::world_xpos / 50, fo::var::world_ypos / 50);
+	return (name) ? name : fo::GetMessageStr(&fo::var::wmMsgFile, 1000 + fo::wmGetCurrentTerrainType());
+}
+
 void Worldmap::init() {
 	PathfinderFixInit();
 	StartingStatePatches();
@@ -616,6 +648,7 @@ void Worldmap::init() {
 		if (restTime) SetRestHealTime(180);
 		RestRestore();
 		mapRestInfo.clear();
+		wmTerrainTypeNames.clear();
 	};
 }
 
