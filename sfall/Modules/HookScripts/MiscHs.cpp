@@ -525,14 +525,14 @@ end:
 	}
 }
 
-// Íook does not work for scripted encounter and meeting Horrigan
+// Hook does not work for scripted encounter and meeting Horrigan
 static long __fastcall EncounterHook_Script(long encounterMapID, long eventType, long encType) {
 	BeginHook();
 	argCount = 3;
 
-	args[0] = eventType; // 1 - enter to local map from the world map
+	args[0] = eventType; // 1 - enter local map from the world map
 	args[1] = encounterMapID;
-	args[3] = (encType == 3); // 1 - random special encounter (not verified)
+	args[2] = (encType == 3); // 1 - special random encounter
 
 	RunHookScript(HOOK_ENCOUNTER);
 
@@ -590,27 +590,27 @@ hookRun: /////////////////////////////////
 clearEnc: /////////////////////////////////
 		mov  dword ptr ds:[FO_VAR_EncounterMapID], -1;
 		neg  eax;
-		sub  eax, 2; // recovery correct map number from negative value
+		sub  eax, 2; // recover correct map number from negative value
 		mov  hkEncounterMapID, eax;
 		dec  edx;
 blinkIcon:
 		cmp  edx, 6; // counter of blinking
-		je   break;
+		jge  break;
 		jmp  fo::funcoffs::wmInterfaceRefresh_;
 break:
 		mov  eax, hkEncounterMapID;
-		cmp  ds:[FO_VAR_Move_on_Car], 1;
-		jne  noCar;
+		cmp  ds:[FO_VAR_Move_on_Car], 0;
+		je   noCar;
 		mov  edx, FO_VAR_carCurrentArea;
 		call fo::funcoffs::wmMatchAreaContainingMapIdx_;
 		mov  eax, hkEncounterMapID;
 noCar:
 		call fo::funcoffs::map_load_idx_;
 		xor  eax, eax;
-		//mov  ds:[0x672E48], eax; // _wmUnkVar00
 		mov  hkEncounterMapID, -1;
 cancelEnc:
 		inc  eax; // 0 - continue movement, 1 - interrupt
+		mov  ds:[FO_VAR_wmEncounterIconShow], 0;
 		add  esp, 4;
 		mov  ebx, 0x4C0BC7;
 		jmp  ebx;

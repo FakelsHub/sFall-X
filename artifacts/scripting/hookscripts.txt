@@ -677,12 +677,12 @@ mixed   ret1 - overrides the target object, or pass -1 to prevent the player fro
 
 HOOK_ENCOUNTER (hs_encounter.int)
 
-Runs whenever any random encounter occurs (except the Horrigan meeting, and scripted encounters), or when the player enters a location map from the world map.
-You can override the map for loading or encounter.
+Runs whenever a random encounter occurs (except the Horrigan meeting and scripted encounters), or when the player enters a local map from the world map.
+You can override the map for loading or the encounter.
 
-int     arg1 - event type: 0 - when there is a encounter, 1 - when the player entering from the world map
-int     arg2 - map number encounter that will loaded (see MAPS.h or Maps.txt)
-int     arg3 - 1 - for a unique random encounter, 0 otherwise
+int     arg1 - event type: 0 - when a random encounter occurs, 1 - when the player enters from the world map
+int     arg2 - the map ID that the encounter will load (see MAPS.h or Maps.txt)
+int     arg3 - 1 when the encounter occurs is a special encounter, 0 otherwise
 
-int     ret1 - overrides the map number, or pass -1 to cancel the encounter and continue travel
-int     ret2 - pass 1 to cancel the encounter and load the specified map to the ret1 (only for event type = 0)
+int     ret1 - overrides the map ID, or for event type 0: pass -1 to cancel the encounter and continue traveling
+int     ret2 - pass 1 to cancel the encounter and load the specified map from the ret1 (only for event type 0)
