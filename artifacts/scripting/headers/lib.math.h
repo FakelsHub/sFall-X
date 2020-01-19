@@ -5,6 +5,17 @@
   Numbers...
 */
 
+#define above(a, b)        (unsigned_comp(a, b) > 0)
+#define above_equal(a, b)  (unsigned_comp(a, b) >= 0)
+#define below(a, b)        (unsigned_comp(a, b) < 0)
+#define below_equal(a, b)  (unsigned_comp(a, b) <= 0)
+
+procedure unsigned_comp(variable a, variable b) begin
+   if (a == b) then return 0;
+   if (b == 0) then return 1;
+   return 1 if (a / b) else -1;
+end
+
 #define MAX(x, y)    ((x > y) * x + (x <= y) * y)
 #define MIN(x, y)    ((x < y) * x + (x >= y) * y)
 #define in_range(x, from, to)    (x >= from and x <= to)
@@ -36,7 +47,8 @@ end*/
 end*/
 
 procedure cap_number(variable num, variable min, variable max) begin
-   if (num > max) then num := max;
+   if (num > max) then
+		num := max;
    else if (num < min) then num := min;
    return num;
 end
