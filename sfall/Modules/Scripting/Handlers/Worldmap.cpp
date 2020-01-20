@@ -35,11 +35,30 @@ static DWORD ForceEncounterMapID = -1;
 static DWORD ForceEncounterFlags;
 
 DWORD ForceEncounterRestore() {
+	if (ForceEncounterMapID == -1) return 0;
+	long long data = 0x672E043D83; // cmp ds:_Meet_Frank_Horrigan, 0
+	SafeWriteBytes(0x4C06D1, (BYTE*)&data, 5);
+	ForceEncounterFlags = 0;
+	DWORD mapID = ForceEncounterMapID;
+	ForceEncounterMapID = -1;
+	return mapID;
+}
+
+static void ForceEncounterEffects() {
+	if (ForceEncounterFlags & 0x10) { // _FadeOut flag
+		__asm mov  eax, FO_VAR_black_palette;
+		__asm call fo::funcoffs::palette_fade_to_;
+		return;
+	};
+
 	// implements a blinking encounter icon
-	long iconType = (ForceEncounterFlags & 4) ? 3 : 1; // icon type flag (special: 0-3, normal: 0-1)
+	if ((ForceEncounterFlags & 4)) return; // _NoIcon flag
+	long iconType = (ForceEncounterFlags & 8) ? 3 : 1; // icon type flag (special: 0-3, normal: 0-1)
+
 	*(DWORD*)FO_VAR_wmEncounterIconShow = 1;
 	*(DWORD*)FO_VAR_wmRndCursorFid = 0;
-	for (size_t n = 0; n < 7; ++n)
+
+	for (size_t n = 8; n > 0; --n)
 	{
 		long iconFidIndex = iconType - *(DWORD*)FO_VAR_wmRndCursorFid;
 		*(DWORD*)FO_VAR_wmRndCursorFid = iconFidIndex;
@@ -47,13 +66,6 @@ DWORD ForceEncounterRestore() {
 		fo::func::block_for_tocks(200);
 	}
 	*(DWORD*)FO_VAR_wmEncounterIconShow = 0;
-
-	long long data = 0x672E043D83; // cmp ds:_Meet_Frank_Horrigan, 0
-	SafeWriteBytes(0x4C06D1, (BYTE*)&data, 5);
-	ForceEncounterFlags = 0;
-	DWORD mapID = ForceEncounterMapID;
-	ForceEncounterMapID = -1;
-	return mapID;
 }
 
 static void __declspec(naked) wmRndEncounterOccurred_hack() {
@@ -66,6 +78,7 @@ static void __declspec(naked) wmRndEncounterOccurred_hack() {
 		mov  eax, ForceEncounterMapID;
 		call fo::funcoffs::wmMatchAreaContainingMapIdx_;
 noCar:
+		call ForceEncounterEffects;
 		call ForceEncounterRestore;
 		push 0x4C0721; // return addr
 		jmp  fo::funcoffs::map_load_idx_; // eax - mapID
