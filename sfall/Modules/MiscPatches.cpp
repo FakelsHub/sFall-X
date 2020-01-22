@@ -626,11 +626,12 @@ void DisableHorriganPatch() {
 }
 
 void DisplaySecondWeaponRangePatch() {
-	if (GetConfigInt("Misc", "DisplaySecondWeaponRange", 1)) { // TODO: Remove option from ddraw
-		dlog("Applying display second weapon range patch.", DL_INIT);
-		HookCall(0x472201, display_stats_hook);
-		dlogr(" Done", DL_INIT);
-	}
+	// Display the range of the second attack mode in the inventory when you switch weapon modes in active item slots
+	//if (GetConfigInt("Misc", "DisplaySecondWeaponRange", 1)) {
+	dlog("Applying display second weapon range patch.", DL_INIT);
+	HookCall(0x472201, display_stats_hook);
+	dlogr(" Done", DL_INIT);
+	//}
 }
 
 void DisplayElectricalStatPatch() {
