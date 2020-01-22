@@ -84,6 +84,8 @@ fo::GameObject* __fastcall LineOfSight(fo::GameObject* obj);
 
 long __fastcall GetTopWindowID(long xPos, long yPos);
 
+fo::Window* GetWindow(long winType);
+
 void GetObjectsTileRadius(std::vector<fo::GameObject*> &objs, long sourceTile, long radius, long elev, long type);
 
 long wmGetCurrentTerrainType();

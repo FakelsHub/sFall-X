@@ -319,7 +319,7 @@ static void __declspec(naked) wmRndEncounterOccurred_hook() {
 	__asm {
 		push eax;
 		mov  edx, 1;
-		mov  ds:[FO_VAR_wmRndCursorFid], 0;
+		mov  dword ptr ds:[FO_VAR_wmRndCursorFid], 0;
 		mov  ds:[FO_VAR_wmEncounterIconShow], edx;
 		mov  ecx, 7;
 jLoop:
