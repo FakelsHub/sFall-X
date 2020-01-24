@@ -46,6 +46,10 @@ public:
 	static void SetTerrainTypeName(long x, long y, const char* name);
 	static const char* GetTerrainTypeName(long x, long y);
 	static const char* GetCurrentTerrainName();
+
+	static bool AreaTitlesIsEmpty();
+	static const char* GetCustomAreaTitle(long areaId);
+	static void SetCustomAreaTitle(long areaId, const char* msg);
 };
 
 void _stdcall SetMapMulti(float d);

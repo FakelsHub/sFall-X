@@ -542,7 +542,7 @@ void sf_unwield_slot(OpcodeContext& ctx) {
 	if (update) fo::func::intface_update_items(0, -1, -1);
 }
 
-void sf_get_window_attributes(OpcodeContext& ctx) {
+void sf_get_window_attribute(OpcodeContext& ctx) {
 	fo::Window* win = fo::GetWindow(ctx.arg(0).rawValue());
 	if (win == nullptr) {
 		ctx.printOpcodeError("%s() - Failed to get the interface window.", ctx.getMetaruleName());
@@ -554,10 +554,10 @@ void sf_get_window_attributes(OpcodeContext& ctx) {
 	}
 	long pos = 0;
 	switch (ctx.arg(1).rawValue()) {
-	case 0 : // x
+	case 0: // x
 		pos = win->wRect.left;
 		break;
-	case 1 : // y
+	case 1: // y
 		pos = win->wRect.top;
 		break;
 	}

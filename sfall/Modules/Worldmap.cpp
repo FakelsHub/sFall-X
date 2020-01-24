@@ -42,7 +42,8 @@ struct levelRest {
 };
 std::unordered_map<int, levelRest> mapRestInfo;
 
-std::vector<std::pair<long, std::string>> wmTerrainTypeNames; // pair frist: x + y * numbers of sub-tiles horizontally
+std::vector<std::pair<long, std::string>> wmTerrainTypeNames; // pair first: x + y * numbers of sub-tiles horizontally
+std::vector<std::pair<long, std::string>> wmAreaHotSpotTitle;
 
 static bool restMap;
 static bool restMode;
@@ -628,6 +629,24 @@ const char* Worldmap::GetCurrentTerrainName() {
 	return (name) ? name : fo::GetMessageStr(&fo::var::wmMsgFile, 1000 + fo::wmGetCurrentTerrainType());
 }
 
+bool Worldmap::AreaTitlesIsEmpty() {
+	return wmAreaHotSpotTitle.empty();
+}
+
+void Worldmap::SetCustomAreaTitle(long areaID, const char* msg) {
+	wmAreaHotSpotTitle.push_back(std::make_pair(areaID, msg));
+}
+
+const char* Worldmap::GetCustomAreaTitle(long areaID) {
+	if (wmAreaHotSpotTitle.empty()) return nullptr;
+
+	auto it = std::find_if(wmAreaHotSpotTitle.crbegin(), wmAreaHotSpotTitle.crend(),
+						  [=](const std::pair<long, std::string> &el)
+						  { return el.first == areaID; }
+	);
+	return (it != wmAreaHotSpotTitle.crend()) ? it->second.c_str() : nullptr;
+}
+
 void Worldmap::init() {
 	PathfinderFixInit();
 	StartingStatePatches();
@@ -645,6 +664,7 @@ void Worldmap::init() {
 		RestRestore();
 		mapRestInfo.clear();
 		wmTerrainTypeNames.clear();
+		wmAreaHotSpotTitle.clear();
 	};
 }
 
