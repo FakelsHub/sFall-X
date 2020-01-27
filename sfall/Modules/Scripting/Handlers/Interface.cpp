@@ -139,9 +139,8 @@ void sf_create_message_window(OpcodeContext &ctx) {
 	dialogShow = false;
 }
 
-void sf_dialog_box(OpcodeContext &ctx) {
-	const char* str = ctx.arg(0).strValue();
-	if (!str || str[0] == 0) return;
+void sf_message_box(OpcodeContext &ctx) {
+	static u_short dialogShowCount = 0;
 
 	const char* str2[2];
 	long lines = 0;
@@ -153,9 +152,11 @@ void sf_dialog_box(OpcodeContext &ctx) {
 		++lines;
 		str2[1] = ctx.arg(2).strValue();
 	}
+	dialogShowCount++;
 	*(DWORD*)FO_VAR_script_engine_running = 0;
-	long result = fo::func::DialogOutEx(str, str2, lines, fo::DIALOGOUT_NORMAL | fo::DIALOGOUT_YESNO);
-	*(DWORD*)FO_VAR_script_engine_running = 1;
+	long result = fo::func::DialogOutEx(ctx.arg(0).asString(), str2, lines, fo::DIALOGOUT_NORMAL | fo::DIALOGOUT_YESNO);
+	if (--dialogShowCount == 0) *(DWORD*)FO_VAR_script_engine_running = 1;
+
 	ctx.setReturn(result);
 }
 

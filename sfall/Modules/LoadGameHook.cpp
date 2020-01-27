@@ -769,7 +769,7 @@ void LoadGameHook::init() {
 	HookCall(0x473E0D, LootContainerHook_Start); // loot_container_ (old 0x4746EC, 0x4A4369, 0x4A4565)
 	MakeCall(0x474692, LootContainerHook_End, 1);
 
-	MakeCall(0x4466C7, BarterInventoryHook); // gdProcess_
+	HookCall(0x4466C7, BarterInventoryHook); // gdProcess_
 
 	HookCalls(AutomapHook, {0x44396D, 0x479519}); // TODO
 
