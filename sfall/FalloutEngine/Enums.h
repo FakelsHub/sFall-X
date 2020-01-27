@@ -819,4 +819,14 @@ enum QueueType : long
 	gsound_sfx_event   = 13  // no object
 };
 
+enum DialogOutFlags : long
+{
+	DIALOGOUT_NORMAL     = 0x01, // uses regular graphic
+	DIALOGOUT_SMALL      = 0x02, // uses smaller graphic
+	DIALOGOUT_ALIGN_LEFT = 0x04, // text moved to left
+	DIALOGOUT_ALIGN_TOP  = 0x08, // text moved to top
+	DIALOGOUT_YESNO      = 0x10, // DONE button replaced with YES/NO -- WIP, useless in scripts in current state
+	DIALOGOUT_CLEAN      = 0x20  // no buttons
+};
+
 }
