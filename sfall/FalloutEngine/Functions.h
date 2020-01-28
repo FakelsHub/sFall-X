@@ -206,9 +206,9 @@ long __stdcall stat_level(GameObject* critter, long statId);
 // pictureUp/pictureDown - pointers to a surface
 long __stdcall win_register_button(DWORD winRef, long xPos, long yPos, long width, long height, long hoverOn, long hoverOff, long buttonDown, long buttonUp, BYTE* pictureUp, BYTE* pictureDown, long arg12, long buttonType);
 
-void __stdcall DialogOut(const char* text);
+void __fastcall DialogOut(const char* text, const char** textEx, long lines);
 
-long __fastcall DialogOutEx(const char* text, const char** textEx, long count, long flags);
+long __fastcall DialogOutEx(const char* text, const char** textEx, long lines, long flags, long colors);
 
 // draws the image to the buffer without scaling with the possibility of transparency
 void __fastcall windowDisplayBuf(long x, long width, long y, long height, void* data, long noTrans);
@@ -220,7 +220,7 @@ void __fastcall trans_cscale(long i_width, long i_height, long s_width, long s_h
 
 //void __declspec() __stdcall buf_to_buf(void* to_buf, long to_width, void* from_buf, long from_width, long width, long height);
 
-long __fastcall get_game_config_string(const char* outValue, const char* section, const char* param); 
+long __fastcall get_game_config_string(const char* outValue, const char* section, const char* param);
 
 // X-Macro for wrapper functions.
 #define WRAP_WATCOM_FUNC0(retType, name) \

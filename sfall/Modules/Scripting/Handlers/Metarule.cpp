@@ -70,7 +70,6 @@ static const SfallMetarule metarules[] = {
 	{"car_gas_amount",          sf_car_gas_amount,          0, 0},
 	{"create_win",              sf_create_win,              5, 6, -1, {ARG_STRING, ARG_INT, ARG_INT, ARG_INT, ARG_INT, ARG_INT}},
 	{"critter_inven_obj2",      sf_critter_inven_obj2,      2, 2,  0, {ARG_OBJECT, ARG_INT}},
-	{"message_box",             sf_message_box,             1, 3, -1, {ARG_STRING, ARG_STRING, ARG_STRING}},
 	{"dialog_message",          sf_dialog_message,          1, 1, -1, {ARG_STRING}},
 	{"dialog_obj",              sf_get_dialog_object,       0, 0},
 	{"display_stats",           sf_display_stats,           0, 0}, // refresh
@@ -106,6 +105,7 @@ static const SfallMetarule metarules[] = {
 	{"item_weight",             sf_item_weight,             1, 1,  0, {ARG_OBJECT}},
 	{"lock_is_jammed",          sf_lock_is_jammed,          1, 1,  0, {ARG_OBJECT}},
 	{"loot_obj",                sf_get_loot_object,         0, 0},
+	{"message_box",             sf_message_box,             1, 4, -1, {ARG_STRING, ARG_INT, ARG_INT, ARG_INT}},
 	{"metarule_exist",          sf_metarule_exist,          1, 1}, // no arg check
 	{"npc_engine_level_up",     sf_npc_engine_level_up,     1, 1},
 	{"obj_under_cursor",        sf_obj_under_cursor,        2, 2,  0, {ARG_INT, ARG_INT}},
