@@ -120,15 +120,11 @@ DWORD __stdcall interpretPopShort(Program* scriptPtr);
 // pops value from Data stack (must be preceded by InterpretPopShort)
 DWORD __stdcall interpretPopLong(Program* scriptPtr);
 
-// pushes value to Data stack (must be followed by InterpretPushShort)
-void __stdcall interpretPushLong(Program* scriptPtr, DWORD val);
+void interpretReturnValue(Program* scriptPtr, DWORD val, DWORD valType);
 
-// pushes value type to Data stack (must be preceded by InterpretPushLong)
-void __stdcall interpretPushShort(Program* scriptPtr, DWORD valType);
+DWORD __fastcall interpretGetValue(Program* scriptPtr, DWORD &outType);
 
 const char* __fastcall interpretGetString(Program* scriptPtr, DWORD dataType, DWORD strId);
-
-DWORD __stdcall interpretAddString(Program* scriptPtr, const char* str);
 
 // prints scripting error in debug.log and stops current script execution by performing longjmp
 // USE WITH CAUTION
@@ -206,9 +202,9 @@ long __stdcall stat_level(GameObject* critter, long statId);
 // pictureUp/pictureDown - pointers to a surface
 long __stdcall win_register_button(DWORD winRef, long xPos, long yPos, long width, long height, long hoverOn, long hoverOff, long buttonDown, long buttonUp, BYTE* pictureUp, BYTE* pictureDown, long arg12, long buttonType);
 
-void __fastcall DialogOut(const char* text, const char** textEx, long lines);
+void __stdcall DialogOut(const char* text);
 
-long __fastcall DialogOutEx(const char* text, const char** textEx, long lines, long flags, long colors);
+long __fastcall DialogOutEx(const char* text, const char** textEx, long lines, long flags, long colors = 0);
 
 // draws the image to the buffer without scaling with the possibility of transparency
 void __fastcall windowDisplayBuf(long x, long width, long y, long height, void* data, long noTrans);
