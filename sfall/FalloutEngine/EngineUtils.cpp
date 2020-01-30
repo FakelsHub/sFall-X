@@ -16,7 +16,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "Functions.h"
 #include "FunctionOffsets.h"
@@ -231,6 +231,7 @@ enum WinNameType {
 	Character = 5,
 	SkillDex  = 6,
 	EscMenu   = 7, // escape menu
+//	Automap   = 8  // for this window there is no global variable
 };
 
 fo::Window* GetWindow(long winType) {

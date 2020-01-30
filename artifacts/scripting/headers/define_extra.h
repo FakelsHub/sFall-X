@@ -87,7 +87,7 @@
 #define FLAG_SEEN         (0x40000000)
 #define FLAG_SHOOTTHRU    (0x80000000)
 
-/* Critter Flags */
+/* Critter flags */
 #define CFLG_BARTER             2  // 0x00000002 - Barter (can trade with)
 #define CFLG_NOSTEAL           32  // 0x00000020 - Steal (cannot steal from)
 #define CFLG_NODROP            64  // 0x00000040 - Drop (doesn't drop items)
@@ -100,12 +100,20 @@
 #define CFLG_RANGED          8192  // 0x00002000 - Range (melee attack is possible at a distance)
 #define CFLG_NOKNOCKDOWN    16384  // 0x00004000 - Knock (cannot be knocked down)
 
-/* Window Flags */
+/* Window flags */
 #define WIN_FLAG_MOVEONTOP          (0x4)
 #define WIN_FLAG_HIDDEN             (0x8)
 #define WIN_FLAG_EXCLUSIVE         (0x10)
 #define WIN_FLAG_TRANSPARENT       (0x20)
 
+/* Message window flags */
+#define MESSAGE_BOX_AUTOSIZE         (0x0)
+#define MESSAGE_BOX_NORMAL           (0x1)
+#define MESSAGE_BOX_SMALL            (0x2)
+#define MESSAGE_BOX_ALIGN_LEFT       (0x4) // text moved to left
+#define MESSAGE_BOX_ALIGN_TOP        (0x8) // text moved to top
+#define MESSAGE_BOX_YESNO           (0x10) // uses YES/NO buttons instead DONE
+#define MESSAGE_BOX_CLEAN           (0x20) // no buttons
 
 //remove inven obj defines
 #define RMOBJ_CONSUME_DRUG        4666772
