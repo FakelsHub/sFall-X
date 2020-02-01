@@ -2548,6 +2548,12 @@ void BugFixes::init()
 	// for op_div:
 	SafeWrite16(0x46A566, 0x04DB);
 	SafeWrite16(0x46A4E7, 0x04DB);
+	// Fix division operator to integer signed division
+	if (GetConfigInt("Misc", "DivisionOperatorFix", 1)) {
+		dlog("Applying unsigned division operator fix.", DL_INIT);
+		SafeWrite32(0x46A51D, 0xFBF79990); // cdq idiv
+		dlogr(" Done", DL_INIT);
+	}
 
 	//if (GetConfigInt("Misc", "SpecialUnarmedAttacksFix", 1)) {
 		dlog("Applying Special Unarmed Attacks fix.", DL_INIT);

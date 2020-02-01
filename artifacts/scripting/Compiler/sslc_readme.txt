@@ -340,7 +340,8 @@ There are several changes in this version of sslc which may result in problems f
 =================
 
 > sslc v1.2:
-- added new logical operators "AndAlso", "OrElse" for short-circuit evaluation of logical expressions
+- added new "div" operator for unsigned integer division for sfall 4.2.3/3.8.23
+- added new logical operators "andAlso", "orElse" for short-circuit evaluation of logical expressions
 - added an alternative (C/Java-style) assignment operator
 - fixed compiler giving "assignment operator expected" error when a variable-like macro is not being defined properly
 

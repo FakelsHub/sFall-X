@@ -317,8 +317,8 @@
       <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
       <ForcedIncludeFiles>stdafx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <FunctionLevelLinking>false</FunctionLevelLinking>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(DXSDK_DIR)Include\</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>d3d9.lib;d3dx9.lib;dinput.lib;Strmiids.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -338,9 +338,9 @@
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <AdditionalLibraryDirectories>$(DXSDK_DIR)lib\x86\</AdditionalLibraryDirectories>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
       <AdditionalOptions>/LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalLibraryDirectories>$(DXSDK_DIR)lib\x86\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>"$(ProjectDir)postbuild.cmd" releasexp "$(TargetPath)"</Command>
@@ -381,6 +381,7 @@
     <ClInclude Include="Modules\LoadOrder.h" />
     <ClInclude Include="Modules\Objects.h" />
     <ClInclude Include="Modules\PlayerModel.h" />
+    <ClInclude Include="Modules\Scripting\Handlers\Math.h" />
     <ClInclude Include="Modules\SpeedPatch.h" />
     <ClInclude Include="Modules\SubModules\CombatBlock.h" />
     <ClInclude Include="Modules\Worldmap.h" />
@@ -474,6 +475,7 @@
     <ClCompile Include="Modules\LoadOrder.cpp" />
     <ClCompile Include="Modules\Objects.cpp" />
     <ClCompile Include="Modules\PlayerModel.cpp" />
+    <ClCompile Include="Modules\Scripting\Handlers\Math.cpp" />
     <ClCompile Include="Modules\SpeedPatch.cpp" />
     <ClCompile Include="Modules\SubModules\CombatBlock.cpp" />
     <ClCompile Include="Modules\Worldmap.cpp" />
