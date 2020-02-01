@@ -27,5 +27,29 @@ class OpcodeContext;
 
 void sf_div(OpcodeContext&);
 
+void sf_sqrt(OpcodeContext&);
+
+void sf_abs(OpcodeContext&);
+
+void sf_sin(OpcodeContext&);
+
+void sf_cos(OpcodeContext&);
+
+void sf_tan(OpcodeContext&);
+
+void sf_arctan(OpcodeContext&);
+
+void sf_power(OpcodeContext&);
+
+void sf_log(OpcodeContext&);
+
+void sf_exponent(OpcodeContext&);
+
+void sf_ceil(OpcodeContext&);
+
+void sf_round(OpcodeContext&);
+
+void sf_floor2(OpcodeContext&);
+
 }
 }
