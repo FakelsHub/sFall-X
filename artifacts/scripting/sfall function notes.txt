@@ -722,7 +722,7 @@ optional argument:
 - returns -1 if for some reason the dialog box cannot be created
 - message: the text in the dialog box. Use the \n control character to move text to a new line (example: "Hello\nWorld!")
 optional arguments:
-- flags: mode flags (see MESSAGE_BOX_* constants in define_extra.h). Pass -1 to skip setting the flags (default are NORMAL and YESNO flags)
+- flags: mode flags (see MSGBOX_* constants in define_extra.h). Pass -1 to skip setting the flags (default are NORMAL and YESNO flags)
 - color1/2: the color index in Fallout palette. color1 sets the text color for the first line, and color2 for all subsequent lines of text (default color is 145)
 
 ------------------------

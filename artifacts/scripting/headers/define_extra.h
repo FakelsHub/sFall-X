@@ -107,13 +107,13 @@
 #define WIN_FLAG_TRANSPARENT       (0x20)
 
 /* Message window flags */
-#define MESSAGE_BOX_AUTOSIZE         (0x0)
-#define MESSAGE_BOX_NORMAL           (0x1)
-#define MESSAGE_BOX_SMALL            (0x2)
-#define MESSAGE_BOX_ALIGN_LEFT       (0x4) // text moved to left
-#define MESSAGE_BOX_ALIGN_TOP        (0x8) // text moved to top
-#define MESSAGE_BOX_YESNO           (0x10) // uses YES/NO buttons instead DONE
-#define MESSAGE_BOX_CLEAN           (0x20) // no buttons
+#define MSGBOX_AUTOSIZE             (0x0)
+#define MSGBOX_NORMAL               (0x1)
+#define MSGBOX_SMALL                (0x2)
+#define MSGBOX_ALIGN_LEFT           (0x4) // text moved to left
+#define MSGBOX_ALIGN_TOP            (0x8) // text moved to top
+#define MSGBOX_YESNO               (0x10) // uses YES/NO buttons instead DONE
+#define MSGBOX_CLEAN               (0x20) // no buttons
 
 //remove inven obj defines
 #define RMOBJ_CONSUME_DRUG        4666772
@@ -407,7 +407,7 @@
 #define OBJ_DATA_COMBAT_STATE       (0x3C) // flags:  1 - combat, 2 - target out of range, 4 - flee
 #define OBJ_DATA_CUR_ACTION_POINT   (0x40)
 #define OBJ_DATA_DAMAGE_LAST_TURN   (0x48)
-#define OBJ_DATA_WHO_HIT_ME         (0x54)
+#define OBJ_DATA_WHO_HIT_ME         (0x54) // current target of critter
 
 // compute attack result data offset
 #define C_ATTACK_SOURCE             (0x00)

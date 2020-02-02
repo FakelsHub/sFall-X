@@ -310,7 +310,7 @@ void SurfaceCopyToMem(long fromX, long fromY, long width, long height, long from
 	}
 }
 
-// copy data from memory to the area of the interface buffer
+// safe copy data from memory to the area of the interface buffer
 void DrawToSurface(long toX, long toY, long width, long height, long toWidth, long toHeight, BYTE* toSurface, BYTE* fromMem) {
 	BYTE* _toSurface = toSurface + (toY * toWidth + toX);
 	BYTE* endToSurf = (toWidth * toHeight) + toSurface;
@@ -324,6 +324,7 @@ void DrawToSurface(long toX, long toY, long width, long height, long toWidth, lo
 	}
 }
 
+// safe copy data from surface to surface with mask
 void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE *fromSurf,
 	               long toX, long toY, long toWidth, long toHeight, BYTE *toSurf, int maskRef)
 {
@@ -341,6 +342,7 @@ void DrawToSurface(long width, long height, long fromX, long fromY, long fromWid
 	}
 }
 
+// safe copy data from surface to surface
 void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE* fromSurf,
 	               long toX, long toY, long toWidth, long toHeight, BYTE* toSurf)
 {
