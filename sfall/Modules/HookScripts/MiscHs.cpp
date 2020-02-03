@@ -525,7 +525,7 @@ end:
 	}
 }
 
-// Hook does not work for scripted encounter and meeting Horrigan
+// Hook does not work for scripted encounters and meeting Horrigan
 static long __fastcall EncounterHook_Script(long encounterMapID, long eventType, long encType) {
 	BeginHook();
 	argCount = 3;

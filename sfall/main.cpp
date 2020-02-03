@@ -89,7 +89,7 @@ namespace sfall
 bool isDebug = false;
 
 bool hrpIsEnabled = false;
-bool hrpVersionValid = false; // HRP validation version 4.1.8
+bool hrpVersionValid = false; // HRP 4.1.8 version validation
 
 const char ddrawIni[] = ".\\ddraw.ini";
 static char ini[65]   = ".\\";
@@ -102,12 +102,12 @@ DWORD HRPAddress(DWORD addr) {
 	return (hrpDLLBaseAddr + (addr & 0xFFFFF));
 }
 
-size_t iniGetString(const char* section, const char* setting, const char* defaultValue, char* buf, size_t bufSize, const char* iniFile) {
-	return GetPrivateProfileStringA(section, setting, defaultValue, buf, bufSize, iniFile);
-}
-
 int iniGetInt(const char* section, const char* setting, int defaultValue, const char* iniFile) {
 	return GetPrivateProfileIntA(section, setting, defaultValue, iniFile);
+}
+
+size_t iniGetString(const char* section, const char* setting, const char* defaultValue, char* buf, size_t bufSize, const char* iniFile) {
+	return GetPrivateProfileStringA(section, setting, defaultValue, buf, bufSize, iniFile);
 }
 
 std::string GetIniString(const char* section, const char* setting, const char* defaultValue, size_t bufSize, const char* iniFile) {
@@ -187,7 +187,7 @@ static void InitModules() {
 	manager.add<Console>();
 	manager.add<ExtraSaveSlots>();
 	manager.add<Inventory>();
-	manager.add<Drugs>();       // should be above than PartyControl
+	manager.add<Drugs>();       // should be loaded before PartyControl
 	manager.add<PartyControl>();
 	manager.add<BurstMods>();
 	manager.add<Books>();
@@ -205,7 +205,7 @@ static void InitModules() {
 	manager.add<TalkingHeads>();
 	manager.add<ScriptShaders>();
 
-	// should be last (reason: all build-in events(delegates) of modules must be executed before running the script handlers)
+	// should be last: all built-in events(delegates) of modules should be executed before running the script handlers
 	manager.add<HookScripts>();
 	manager.add<ScriptExtender>();
 
@@ -217,10 +217,10 @@ static void InitModules() {
 }
 
 static const DWORD loadFunc = 0x4FE1D0;
-static void LoadingHRPModule() {
+static void LoadHRPModule() {
 	HMODULE dll;
-	_asm call loadFunc; // get HRP loading address
-	_asm mov  dll, eax;
+	__asm call loadFunc; // get HRP loading address
+	__asm mov  dll, eax;
 	if (dll != NULL) hrpDLLBaseAddr = (DWORD)dll;
 	dlog_f("Loaded f2_res.dll library at the memory address: 0x%x\n", DL_MAIN, dll);
 }
@@ -237,9 +237,9 @@ static void CompatModeCheck(HKEY root, const char* filepath, int extra) {
 					RegCloseKey(key);
 
 					MessageBoxA(0, "Fallout appears to be running in compatibility mode.\n" //, and sfall was not able to disable it.\n"
-								"Please check the compatibility tab of fallout2.exe, and ensure that the following settings are unchecked.\n"
-								"Run this program in compatibility mode for..., run in 256 colours, and run in 640x480 resolution.\n"
-								"If these options are disabled, click the 'change settings for all users' button and see if that enables them.", "Error", 0);
+								   "Please check the compatibility tab of fallout2.exe, and ensure that the following settings are unchecked:\n"
+								   "Run this program in compatibility mode for..., run in 256 colours, and run in 640x480 resolution.\n"
+								   "If these options are disabled, click the 'change settings for all users' button and see if that enables them.", "Error", MB_TASKMODAL | MB_ICONERROR);
 
 					ExitProcess(-1);
 				}
@@ -267,10 +267,10 @@ inline void SfallInit() {
 		typedef int (_stdcall *chk64bitproc)(HANDLE, int*);
 		HMODULE h = LoadLibrary("Kernel32.dll");
 		chk64bitproc proc = (chk64bitproc)GetProcAddress(h, "IsWow64Process");
-		if(proc)
+		if (proc)
 			proc(GetCurrentProcess(), &is64bit);
 		else
-			is64bit=0;
+			is64bit = 0;
 		FreeLibrary(h);
 
 		CompatModeCheck(HKEY_CURRENT_USER, filepath, is64bit ? KEY_WOW64_64KEY : 0);
@@ -306,10 +306,10 @@ inline void SfallInit() {
 		HANDLE h = CreateFileA(cmdline, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
 		if (h != INVALID_HANDLE_VALUE) {
 			CloseHandle(h);
-			strcat_s(ini, 65, cmdline);
+			strcat_s(ini, cmdline);
 		} else {
-			MessageBox(0, "You gave a command line argument to fallout, but it couldn't be matched to a file\n" \
-						  "Using default ddraw.ini instead", "Warning", MB_TASKMODAL);
+			MessageBoxA(0, "You gave a command line argument to Fallout, but it couldn't be matched to a file.\n" \
+						   "Using default ddraw.ini instead.", "Warning", MB_TASKMODAL | MB_ICONWARNING);
 			goto defaultIni;
 		}
 	} else {
@@ -320,9 +320,9 @@ defaultIni:
 	GetConfigString("Main", "TranslationsINI", ".\\Translations.ini", translationIni, 65);
 	modifiedIni = GetConfigInt("Main", "ModifiedIni", 0);
 
-	hrpIsEnabled = (*(DWORD*)0x4E4480 != 0x278805C7); // check enabled HRP
+	hrpIsEnabled = (*(DWORD*)0x4E4480 != 0x278805C7); // check if HRP is enabled
 	if (hrpIsEnabled) {
-		LoadingHRPModule();
+		LoadHRPModule();
 		if (strncmp((const char*)HRPAddress(0x10039940), "4.1.8", 5) == 0) hrpVersionValid = true;
 	}
 
@@ -332,8 +332,7 @@ defaultIni:
 }
 
 static bool LoadOriginalDll(DWORD dwReason) {
-	switch (dwReason)
-	{
+	switch (dwReason) {
 		case DLL_PROCESS_ATTACH:
 			char path[MAX_PATH];
 			CopyMemory(path + GetSystemDirectoryA(path , MAX_PATH - 10), "\\ddraw.dll", 11); // path to original dll
@@ -367,7 +366,6 @@ static bool LoadOriginalDll(DWORD dwReason) {
 		case DLL_PROCESS_DETACH:
 			if (ddraw.dll) FreeLibrary(ddraw.dll);
 			break;
-
 	}
 	return false;
 }

@@ -1,4 +1,3 @@
-
 #include "main.h"
 #include "CheckAddress.h"
 
@@ -8,7 +7,7 @@ namespace sfall
 enum CodeType : BYTE {
 	Call = 0xE8,
 	Jump = 0xE9,
-	Nop =  0x90
+	Nop  = 0x90
 };
 
 static void _stdcall SafeWriteFunc(BYTE code, DWORD addr, void* func) {
@@ -22,7 +21,7 @@ static void _stdcall SafeWriteFunc(BYTE code, DWORD addr, void* func) {
 	CheckConflict(addr, 5);
 }
 
-static _declspec(noinline) void _stdcall SafeWriteFunc(BYTE code, DWORD addr, void* func, DWORD len) {
+static __declspec(noinline) void _stdcall SafeWriteFunc(BYTE code, DWORD addr, void* func, DWORD len) {
 	DWORD oldProtect,
 		protectLen = len + 5,
 		addrMem = addr + 5,
@@ -138,9 +137,9 @@ void SafeMemSet(DWORD addr, BYTE val, int len) {
 void BlockCall(DWORD addr) {
 	DWORD oldProtect;
 
-	VirtualProtect((void *)addr, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
+	VirtualProtect((void*)addr, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
 	*(DWORD*)addr = 0x00441F0F; // long NOP (0F1F4400-XX)
-	VirtualProtect((void *)addr, 4, oldProtect, &oldProtect);
+	VirtualProtect((void*)addr, 4, oldProtect, &oldProtect);
 
 	CheckConflict(addr, 5);
 }

@@ -103,8 +103,8 @@ Delegate<>& OnInputLoop() {
 }
 
 void FlushInputBuffer() {
-	while(!bufferedPresses.empty()) bufferedPresses.pop();
-	_asm call fo::funcoffs::kb_clear_;
+	while (!bufferedPresses.empty()) bufferedPresses.pop();
+	__asm call fo::funcoffs::kb_clear_;
 }
 
 DWORD _stdcall KeyDown(DWORD key) {

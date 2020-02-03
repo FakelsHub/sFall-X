@@ -1,20 +1,21 @@
 /*
-*    sfall
-*    Copyright (C) 2008-2016  The sfall team
-*
-*    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU General Public License as published by
-*    the Free Software Foundation, either version 3 of the License, or
-*    (at your option) any later version.
-*
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU General Public License for more details.
-*
-*    You should have received a copy of the GNU General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ *    sfall
+ *    Copyright (C) 2008-2016  The sfall team
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #pragma warning(disable:4996)
@@ -35,11 +36,11 @@
 
 struct ddrawDll {
 	HMODULE dll;
-	FARPROC	DirectDrawEnumerateExA;
+	FARPROC DirectDrawEnumerateExA;
 	FARPROC DirectDrawCreate;
-	FARPROC	DirectDrawCreateEx;
-	FARPROC	AcquireDDThreadLock;
-	FARPROC	ReleaseDDThreadLock;
+	FARPROC DirectDrawCreateEx;
+	FARPROC AcquireDDThreadLock;
+	FARPROC ReleaseDDThreadLock;
 	FARPROC CheckFullscreen;
 	FARPROC CompleteCreateSysmemSurface;
 	FARPROC D3DParseUnknownCommand;
@@ -71,17 +72,17 @@ namespace sfall
 #endif
 
 // Trap for Debugger
-#define BREAKPOINT  _asm int 3
+#define BREAKPOINT __asm int 3
 
 // Macros for quick replacement of assembler opcodes pushad/popad
-#define pushadc _asm push eax _asm push edx _asm push ecx
-#define popadc  _asm pop ecx _asm pop edx _asm pop eax
-
-// Gets the string value from given INI file.
-size_t iniGetString(const char* section, const char* setting, const char* defaultValue, char* buf, size_t bufSize, const char* iniFile);
+#define pushadc __asm push eax __asm push edx __asm push ecx
+#define popadc  __asm pop ecx __asm pop edx __asm pop eax
 
 // Gets the integer value from given INI file.
 int iniGetInt(const char* section, const char* setting, int defaultValue, const char* iniFile);
+
+// Gets the string value from given INI file.
+size_t iniGetString(const char* section, const char* setting, const char* defaultValue, char* buf, size_t bufSize, const char* iniFile);
 
 // Gets the string value from given INI file.
 std::string GetIniString(const char* section, const char* setting, const char* defaultValue, size_t bufSize, const char* iniFile);

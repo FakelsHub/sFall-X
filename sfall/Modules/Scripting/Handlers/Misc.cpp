@@ -307,8 +307,8 @@ void __declspec(naked) op_eax_available() {
 }
 
 static const char* nameNPCToInc;
-static long  pidNPCToInc;
-static bool  onceNpcLoop;
+static long pidNPCToInc;
+static bool onceNpcLoop;
 
 static void __cdecl IncNPCLevel(const char* fmt, const char* name) {
 	fo::GameObject* mObj;

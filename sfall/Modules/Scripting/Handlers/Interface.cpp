@@ -603,7 +603,7 @@ void sf_get_window_attribute(OpcodeContext& ctx) {
 	}
 	long result = 0;
 	switch (ctx.arg(1).rawValue()) {
-	case 0: // check window exist
+	case 0: // check if window exists
 		result = 1;
 		break;
 	case 1: // x

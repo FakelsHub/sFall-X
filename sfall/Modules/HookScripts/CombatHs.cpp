@@ -493,12 +493,12 @@ static long __fastcall TargetObjectHook(DWORD isValid, DWORD object, long type) 
 	BeginHook();
 	argCount = 3;
 
-	args[0] = type;    // 0 - mouse hover on target, 1 - mouse click target
+	args[0] = type;    // 0 - mouse hovering over target, 1 - mouse clicking on target
 	args[1] = isValid; // 1 - target is valid
 	args[2] = object;  // target object
 
 	if (isValid == 0) object = 0; // it is necessary for the proper operation of the engine code
-	if (type == 0) targetRet = 0; // unset ret from the previous execution hook
+	if (type == 0) targetRet = 0; // unset ret from the previous execution of the hook
 
 	RunHookScript(HOOK_TARGETOBJECT);
 

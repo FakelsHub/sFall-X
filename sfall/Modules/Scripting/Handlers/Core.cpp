@@ -120,7 +120,7 @@ void __declspec(naked) op_get_sfall_arg() {
 void sf_get_sfall_arg_at(OpcodeContext& ctx) {
 	long argVal = 0;
 	long id = ctx.arg(0).rawValue();
-	if (id >= (long)HookScripts::GetHSArgCount() || id < 0) {
+	if (id >= static_cast<long>(HookScripts::GetHSArgCount()) || id < 0) {
 		ctx.printOpcodeError("%s() - invalid value for argument.", ctx.getMetaruleName());
 	} else {
 		argVal = HookScripts::GetHSArgAt(id);

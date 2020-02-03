@@ -51,8 +51,8 @@ static void ForceEncounterEffects() {
 		return;
 	};
 
-	// implements a blinking encounter icon
-	if ((ForceEncounterFlags & 4)) return; // _NoIcon flag
+	// implements a flashing encounter icon
+	if (ForceEncounterFlags & 4) return; // _NoIcon flag
 	long iconType = (ForceEncounterFlags & 8) ? 3 : 1; // icon type flag (special: 0-3, normal: 0-1)
 
 	*(DWORD*)FO_VAR_wmEncounterIconShow = 1;

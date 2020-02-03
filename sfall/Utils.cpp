@@ -35,14 +35,14 @@ void strtrim(char* str) {
 
 	int i = len;
 	while (len >= 0 && isSpace(str[len])) len--;
-	if (i != len) str[len + 1] = '\0'; // delete all right spaces
+	if (i != len) str[len + 1] = '\0'; // delete all spaces on the right
 
 	i = 0;
 	while (i < len && isSpace(str[i])) i++;
 	if (i > 0) {
 		int j = 0;
 		do {
-			str[j] = str[j + i]; // shift all chars(include null char) to left
+			str[j] = str[j + i]; // shift all chars (including null char) to the left
 		} while (++j <= len);
 	}
 }
@@ -61,7 +61,7 @@ const char* strfind(const char* source, const char* word) {
 	return 0;
 }
 
-// replace all '/' char to '\'
+// replace all '/' chars to '\'
 void StrNormalizePath(char* path) {
 	if (*path == 0) return;
 	do {
