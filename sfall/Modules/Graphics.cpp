@@ -668,34 +668,41 @@ public:
 	HRESULT _stdcall AddAttachedSurface(LPDIRECTDRAWSURFACE) { UNUSEDFUNCTION; }
 	HRESULT _stdcall AddOverlayDirtyRect(LPRECT) { UNUSEDFUNCTION; }
 
-	HRESULT _stdcall Blt(LPRECT a, LPDIRECTDRAWSURFACE b, LPRECT c, DWORD d, LPDDBLTFX e) { // used for game movies (is not primary)
-		//dlog("\nBlt()", DL_INIT);
+	/*
+		0x4868DA movie_MVE_ShowFrame_
+	*/
+	HRESULT _stdcall Blt(LPRECT a, LPDIRECTDRAWSURFACE b, LPRECT c, DWORD d, LPDDBLTFX e) { // used for game movies (w/o HRP)
+		//long addrs;
+		//_asm mov eax, dword ptr [ebp + 4];
+		//_asm mov addrs, eax;
+		//dlog_f("\nBlt(0x%x)", DL_INIT, addrs);
 
 		IsPlayMovie = true;
 		if (Graphics::PlayAviMovie) return DD_OK;
 
-		movieHeight = (a->bottom - a->top);
-		yoffset = (ResHeight - movieHeight) / 2;
 		//movieWidth = (a->right - a->left);
 		//xoffset = (ResWidth - movieWidth) / 2;
+		//movieHeight = (a->bottom - a->top);
+		yoffset = (ResHeight - movieDesc.dwHeight) / 2;
 
 		BYTE* lockTarget = ((FakeSurface2*)b)->lockTarget;
 		D3DLOCKED_RECT dRect;
 		Tex->LockRect(0, &dRect, a, 0);
-		DWORD width = ResWidth;
+		DWORD width = movieDesc.lPitch; // the current size of the width of the mve movie //ResWidth;
 		int pitch = dRect.Pitch;
 		if (Graphics::GPUBlt) {
 			char* pBits = (char*)dRect.pBits;
 			if (subTitlesShow) {
 				subTitlesShow = false;
-				DWORD bottom = yoffset + movieHeight;
+				DWORD bottom = yoffset + movieDesc.dwHeight;
+				long x_shift = (ResWidth - width) / 2; // shift the position of sub-titles relative to the width difference
 				for (DWORD y = 0; y < ResHeight; y++) {
-					if (y < yoffset || y > bottom) {  // copy excluding video region
-						CopyMemory(&pBits[(y - yoffset) * pitch], &titlesBuffer[y * width], width);
+					if (y < yoffset || y > bottom) { // paste sub-titles excluding video region
+						CopyMemory(&pBits[(y - yoffset) * pitch], &titlesBuffer[(y * ResWidth) + x_shift], width);
 					}
 				}
 			}
-			for (DWORD y = 0; y < movieHeight; y++) {
+			for (DWORD y = 0; y < movieDesc.dwHeight; y++) {
 				CopyMemory(&pBits[y * pitch], &lockTarget[y * width], width);
 			}
 			//if (ResWidth > 640) {
@@ -708,18 +715,19 @@ public:
 			pitch /= 4;
 			if (subTitlesShow) {
 				subTitlesShow = false;
-				DWORD bottom = yoffset + movieHeight;
+				DWORD bottom = yoffset + movieDesc.dwHeight;
+				long x_shift = (ResWidth - width) / 2; // shift the position of sub-titles relative to the width difference
 				for (DWORD y = 0; y < ResHeight; y++) {
 					if (y < yoffset || y > bottom) {
 						int yyp = (y - yoffset) * pitch;
-						int yw = y * width;
+						int yw = (y * ResWidth) + x_shift;
 						for (DWORD x = 0; x < width; x++) {
 							((DWORD*)dRect.pBits)[yyp + x] = palette[titlesBuffer[yw + x]];
 						}
 					}
 				}
 			}
-			for (DWORD y = 0; y < movieHeight; y++) {
+			for (DWORD y = 0; y < movieDesc.dwHeight; y++) {
 				int yp = y * pitch;
 				int yw = y * width;
 				for (DWORD x = 0; x < width; x++) {
@@ -779,14 +787,18 @@ public:
 		0x4CB887 GNW95_ShowRect_ (c=1)
 		0x48699D movieShowFrame_ (c=0)
 		0x4CBBFA GNW95_zero_vid_mem_ (c=1)
+		0x4F5E91/0x4F5EBB sub_4F5E60 (c=0)
 	*/
 	HRESULT _stdcall Lock(LPRECT a, LPDDSURFACEDESC b, DWORD c, HANDLE d) {
-		*b = (Primary) ? surfaceDesc : movieDesc;
-		/*if (Primary) {
-			dlog("\nLock() use surfaceDesc.", DL_INIT);
+		if (Primary) {
+			//dlog_f("\nLock(%d) use surfaceDesc.", DL_INIT, c);
+			*b = surfaceDesc;
 		} else {
-			dlog("\nLock() use movieDesc.", DL_INIT);
-		}*/
+			//dlog_f("\nLock(%d) use movieDesc.", DL_INIT, c);
+			movieDesc.lPitch = *(DWORD*)FO_VAR_lastMovieW;
+			movieDesc.dwHeight = *(DWORD*)FO_VAR_lastMovieH;
+			*b = movieDesc;
+		}
 		b->lpSurface = lockTarget;
 		return DD_OK;
 	}
@@ -825,7 +837,7 @@ public:
 					if (IsPlayMovie) { // for subtitles
 						subTitlesShow = true;
 						if (!titlesBuffer) titlesBuffer = new BYTE[ResWidth * ResHeight]();
-						DWORD bottom = (yoffset + movieHeight);
+						DWORD bottom = (yoffset + movieDesc.dwHeight);
 						for (DWORD y = 0; y < ResHeight; y++) {
 							if (y < yoffset || y > bottom) CopyMemory(&titlesBuffer[y * width], &lockTarget[y * width], width); //copy subtitles region to buffer
 						}
@@ -840,7 +852,7 @@ public:
 					if (IsPlayMovie) { // for subtitles
 						subTitlesShow = true;
 						if (!titlesBuffer) titlesBuffer = new BYTE[ResWidth * ResHeight]();
-						DWORD bottom = (yoffset + movieHeight);
+						DWORD bottom = (yoffset + movieDesc.dwHeight);
 						for (DWORD y = 0; y < ResHeight; y++) {
 							if (y >= yoffset && y <= bottom) continue;
 							int yw = y * width;
@@ -848,7 +860,7 @@ public:
 								titlesBuffer[yw + x] = lockTarget[yw + x];
 							}
 						}
-					} else if (!(ResWidth % 8)) { // for what?
+					} else if (!(ResWidth % 8)) {
 						DWORD* target = (DWORD*)&lockTarget[0];
 						pitch = (pitch - ResWidth) * 4;
 						DWORD width = ResWidth / 8;
@@ -1037,8 +1049,8 @@ HRESULT _stdcall FakeDirectDrawCreate2_Init(void*, IDirectDraw** b, void*) {
 	// set params for .mve surface
 	movieDesc = surfaceDesc;
 	movieDesc.lPitch = 640;
-	movieDesc.dwHeight = 480;
 	movieDesc.dwWidth = 640;
+	movieDesc.dwHeight = 480;
 
 	gWidth = GetConfigInt("Graphics", "GraphicsWidth", 0);
 	gHeight = GetConfigInt("Graphics", "GraphicsHeight", 0);
