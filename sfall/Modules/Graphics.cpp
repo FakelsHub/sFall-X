@@ -45,6 +45,8 @@ typedef IDirect3D9* (_stdcall *D3DCreateProc)(UINT version);
 
 #define UNUSEDFUNCTION { DEBUGMESS("\n[SFALL] Unused function called: %s", __FUNCTION__); return DDERR_GENERIC; }
 
+IDirectDrawSurface* primaryDDSurface = nullptr;
+
 static DWORD ResWidth;
 static DWORD ResHeight;
 
@@ -601,7 +603,7 @@ public:
 		0x4CB5C7 GNW95_SetPalette_
 		0x4CB36B GNW95_SetPaletteEntries_
 	*/
-	HRESULT _stdcall SetEntries(DWORD, DWORD b, DWORD c, LPPALETTEENTRY destPal) { // used to set palette for splash screen, fades, sub-titles
+	HRESULT _stdcall SetEntries(DWORD a, DWORD b, DWORD c, LPPALETTEENTRY destPal) { // used to set palette for splash screen, fades, sub-titles
 		if (!windowInit || c == 0 || b + c > 256) return DDERR_INVALIDPARAMS;
 
 		CopyMemory(&palette[b], destPal, c * 4);
@@ -614,12 +616,13 @@ public:
 				}
 			}
 		} else {
+			// format X8B8G8R8
 			for (DWORD i = b; i < b + c; i++) { // swap color R <> B
-				//palette[i]&=0x00ffffff;
 				BYTE clr = *(BYTE*)((DWORD)&palette[i]); // B
 				*(BYTE*)((DWORD)&palette[i]) = *(BYTE*)((DWORD)&palette[i] + 2); // R
 				*(BYTE*)((DWORD)&palette[i] + 2) = clr;
 			}
+			primaryDDSurface->SetPalette(0); // update
 		}
 		if (!Graphics::PlayAviMovie) {
 			RefreshGraphics();
@@ -808,7 +811,27 @@ public:
 	HRESULT _stdcall SetClipper(LPDIRECTDRAWCLIPPER) { UNUSEDFUNCTION; }
 	HRESULT _stdcall SetColorKey(DWORD, LPDDCOLORKEY) { UNUSEDFUNCTION; }
 	HRESULT _stdcall SetOverlayPosition(LONG, LONG) { UNUSEDFUNCTION; }
-	HRESULT _stdcall SetPalette(LPDIRECTDRAWPALETTE) { return DD_OK; }
+
+	HRESULT _stdcall SetPalette(LPDIRECTDRAWPALETTE a) {
+		if (a) return DD_OK; // prevents executing the function when called from out of sfall
+
+		D3DLOCKED_RECT dRect;
+		Tex->LockRect(0, &dRect, 0, 0);
+
+		DWORD* pBits = (DWORD*)dRect.pBits;
+		int pitch = dRect.Pitch / 4;
+		DWORD width = ResWidth;
+
+		for (DWORD y = 0; y < ResHeight; y++) {
+			int yp = y * pitch;
+			int yw = y * width;
+			for (DWORD x = 0; x < width; x++) {
+				pBits[yp + x] = palette[lockTarget[yw + x]];
+			}
+		}
+		Tex->UnlockRect(0);
+		return DD_OK;
+	}
 
 #define FASTCOPY(a) __asm {                    \
 	_asm movzx eax, byte ptr ds:[esi]          \
@@ -968,10 +991,10 @@ public:
 		//dlog("\nCreateSurface", DL_INIT);
 		if (a->dwFlags == 1 && a->ddsCaps.dwCaps == DDSCAPS_PRIMARYSURFACE) {
 			//dlog(" primary.", DL_INIT);
-			*b = (IDirectDrawSurface*)new FakeSurface2(true);
-		} else
+			*b = primaryDDSurface = (IDirectDrawSurface*)new FakeSurface2(true);
+		} else {
 			*b = (IDirectDrawSurface*)new FakeSurface2(false);
-
+		}
 		return DD_OK;
 	}
 
