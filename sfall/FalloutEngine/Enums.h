@@ -90,6 +90,24 @@ enum Animation : long
 	ANIM_called_shot_pic = 64,
 };
 
+enum CritterFlags : long
+{
+	Sneak        = 0x01,   // Can sneak ?
+	Barter       = 0x02,   // Can trade
+	Level        = 0x04,   // Level received ?
+	Addict       = 0x08,   // Drug addiction ?
+	NoSteal      = 0x20,   // Can't be stolen from
+	NoDrop       = 0x40,   // Can't Drop items
+	NoLimbs      = 0x80,   // Can't lose limbs
+	DeadAges     = 0x100,  // Dead Bodies Can't Age
+	NoHeal       = 0x200,  // Can't Heal by Aging
+	Invlunerable = 0x400,  // Is Invlunerable (cannot be hurt)
+	NotFlattens  = 0x800,  // Can't Flatten on Death (leaves no dead body)
+	SpecialDeath = 0x1000, // Has Special Death
+	RangeHth     = 0x2000, // Has Extra Hand-To-Hand Range
+	NoKnockBack  = 0x4000, // Can't be knocked back
+};
+
 enum DamageFlag : long
 {
 	DAM_KNOCKED_OUT = 0x1,
