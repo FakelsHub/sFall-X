@@ -93,18 +93,18 @@ enum Animation : long
 enum CritterFlags : long
 {
 	Sneak        = 0x01,   // Can sneak ?
-	Barter       = 0x02,   // Can trade
+	Barter       = 0x02,   // Can trade with
 	Level        = 0x04,   // Level received ?
 	Addict       = 0x08,   // Drug addiction ?
 	NoSteal      = 0x20,   // Can't be stolen from
-	NoDrop       = 0x40,   // Can't Drop items
+	NoDrop       = 0x40,   // Doesn't drop items
 	NoLimbs      = 0x80,   // Can't lose limbs
-	DeadAges     = 0x100,  // Dead Bodies Can't Age
-	NoHeal       = 0x200,  // Can't Heal by Aging
-	Invlunerable = 0x400,  // Is Invlunerable (cannot be hurt)
-	NotFlattens  = 0x800,  // Can't Flatten on Death (leaves no dead body)
-	SpecialDeath = 0x1000, // Has Special Death
-	RangeHth     = 0x2000, // Has Extra Hand-To-Hand Range
+	NoAges       = 0x100,  // Dead body does not disappear
+	NoHeal       = 0x200,  // Damage is not healed with time
+	Invulnerable = 0x400,  // Is Invulnerable (cannot be hurt)
+	NoFlatten    = 0x800,  // Doesn't flatten on death (leaves no dead body)
+	SpecialDeath = 0x1000, // Has a special type of death
+	RangeHtH     = 0x2000, // Has extra hand-to-hand range
 	NoKnockBack  = 0x4000, // Can't be knocked back
 };
 
@@ -704,7 +704,7 @@ enum KillType : long
 
 #define AUTOMAP_MAX           (160)
 
-#define MSG_GENDER_CHECK_FLG  (0x80) // 8-bit
+#define MSG_GENDER_CHECK_FLG  (0x80) // bit 8
 
 enum TicksTime : unsigned long
 {
@@ -841,9 +841,9 @@ enum DialogOutFlags : long
 {
 	DIALOGOUT_NORMAL     = 0x01, // uses regular graphic
 	DIALOGOUT_SMALL      = 0x02, // uses smaller graphic
-	DIALOGOUT_ALIGN_LEFT = 0x04, // text moved to left
-	DIALOGOUT_ALIGN_TOP  = 0x08, // text moved to top
-	DIALOGOUT_YESNO      = 0x10, // DONE button replaced with YES/NO
+	DIALOGOUT_ALIGN_LEFT = 0x04, // text aligned to left
+	DIALOGOUT_ALIGN_TOP  = 0x08, // text aligned to top
+	DIALOGOUT_YESNO      = 0x10, // DONE button replaced by YES/NO buttons
 	DIALOGOUT_CLEAN      = 0x20  // no buttons
 };
 

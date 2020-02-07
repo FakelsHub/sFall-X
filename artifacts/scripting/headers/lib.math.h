@@ -48,9 +48,11 @@ end*/
 
 procedure cap_number(variable num, variable min, variable max) begin
    if (num > max) then
-		num := max;
-   else if (num < min) then num := min;
-   return num;
+      num := max;
+   else if (num < min) then
+      num := min;
+
+    return num;
 end
 
 

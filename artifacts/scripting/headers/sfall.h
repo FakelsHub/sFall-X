@@ -1,3 +1,6 @@
+#ifndef SFALL_H
+#define SFALL_H
+
 //Valid window types for get_window_attribute
 #define WINTYPE_INVENTORY    (0) // any inventory window (player/loot/use/barter)
 #define WINTYPE_DIALOG       (1)
@@ -354,3 +357,5 @@
 #define set_fake_perk_npc(npc, perk, level, image, desc)        sfall_func5("set_fake_perk_npc", npc, perk, level, image, desc)
 #define set_fake_trait_npc(npc, trait, active, image, desc)     sfall_func5("set_fake_trait_npc", npc, trait, active, image, desc)
 #define set_selectable_perk_npc(npc, perk, active, image, desc) sfall_func5("set_selectable_perk_npc", npc, perk, active, image, desc)
+
+#endif

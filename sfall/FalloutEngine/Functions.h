@@ -29,7 +29,7 @@ namespace fo
 namespace func
 {
 
-// Debug prints message to debug.log file for develop version
+// Prints debug message to debug.log file for develop build
 #ifndef NDEBUG
 void dev_printf(const char* fmt, ...);
 #else
@@ -49,7 +49,7 @@ const char* __stdcall critter_name(GameObject* critter);
 // Change the name of playable character
 void critter_pc_set_name(const char* newName);
 
-// Checks if given file exist in DB
+// Checks if given file exists in DB
 bool __stdcall db_access(const char* fileName);
 
 long __stdcall db_fclose(DbFile* file);
@@ -85,7 +85,7 @@ long __stdcall db_get_file_list(const char* searchMask, char* * *fileList);
 
 long __stdcall db_init(const char* path_dat, const char* path_patches);
 
-// Check fallout file and get file size (result 0 - exist file)
+// Check fallout file and get file size (result 0 - file exists)
 long __stdcall db_dir_entry(const char *fileName, DWORD *sizeOut);
 
 // prints message to debug.log file
@@ -120,11 +120,11 @@ DWORD __stdcall interpretPopShort(Program* scriptPtr);
 // pops value from Data stack (must be preceded by InterpretPopShort)
 DWORD __stdcall interpretPopLong(Program* scriptPtr);
 
+const char* __fastcall interpretGetString(Program* scriptPtr, DWORD dataType, DWORD strId);
+
 void interpretReturnValue(Program* scriptPtr, DWORD val, DWORD valType);
 
 DWORD __fastcall interpretGetValue(Program* scriptPtr, DWORD &outType);
-
-const char* __fastcall interpretGetString(Program* scriptPtr, DWORD dataType, DWORD strId);
 
 // prints scripting error in debug.log and stops current script execution by performing longjmp
 // USE WITH CAUTION
@@ -206,10 +206,10 @@ void __stdcall DialogOut(const char* text);
 
 long __fastcall DialogOutEx(const char* text, const char** textEx, long lines, long flags, long colors = 0);
 
-// draws the image to the buffer without scaling with the possibility of transparency
+// draws an image to the buffer without scaling and with transparency display toggle
 void __fastcall windowDisplayBuf(long x, long width, long y, long height, void* data, long noTrans);
 
-// draws an image in the window and scales the image to fit the window
+// draws an image in the window and scales it to fit the window
 void __fastcall displayInWindow(long w_here, long width, long height, void* data);
 
 void __fastcall trans_cscale(long i_width, long i_height, long s_width, long s_height, long xy_shift, long w_width, void* data);

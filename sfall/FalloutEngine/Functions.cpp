@@ -26,7 +26,7 @@ namespace fo
 namespace func
 {
 
-// debug prints message to debug.log file for develop version
+// Prints debug message to debug.log file for develop build
 #ifndef NDEBUG
 void __declspec(naked) dev_printf(const char* fmt, ...) {
 	__asm jmp fo::funcoffs::debug_printf_;
@@ -174,14 +174,14 @@ long __stdcall db_init(const char* path_dat, const char* path_patches) {
 	WRAP_WATCOM_CALL3(db_init_, path_dat, 0, path_patches)
 }
 
-// Check fallout file and get file size (result 0 - exist file)
+// Check fallout file and get file size (result 0 - file exists)
 long __stdcall db_dir_entry(const char *fileName, DWORD *sizeOut) {
 	WRAP_WATCOM_CALL2(db_dir_entry_, fileName, sizeOut)
 }
 
 // prints message to debug.log file
 void __declspec(naked) debug_printf(const char* fmt, ...) {
-	__asm jmp fo::funcoffs::debug_printf_
+	__asm jmp fo::funcoffs::debug_printf_;
 }
 
 // Displays message in main UI console window
@@ -338,7 +338,7 @@ long __stdcall message_exit(MessageList *msgList) {
 
 long __fastcall tile_num(long x, long y) {
 	__asm push ebx; // don't delete (bug in tile_num_)
-	WRAP_WATCOM_FCALL2(tile_num_, x, x);
+	WRAP_WATCOM_FCALL2(tile_num_, x, y)
 	__asm pop  ebx;
 }
 
@@ -478,6 +478,7 @@ void __fastcall DrawWinLine(int winRef, DWORD startXPos, DWORD endXPos, DWORD st
 	}
 }
 
+// draws an image to the buffer without scaling and with transparency display toggle
 void __fastcall windowDisplayBuf(long x, long width, long y, long height, void* data, long noTrans) {
 	__asm {
 		push height;
@@ -491,6 +492,7 @@ void __fastcall windowDisplayBuf(long x, long width, long y, long height, void* 
 	}
 }
 
+// draws an image in the window and scales it to fit the window
 void __fastcall displayInWindow(long w_here, long width, long height, void* data) {
 	__asm {
 		mov  ebx, height;

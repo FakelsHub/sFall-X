@@ -52,7 +52,7 @@ void SkillGetTags(long* result, long num);
 // wrapper for skill_set_tags with bounds checking
 void SkillSetTags(long* tags, long num);
 
-long _fastcall GetItemType(GameObject* item);
+long __fastcall GetItemType(GameObject* item);
 
 long GetCritterKillType(GameObject* critter);
 
@@ -72,7 +72,7 @@ long CheckAddictByPid(fo::GameObject* critter, long pid);
 
 void ToggleNpcFlag(fo::GameObject* npc, long flag, bool set);
 
-// Returns the number of party member in the existing table (begins from 1)
+// Returns the number of party members in the existing table (begins from 1)
 long IsPartyMemberByPid(long pid);
 
 bool IsPartyMember(fo::GameObject* critter);
@@ -94,27 +94,27 @@ void SurfaceCopyToMem(long fromX, long fromY, long width, long height, long from
 
 void DrawToSurface(long toX, long toY, long width, long height, long toWidth, long toHeight, BYTE* toSurface, BYTE* fromMem);
 
-void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE *fromSurf, long toX, long toY, long toWidth, long toHeight, BYTE *toSurf, int maskRef);
+void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE* fromSurf, long toX, long toY, long toWidth, long toHeight, BYTE* toSurf, int maskRef);
 
-void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE *fromSurf, long toX, long toY, long toWidth, long toHeight, BYTE *toSurf);
+void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE* fromSurf, long toX, long toY, long toWidth, long toHeight, BYTE* toSurf);
 
 // Print text to surface
-void PrintText(char *displayText, BYTE colorIndex, DWORD x, DWORD y, DWORD textWidth, DWORD destWidth, BYTE* surface);
-void PrintTextFM(char* displayText, BYTE colorIndex, DWORD x, DWORD y, DWORD textWidth, DWORD destWidth, BYTE* surface);
+void PrintText(char* displayText, BYTE colorIndex, DWORD xPos, DWORD yPos, DWORD txtWidth, DWORD toWidth, BYTE* toSurface);
+void PrintTextFM(char* displayText, BYTE colorIndex, DWORD xPos, DWORD yPos, DWORD txtWidth, DWORD toWidth, BYTE* toSurface);
 
 // gets the height of the currently selected font
 DWORD GetTextHeight();
 
 // gets the length of a string using the currently selected font
-DWORD GetTextWidth(const char *textMsg);
-DWORD GetTextWidthFM(const char *textMsg);
+DWORD GetTextWidth(const char* textMsg);
+DWORD GetTextWidthFM(const char* textMsg);
 
 // get width of Char for current font
 DWORD GetCharWidth(char charVal);
 DWORD GetCharWidthFM(char charVal);
 
 // get maximum string length for current font - if all characters were maximum width
-DWORD GetMaxTextWidth(const char *textMsg);
+DWORD GetMaxTextWidth(const char* textMsg);
 
 // get number of pixels between characters for current font
 DWORD GetCharGapWidth();

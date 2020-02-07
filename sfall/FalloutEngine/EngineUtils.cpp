@@ -83,7 +83,7 @@ void SkillSetTags(long* tags, long num) {
 	fo::func::skill_set_tags(tags, num);
 }
 
-long _fastcall GetItemType(GameObject* item) {
+long __fastcall GetItemType(GameObject* item) {
 	return fo::func::item_get_type(item);
 }
 
@@ -121,10 +121,12 @@ long GetCurrentAttackMode() {
 	if (fo::var::interfaceWindow != -1) {
 		long activeHand = fo::var::itemCurrentItem; // 0 - left, 1 - right
 		switch (fo::var::itemButtonItems[activeHand].mode) {
-		case 1: case 2: // 2 - called shot
+		case 1:
+		case 2: // called shot
 			hitMode = fo::var::itemButtonItems[activeHand].primaryAttack;
 			break;
-		case 3: case 4: // 4 - called shot
+		case 3:
+		case 4: // called shot
 			hitMode = fo::var::itemButtonItems[activeHand].secondaryAttack;
 			break;
 		case 5: // reload mode
@@ -174,7 +176,7 @@ void ToggleNpcFlag(fo::GameObject* npc, long flag, bool set) {
 	}
 }
 
-// Returns the number of party member in the existing table (begins from 1)
+// Returns the number of party members in the existing table (begins from 1)
 long IsPartyMemberByPid(long pid) {
 	size_t patryCount = fo::var::partyMemberMaxCount;
 	if (patryCount) {
@@ -223,15 +225,15 @@ long __fastcall GetTopWindowID(long xPos, long yPos) {
 }
 
 enum WinNameType {
-	Inventory = 0, // any inventory window
+	Inventory = 0, // any inventory window (player/loot/use/barter)
 	Dialog    = 1,
 	PipBoy    = 2,
 	WorldMap  = 3,
-	IfaceBar  = 4, // player interface panel
+	IfaceBar  = 4, // the interface bar
 	Character = 5,
-	SkillDex  = 6,
+	Skilldex  = 6,
 	EscMenu   = 7, // escape menu
-//	Automap   = 8  // for this window there is no global variable
+	//Automap   = 8  // for this window there is no global variable
 };
 
 fo::Window* GetWindow(long winType) {
@@ -255,19 +257,19 @@ fo::Window* GetWindow(long winType) {
 	case WinNameType::Character:
 		winID = fo::var::edit_win;
 		break;
-	case WinNameType::SkillDex:
+	case WinNameType::Skilldex:
 		winID = fo::var::skldxwin;
 		break;
 	case WinNameType::EscMenu:
 		winID = fo::var::optnwin;
 		break;
-	default :
+	default:
 		return (fo::Window*)-1;
 	}
 	return (winID > 0) ? fo::func::GNW_find(winID) : nullptr;
 }
 
-// Returns an array of objects within the specified tile radius
+// Returns an array of objects within the specified radius from the source tile
 void GetObjectsTileRadius(std::vector<fo::GameObject*> &objs, long sourceTile, long radius, long elev, long type = -1) {
 	for (long tile = 0; tile < 40000; tile++) {
 		fo::GameObject* obj = fo::func::obj_find_first_at_tile(elev, tile);
@@ -283,7 +285,7 @@ void GetObjectsTileRadius(std::vector<fo::GameObject*> &objs, long sourceTile, l
 	}
 }
 
-// Returns the type of terrain sub tile on the world map at the player's position
+// Returns the type of the terrain sub tile at the the player's position on the world map
 long wmGetCurrentTerrainType() {
 	long* terrainId = *(long**)FO_VAR_world_subtile;
 	if (terrainId == nullptr) {
@@ -325,8 +327,8 @@ void DrawToSurface(long toX, long toY, long width, long height, long toWidth, lo
 }
 
 // safe copy data from surface to surface with mask
-void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE *fromSurf,
-	               long toX, long toY, long toWidth, long toHeight, BYTE *toSurf, int maskRef)
+void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE* fromSurf,
+                   long toX, long toY, long toWidth, long toHeight, BYTE* toSurf, int maskRef)
 {
 	BYTE* _fromSurf = fromSurf + (fromY * fromWidth + fromX);
 	BYTE* _toSurf =  toSurf + (toY * toWidth + toX);
@@ -344,7 +346,7 @@ void DrawToSurface(long width, long height, long fromX, long fromY, long fromWid
 
 // safe copy data from surface to surface
 void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE* fromSurf,
-	               long toX, long toY, long toWidth, long toHeight, BYTE* toSurf)
+                   long toX, long toY, long toWidth, long toHeight, BYTE* toSurf)
 {
 	BYTE* _fromSurf = fromSurf + (fromY * fromWidth + fromX);
 	BYTE* _toSurf = toSurf + (toY * toWidth + toX);
@@ -362,11 +364,11 @@ void DrawToSurface(long width, long height, long fromX, long fromY, long fromWid
 
 //---------------------------------------------------------
 // print text to surface
-void PrintText(char* displayText, BYTE colourIndex, DWORD xPos, DWORD yPos, DWORD txtWidth, DWORD toWidth, BYTE* toSurface) {
+void PrintText(char* displayText, BYTE colorIndex, DWORD xPos, DWORD yPos, DWORD txtWidth, DWORD toWidth, BYTE* toSurface) {
 	DWORD posOffset = yPos * toWidth + xPos;
 	__asm {
 		xor  eax, eax;
-		mov  al, colourIndex;
+		mov  al, colorIndex;
 		mov  edx, displayText;
 		push eax;
 		mov  ebx, txtWidth;
@@ -434,7 +436,7 @@ DWORD GetCharWidthFM(char charVal) {
 
 //---------------------------------------------------------
 //get maximum string length for current font - if all characters were maximum width
-DWORD GetMaxTextWidth(const char *TextMsg) {
+DWORD GetMaxTextWidth(const char* TextMsg) {
 //	DWORD msgWidth;
 	__asm {
 		mov  eax, TextMsg;

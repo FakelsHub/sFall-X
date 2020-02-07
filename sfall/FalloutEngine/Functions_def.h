@@ -14,7 +14,7 @@
 	NOTES: be careful not to use reserved words, including ASM instructions (push, pop, mov, div, etc.)
 */
 
-// functions that have 3 or more arguments, it is preferable to use call agreement the fastcall
+// For functions that have 3 or more arguments, it is preferable to use the fastcall calling convention
 // because the compiler builds the better/optimized code when calling the engine functions
 WRAP_WATCOM_FFUNC4(long, _word_wrap, const char*, text, int, maxWidth, DWORD*, buf, BYTE*, count)
 WRAP_WATCOM_FFUNC4(GameObject*, ai_best_weapon, GameObject*, source, GameObject*, prevItem, GameObject*, checkItem, GameObject*, target)
