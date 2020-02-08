@@ -28,6 +28,7 @@ procedure distance_sort(variable array);
 procedure weapon_drop;
 procedure DeathAmimHandler;
 procedure GameModeHandler;
+procedure UseSkillOnHandler;
 
 variable quickAmmoReload, pickupKey, keyMod, hideIfaceKey;
 variable pickupItem, temp, pickupMessage, hideIface := false;
@@ -57,6 +58,10 @@ procedure start begin
          deathNpcArray := create_array_list(8);
       end
       keyMod := GetConfig("Misc", "CombatKeyMod", 0);
+
+      if (GetConfig("PartyMember", "UsePartySkills", 0)) then begin
+         register_hook_proc(HOOK_USESKILLON, UseSkillOnHandler);
+      end
 
       if (GetIniConfig("IFACE", "IFACE_BAR_MODE", 0, "f2_res.ini") == 1) then begin
          hideIfaceKey := GetConfig("Misc", "HideInterfaceKey", 0);
@@ -278,4 +283,54 @@ procedure GameModeHandler begin
       intface_show;
       hideIface := false;
    end
+end
+
+procedure UseSkillOnHandler begin
+   variable object, member, skill, dudeSkill, memberSkill, memberUse, useOnSelf, medicSkill, allow;
+
+   if (party_member_count(DONT_LIST_HIDDEN_MEMBERS) == 0 or get_sfall_arg != dude_obj) then return;
+
+   object := get_sfall_arg;
+   skill  := get_sfall_arg;
+
+   useOnSelf  := (object == dude_obj);
+   medicSkill := (skill == SKILL_DOCTOR or skill == SKILL_FIRST_AID);
+
+   if (useOnSelf and medicSkill == false) then return; // exit, when using skills on himself (except for the skill of the doctor and first aid)
+   if (medicSkill and obj_type(object) != OBJ_TYPE_CRITTER) then return;
+
+   if (skill != SKILL_LOCKPICK and skill != SKILL_TRAPS and skill != SKILL_SCIENCE and skill != SKILL_REPAIR and medicSkill == false) then return;
+   if ((skill == SKILL_LOCKPICK or skill == SKILL_TRAPS) and obj_type(object) == OBJ_TYPE_CRITTER) then return;
+
+   dudeSkill := critter_skill_level(dude_obj, skill);
+
+   foreach (member in party_member_list_critters) begin
+      if (member != dude_obj and proto_data(obj_pid(member), cr_body_type) == CR_BODY_BIPED) then begin
+         memberSkill := critter_skill_level(member, skill);
+         if (memberSkill > dudeSkill and tile_distance_objs(dude_obj, member) <= 10) then begin
+            memberUse := member;
+            dudeSkill := memberSkill;
+         end
+      end
+   end
+   if (memberUse and
+      (memberUse != object or medicSkill)) then
+   begin
+      if (useOnSelf) then begin // the skill of the medic is applied to itself
+         allow := (tile_distance_objs(memberUse, object) < 3); // allow a party member to apply the skill to a player if it is located nearby
+      end
+      else begin
+         allow := (tile_distance_objs(dude_obj, object) > 2); // allow the party member to apply the skill to an object if the player is not located near the object
+      end
+      if (allow) then begin
+         float_msg(memberUse, message_str_game(GAME_MSG_SKILL, random(1000, 1005)), FLOAT_MSG_NORMAL);
+         set_sfall_arg(0, memberUse);
+         set_sfall_return(memberUse);
+         return;
+      end
+      else if ((medicSkill or random(0, 10) == 0) and anim_busy(memberUse) == false) then begin
+         float_msg(memberUse, message_str_game(GAME_MSG_SKILL, random(1100, 1104)), FLOAT_MSG_NORMAL);
+      end
+   end
+   set_sfall_return(dude_obj); // for disable engine behavior
 end
