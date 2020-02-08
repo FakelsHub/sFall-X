@@ -236,7 +236,7 @@ static void ResetDevice(bool createNew) {
 	if (createNew) {
 		dlog("Creating D3D9 Device...", DL_MAIN);
 		if (FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_PUREDEVICE | D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &params, &d3d9Device))) {
-			dlog(" Failed create d3d9 Device. Use software vertex processing.", DL_MAIN);
+			dlog(" Failed to create D3D9 Device. Use software vertex processing.", DL_MAIN);
 			software = true;
 			d3d9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &params, &d3d9Device);
 		}
@@ -325,7 +325,7 @@ static void ResetDevice(bool createNew) {
 	d3d9Device->SetRenderState(D3DRS_CULLMODE, 2);
 	//d3d9Device->SetRenderState(D3DRS_TEXTUREFACTOR, 0);
 
-	if (createNew) dlogr(" Done.", DL_MAIN);
+	if (createNew) dlogr(" Done", DL_MAIN);
 }
 
 static void Present() {
@@ -381,7 +381,7 @@ static void Present() {
 
 	if (d3d9Device->Present(0, 0, 0, 0) == D3DERR_DEVICELOST) {
 		#ifndef NDEBUG
-		dlog("Present: DEVICELOST\n", DL_MAIN);
+		dlogr("Present: DEVICELOST", DL_MAIN);
 		#endif
 		d3d9Device->SetTexture(0, 0);
 		SAFERELEASE(Tex)
@@ -603,7 +603,7 @@ public:
 		0x4CB5C7 GNW95_SetPalette_
 		0x4CB36B GNW95_SetPaletteEntries_
 	*/
-	HRESULT _stdcall SetEntries(DWORD a, DWORD b, DWORD c, LPPALETTEENTRY destPal) { // used to set palette for splash screen, fades, sub-titles
+	HRESULT _stdcall SetEntries(DWORD a, DWORD b, DWORD c, LPPALETTEENTRY destPal) { // used to set palette for splash screen, fades, subtitles
 		if (!windowInit || c == 0 || b + c > 256) return DDERR_INVALIDPARAMS;
 
 		CopyMemory(&palette[b], destPal, c * 4);
@@ -616,7 +616,7 @@ public:
 				}
 			}
 		} else {
-			// format X8B8G8R8
+			// X8B8G8R8 format
 			for (DWORD i = b; i < b + c; i++) { // swap color B <> R
 				BYTE clr = *(BYTE*)((DWORD)&palette[i]); // B
 				*(BYTE*)((DWORD)&palette[i]) = *(BYTE*)((DWORD)&palette[i] + 2); // R
@@ -698,9 +698,9 @@ public:
 			if (subTitlesShow) {
 				subTitlesShow = false;
 				DWORD bottom = yoffset + movieDesc.dwHeight;
-				long x_shift = (ResWidth - width) / 2; // shift the position of sub-titles relative to the width difference
+				long x_shift = (ResWidth - width) / 2; // shift the position of subtitles relative to the width difference
 				for (DWORD y = 0; y < ResHeight; y++) {
-					if (y < yoffset || y > bottom) { // paste sub-titles excluding video region
+					if (y < yoffset || y > bottom) { // paste subtitles excluding video region
 						CopyMemory(&pBits[(y - yoffset) * pitch], &titlesBuffer[(y * ResWidth) + x_shift], width);
 					}
 				}
@@ -719,7 +719,7 @@ public:
 			if (subTitlesShow) {
 				subTitlesShow = false;
 				DWORD bottom = yoffset + movieDesc.dwHeight;
-				long x_shift = (ResWidth - width) / 2; // shift the position of sub-titles relative to the width difference
+				long x_shift = (ResWidth - width) / 2; // shift the position of subtitles relative to the width difference
 				for (DWORD y = 0; y < ResHeight; y++) {
 					if (y < yoffset || y > bottom) {
 						int yyp = (y - yoffset) * pitch;
@@ -813,7 +813,7 @@ public:
 	HRESULT _stdcall SetOverlayPosition(LONG, LONG) { UNUSEDFUNCTION; }
 
 	HRESULT _stdcall SetPalette(LPDIRECTDRAWPALETTE a) {
-		if (a) return DD_OK; // prevents executing the function when called from out of sfall
+		if (a) return DD_OK; // prevents executing the function when called from outside of sfall
 
 		D3DLOCKED_RECT dRect;
 		Tex->LockRect(0, &dRect, 0, 0);
@@ -1036,7 +1036,7 @@ public:
 			SetWindowPos(a, HWND_NOTOPMOST, r.left, r.top, r.right, r.bottom, SWP_DRAWFRAME | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 		}
 
-		dlogr(" Done.", DL_MAIN);
+		dlogr(" Done", DL_MAIN);
 		return DD_OK;
 	}
 
@@ -1096,7 +1096,7 @@ HRESULT _stdcall FakeDirectDrawCreate2_Init(void*, IDirectDraw** b, void*) {
 
 	*b = (IDirectDraw*)new FakeDirectDraw2();
 
-	dlogr(" Done.", DL_MAIN);
+	dlogr(" Done", DL_MAIN);
 	return DD_OK;
 }
 

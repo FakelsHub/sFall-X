@@ -72,7 +72,7 @@ void ResetBodyState() {
 static void Initialization() {
 	*(DWORD*)FO_VAR_gDialogMusicVol = *(DWORD*)FO_VAR_background_volume; // fix dialog music
 
-	// Restore calling original engine functions from hacking HRP (there is no difference in HRP functions)
+	// Restore calling original engine functions from HRP hacks (there is no difference in HRP functions)
 	long long data = 0xC189565153;
 	SafeWriteBytes(0x4D78CC, (BYTE*)&data, 5); // win_get_top_win_
 	data = 0xC389565153;
@@ -2563,19 +2563,19 @@ void BugFixes::init()
 	// Missing game initialization
 	LoadGameHook::OnBeforeGameInit() += Initialization;
 
-	// Fix vanilla negate operator on float values
+	// Fix vanilla negate operator for float values
 	MakeCall(0x46AB68, NegateFixHack);
 	// Fix incorrect int-to-float conversion
-	// for op_mult:
+	// op_mult:
 	SafeWrite16(0x46A3F4, 0x04DB); // replace operator to "fild 32bit"
 	SafeWrite16(0x46A3A8, 0x04DB);
-	// for op_div:
+	// op_div:
 	SafeWrite16(0x46A566, 0x04DB);
 	SafeWrite16(0x46A4E7, 0x04DB);
-	// Fix division operator to integer signed division
+	// Fix for vanilla division operator treating negative integers as unsigned
 	if (GetConfigInt("Misc", "DivisionOperatorFix", 1)) {
-		dlog("Applying unsigned division operator fix.", DL_INIT);
-		SafeWrite32(0x46A51D, 0xFBF79990); // cdq idiv
+		dlog("Applying division operator fix.", DL_INIT);
+		SafeWrite32(0x46A51D, 0xFBF79990); // xor edx, edx; div ebx -> cdq; idiv ebx
 		dlogr(" Done", DL_INIT);
 	}
 
@@ -3182,11 +3182,11 @@ void BugFixes::init()
 	// Fix the position of the target marker for small/medium location circles
 	MakeCall(0x4C03AA, wmWorldMap_hack, 2);
 
-	// Fix to prevent the use of number keys to enter unvisited areas on a town map
+	// Fix to prevent using number keys to enter unvisited areas on a town map
 	//if (GetConfigInt("Misc", "TownMapHotkeysFix", 1)) {
-	dlog("Applying town map hotkeys patch.", DL_INIT);
-	MakeCall(0x4C495A, wmTownMapFunc_hack, 1);
-	dlogr(" Done", DL_INIT);
+		dlog("Applying town map hotkeys patch.", DL_INIT);
+		MakeCall(0x4C495A, wmTownMapFunc_hack, 1);
+		dlogr(" Done", DL_INIT);
 	//}
 
 	// Fix for combat not ending automatically when there are no hostile critters
@@ -3223,10 +3223,10 @@ void BugFixes::init()
 	// Fix for party member's equipped weapon being placed in the incorrect item slot after leveling up
 	MakeCall(0x495FD9, partyMemberCopyLevelInfo_hack, 1);
 
-	// Fix playback of the speech sound file for the screen of death
+	// Fix the playback of the speech sound file for the death screen
 	HookCall(0x481409, main_death_scene_hook);
 
-	// Fix looting corpses with the NoSteal critter flag
+	// Fix for trying to loot corpses with the "NoSteal" flag
 	MakeCall(0x4123F8, action_loot_container_hack, 1);
 	SafeWrite8(0x4123F2, CommonObj::protoId);
 	BlockCall(0x4123F3);

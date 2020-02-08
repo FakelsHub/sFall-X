@@ -363,7 +363,7 @@ static void __declspec(naked) op_display_msg_hook() {
 		jne  debug;
 		retn;
 debug:
-		jmp fo::funcoffs::config_get_value_;
+		jmp  fo::funcoffs::config_get_value_;
 	}
 }
 
@@ -393,21 +393,21 @@ static void DebugModePatch() {
 		if (iniGetInt("Debugging", "HideObjIsNullMsg", 0, ::sfall::ddrawIni)) {
 			MakeJump(0x453FD2, dbg_error_hack);
 		}
-		// prints a debug message about missing art file for critters and interrupts game execution
+		// prints a debug message about missing art file for critters to both debug.log and the message window in sfall debug mode
 		HookCall(0x419B65, art_data_size_hook);
 
-		// fix to prevent a crash game if there have a '%' character in the printed message to log
+		// Fix to prevent crashes when there is a '%' character in the printed message
 		if (dbgMode > 1) {
 			MakeCall(0x4C703F, debug_log_hack);
 			BlockCall(0x4C7044); // just nop code
 		}
-		// replaced calling debug_printf_ to _debug_func
+		// replace calling debug_printf_ with _debug_func
 		long long data = 0x51DF0415FFF08990; // mov eax, esi; call ds:_debug_func
 		SafeWriteBytes(0x455419, (BYTE*)&data, 8); // op_display_msg_
 
 		dlogr(" Done", DL_INIT);
 	}
-	// Just for speed (optional)
+	// Just for speeding up display_msg function (optional)
 	HookCall(0x455404, op_display_msg_hook);
 }
 

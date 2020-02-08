@@ -93,8 +93,8 @@ private:
 		HRESULT hr = pAllocNotify->AllocateSurfaceHelper(lpAllocInfo, lpNumBuffers, &surfaces[0]);
 		if (FAILED(hr)) return hr;
 
-		dlog_f(" Height: %d", DL_INIT, lpAllocInfo->dwHeight);
-		dlog_f(" Width: %d", DL_INIT, lpAllocInfo->dwWidth);
+		dlog_f(" Width: %d,", DL_INIT, lpAllocInfo->dwWidth);
+		dlog_f(" Height: %d,", DL_INIT, lpAllocInfo->dwHeight);
 		dlog_f(" Format: %d", DL_INIT, lpAllocInfo->Format);
 
 		hr = surfaces[0]->GetContainer(IID_IDirect3DTexture9, (void**)&pTex);
@@ -104,7 +104,7 @@ private:
 		}
 
 		if (d3d9Device->CreateTexture(lpAllocInfo->dwWidth, lpAllocInfo->dwHeight, 1, 0, lpAllocInfo->Format, D3DPOOL_DEFAULT, &mTex, nullptr) != D3D_OK) {
-			dlog(" Failed created movie texture!", DL_INIT);
+			dlog(" Failed to create movie texture!", DL_INIT);
 		}
 		return S_OK;
 	}
@@ -224,12 +224,12 @@ DWORD FreeMovie(sDSTexture* movie) {
 	if (movie->pConfig) movie->pConfig->Release();
 	if (movie->pVmr) movie->pVmr->Release();
 	if (movie->pGraph) movie->pGraph->Release();
-	//if (info->pBuild) info->pBuild->Release();
+	//if (movie->pBuild) movie->pBuild->Release();
 	return 0;
 }
 
 DWORD CreateDSGraph(wchar_t* path, sDSTexture* movie) {
-	dlog("\nCreate DirectShow graph.", DL_INIT);
+	dlog("\nCreating DirectShow graph...", DL_INIT);
 
 	ZeroMemory(movie, sizeof(sDSTexture));
 
@@ -259,7 +259,8 @@ DWORD CreateDSGraph(wchar_t* path, sDSTexture* movie) {
 	if (hr != S_OK) return FreeMovie(movie);
 
 	/*
-		Custom Allocator-Presenter VMR-9: (https://docs.microsoft.com/en-us/windows/desktop/DirectShow/supplying-a-custom-allocator-presenter-for-vmr-9)
+		Custom Allocator-Presenter for VMR-9:
+		https://docs.microsoft.com/en-us/windows/win32/directshow/supplying-a-custom-allocator-presenter-for-vmr-9
 	*/
 	movie->pMyAlloc = new CAllocator();
 
@@ -276,7 +277,7 @@ DWORD CreateDSGraph(wchar_t* path, sDSTexture* movie) {
 	hr = movie->pGraph->AddFilter(movie->pVmr, L"VMR9");
 	if (hr != S_OK) return FreeMovie(movie);
 
-	dlog_f("\nStart render file", DL_INIT);
+	dlog_f("\nStart rendering file.", DL_INIT);
 	hr = movie->pGraph->RenderFile(path, nullptr);
 	if (hr != S_OK) dlog_f(" ERROR: %d", DL_INIT, hr);
 
@@ -292,7 +293,7 @@ static DWORD PlayMovieLoop() {
 
 	if (GetAsyncKeyState(VK_ESCAPE)) {
 		StopMovie(&movieInterface);
-		return 0;  // break play
+		return 0; // break play
 	}
 
 	_int64 pos, end;
@@ -302,7 +303,7 @@ static DWORD PlayMovieLoop() {
 	bool isPlayEnd = (end == pos);
 	if (isPlayEnd) StopMovie(&movieInterface);
 
-	return !isPlayEnd; // 0 - for break play
+	return !isPlayEnd; // 0 - for breaking play
 }
 
 static void __declspec(naked) gmovie_play_hook() {
@@ -321,7 +322,7 @@ static void __declspec(naked) gmovie_play_hook_wsub() {
 		push ecx;
 		xor  eax, eax;
 		call fo::funcoffs::GNW95_process_message_; // windows message pump
-		call fo::funcoffs::movieUpdate_; // for play mve
+		call fo::funcoffs::movieUpdate_; // for playing mve
 		call PlayMovieLoop;
 		pop  ecx;
 		retn;
@@ -361,7 +362,7 @@ static DWORD __fastcall PreparePlayMovie(const DWORD id) {
 	// Create texture and graph filter
 	if (!CreateDSGraph(path, &movieInterface)) return FreeMovie(&movieInterface);
 
-	HookCall(0x44E949,gmovie_play_hook_input); // block get_input_ (if subtitles are disabled then .mve video will not be played)
+	HookCall(0x44E949,gmovie_play_hook_input); // block get_input_ (if subtitles are disabled then mve videos will not be played)
 	// patching gmovie_play_ for disabled game subtitles
 	if (*(DWORD*)FO_VAR_subtitles == 0) {
 		HookCall(0x44E937, gmovie_play_hook); // looping call moviePlaying_
@@ -370,9 +371,9 @@ static DWORD __fastcall PreparePlayMovie(const DWORD id) {
 		HookCall(0x44E937, gmovie_play_hook_wsub); // looping call moviePlaying_
 		//SafeWrite8(0x486654, 0xC3); // blocking movie_MVE_ShowFrame_
 		//SafeWrite8(0x486900, 0xC3); // blocking movieShowFrame_
-		SafeWrite8(0x4F5F40, 0xC3); // blocking sfShowFrame_ for disabling the display of frames .mve video file
+		SafeWrite8(0x4F5F40, 0xC3); // blocking sfShowFrame_ for disabling the display of mve video frames
 
-		#ifdef NDEBUG // mute sound because mve file is still being playing to get sub-titles
+		#ifdef NDEBUG // mute sound because mve file is still being played to get subtitles
 		backgroundVolume = fo::func::gsound_background_volume_get_set(0);
 		#endif
 	}
@@ -880,10 +881,9 @@ void Movies::init() {
 	SafeWrite32(0x44E75E, (DWORD)MoviePtrs);
 	SafeWrite32(0x44E78A, (DWORD)MoviePtrs);
 	dlog(".", DL_INIT);
-
 	/*
 		WIP: Task
-		Necessary to implement the volume setting in accordance with the volume control in the fallout settings.
+		Necessary to implement setting the volume according to the volume control in Fallout settings.
 		Add fade effects and brightness adjustment for videos.
 		Implement subtitle output from the need to play an mve file in the background.
 		Fix minor bugs.

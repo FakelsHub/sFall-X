@@ -240,7 +240,7 @@ static bool LoadGame_Before() {
 	}
 
 	GetSavePath(buf, "db");
-	dlog("Loading data from sfalldb.sav file...\n", DL_MAIN);
+	dlogr("Loading data from sfalldb.sav file...", DL_MAIN);
 	h = CreateFileA(buf, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
 	if (h != INVALID_HANDLE_VALUE) {
 		if (Worldmap::LoadData(h) || CritterStats::LoadStatData(h)) goto errorLoad;
@@ -510,7 +510,7 @@ static void __declspec(naked) CharacterHook() {
 		xor  eax, eax;
 		call fo::funcoffs::editor_design_;
 		test eax, eax;
-		jz success;
+		jz   success;
 		call PerksCancelCharScreen;
 		jmp  end;
 success:
@@ -687,7 +687,7 @@ static void __declspec(naked) gdialog_bk_hook() {
 	}
 }
 
-static void __declspec(naked) gdialogUpdatePartyStatus_hook_1() {
+static void __declspec(naked) gdialogUpdatePartyStatus_hook1() {
 	__asm {
 		push edx;
 		_InLoop2(1, SPECIAL);
@@ -696,7 +696,7 @@ static void __declspec(naked) gdialogUpdatePartyStatus_hook_1() {
 	}
 }
 
-static void __declspec(naked) gdialogUpdatePartyStatus_hook_0() {
+static void __declspec(naked) gdialogUpdatePartyStatus_hook0() {
 	__asm {
 		call fo::funcoffs::gdialog_window_create_;
 		_InLoop2(0, SPECIAL);
@@ -752,8 +752,8 @@ void LoadGameHook::init() {
 	HookCall(0x443A50, HelpMenuHook);  // game_handle_input_
 	HookCall(0x443320, CharacterHook); // 0x4A73EB, 0x4A740A for character creation
 
-	MakeCall(0x445285, DialogHook_Start);  // gdialogInitFromScript_
-	HookCall(0x4452CD, DialogHook_End);    // gdialogExitFromScript_ (old 0x445748)
+	MakeCall(0x445285, DialogHook_Start); // gdialogInitFromScript_
+	HookCall(0x4452CD, DialogHook_End);   // gdialogExitFromScript_ (old 0x445748)
 
 	HookCalls(PipboyHook_Start, {0x49767F, 0x4977EF, 0x49780D}); // StartPipboy_ (old 0x443463, 0x443605)
 	HookCall(0x497868, PipboyHook_End); // EndPipboy_
@@ -779,10 +779,10 @@ void LoadGameHook::init() {
 	HookCall(0x476AC6, setup_move_timer_win_Hook); // before init win
 	HookCall(0x477067, exit_move_timer_win_Hook);
 
-	// Set and unset the Special flag of game mode when animating the dialog interface bar
-	HookCall(0x447A7E, gdialog_bk_hook); // set when switching dialog mode to barter mode (unset when entering barter)
-	HookCall(0x4457B1, gdialogUpdatePartyStatus_hook_1); // set when join/remove party member
-	HookCall(0x4457BC, gdialogUpdatePartyStatus_hook_0); // unset
+	// Set and unset the Special flag of game mode when animating the dialog interface panel
+	HookCall(0x447A7E, gdialog_bk_hook); // set when switching from dialog mode to barter mode (unset when entering barter)
+	HookCall(0x4457B1, gdialogUpdatePartyStatus_hook1); // set when a party member joins/leaves
+	HookCall(0x4457BC, gdialogUpdatePartyStatus_hook0); // unset
 }
 
 Delegate<>& LoadGameHook::OnBeforeGameInit() {

@@ -689,7 +689,7 @@ normalPerk:
 		pop  edx;
 		test eax, eax;
 		jnz  end;
-		// fix gain perks (added to base stat instead of the bonus stats)
+		// fix gain perks (add to base stats instead of bonus stats)
 		cmp  edx, PERK_gain_strength_perk;
 		jl   end;
 		cmp  edx, PERK_gain_luck_perk;
@@ -1446,7 +1446,7 @@ void Perks::init() {
 
 	FastShotTraitFix();
 
-	// Disabled gain perks for bonus stats
+	// Disable gain perks for bonus stats
 	for (int i = STAT_st; i <= STAT_lu; i++) SafeWrite8(GainStatPerks[i][0], (BYTE)GainStatPerks[i][1]);
 
 	PerkEngineInit();

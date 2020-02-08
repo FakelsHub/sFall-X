@@ -87,7 +87,7 @@ static void __declspec(naked) register_object_take_out_hack() {
 		dec  ebx;                                 // delay -1
 		pop  eax;                                 // critter
 		call fo::funcoffs::register_object_change_fid_;
-		pop  ecx
+		pop  ecx;
 		xor  eax, eax;
 		retn;
 	}
@@ -138,7 +138,7 @@ fail:
 
 static const DWORD ScannerHookRet  = 0x41BC1D;
 static const DWORD ScannerHookFail = 0x41BC65;
-static void __declspec(naked) automap_hook() {
+static void __declspec(naked) automap_hack() {
 	using fo::PID_MOTION_SENSOR;
 	__asm {
 		mov  eax, ds:[FO_VAR_obj_dude];
@@ -504,7 +504,7 @@ void PlayIdleAnimOnReloadPatch() {
 void MotionScannerFlagsPatch() {
 	if (long flags = GetConfigInt("Misc", "MotionScannerFlags", 1)) {
 		dlog("Applying MotionScannerFlags patch.", DL_INIT);
-		if (flags & 1) MakeJump(0x41BBE9, automap_hook);
+		if (flags & 1) MakeJump(0x41BBE9, automap_hack);
 		if (flags & 2) {
 			// automap_
 			SafeWrite16(0x41BC24, 0x9090);
@@ -628,9 +628,9 @@ void DisableHorriganPatch() {
 void DisplaySecondWeaponRangePatch() {
 	// Display the range of the second attack mode in the inventory when you switch weapon modes in active item slots
 	//if (GetConfigInt("Misc", "DisplaySecondWeaponRange", 1)) {
-	dlog("Applying display second weapon range patch.", DL_INIT);
-	HookCall(0x472201, display_stats_hook);
-	dlogr(" Done", DL_INIT);
+		dlog("Applying display second weapon range patch.", DL_INIT);
+		HookCall(0x472201, display_stats_hook);
+		dlogr(" Done", DL_INIT);
 	//}
 }
 
@@ -689,7 +689,7 @@ void SkipLoadingGameSettingsPatch() {
 
 void InterfaceDontMoveOnTopPatch() {
 	if (GetConfigInt("Misc", "InterfaceDontMoveOnTop", 0)) { // TODO: Move to Interface section or remove option (obsolete)
-		dlog("Applying InterfaceDontMoveOnTop patch.", DL_INIT);
+		dlog("Applying no MoveOnTop flag for interface patch.", DL_INIT);
 		SafeWrite8(0x46ECE9, fo::WinFlags::Exclusive); // Player Inventory/Loot/UseOn
 		SafeWrite8(0x41B966, fo::WinFlags::Exclusive); // Automap
 		dlogr(" Done", DL_INIT);
@@ -710,7 +710,7 @@ void F1EngineBehaviorPatch() {
 		dlog("Applying Fallout 1 engine behavior patch.", DL_INIT);
 		BlockCall(0x4A4343); // disable playing the final movie/credits after the endgame slideshow
 		SafeWrite8(0x477C71, 0xEB); // disable halving the weight for power armor items
-		HookCall(0x43F872, endgame_movie_hook);
+		HookCall(0x43F872, endgame_movie_hook); // play movie 10 or 11 based on the player's gender before the credits
 		dlogr(" Done", DL_INIT);
 	}
 }

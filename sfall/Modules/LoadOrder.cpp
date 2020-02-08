@@ -1,20 +1,20 @@
 /*
-*    sfall
-*    Copyright (C) 2008-2017  The sfall team
-*
-*    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU General Public License as published by
-*    the Free Software Foundation, either version 3 of the License, or
-*    (at your option) any later version.
-*
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU General Public License for more details.
-*
-*    You should have received a copy of the GNU General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ *    sfall
+ *    Copyright (C) 2008-2017  The sfall team
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
@@ -167,7 +167,7 @@ static void __fastcall game_init_databases_hook() { // eax = _master_db_handle
 
 	/*if (!patchFiles.empty())*/ InitExtraPatches();
 
-	fo::PathNode* critter_patches = (fo::PathNode*)fo::var::critter_db_handle;
+	fo::PathNode* critter_patches = fo::var::critter_db_handle;
 	fo::PathNode* paths = fo::var::paths; // beginning of the chain of paths
 	// insert master_patches/critter_patches at the beginning of the chain of paths
 	if (critter_patches) {

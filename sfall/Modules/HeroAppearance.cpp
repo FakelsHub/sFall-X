@@ -146,11 +146,11 @@ static void DeleteWordWrapList(LineNode *CurrentLine) {
 
 /////////////////////////////////////////////////////////////////DAT FUNCTIONS///////////////////////////////////////////////////////////////////////
 
-static void* LoadDat(char*fileName) {
+static void* LoadDat(const char* fileName) {
 	return fo::func::dbase_open(fileName);
 }
 
-static void UnloadDat(void *dat) {
+static void UnloadDat(void* dat) {
 	fo::func::dbase_close(dat);
 }
 
@@ -393,11 +393,9 @@ void UpdateHeroArt() {
 
 		if (item->flags & fo::ObjectFlag::Right_Hand) {
 			fo::var::i_rhand = item;
-		}
-		else if (item->flags & fo::ObjectFlag::Left_Hand) {
+		} else if (item->flags & fo::ObjectFlag::Left_Hand) {
 			fo::var::i_lhand = item;
-		}
-		else if (item->flags & fo::ObjectFlag::Worn) {
+		} else if (item->flags & fo::ObjectFlag::Worn) {
 			fo::var::i_worn = item;
 		}
 	}
@@ -498,7 +496,10 @@ endFunc:
 }
 
 /////////////////////////////////////////////////////////////////INTERFACE FUNCTIONS/////////////////////////////////////////////////////////////////
-static void surface_draw(long width, long height, long fromWidth, long fromX, long fromY, BYTE *fromBuff, long toWidth, long toX, long toY, BYTE *toBuff, int maskRef) {
+
+static void surface_draw(long width, long height, long fromWidth, long fromX, long fromY, BYTE *fromBuff,
+                         long toWidth, long toX, long toY, BYTE *toBuff, int maskRef)
+{
 	fromBuff += fromY * fromWidth + fromX;
 	toBuff += toY * toWidth + toX;
 
@@ -511,7 +512,9 @@ static void surface_draw(long width, long height, long fromWidth, long fromX, lo
 	}
 }
 
-static void surface_draw(long width, long height, long fromWidth, long fromX, long fromY, BYTE *fromBuff, long toWidth, long toX, long toY, BYTE *toBuff) {
+static void surface_draw(long width, long height, long fromWidth, long fromX, long fromY, BYTE *fromBuff,
+                         long toWidth, long toX, long toY, BYTE *toBuff)
+{
 	fromBuff += fromY * fromWidth + fromX;
 	toBuff += toY * toWidth + toX;
 
@@ -650,7 +653,7 @@ static void DrawCharNote(bool style, int winRef, DWORD xPosWin, DWORD yPosWin, B
 	*(long*)FO_VAR_card_old_fid1 = -1; // reset fid
 
 	DeleteWordWrapList(StartLine);
-	delete[]PadSurface;
+	delete[] PadSurface;
 }
 
 static void _stdcall DrawCharNoteNewChar(bool type) {
@@ -1185,7 +1188,7 @@ static void __declspec(naked) FixCharScrnBack() {
 
 			// Sex button mask frm
 			FrmMaskSurface = fo::func::art_ptr_lock_data(BuildFrmId(fo::OBJ_TYPE_INTRFACE, 187), 0, 0, &FrmMaskObj);
-			// crop the image Sexoff by mask
+			// crop the Sexoff image by mask
 			surface_draw(80, 28, 80, 0, 0, FrmMaskSurface, 80, 0, 0, newFrmSurface, 0x39); // mask for style and race buttons
 			fo::func::art_ptr_unlock(FrmMaskObj);
 
@@ -1317,7 +1320,7 @@ static void __declspec(naked) op_obj_art_fid_hack() {
 		cmp  eax, PID_Player;
 		jne  skip;
 		mov  eax, esi;
-		and  eax, 0xFFF; // index .lst
+		and  eax, 0xFFF; // index in .LST
 		cmp  eax, critterListSize;
 		jle  skip;
 		sub  esi, critterListSize; // fix hero FrmID

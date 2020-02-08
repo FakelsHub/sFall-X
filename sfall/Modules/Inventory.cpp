@@ -757,7 +757,7 @@ void Inventory::init() {
 			SafeWrite8(0x449150, 0x10 + 0x08);
 		}
 	}
-	// Adjust the width of the display total weight on the inventory screen
+	// Adjust the max text width of the total weight display on the inventory screen
 	SafeWrite32(0x472632, widthWeight);
 
 	if (GetConfigInt("Misc", "SuperStimExploitFix", 0)) {

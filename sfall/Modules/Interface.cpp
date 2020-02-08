@@ -89,7 +89,7 @@ static void ActionPointsBarPatch() {
 		if (hrpVersionValid && !_stricmp((const char*)HRPAddress(0x10039358), "HR_IFACE_%i.frm")) {
 			SafeWriteStr(HRPAddress(0x10039363), "E.frm"); // patching HRP
 		} else {
-			dlog(" Incorrect HRP version!", DL_INIT);
+			dlogr(" Incorrect HRP version!", DL_INIT);
 			return;
 		}
 		LoadGameHook::OnAfterGameInit() += APBarRectPatch;
@@ -478,7 +478,7 @@ enum TerrainHoverImage {
 	width  = 200,
 	height = 15,
 	size = width * height,
-	x_shift = (width / 4) + 25 // adjuct x position
+	x_shift = (width / 4) + 25 // adjust x position
 };
 
 static std::array<unsigned char, TerrainHoverImage::size> wmTmpBuffer;
@@ -554,7 +554,7 @@ static void __declspec(naked) DrawingDots() {
 
 		wmPixelY *= wmapWinWidth;
 
-		BYTE* wmWinBuf = *(BYTE**)FO_VAR_wmBkWinBuf;
+		BYTE* wmWinBuf = fo::var::wmBkWinBuf;
 		BYTE* wmWinBuf_xy = (wmPixelY + wmPixelX) + wmWinBuf;
 
 		// put pixel to interface window buffer
@@ -632,7 +632,7 @@ static void __fastcall wmDetectHotspotHover(long wmMouseX, long wmMouseY) {
 
 	long deltaX = 20, deltaY = 20;
 
-	// mouse cursor is out of viewport area (the zero values wmMouseX and wmMouseY, correspond to the location of the left-top corner of the worldmap interface)
+	// mouse cursor is out of viewport area (the zero values of wmMouseX and wmMouseY correspond to the top-left corner of the worldmap interface)
 	if ((wmMouseX < 20 || wmMouseY < 20 || wmMouseX > wmapViewPortWidth + 15 || wmMouseY > wmapViewPortHeight + 20) == false) {
 		deltaX = abs((long)fo::var::world_xpos - (wmMouseX - deltaX + fo::var::wmWorldOffsetX));
 		deltaY = abs((long)fo::var::world_ypos - (wmMouseY - deltaY + fo::var::wmWorldOffsetY));
@@ -757,7 +757,7 @@ static void WorldMapInterfacePatch() {
 		}
 	}
 
-	// Fallout 1 features, travel markers and displaying terrain types or town title
+	// Fallout 1 features, travel markers and displaying terrain types or town titles
 	if (GetConfigInt("Interface", "WorldMapTravelMarkers", 0)) {
 		dlog("Applying world map travel markers patch.", DL_INIT);
 
@@ -905,7 +905,7 @@ void Interface::init() {
 		HookCall(0x44C018, gmouse_handle_event_hook); // replaces hack function from HRP
 	};
 
-	// Graphical fix of the barter button in the dialog window when first entering to the dialog
+	// Animation fix for the barter button in the dialog window when first entering to the dialog
 	HookCall(0x44A77C, gdialog_window_create_hook);
 }
 

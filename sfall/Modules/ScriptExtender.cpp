@@ -52,7 +52,7 @@ static DWORD _stdcall HandleMapUpdateForScripts(const DWORD procId);
 
 static int idle;
 
-char ScriptExtender::gTextBuffer[5120]; // used as global temp text buffer for scripting functions
+char ScriptExtender::gTextBuffer[5120]; // used as global temp text buffer for script functions
 
 std::string ScriptExtender::iniConfigFolder;
 
@@ -533,7 +533,7 @@ static void LoadGlobalScripts() {
 
 	LoadHookScripts();
 
-	dlogr("Loading global scripts", DL_SCRIPT|DL_INIT);
+	dlogr("Loading global scripts:", DL_SCRIPT|DL_INIT);
 	if (!listIsPrepared) { // only once
 		PrepareGlobalScriptsListByMask();
 		listIsPrepared = !alwaysFindScripts;

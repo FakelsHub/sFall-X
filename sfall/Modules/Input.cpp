@@ -68,7 +68,7 @@ end:
 }
 
 void Input::init() {
-	//if(GetConfigInt("Input", "Enable", 0)) {
+	//if (GetConfigInt("Input", "Enable", 0)) {
 		dlog("Applying input patch.", DL_INIT);
 		SafeWriteStr(0x50FB70, "ddraw.dll");
 		::sfall::availableGlobalScriptTypes |= 1;

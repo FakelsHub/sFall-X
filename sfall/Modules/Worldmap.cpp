@@ -42,7 +42,7 @@ struct levelRest {
 };
 std::unordered_map<int, levelRest> mapRestInfo;
 
-std::vector<std::pair<long, std::string>> wmTerrainTypeNames; // pair first: x + y * numbers of sub-tiles horizontally
+std::vector<std::pair<long, std::string>> wmTerrainTypeNames; // pair first: x + y * number of horizontal sub-tiles
 std::unordered_map<long, std::string> wmAreaHotSpotTitle;
 
 static bool restMap;
@@ -440,10 +440,10 @@ void StartingStatePatches() {
 	}
 	date = GetConfigInt("Misc", "StartDay", -1);
 	if (date >= 0) {
-		if (month == 1 && date > 28) { // for february
-			date = 28; // set 29-st day
+		if (month == 1 && date > 28) { // for February
+			date = 28; // set 29th day
 		} else if (date > 30) {
-			date = 30; // set 31-st day
+			date = 30; // set 31st day
 		}
 		dlog("Applying starting day patch.", DL_INIT);
 		SafeWrite8(0x4A3356, static_cast<BYTE>(date));
@@ -616,13 +616,13 @@ void Worldmap::SetTerrainTypeName(long x, long y, const char* name) {
 	wmTerrainTypeNames.push_back(std::make_pair(subTileID, name));
 }
 
-// TODO: that someone might need to know the name of a terrain type?
+// TODO: someone might need to know the name of a terrain type?
 /*const char* Worldmap::GetTerrainTypeName(long x, long y) {
 	const char* name = GetOverrideTerrainName(x, y);
 	return (name) ? name : fo::GetMessageStr(&fo::var::wmMsgFile, 1000 + fo::wmGetTerrainType(x, y));
 }*/
 
-// Returns the name of the terrain type of the player's marker position on the world map
+// Returns the name of the terrain type in the position of the player's marker on the world map
 const char* Worldmap::GetCurrentTerrainName() {
 	const char* name = GetOverrideTerrainName(fo::var::world_xpos / 50, fo::var::world_ypos / 50);
 	return (name) ? name : fo::GetMessageStr(&fo::var::wmMsgFile, 1000 + fo::wmGetCurrentTerrainType());
@@ -650,7 +650,7 @@ void Worldmap::init() {
 	WorldmapFpsPatch();
 	PipBoyAutomapsPatch();
 
-	// Blinking icon for a meeting Frank Horrigan
+	// Add a flashing icon to the Horrigan encounter
 	HookCall(0x4C071C, wmRndEncounterOccurred_hook);
 
 	LoadGameHook::OnGameReset() += []() {

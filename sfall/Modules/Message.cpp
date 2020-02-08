@@ -60,7 +60,7 @@ static long msgNumCounter = 0x3000;
 
 static long heroIsFemale = -1;
 
-// Searching the special character in the text and removes the text depending the gender of the player's hero
+// Searches the special character in the text and removes the text depending on the player's gender
 // example: <MaleText^FemaleText>
 static long __fastcall ReplaceGenderWord(fo::MessageNode* msgData, DWORD* msgFile) {
 
@@ -263,8 +263,10 @@ void Message::init() {
 	msgFileList = GetConfigList("Misc", "ExtraGameMsgFileList", "", 512);
 
 	if (GetConfigInt("Misc", "DialogGenderWords", 0)) {
+		dlog("Applying dialog gender words patch.", DL_INIT);
 		HookCall(0x4A6CEE, scr_get_msg_str_speech_hook);
 		SafeWrite16(0x484C62, 0x9090); // message_search_
+		dlogr(" Done", DL_INIT);
 	}
 
 	LoadGameHook::OnGameInit() += FallbackEnglishLoadMsgFiles;

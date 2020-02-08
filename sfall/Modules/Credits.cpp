@@ -34,7 +34,7 @@ static const char* ExtraLines[] = {
 	"#SFALL " VERSION_STRING,
 	"",
 	"sfall is free software, licensed under the GPL",
-	"Copyright 2008-2019  The sfall team",
+	"Copyright 2008-2020  The sfall team",
 	"",
 	"@Author",
 	"Timeslip",
@@ -70,7 +70,7 @@ static const char* ExtraLines[] = {
 	"Continuum",
 	"Drobovik",
 	"Burn",
-	"LEXX"
+	"Lexx",
 	"",
 	"@Anyone who has used sfall in their own mods",
 	"@The bug reporters and feature requesters",

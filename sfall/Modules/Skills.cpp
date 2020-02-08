@@ -381,7 +381,7 @@ void Skills::init() {
 					tok = strtok(0, "|");
 				}
 				while (upto < 512) skillCosts[i * 512 + upto++] = price;
-			} else { // sets default cost values
+			} else { // set default cost values
 				for (int j = 0;   j <= 100; j++) skillCosts[i * 512 + j] = 1; // 101
 				for (int j = 101; j <= 125; j++) skillCosts[i * 512 + j] = 2; // 25
 				for (int j = 126; j <= 150; j++) skillCosts[i * 512 + j] = 3; // 25
