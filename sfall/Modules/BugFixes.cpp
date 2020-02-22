@@ -2553,11 +2553,71 @@ look:
 	}
 }
 
+static void FixCreateBarterButton() {
+	const long artID = fo::OBJ_TYPE_INTRFACE << 24;
+	*(BYTE**)FO_VAR_dialog_red_button_up_buf = fo::func::art_ptr_lock_data(artID | 96, 0 ,0, (DWORD*)FO_VAR_dialog_red_button_up_key);
+	*(BYTE**)FO_VAR_dialog_red_button_down_buf = fo::func::art_ptr_lock_data(artID | 95, 0 ,0, (DWORD*)FO_VAR_dialog_red_button_down_key);
+}
+
+static void __declspec(naked) gdialog_window_create_hook() {
+	__asm {
+		call fo::funcoffs::art_ptr_unlock_;
+		cmp  dword ptr ds:[FO_VAR_dialog_red_button_down_buf], 0;
+		jz   FixCreateBarterButton;
+		retn;
+	}
+}
+
+static void __declspec(naked) gdialog_bk_hook() {
+	__asm {
+		xor  ebp, ebp;
+		mov  eax, ds:[FO_VAR_curr_font_num];
+		cmp  eax, 101;
+		je   skip0;
+		mov  ebp, eax;
+		mov  eax, 101; // set font
+		call fo::funcoffs::text_font_;
+skip0:
+		mov  eax, ds:[FO_VAR_obj_dude];
+		call fo::funcoffs::item_caps_total_;
+		push eax;      // caps
+		push 0x502B1C; // fmt: $%d
+		lea  eax, tempBuffer;
+		push eax;
+		call fo::funcoffs::sprintf_;
+		add  esp, 3 * 4;
+		lea  eax, tempBuffer;
+		call ds:[FO_VAR_text_width];
+		mov  edx, 60;  // max width
+		mov  ebx, eax; // ebx - textWidth
+		cmp  eax, edx;
+		cmova ebx, edx;
+		movzx eax, ds:[FO_VAR_GreenColor];
+		or   eax, 0x7000000; // print flags
+		push eax;
+		mov  eax, ebx;
+		mov  ecx, 38;  // x
+		push 36;       // y
+		sar  eax, 1;
+		sub  ecx, eax; // x shift
+		lea  edx, tempBuffer;
+		mov  eax, ds:[FO_VAR_dialogueWindow];
+		call fo::funcoffs::win_print_;
+		test ebp, ebp;
+		jz   skip1;
+		mov  eax, ebp;
+		call fo::funcoffs::text_font_;
+skip1:
+		mov  eax, edi;
+		jmp  fo::funcoffs::win_show_;
+	}
+}
+
 void BugFixes::init()
 {
 	#ifndef NDEBUG
 		LoadGameHook::OnBeforeGameClose() += PrintAddrList;
-		if (isDebug && (GetConfigInt("Debugging", "BugFixes", 1) == 0)) return;
+		if ((GetConfigInt("Debugging", "BugFixes", 1) == 0)) return;
 	#endif
 
 	// Missing game initialization
@@ -2793,7 +2853,7 @@ void BugFixes::init()
 
 	// Fix the impact in itself in case of a miss hit for multihex critters when using throwing weapon
 	// Note: in fact, the bug is in tile_num_beyond_ and related functions, in case of fix, this crutch will need to be removed
-	if (GetConfigInt("Misc", "MultiHexSelfHitFix", 0) != 0) {
+	if (GetConfigInt("Misc", "MultiHexSelfHitFix", 0)) { // TODO: Re-write fix
 		dlog("Applying multihex critter self hit fix.", DL_INIT);
 		HookCalls(MultiHexAIMissHitFix, { 0x423B44, 0x42315D });
 		dlogr(" Done", DL_INIT);
@@ -3183,11 +3243,11 @@ void BugFixes::init()
 	MakeCall(0x4C03AA, wmWorldMap_hack, 2);
 
 	// Fix to prevent using number keys to enter unvisited areas on a town map
-	//if (GetConfigInt("Misc", "TownMapHotkeysFix", 1)) {
-		dlog("Applying town map hotkeys patch.", DL_INIT);
+	if (GetConfigInt("Debugging", "TownMapHotkeys", 0) == 0) {
+		dlog("Applying town map hotkeys fix patch.", DL_INIT);
 		MakeCall(0x4C495A, wmTownMapFunc_hack, 1);
 		dlogr(" Done", DL_INIT);
-	//}
+	}
 
 	// Fix for combat not ending automatically when there are no hostile critters
 	MakeCall(0x422CF3, combat_should_end_hack);
@@ -3230,6 +3290,16 @@ void BugFixes::init()
 	MakeCall(0x4123F8, action_loot_container_hack, 1);
 	SafeWrite8(0x4123F2, CommonObj::protoId);
 	BlockCall(0x4123F3);
+
+	// Animation fix for the barter button in the dialog window when first entering to the dialog
+	HookCall(0x44A77C, gdialog_window_create_hook);
+
+	// Fix displaying money of the player's in the dialogue when exiting the barter/control interface
+	HookCall(0x447ACD, gdialog_bk_hook);
+
+	// Fix the animation death of critters when explosion (for explosive items) in combat
+	// when the explosion and critter attack animation are performed simultaneously
+	// TODO
 }
 
 }
