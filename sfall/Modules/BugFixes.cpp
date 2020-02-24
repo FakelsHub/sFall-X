@@ -2613,6 +2613,23 @@ skip1:
 	}
 }
 
+static void __declspec(naked) combat_ai_hook() {
+	__asm {
+		call fo::funcoffs::combat_should_end_;
+		test eax, eax;
+		jnz  skip;
+		cmp  ds:[FO_VAR_game_user_wants_to_quit], 2;
+		je   skip;
+		//cmp  ds:[FO_VAR_script_engine_running], 1;
+		//jne  skip;
+		call fo::funcoffs::GNW_do_bk_process_;
+		call fo::funcoffs::combat_turn_run_;
+		xor  eax, eax;
+skip:
+		retn;
+	}
+}
+
 void BugFixes::init()
 {
 	#ifndef NDEBUG
@@ -3297,9 +3314,10 @@ void BugFixes::init()
 	// Fix displaying money of the player's in the dialogue when exiting the barter/control interface
 	HookCall(0x447ACD, gdialog_bk_hook);
 
-	// Fix the animation death of critters when explosion (for explosive items) in combat
-	// when the explosion and critter attack animation are performed simultaneously
-	// TODO
+	// Fix a crash or glitch of the critter animation in combat when an explosion (from explosive items)
+	// and the AI attack animation are performed simultaneously
+	// Note: all events in the combat will occur before the AI (party member) attack
+	HookCall(0x422E5F, combat_ai_hook); // execution of the all events after end of the combat sequence
 }
 
 }
