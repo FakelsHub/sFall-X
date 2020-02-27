@@ -2630,6 +2630,34 @@ skip:
 	}
 }
 
+static void __declspec(naked) wmSubTileMarkRadiusVisited_hack() {
+	static const unsigned long wmSubTileMarkRadiusVisited_Ret = 0x4C3730;
+	__asm {
+		call fo::funcoffs::wmMarkSubTileOffsetVisitedFunc_;
+		cmp  ebp, 7; // count of horizontal sub-tiles
+		je   fix;
+		jmp  wmSubTileMarkRadiusVisited_Ret;
+fix:
+		test esi, esi; // if this is zero, then need to apply the fix
+		jz   checkTiles;
+jback:
+		xor  ecx, ecx;
+		dec  esi;
+		cmovnz ebp, ecx; // ebp=0 for continue uncover sub-tiles
+		dec  dword ptr [esp + 0x1C - 0x14]; // subtract one tile from the left
+		jmp  wmSubTileMarkRadiusVisited_Ret;
+checkTiles:
+		mov  eax, ds:[FO_VAR_world_xpos]; // player's X position
+		mov  ecx, 350;
+		xor  edx, edx;
+		div  ecx; // eax: count of tiles on the left of the player's position
+		mov  esi, eax;
+		cmp  eax, 1;
+		jg   jback;
+		jmp  wmSubTileMarkRadiusVisited_Ret;
+	}
+}
+
 void BugFixes::init()
 {
 	#ifndef NDEBUG
@@ -3318,6 +3346,11 @@ void BugFixes::init()
 	// and the AI attack animation are performed simultaneously
 	// Note: all events in the combat will occur before the AI (party member) attack
 	HookCall(0x422E5F, combat_ai_hook); // execution of the all events after end of the combat sequence
+
+	// Fix to uncover all the tiles of the world map to the left edge map
+	MakeJump(0x4C372B, wmSubTileMarkRadiusVisited_hack);
+	SafeWrite16(0x4C3723, 0xC931); // mov ecx, esi > xor ecx, ecx
+	SafeWrite8(0x4C3727, 0x51);    // push esi > push ecx
 }
 
 }
