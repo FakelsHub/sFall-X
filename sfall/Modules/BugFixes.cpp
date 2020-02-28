@@ -5,6 +5,7 @@
 #include "LoadGameHook.h"
 #include "Objects.h"
 #include "ScriptExtender.h"
+#include "Worldmap.h"
 
 #include "BugFixes.h"
 
@@ -2302,13 +2303,16 @@ static void __declspec(naked) action_climb_ladder_hack() {
 	}
 }
 
-//static const DWORD wmAreaMarkVisitedState_Error = 0x4C4698;
-static const DWORD wmAreaMarkVisitedState_Ret = 0x4C46A2;
 static void __declspec(naked) wmAreaMarkVisitedState_hack() {
+	static const u_long wmAreaMarkVisitedState_Ret = 0x4C46A2;
+	//static const u_long wmAreaMarkVisitedState_Error = 0x4C4698;
+	static long isNoRadius;
+
+	isNoRadius = Worldmap::AreaMarkStateIsNoRadius(); // F1 behavior radius
 	__asm {
 		mov  [ecx + 0x40], esi; // wmAreaInfoList.visited
 		test esi, esi;          // mark "unknown" state
-		jz   skip;
+		jz   noRadius;
 		mov  eax, [ecx + 0x2C]; // wmAreaInfoList.world_posx
 		mov  edx, [ecx + 0x30]; // wmAreaInfoList.world_posy
 		// fix loc coordinates
@@ -2316,13 +2320,13 @@ static void __declspec(naked) wmAreaMarkVisitedState_hack() {
 		jg   largeLoc;
 		je   mediumLoc;
 //smallLoc:
-		sub eax, 5;
-		lea edx, [edx - 5];
+		sub  eax, 5;
+		lea  edx, [edx - 5];
 mediumLoc:
-		sub eax, 10;
-		lea edx, [edx - 10];
+		sub  eax, 10;
+		lea  edx, [edx - 10];
 largeLoc:
-		mov  ebx, esp; // ppSubTile out
+		lea  ebx, [esp]; // ppSubTile out
 		push edx;
 		push eax;
 		call fo::funcoffs::wmFindCurSubTileFromPos_;
@@ -2331,19 +2335,23 @@ largeLoc:
 		pop  eax;
 		pop  edx;
 		mov  ebx, [esp];
-		mov  ebx, [ebx + 0x18]; // sub-tile state
+		mov  ebx, [ebx + 0x18]; // sub-tile state: 0 - black, 1 - uncovered, 2 - visited
 		test ebx, ebx;
 		jnz  skip;
-		inc  ebx; // 1
+		inc  ebx; // set 1
 skip:
-		cmp  [ecx + 0x38], 1;   // wmAreaInfoList.start_state
-		jne  hideLoc;
-		cmp  esi, 2; // mark visited state
-		jne  fix;
+		///////// check result F1 behavior radius /////////
+		cmp isNoRadius, 1;
+		je  noRadius;
+		///////////////////////////////////////////////////
+		cmp  [ecx + 0x38], 1; // wmAreaInfoList.start_state
+		jne  noRadius;        // hidden locaton
+		cmp  esi, 2;          // mark visited state
+		jne  fixRadius;
 		call fo::funcoffs::wmMarkSubTileRadiusVisited_;
-hideLoc:
+noRadius:
 		jmp  wmAreaMarkVisitedState_Ret;
-fix:
+fixRadius:
 		push ebx;
 		mov  ebx, 1; // radius (fix w/o PERK_scout)
 		call fo::funcoffs::wmSubTileMarkRadiusVisited_;
@@ -3347,7 +3355,7 @@ void BugFixes::init()
 	// Note: all events in the combat will occur before the AI (party member) attack
 	HookCall(0x422E5F, combat_ai_hook); // execution of the all events after end of the combat sequence
 
-	// Fix to uncover all the tiles of the world map to the left edge map
+	// Fix for the "Fill_W" flag in worldmap.txt not uncovering all tiles to the left edge of the world map
 	MakeJump(0x4C372B, wmSubTileMarkRadiusVisited_hack);
 	SafeWrite16(0x4C3723, 0xC931); // mov ecx, esi > xor ecx, ecx
 	SafeWrite8(0x4C3727, 0x51);    // push esi > push ecx
