@@ -301,6 +301,9 @@
     <ClInclude Include="Modules\Scripting\Handlers\Math.h">
       <Filter>Modules\Scripting\Handlers</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\SubModules\AI.Behavior.h">
+      <Filter>Modules\SubModules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -552,6 +555,9 @@
     </ClCompile>
     <ClCompile Include="Modules\Scripting\Handlers\Math.cpp">
       <Filter>Modules\Scripting\Handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\AI.Behavior.cpp">
+      <Filter>Modules\SubModules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

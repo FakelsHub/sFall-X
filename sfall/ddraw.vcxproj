@@ -383,6 +383,7 @@
     <ClInclude Include="Modules\PlayerModel.h" />
     <ClInclude Include="Modules\Scripting\Handlers\Math.h" />
     <ClInclude Include="Modules\SpeedPatch.h" />
+    <ClInclude Include="Modules\SubModules\AI.Behavior.h" />
     <ClInclude Include="Modules\SubModules\CombatBlock.h" />
     <ClInclude Include="Modules\Worldmap.h" />
     <ClInclude Include="Modules\ScriptExtender.h" />
@@ -477,6 +478,7 @@
     <ClCompile Include="Modules\PlayerModel.cpp" />
     <ClCompile Include="Modules\Scripting\Handlers\Math.cpp" />
     <ClCompile Include="Modules\SpeedPatch.cpp" />
+    <ClCompile Include="Modules\SubModules\AI.Behavior.cpp" />
     <ClCompile Include="Modules\SubModules\CombatBlock.cpp" />
     <ClCompile Include="Modules\Worldmap.cpp" />
     <ClCompile Include="Modules\ScriptExtender.cpp" />

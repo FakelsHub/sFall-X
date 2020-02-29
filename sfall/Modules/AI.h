@@ -22,20 +22,20 @@
 
 #include "Module.h"
 
-namespace sfall 
+namespace sfall
 {
 
 class AI : public Module {
 public:
 	const char* name() { return "AI"; }
 	void init();
+
+	// TODO: use subscription instead
+	static void _stdcall AICombatStart();
+	static void _stdcall AICombatEnd();
+
+	static fo::GameObject* _stdcall AIGetLastAttacker(fo::GameObject* target);
+	static fo::GameObject* _stdcall AIGetLastTarget(fo::GameObject* source);
 };
-
-// TODO: use subscription instead
-void _stdcall AICombatStart();
-void _stdcall AICombatEnd();
-
-fo::GameObject* _stdcall AIGetLastAttacker(fo::GameObject* target);
-fo::GameObject* _stdcall AIGetLastTarget(fo::GameObject* source);
 
 }
