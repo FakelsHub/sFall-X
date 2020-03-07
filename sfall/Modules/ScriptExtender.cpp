@@ -48,7 +48,7 @@ using namespace script;
 
 static Delegate<> onMapExit;
 
-static DWORD _stdcall HandleMapUpdateForScripts(const DWORD procId);
+static uint32_t __stdcall HandleMapUpdateForScripts(const uint32_t procId);
 
 static int idle;
 
@@ -112,14 +112,13 @@ std::unordered_map<fo::Program*, SelfOverrideObj> selfOverrideMap;
 
 typedef std::unordered_map<std::string, ExportedVar> ExportedVarsMap;
 static ExportedVarsMap globalExportedVars;
-DWORD isGlobalScriptLoading = 0;
 
 std::unordered_map<__int64, int> globalVars;
-typedef std::unordered_map<__int64, int> :: iterator glob_itr;
-typedef std::unordered_map<__int64, int> :: const_iterator glob_citr;
-//typedef std::pair<__int64, int> glob_pair;
+typedef std::unordered_map<__int64, int>::iterator glob_itr;
+typedef std::unordered_map<__int64, int>::const_iterator glob_citr;
 
-DWORD availableGlobalScriptTypes = 0;
+uint32_t availableGlobalScriptTypes = 0;
+uint32_t isGlobalScriptLoading = 0;
 bool isGameLoading;
 bool alwaysFindScripts;
 
@@ -230,8 +229,8 @@ end:
 	}
 }
 
-static const DWORD ExecMapScriptsRet = 0x4A67F5;
 static void __declspec(naked) ExecMapScriptsHack() {
+	static const DWORD ExecMapScriptsRet = 0x4A67F5;
 	__asm {
 		push edi;
 		push ebp;
@@ -243,15 +242,15 @@ static void __declspec(naked) ExecMapScriptsHack() {
 	}
 }
 
-static DWORD __fastcall GetGlobalExportedVarPtr(const char* name) {
+static ExportedVar* __fastcall GetGlobalExportedVarPtr(const char* name) {
 	std::string str(name);
 	ExportedVarsMap::iterator it = globalExportedVars.find(str);
 	//dlog_f("\n Trying to find exported var %s... ", DL_MAIN, name);
 	if (it != globalExportedVars.end()) {
 		ExportedVar *ptr = &it->second;
-		return (DWORD)ptr;
+		return ptr;
 	}
-	return 0;
+	return nullptr;
 }
 
 static void __stdcall CreateGlobalExportedVar(DWORD scr, const char* name) {
@@ -286,8 +285,8 @@ proceedNormal:
 	}
 }
 
-static const DWORD Export_Export_FindVar_back = 0x4414AE;
 static void __declspec(naked) Export_Export_FindVar_Hook() {
+	static const DWORD Export_Export_FindVar_back = 0x4414AE;
 	__asm {
 		cmp  isGlobalScriptLoading, 0;
 		jz   proceedNormal;
@@ -303,7 +302,7 @@ proceedNormal:
 }
 
 // this hook prevents sfall scripts from being removed after switching to another map, since normal script engine re-loads completely
-static void _stdcall FreeProgram(fo::Program* progPtr) {
+static void __stdcall FreeProgram(fo::Program* progPtr) {
 	if (isGameLoading || (sfallProgsMap.find(progPtr) == sfallProgsMap.end())) { // only delete non-sfall scripts or when actually loading the game
 		__asm {
 			mov  eax, progPtr;
@@ -347,12 +346,12 @@ static void __declspec(naked) CombatOverHook() {
 }
 
 void __fastcall SetGlobalScriptRepeat(fo::Program* script, int frames) {
-	for (DWORD d = 0; d < globalScripts.size(); d++) {
-		if (globalScripts[d].prog.ptr == script) {
+	for (size_t i = 0; i < globalScripts.size(); i++) {
+		if (globalScripts[i].prog.ptr == script) {
 			if (frames == -1) {
-				globalScripts[d].mode = !globalScripts[d].mode;
+				globalScripts[i].mode = !globalScripts[i].mode;
 			} else {
-				globalScripts[d].repeat = frames;
+				globalScripts[i].repeat = frames;
 			}
 			break;
 		}
@@ -361,9 +360,9 @@ void __fastcall SetGlobalScriptRepeat(fo::Program* script, int frames) {
 
 void __fastcall SetGlobalScriptType(fo::Program* script, int type) {
 	if (type <= 3) {
-		for (size_t d = 0; d < globalScripts.size(); d++) {
-			if (globalScripts[d].prog.ptr == script) {
-				globalScripts[d].mode = type;
+		for (size_t i = 0; i < globalScripts.size(); i++) {
+			if (globalScripts[i].prog.ptr == script) {
+				globalScripts[i].mode = type;
 				break;
 			}
 		}
@@ -383,8 +382,8 @@ static void SetGlobalVarInternal(__int64 var, int val) {
 	}
 }
 
-void SetGlobalVarInt(DWORD var, int val) {
-	SetGlobalVarInternal(var, val);
+void SetGlobalVarInt(unsigned long var, int val) {
+	SetGlobalVarInternal(static_cast<__int64>(var), val);
 }
 
 long SetGlobalVar(const char* var, int val) {
@@ -404,8 +403,8 @@ long GetGlobalVar(const char* var) {
 	return (strlen(var) == 8) ? GetGlobalVarInternal(*(__int64*)var) : 0;
 }
 
-long GetGlobalVarInt(DWORD var) {
-	return GetGlobalVarInternal(var);
+long GetGlobalVarInt(unsigned long var) {
+	return GetGlobalVarInternal(static_cast<__int64>(var));
 }
 
 void __fastcall SetSelfObject(fo::Program* script, fo::GameObject* obj) {
@@ -463,7 +462,7 @@ ScriptProgram* ScriptExtender::GetGlobalScriptProgram(fo::Program* scriptPtr) {
 	return (it == sfallProgsMap.end()) ? nullptr : &it->second ; // prog
 }
 
-bool __stdcall IsGameScript(const char* filename) {
+bool IsGameScript(const char* filename) {
 	for (int i = 0; filename[i]; ++i) if (i > 8) return false;
 	// TODO: write better solution (binary search)
 	for (int i = 0; i < fo::var::maxScriptNum; i++) {
@@ -610,11 +609,11 @@ static void ResetStateAfterFrame() {
 static inline void RunGlobalScripts(int mode1, int mode2) {
 	if (idle > -1) Sleep(idle);
 
-	for (DWORD d = 0; d < globalScripts.size(); d++) {
-		if (globalScripts[d].repeat
-			&& (globalScripts[d].mode == mode1 || globalScripts[d].mode == mode2)
-			&& ++globalScripts[d].count >= globalScripts[d].repeat) {
-			RunScript(&globalScripts[d]);
+	for (size_t i = 0; i < globalScripts.size(); i++) {
+		if (globalScripts[i].repeat
+			&& (globalScripts[i].mode == mode1 || globalScripts[i].mode == mode2)
+			&& ++globalScripts[i].count >= globalScripts[i].repeat) {
+			RunScript(&globalScripts[i]);
 		}
 	}
 	ResetStateAfterFrame();
@@ -634,7 +633,7 @@ static void RunGlobalScriptsOnWorldMap() {
 	RunGlobalScripts(2, 3);
 }
 
-static DWORD _stdcall HandleMapUpdateForScripts(const DWORD procId) {
+static uint32_t __stdcall HandleMapUpdateForScripts(const uint32_t procId) {
 	if (procId == fo::Scripts::ScriptProc::map_enter_p_proc) {
 		// map changed, all game objects were destroyed and scripts detached, need to re-insert global scripts into the game
 		for (std::vector<GlobalScript>::const_iterator it = globalScripts.cbegin(); it != globalScripts.cend(); it++) {
@@ -651,8 +650,8 @@ static DWORD _stdcall HandleMapUpdateForScripts(const DWORD procId) {
 	return procId; // restore eax (don't delete)
 }
 
-static u_long HandleTimedEventScripts() {
-	u_long currentTime = fo::var::fallout_game_time;
+static uint32_t HandleTimedEventScripts() {
+	uint32_t currentTime = fo::var::fallout_game_time;
 	bool wasRunning = false;
 	auto timerIt = timerEventScripts.cbegin();
 	for (; timerIt != timerEventScripts.cend(); timerIt++) {
@@ -675,8 +674,8 @@ static u_long HandleTimedEventScripts() {
 	return currentTime;
 }
 
-static u_long TimedEventNextTime() {
-	u_long nextTime;
+static uint32_t TimedEventNextTime() {
+	uint32_t nextTime;
 	__asm {
 		push ecx;
 		call fo::funcoffs::queue_next_time_;
@@ -684,7 +683,7 @@ static u_long TimedEventNextTime() {
 		push edx;
 	}
 	if (!timerEventScripts.empty()) {
-		u_long time = timerEventScripts.front().time;
+		uint32_t time = timerEventScripts.front().time;
 		if (!nextTime || time < nextTime) nextTime = time;
 	}
 	__asm pop edx;
@@ -692,7 +691,7 @@ static u_long TimedEventNextTime() {
 	return nextTime;
 }
 
-static long script_chk_timed_events_hook() {
+static uint32_t script_chk_timed_events_hook() {
 	return (!fo::var::queue && timerEventScripts.empty());
 }
 
@@ -721,10 +720,10 @@ void ScriptExtender::RemoveTimerEventScripts(fo::Program* script) {
 }
 
 // run all global scripts of types 0 and 3 at specific procedure (if exist)
-void RunGlobalScriptsAtProc(DWORD procId) {
-	for (DWORD d = 0; d < globalScripts.size(); d++) {
-		if (globalScripts[d].mode != 0 && globalScripts[d].mode != 3) continue;
-		RunScriptProc(&globalScripts[d].prog, procId);
+void RunGlobalScriptsAtProc(uint32_t procId) {
+	for (size_t i = 0; i < globalScripts.size(); i++) {
+		if (globalScripts[i].mode != 0 && globalScripts[i].mode != 3) continue;
+		RunScriptProc(&globalScripts[i].prog, procId);
 	}
 }
 
@@ -829,7 +828,7 @@ void ScriptExtender::init() {
 	idle = GetConfigInt("System", "ProcessorIdle", -1);
 	if (idle > -1) {
 		if (idle > 127) idle = 127;
-		fo::var::idle_func = reinterpret_cast<DWORD>(Sleep);
+		fo::var::idle_func = reinterpret_cast<void*>(Sleep);
 		SafeWrite8(0x4C9F12, 0x6A); // push idle
 		SafeWrite8(0x4C9F13, idle);
 	}

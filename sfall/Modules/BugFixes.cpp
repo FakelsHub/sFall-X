@@ -74,7 +74,7 @@ static void Initialization() {
 	*(DWORD*)FO_VAR_gDialogMusicVol = *(DWORD*)FO_VAR_background_volume; // fix dialog music
 
 	// Restore calling original engine functions from HRP hacks (there is no difference in HRP functions)
-	long long data = 0xC189565153;
+	__int64 data = 0xC189565153;
 	SafeWriteBytes(0x4D78CC, (BYTE*)&data, 5); // win_get_top_win_
 	data = 0xC389565153;
 	SafeWriteBytes(0x4CA9DC, (BYTE*)&data, 5); // mouse_get_position_
@@ -2304,8 +2304,8 @@ static void __declspec(naked) action_climb_ladder_hack() {
 }
 
 static void __declspec(naked) wmAreaMarkVisitedState_hack() {
-	static const u_long wmAreaMarkVisitedState_Ret = 0x4C46A2;
-	//static const u_long wmAreaMarkVisitedState_Error = 0x4C4698;
+	static const DWORD wmAreaMarkVisitedState_Ret = 0x4C46A2;
+	//static const DWORD wmAreaMarkVisitedState_Error = 0x4C4698;
 	static long isNoRadius;
 
 	isNoRadius = Worldmap::AreaMarkStateIsNoRadius(); // F1 behavior radius

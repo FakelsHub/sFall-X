@@ -69,9 +69,9 @@ struct GlobalVar {
 
 void __fastcall SetGlobalScriptRepeat(fo::Program* script, int frames);
 void __fastcall SetGlobalScriptType(fo::Program* script, int type);
-bool _stdcall IsGameScript(const char* filename);
+bool IsGameScript(const char* filename);
 
-void RunGlobalScriptsAtProc(DWORD procId);
+void RunGlobalScriptsAtProc(uint32_t procId);
 
 bool LoadGlobals(HANDLE h);
 void SaveGlobals(HANDLE h);
@@ -81,15 +81,15 @@ void GetGlobals(GlobalVar* globals);
 void SetGlobals(GlobalVar* globals);
 
 long SetGlobalVar(const char* var, int val);
-void SetGlobalVarInt(DWORD var, int val);
+void SetGlobalVarInt(unsigned long var, int val);
 
 long GetGlobalVar(const char* var);
-long GetGlobalVarInt(DWORD var);
+long GetGlobalVarInt(unsigned long var);
 long GetGlobalVarInternal(__int64 val);
 
 void __fastcall SetSelfObject(fo::Program* script, fo::GameObject* obj);
 
-bool _stdcall ScriptHasLoaded(fo::Program* script);
+bool __stdcall ScriptHasLoaded(fo::Program* script);
 
 // loads script from .int file into a sScriptProgram struct, filling script pointer and proc lookup table
 // prog - reference to program structure
@@ -109,8 +109,8 @@ void RunScriptProc(ScriptProgram* prog, long procId);
 int RunScriptStartProc(ScriptProgram* prog);
 
 // variables
-extern DWORD isGlobalScriptLoading;
-extern DWORD availableGlobalScriptTypes;
+extern uint32_t isGlobalScriptLoading;
+extern uint32_t availableGlobalScriptTypes;
 extern bool alwaysFindScripts;
 
 }
