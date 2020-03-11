@@ -710,10 +710,10 @@ optional argument:
 > void sfall_func3("set_terrain_name", int x, int y, string name)
 - overrides the terrain type name for the sub-tile on the world map by the specified coordinates
 
-> int sfall_func1("get_window_attribute", int winType)
-> int sfall_func2("get_window_attribute", int winType, int attrType)
+> int sfall_func1("get_window_attribute", int winID)
+> int sfall_func2("get_window_attribute", int winID, int attrType)
 - returns the attribute of the specified interface window by the attrType argument
-- winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
+- winID: the type number of the interface window (see WINTYPE_* constants in sfall.h)
 - attrType: 0 - checks and returns a value of 1 if the specified interface window is created by the game (same as without the argument)
             1 - X position, 2 - Y position (relative to the top-left corner of the game screen)
 - returns -1 if the specified attribute cannot be obtained

@@ -20,6 +20,7 @@
 
 #include "..\..\..\Utils.h"
 #include "..\..\..\FalloutEngine\Fallout2.h"
+
 #include "..\..\AI.h"
 #include "..\..\Combat.h"
 #include "..\..\Criticals.h"
@@ -31,7 +32,9 @@
 #include "..\..\PartyControl.h"
 #include "..\..\PlayerModel.h"
 #include "..\..\ScriptExtender.h"
+#include "..\..\Sound.h"
 #include "..\..\Stats.h"
+
 #include "..\Arrays.h"
 #include "..\OpcodeContext.h"
 
@@ -616,7 +619,7 @@ void sf_get_attack_type(OpcodeContext& ctx) {
 }
 
 void sf_play_sfall_sound(OpcodeContext& ctx) {
-	long soundID = (long)PlaySfallSound(ctx.arg(0).strValue(), ctx.arg(1).asBool());
+	long soundID = (long)Sound::PlaySfallSound(ctx.arg(0).strValue(), ctx.arg(1).asBool());
 	ctx.setReturn(soundID);
 }
 
@@ -625,7 +628,7 @@ void __declspec(naked) op_stop_sfall_sound() {
 		mov  esi, ecx;
 		_GET_ARG_INT(end);
 		push eax;
-		call StopSfallSound;
+		call Sound::StopSfallSound;
 end:
 		mov  ecx, esi;
 		retn;
