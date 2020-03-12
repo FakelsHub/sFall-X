@@ -16,10 +16,10 @@
 namespace sfall
 {
 
-#define SAFERELEASE(a) { if (a) { a->Release(); a = 0; } }
+#define SAFERELEASE(a) { if (a) { a->Release(); } }
 
 struct sDSSound {
-	DWORD id;
+	DWORD id;     // should be first
 	IGraphBuilder *pGraph;
 	IMediaControl *pControl;
 	IMediaSeeking *pSeek;
@@ -34,7 +34,7 @@ DWORD playID = 0;
 DWORD loopID = 0;
 
 static HWND soundwindow = 0;
-static void* musicLoopPtr = nullptr;
+static sDSSound* musicLoopPtr = nullptr;
 //static char playingMusicFile[256];
 
 static void FreeSound(sDSSound* sound) {
@@ -48,48 +48,50 @@ static void FreeSound(sDSSound* sound) {
 }
 
 static void WipeSounds() {
-	for (DWORD i = 0; i < playingSounds.size(); i++) FreeSound(playingSounds[i]);
-	for (DWORD i = 0; i < loopingSounds.size(); i++) FreeSound(loopingSounds[i]);
+	for (size_t i = 0; i < playingSounds.size(); i++) FreeSound(playingSounds[i]);
+	for (size_t i = 0; i < loopingSounds.size(); i++) FreeSound(loopingSounds[i]);
 	playingSounds.clear();
 	loopingSounds.clear();
 	musicLoopPtr = nullptr;
+	playID = 0;
+	loopID = 0;
 }
 
 LRESULT CALLBACK SoundWndProc(HWND wnd, UINT msg, WPARAM w, LPARAM l) {
 	if (msg == WM_APP) {
 		DWORD id = l;
-		sDSSound* dssound = nullptr;
+		sDSSound* sound = nullptr;
 		if (id & 0x80000000) {
-			for (DWORD i = 0; i < loopingSounds.size(); i++) {
+			for (size_t i = 0; i < loopingSounds.size(); i++) {
 				if (loopingSounds[i]->id == id) {
-					dssound = loopingSounds[i];
+					sound = loopingSounds[i];
 					break;
 				}
 			}
 		}
 		else {
-			for (DWORD i = 0; i < playingSounds.size(); i++) {
+			for (size_t i = 0; i < playingSounds.size(); i++) {
 				if (playingSounds[i]->id == id) {
-					dssound = playingSounds[i];
+					sound = playingSounds[i];
 					break;
 				}
 			}
 		}
-		if (!dssound) return 0;
+		if (!sound) return 0;
 		LONG e = 0;
 		LONG_PTR p1 = 0, p2 = 0;
-		while (!FAILED(dssound->pEvent->GetEvent(&e, &p1, &p2, 0))) {
-			dssound->pEvent->FreeEventParams(e, p1, p2);
+		while (!FAILED(sound->pEvent->GetEvent(&e, &p1, &p2, 0))) {
+			sound->pEvent->FreeEventParams(e, p1, p2);
 			if (e == EC_COMPLETE) {
 				if (id & 0x80000000) {
 					LONGLONG pos = 0;
-					dssound->pSeek->SetPositions(&pos, AM_SEEKING_AbsolutePositioning, 0, AM_SEEKING_NoPositioning);
-					dssound->pControl->Run();
+					sound->pSeek->SetPositions(&pos, AM_SEEKING_AbsolutePositioning, 0, AM_SEEKING_NoPositioning);
+					sound->pControl->Run();
 				}
 				else {
-					for (DWORD i = 0; i < playingSounds.size(); i++) {
-						if (playingSounds[i] == dssound) {
-							FreeSound(dssound);
+					for (size_t i = 0; i < playingSounds.size(); i++) {
+						if (playingSounds[i] == sound) {
+							FreeSound(sound);
 							playingSounds.erase(playingSounds.begin() + i);
 							return 0;
 						}
@@ -149,7 +151,7 @@ static void __cdecl SfallSoundVolume(sDSSound* sound, int type, long passVolume)
 		}
 		else if (type = 0) { // for music
 			if (musicLoopPtr) {
-				Sound::StopSfallSound(musicLoopPtr);
+				Sound::StopSfallSound(musicLoopPtr->id);
 				musicLoopPtr = nullptr;
 			}
 			return;
@@ -158,8 +160,7 @@ static void __cdecl SfallSoundVolume(sDSSound* sound, int type, long passVolume)
 
 	if (sound) {
 		sound->pAudio->put_Volume(loopVolume);
-	}
-	else {
+	} else {
 		for (DWORD i = 0; i < loopingSounds.size(); i++) {
 			loopingSounds[i]->pAudio->put_Volume(loopVolume);
 		}
@@ -185,43 +186,43 @@ static bool IsMute(bool type) {
 
 static sDSSound* PlayingSound(wchar_t* path, bool loop) {
 	if (!soundwindow) CreateSndWnd();
+
 	if (IsMute(loop)) return nullptr;
 
-	sDSSound* result = new sDSSound();
+	sDSSound* sound = new sDSSound();
 
-	DWORD id = (loop) ? loopID++ : playID++;
+	DWORD id = (loop) ? ++loopID : ++playID;
 	if (loop) id |= 0x80000000;
-	result->id = id;
+	sound->id = id;
 
-	HRESULT hr = CoCreateInstance(CLSID_FilterGraph, 0, CLSCTX_INPROC, IID_IGraphBuilder, (void**)&result->pGraph);
+	HRESULT hr = CoCreateInstance(CLSID_FilterGraph, 0, CLSCTX_INPROC, IID_IGraphBuilder, (void**)&sound->pGraph);
 	if (hr != S_OK) {
 		dlog_f("Error CoCreateInstance: %d", DL_INIT, hr);
 		return nullptr;
 	}
-	result->pGraph->QueryInterface(IID_IMediaControl, (void**)&result->pControl);
+	sound->pGraph->QueryInterface(IID_IMediaControl, (void**)&sound->pControl);
 
 	if (loop)
-		result->pGraph->QueryInterface(IID_IMediaSeeking, (void**)&result->pSeek);
+		sound->pGraph->QueryInterface(IID_IMediaSeeking, (void**)&sound->pSeek);
 	else
-		result->pSeek = nullptr;
+		sound->pSeek = nullptr;
 
-	result->pGraph->QueryInterface(IID_IMediaEventEx, (void**)&result->pEvent);
-	result->pEvent->SetNotifyWindow((OAHWND)soundwindow, WM_APP, id);
+	sound->pGraph->QueryInterface(IID_IMediaEventEx, (void**)&sound->pEvent);
+	sound->pEvent->SetNotifyWindow((OAHWND)soundwindow, WM_APP, id);
+	sound->pGraph->QueryInterface(IID_IBasicAudio, (void**)&sound->pAudio);
 
-	result->pGraph->QueryInterface(IID_IBasicAudio, (void**)&result->pAudio);
-
-	result->pControl->RenderFile(path);
-	result->pControl->Run();
+	sound->pControl->RenderFile(path);
+	sound->pControl->Run();
 
 	if (loop) {
-		loopingSounds.push_back(result);
-		SfallSoundVolume(result, 0, *(DWORD*)FO_VAR_background_volume); // music
+		loopingSounds.push_back(sound);
+		SfallSoundVolume(sound, 0, *(DWORD*)FO_VAR_background_volume); // music
 	}
 	else {
-		playingSounds.push_back(result);
-		SfallSoundVolume(result, 1, *(DWORD*)FO_VAR_sndfx_volume);
+		playingSounds.push_back(sound);
+		SfallSoundVolume(sound, 1, *(DWORD*)FO_VAR_sndfx_volume);
 	}
-	return result;
+	return sound;
 }
 
 static const wchar_t *SoundExtensions[] = { L"mp3", L"wma", L"wav" };
@@ -244,7 +245,7 @@ static bool __cdecl SoundFileLoad(DWORD called, const char* path) {
 	bool music = (called == 0x45092B); // from gsound_background_play_
 	if (music && musicLoopPtr != nullptr) {
 		//if (found && strcmp(path, playingMusicFile) == 0) return true; // don't stop music
-		Sound::StopSfallSound(musicLoopPtr);
+		Sound::StopSfallSound(musicLoopPtr->id);
 		musicLoopPtr = nullptr;
 	}
 	if (!isExist) return false;
@@ -271,18 +272,20 @@ static void __fastcall MakeMusicPath(const char* file) {
 	SoundFileLoad(0x45092B, pathBuf);
 }
 
-void* Sound::PlaySfallSound(const char* path, bool loop) {
+long Sound::PlaySfallSound(const char* path, bool loop) {
 	wchar_t buf[256];
 	mbstowcs_s(0, buf, path, 256);
-	sDSSound* result = PlayingSound(buf, loop);
-	return (loop) ? result : 0;
+	sDSSound* sound = PlayingSound(buf, loop);
+	return (loop && sound) ? sound->id : 0;
 }
 
-void __stdcall Sound::StopSfallSound(void* _ptr) {
-	sDSSound* ptr = (sDSSound*)_ptr;
-	for (DWORD i = 0; i < loopingSounds.size(); i++) {
-		if (loopingSounds[i] == ptr) {
-			FreeSound(ptr);
+void __stdcall Sound::StopSfallSound(uint32_t id) {
+	if (!id) return;
+	for (size_t i = 0; i < loopingSounds.size(); i++) {
+		if (loopingSounds[i]->id == id) {
+			sDSSound* sound = loopingSounds[i];
+			sound->pControl->Stop();
+			FreeSound(sound);
 			loopingSounds.erase(loopingSounds.begin() + i);
 			return;
 		}
@@ -308,7 +311,7 @@ static void __declspec(naked) soundLoad_hack() {
 		test al, al;
 		jnz  playSfall;
 		jmp  SoundLoadHackRet; // play acm
-	playSfall:
+playSfall:
 		jmp  SoundLoadHackEnd; // don't play acm (force error)
 	}
 }
@@ -328,6 +331,7 @@ static void __declspec(naked) gmovie_play_hook_stop() {
 		mov  eax, musicLoopPtr;
 		test eax, eax;
 		jz   skip;
+		mov  eax, [eax]; // musicLoopPtr->id
 		push ecx;
 		push edx;
 		push eax;
@@ -337,7 +341,7 @@ static void __declspec(naked) gmovie_play_hook_stop() {
 		pop  edx;
 		pop  ecx;
 		retn;
-	skip:
+skip:
 		jmp  fo::funcoffs::gsound_background_stop_;
 	}
 }
@@ -354,7 +358,7 @@ static void __declspec(naked) gmovie_play_hook_pause() {
 		pop  edx;
 		pop  ecx;
 		retn;
-	skip:
+skip:
 		jmp  fo::funcoffs::gsound_background_pause_;
 	}
 }
@@ -371,14 +375,14 @@ static void __declspec(naked) gmovie_play_hook_unpause() {
 		pop  edx;
 		pop  ecx;
 		retn;
-	skip:
+skip:
 		jmp  fo::funcoffs::gsound_background_unpause_;
 	}
 }
 
 static void __declspec(naked) gsound_background_volume_set_hack() {
 	__asm {
-		mov  dword ptr ds : [FO_VAR_background_volume], eax;
+		mov  dword ptr ds:[FO_VAR_background_volume], eax;
 		push ecx;
 		mov  ecx, musicLoopPtr;
 		test ecx, ecx;
@@ -391,7 +395,7 @@ static void __declspec(naked) gsound_background_volume_set_hack() {
 		add  esp, 8;
 		pop  eax;
 		pop  edx;
-	skip:
+skip:
 		pop  ecx;
 		retn;
 	}
@@ -399,11 +403,11 @@ static void __declspec(naked) gsound_background_volume_set_hack() {
 
 static void __declspec(naked) gsound_master_volume_set_hack() {
 	__asm {
-		mov  dword ptr ds : [FO_VAR_master_volume], edx;
+		mov  dword ptr ds:[FO_VAR_master_volume], edx;
 		push eax;
 		push ecx;
 		push edx;
-		push dword ptr ds : [FO_VAR_background_volume];
+		push dword ptr ds:[FO_VAR_background_volume];
 		push 2;
 		push 0;
 		call SfallSoundVolume;

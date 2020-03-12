@@ -17,8 +17,8 @@ public:
 	void init();
 	void exit() override;
 
-	static void* PlaySfallSound(const char* path, bool loop);
-	static void __stdcall StopSfallSound(void* ptr);
+	static long PlaySfallSound(const char* path, bool loop);
+	static void __stdcall StopSfallSound(uint32_t id);
 };
 
 }

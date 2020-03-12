@@ -129,7 +129,10 @@ int _stdcall GetShaderTexture(DWORD d, DWORD id) {
 
 void _stdcall FreeShader(DWORD d) {
 	if (d < shadersSize) {
-		SAFERELEASE(shaders[d].Effect);
+		if (shaders[d].Effect) {
+			shaders[d].Effect->Release();
+			shaders[d].Effect = 0;
+		}
 		shaders[d].Active = false;
 	}
 }
@@ -155,7 +158,12 @@ void _stdcall SetShaderTexture(DWORD d, const char* param, DWORD value) {
 }
 
 static void ResetShaders() {
-	for (DWORD d = 0; d < shadersSize; d++) SAFERELEASE(shaders[d].Effect);
+	for (DWORD d = 0; d < shadersSize; d++) {
+		if (shaders[d].Effect) {
+			shaders[d].Effect->Release();
+			shaders[d].Effect = 0;
+		}
+	}
 	shaders.clear();
 	shadersSize = 0;
 	ScriptShaders::LoadGlobalShader();
