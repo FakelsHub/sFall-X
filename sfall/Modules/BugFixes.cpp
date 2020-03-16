@@ -1,3 +1,4 @@
+
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "HookScripts\InventoryHs.h"
@@ -2639,7 +2640,7 @@ skip:
 }
 
 static void __declspec(naked) wmSubTileMarkRadiusVisited_hack() {
-	static const unsigned long wmSubTileMarkRadiusVisited_Ret = 0x4C3730;
+	static const DWORD wmSubTileMarkRadiusVisited_Ret = 0x4C3730;
 	__asm {
 		call fo::funcoffs::wmMarkSubTileOffsetVisitedFunc_;
 		cmp  ebp, 7; // count of horizontal sub-tiles

@@ -24,7 +24,10 @@
 
 #include <cassert>
 #include <string>
+#include <initializer_list>
+#include <list>
 #include <vector>
+#include <unordered_map>
 #include <cstdint>
 
 #include "SafeWrite.h"

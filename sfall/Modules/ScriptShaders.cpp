@@ -131,7 +131,7 @@ void _stdcall FreeShader(DWORD d) {
 	if (d < shadersSize) {
 		if (shaders[d].Effect) {
 			shaders[d].Effect->Release();
-			shaders[d].Effect = 0;
+			shaders[d].Effect = nullptr;
 		}
 		shaders[d].Active = false;
 	}
@@ -161,7 +161,7 @@ static void ResetShaders() {
 	for (DWORD d = 0; d < shadersSize; d++) {
 		if (shaders[d].Effect) {
 			shaders[d].Effect->Release();
-			shaders[d].Effect = 0;
+			shaders[d].Effect = nullptr;
 		}
 	}
 	shaders.clear();

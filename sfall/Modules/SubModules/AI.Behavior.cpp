@@ -171,7 +171,7 @@ end:
 }
 
 static void __declspec(naked) ai_move_steps_closer_hack_move() {
-	static const u_long ai_move_to_object_ret = 0x42A192;
+	static const uint32_t ai_move_to_object_ret = 0x42A192;
 	__asm {
 		mov  edx, [esp + 4];          // source goto tile
 		cmp  [edi + tile], edx;       // target tile
@@ -190,7 +190,7 @@ moveTile:
 }
 
 static void __declspec(naked) ai_move_steps_closer_hack_run() {
-	static const u_long ai_run_to_object_ret = 0x42A169;
+	static const uint32_t ai_run_to_object_ret = 0x42A169;
 	__asm {
 		mov  edx, [esp + 4];          // source goto tile
 		cmp  [edi + tile], edx;       // target tile
@@ -256,6 +256,7 @@ static fo::GameObject* sf_ai_skill_weapon(fo::GameObject* source, fo::GameObject
 }
 
 static bool LookupOnGround = false;
+
 // executed once when the NPC starts attacking
 static void __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObject* target, DWORD &weapon, DWORD &hitMode) {
 
@@ -333,6 +334,7 @@ notRetrieve:
 }
 
 static bool weaponIsSwitch = 0;
+
 static void __declspec(naked) ai_try_attack_hook() {
 	__asm {
 		test edi, edi;                        // first attack loop ?
@@ -416,8 +418,8 @@ static bool __fastcall sf_ai_check_target(fo::GameObject* source, fo::GameObject
 static const char* reTargetMsg = "\n[AI] I can't get at my target. Try picking alternate.";
 
 static void __declspec(naked) ai_danger_source_hack_find() {
-	static const u_long ai_danger_source_hack_find_Pick = 0x42908C;
-	static const u_long ai_danger_source_hack_find_Ret  = 0x4290BB;
+	static const uint32_t ai_danger_source_hack_find_Pick = 0x42908C;
+	static const uint32_t ai_danger_source_hack_find_Ret  = 0x4290BB;
 	__asm {
 		push eax;
 		push edx;
