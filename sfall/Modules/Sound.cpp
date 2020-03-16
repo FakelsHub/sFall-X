@@ -98,11 +98,10 @@ LRESULT CALLBACK SoundWndProc(HWND wnd, UINT msg, WPARAM w, LPARAM l) {
 				}
 			}
 		}
-		if (!sound) return 0;
 
 		LONG e = 0;
 		LONG_PTR p1 = 0, p2 = 0;
-		while (!FAILED(sound->pEvent->GetEvent(&e, &p1, &p2, 0))) {
+		if (sound && !FAILED(sound->pEvent->GetEvent(&e, &p1, &p2, 0))) {
 			sound->pEvent->FreeEventParams(e, p1, p2);
 			if (e == EC_COMPLETE) {
 				if (id & SoundFlags::looping) {
@@ -113,7 +112,6 @@ LRESULT CALLBACK SoundWndProc(HWND wnd, UINT msg, WPARAM w, LPARAM l) {
 					FreeSound(sound);
 					playingSounds.erase(playingSounds.begin() + index);
 				}
-				break;
 			}
 		}
 		return 0;
@@ -126,7 +124,8 @@ static void CreateSndWnd() {
 	if (Graphics::mode == 0) CoInitialize(0);
 
 	WNDCLASSEX wcx;
-	memset(&wcx, 0, sizeof(wcx));
+	std::memset(&wcx, 0, sizeof(wcx));
+
 	wcx.cbSize = sizeof(wcx);
 	wcx.lpfnWndProc = SoundWndProc;
 	wcx.hInstance = GetModuleHandleA(0);
@@ -396,7 +395,7 @@ static void __declspec(naked) gmovie_play_hook_pause() {
 		call PauseAllSfallSound;
 		pop  edx;
 		pop  ecx;
-		cmp  backgroundMusic, 0;
+		cmp  dword ptr backgroundMusic, 0;
 		jnz  skip;
 		jmp  fo::funcoffs::gsound_background_pause_;
 skip:
@@ -411,7 +410,7 @@ static void __declspec(naked) gmovie_play_hook_unpause() {
 		call ResumeAllSfallSound;
 		pop  edx;
 		pop  ecx;
-		cmp  backgroundMusic, 0;
+		cmp  dword ptr backgroundMusic, 0;
 		jnz  skip;
 		jmp  fo::funcoffs::gsound_background_unpause_;
 skip:
