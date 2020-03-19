@@ -23,7 +23,7 @@ namespace sfall
 namespace script
 {
 
-extern bool checkValidationMem;
+extern bool checkValidMemAddr;
 
  // memory_reading_funcs
 

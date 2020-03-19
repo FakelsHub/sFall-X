@@ -16,9 +16,9 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "..\..\..\FalloutEngine\AsmMacros.h"
 #include "..\..\..\FalloutEngine\Fallout2.h"
 #include "..\..\..\SafeWrite.h"
-//#include "..\..\ScriptExtender.h"
 
 #include "Memory.h"
 
@@ -30,7 +30,7 @@ namespace script
 #define START_VALID_ADDR    0x410000
 #define END_VALID_ADDR      0x6B403F
 
-bool checkValidationMem = true;
+bool checkValidMemAddr = true;
 
 void __declspec(naked) op_read_byte() {
 	__asm {
@@ -109,7 +109,7 @@ void __declspec(naked) op_write_byte() {
 		cmp  cx, VAR_TYPE_INT;
 		jnz  end;
 		// check valid addr
-		cmp  checkValidationMem, 0;
+		cmp  checkValidMemAddr, 0;
 		jz   noCheck;
 		cmp  eax, START_VALID_ADDR;
 		jb   end;
@@ -139,7 +139,7 @@ void __declspec(naked) op_write_short() {
 		cmp  cx, VAR_TYPE_INT;
 		jnz  end;
 		// check valid addr
-		cmp  checkValidationMem, 0;
+		cmp  checkValidMemAddr, 0;
 		jz   noCheck;
 		cmp  eax, START_VALID_ADDR;
 		jb   end;
@@ -169,7 +169,7 @@ void __declspec(naked) op_write_int() {
 		cmp  cx, VAR_TYPE_INT;
 		jnz  end;
 		// check valid addr
-		cmp  checkValidationMem, 0;
+		cmp  checkValidMemAddr, 0;
 		jz   noCheck;
 		cmp  eax, START_VALID_ADDR;
 		jb   end;
@@ -213,7 +213,7 @@ next:
 		// ecx - type, esi - value
 		// edx - type, eax - addr
 		// check valid address
-		cmp  checkValidationMem, 0;
+		cmp  checkValidMemAddr, 0;
 		jz   noCheck;
 		cmp  eax, START_VALID_ADDR;
 		jb   end;
@@ -234,14 +234,14 @@ end:
 static void __fastcall CallOffsetInternal(fo::Program* script, DWORD func) {
 	func = (func >> 2) - 0x1d2;
 	DWORD args[5];
-	DWORD illegalArg = 0;
+	long illegalArg = 0;
 	int argCount = func % 5;
 
 	for (int i = argCount; i >= 0; i--) {
 		if ((short)fo::func::interpretPopShort(script) != (short)VAR_TYPE_INT) illegalArg++;
 		args[i] = fo::func::interpretPopLong(script);
 	}
-	if (illegalArg || args[0] < 0x410010 || args[0] > 0x4FCE34) {
+	if (illegalArg || (checkValidMemAddr && (args[0] < 0x410010 || args[0] > 0x4FCE34))) {
 		args[0] = 0;
 	} else {
 		__asm {

@@ -18,9 +18,10 @@
 
 #include <cstring>
 
-#include "..\..\..\Utils.h"
+#include "..\..\..\FalloutEngine\AsmMacros.h"
 #include "..\..\..\FalloutEngine\Fallout2.h"
 
+#include "..\..\..\Utils.h"
 #include "..\..\AI.h"
 #include "..\..\Combat.h"
 #include "..\..\Criticals.h"
@@ -145,13 +146,9 @@ fail:
 void __declspec(naked) op_mod_kill_counter() {
 	__asm {
 		push ecx;
-		call fo::funcoffs::interpretPopShort_;
-		mov  esi, eax; // type
+		_GET_ARG(ecx, esi); // get mod value
 		mov  eax, ebx;
-		call fo::funcoffs::interpretPopLong_;
-		mov  ecx, eax; // mod value
-		mov  eax, ebx;
-		_GET_ARG_INT(end); // get kill type value
+		_GET_ARG_INT(end);  // get kill type value
 		cmp  si, VAR_TYPE_INT;
 		jnz  end;
 		////////////////////////
@@ -452,13 +449,9 @@ fail:
 void __declspec(naked) op_set_bodypart_hit_modifier() {
 	__asm {
 		push ecx;
-		call fo::funcoffs::interpretPopShort_;
-		mov  esi, eax; // type
+		_GET_ARG(ecx, esi); // get body value
 		mov  eax, ebx;
-		call fo::funcoffs::interpretPopLong_;
-		mov  ecx, eax; // body value
-		mov  eax, ebx;
-		_GET_ARG_INT(end); // get modifier value
+		_GET_ARG_INT(end);  // get modifier value
 		cmp  si, VAR_TYPE_INT;
 		jnz  end;
 		///////////
@@ -720,7 +713,8 @@ void __declspec(naked) op_get_last_attacker() {
 end:
 		mov  eax, ebx;
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-fail:	/////////////////////////////
+		/////////////////////////////
+fail:
 		xor  edx, edx; // return 0
 		jmp  end;
 	}
@@ -737,7 +731,8 @@ void __declspec(naked) op_get_last_target() {
 end:
 		mov  eax, ebx;
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-fail:	/////////////////////////////
+		/////////////////////////////
+fail:
 		xor  edx, edx; // return 0
 		jmp  end;
 	}
