@@ -58,8 +58,8 @@ bool Graphics::PlayAviMovie = false;
 
 static BYTE* titlesBuffer = nullptr;
 
-static DWORD yoffset, movieHeight = 0;
-//static DWORD xoffset, movieWidth = 0;
+static DWORD yoffset;
+///static DWORD xoffset;
 
 static bool DeviceLost = false;
 
@@ -222,7 +222,7 @@ static void ResetDevice(bool createNew) {
 	GetDisplayMode(dispMode);
 
 	params.BackBufferCount = 1;
-	params.BackBufferFormat = dispMode.Format; // (Graphics::mode == 4) ? D3DFMT_UNKNOWN : D3DFMT_X8R8G8B8;
+	params.BackBufferFormat = dispMode.Format; // (Graphics::mode != 4) ? D3DFMT_UNKNOWN : D3DFMT_X8R8G8B8;
 	params.BackBufferWidth = gWidth;
 	params.BackBufferHeight = gHeight;
 	params.EnableAutoDepthStencil = false;
@@ -341,9 +341,9 @@ static void Present() {
 
 		RECT r, r2;
 		r.left = windowLeft;
-		r.right = r.left + gWidth;
+		r.right = windowLeft + gWidth;
 		r.top = windowTop;
-		r.bottom = r.top + gHeight;
+		r.bottom = windowTop + gHeight;
 		AdjustWindowRect(&r, WS_CAPTION | WS_BORDER, false);
 
 		r.right -= (r.left - windowLeft);
@@ -671,24 +671,22 @@ public:
 	/*
 		0x4868DA movie_MVE_ShowFrame_
 	*/
-	HRESULT _stdcall Blt(LPRECT a, LPDIRECTDRAWSURFACE b, LPRECT c, DWORD d, LPDDBLTFX e) { // used for game movies (w/o HRP)
-		//long addrs;
-		//_asm mov eax, dword ptr [ebp + 4];
-		//_asm mov addrs, eax;
-		//dlog_f("\nBlt(0x%x)", DL_INIT, addrs);
+	HRESULT _stdcall Blt(LPRECT a, LPDIRECTDRAWSURFACE b, LPRECT c, DWORD d, LPDDBLTFX e) { // used for game movies (only for w/o HRP)
+
+		movieDesc.dwHeight = (a->bottom - a->top);
+		yoffset = (ResHeight - movieDesc.dwHeight) / 2;
+		movieDesc.lPitch = (a->right - a->left);
+		///xoffset = (ResWidth - movieDesc.lPitch) / 2;
+
+		//dlog_f("\nMovieDesc: w:%d h:%d", DL_INIT, movieDesc.lPitch, movieDesc.dwHeight);
 
 		IsPlayMovie = true;
 		if (Graphics::PlayAviMovie) return DD_OK;
 
-		//movieWidth = (a->right - a->left);
-		//xoffset = (ResWidth - movieWidth) / 2;
-		//movieHeight = (a->bottom - a->top);
-		yoffset = (ResHeight - movieDesc.dwHeight) / 2;
-
 		BYTE* lockTarget = ((FakeSurface2*)b)->lockTarget;
 		D3DLOCKED_RECT dRect;
 		Tex->LockRect(0, &dRect, a, 0);
-		DWORD width = movieDesc.lPitch; // the current size of the width of the mve movie //ResWidth;
+		DWORD width = movieDesc.lPitch; // the current size of the width of the mve movie
 		int pitch = dRect.Pitch;
 		if (Graphics::GPUBlt) {
 			char* pBits = (char*)dRect.pBits;
@@ -705,12 +703,12 @@ public:
 			for (DWORD y = 0; y < movieDesc.dwHeight; y++) {
 				CopyMemory(&pBits[y * pitch], &lockTarget[y * width], width);
 			}
-			//if (ResWidth > 640) {
-			//	for (DWORD y = yoffset; y < ResHeight - yoffset; y++) {
-			//		ZeroMemory(&pBits[y*dRect.Pitch], xoffset);
-			//		ZeroMemory(&pBits[y*dRect.Pitch + (ResWidth - xoffset)], xoffset);
-			//	}
-			//}
+			///if (ResWidth > 640) {
+			///	for (DWORD y = yoffset; y < ResHeight - yoffset; y++) {
+			///		ZeroMemory(&pBits[y*dRect.Pitch], xoffset);
+			///		ZeroMemory(&pBits[y*dRect.Pitch + (ResWidth - xoffset)], xoffset);
+			///	}
+			///}
 		} else {
 			pitch /= 4;
 			if (subTitlesShow) {
@@ -734,12 +732,12 @@ public:
 					((DWORD*)dRect.pBits)[yp + x] = palette[lockTarget[yw + x]];
 				}
 			}
-			//if (ResWidth > 640) {
-			//	for (DWORD y = yoffset; y < ResHeight - yoffset; y++) {
-			//		for (DWORD x = 0; x < xoffset; x++) ((DWORD*)dRect.pBits)[(y)*dRect.Pitch + x] = 0;
-			//		for (DWORD x = ResWidth - xoffset; x < ResWidth; x++) ((DWORD*)dRect.pBits)[(y)*dRect.Pitch + x] = 0;
-			//	}
-			//}
+			///if (ResWidth > 640) {
+			///	for (DWORD y = yoffset; y < ResHeight - yoffset; y++) {
+			///		for (DWORD x = 0; x < xoffset; x++) ((DWORD*)dRect.pBits)[(y)*dRect.Pitch + x] = 0;
+			///		for (DWORD x = ResWidth - xoffset; x < ResWidth; x++) ((DWORD*)dRect.pBits)[(y)*dRect.Pitch + x] = 0;
+			///	}
+			///}
 		}
 		Tex->UnlockRect(0);
 
