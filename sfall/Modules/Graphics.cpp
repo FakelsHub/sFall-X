@@ -57,8 +57,8 @@ bool Graphics::PlayAviMovie = false;
 
 static BYTE* titlesBuffer = nullptr;
 
-static DWORD yoffset, movieHeight = 0;
-//static DWORD xoffset, movieWidth = 0;
+static DWORD yoffset;
+//static DWORD xoffset;
 
 static bool DeviceLost = false;
 
@@ -672,24 +672,20 @@ public:
 	/*
 		0x4868DA movie_MVE_ShowFrame_
 	*/
-	HRESULT _stdcall Blt(LPRECT a, LPDIRECTDRAWSURFACE b, LPRECT c, DWORD d, LPDDBLTFX e) { // used for game movies (w/o HRP)
-		//long addrs;
-		//_asm mov eax, dword ptr [ebp + 4];
-		//_asm mov addrs, eax;
-		//dlog_f("\nBlt(0x%x)", DL_INIT, addrs);
+	HRESULT _stdcall Blt(LPRECT a, LPDIRECTDRAWSURFACE b, LPRECT c, DWORD d, LPDDBLTFX e) { // used for game movies (only for w/o HRP)
+
+		movieDesc.dwHeight = (a->bottom - a->top);
+		yoffset = (ResHeight - movieDesc.dwHeight) / 2;
+		movieDesc.lPitch = (a->right - a->left);
+		//xoffset = (ResWidth - movieDesc.lPitch) / 2;
 
 		IsPlayMovie = true;
 		if (Graphics::PlayAviMovie) return DD_OK;
 
-		//movieWidth = (a->right - a->left);
-		//xoffset = (ResWidth - movieWidth) / 2;
-		//movieHeight = (a->bottom - a->top);
-		yoffset = (ResHeight - movieDesc.dwHeight) / 2;
-
 		BYTE* lockTarget = ((FakeSurface2*)b)->lockTarget;
 		D3DLOCKED_RECT dRect;
 		Tex->LockRect(0, &dRect, a, 0);
-		DWORD width = movieDesc.lPitch; // the current size of the width of the mve movie //ResWidth;
+		DWORD width = movieDesc.lPitch; // the current size of the width of the mve movie
 		int pitch = dRect.Pitch;
 		if (Graphics::GPUBlt) {
 			char* pBits = (char*)dRect.pBits;
