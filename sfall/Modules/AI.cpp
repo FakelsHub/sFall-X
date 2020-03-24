@@ -683,6 +683,7 @@ static long GetTargetDistance(fo::GameObject* source, fo::GameObject* &target) {
 
 // executed after the NPC attack
 static void __fastcall sf_ai_move_away_from_target(fo::GameObject* source, fo::GameObject* target, fo::GameObject* sWeapon, long hit) {
+	if (target->critter.health <= 0 || target->critter.damageFlags & fo::DamageFlag::DAM_DEAD) return;
 	if (fo::GetCritterKillType(source) > KillType::KILL_TYPE_women) return; // critter is not men & women
 
 	long distance = source->critter.movePoints;
@@ -693,26 +694,30 @@ static void __fastcall sf_ai_move_away_from_target(fo::GameObject* source, fo::G
 		if (cap->disposition == AIpref::berserk || cap->distance == AIpref::stay) return;
 
 		long wTypeR = fo::func::item_w_subtype(sWeapon, hit);
-		if (wTypeR <= AttackSubType::MELEE) return; // source has a melee weapon
+		if (wTypeR <= AttackSubType::MELEE) return; // source has a melee weapon or unarmed
 
 		if ((distance = GetTargetDistance(source, target)) == -1) return;
+
+		fo::Proto* protoR  = nullptr;
+		fo::Proto* protoL = nullptr;
+		AttackSubType wTypeRs = AttackSubType::NONE;
+		AttackSubType wTypeL = AttackSubType::NONE;
+		AttackSubType wTypeLs = AttackSubType::NONE;
 
 		fo::GameObject* itemHandR = fo::func::inven_right_hand(target);
 		if (!itemHandR && target != fo::var::obj_dude) { // target is unarmed
 			long damage = fo::func::stat_level(target, Stat::STAT_melee_dmg);
-			if (damage * 2 < source->critter.health / 2) return;
+			if (damage * 2 < source->critter.health) return; // dmg >= hp
+			goto moveAway;
 		}
-		fo::Proto* protoR = fo::GetProto(itemHandR->protoId);
-		long weaponFlags = protoR->item.flagsExt;
+		if (itemHandR) {
+			protoR = fo::GetProto(itemHandR->protoId);
+			long weaponFlags = protoR->item.flagsExt;
 
-		wTypeR = fo::GetWeaponType(weaponFlags);
-		if (wTypeR == AttackSubType::GUNS) return; // the attacker **not move away** if the target has a firearm
-
-		AttackSubType wTypeRs = fo::GetWeaponType(weaponFlags >> 4);
-
-		AttackSubType wTypeL = AttackSubType::NONE;
-		AttackSubType wTypeLs = AttackSubType::NONE;
-		fo::Proto* protoL = nullptr;
+			wTypeR = fo::GetWeaponType(weaponFlags);
+			if (wTypeR == AttackSubType::GUNS) return; // the attacker **not move away** if the target has a firearm
+			wTypeRs = fo::GetWeaponType(weaponFlags >> 4);
+		}
 		if (target == fo::var::obj_dude) {
 			fo::GameObject* itemHandL = fo::func::inven_left_hand(target);
 			if (itemHandL) {
@@ -720,16 +725,21 @@ static void __fastcall sf_ai_move_away_from_target(fo::GameObject* source, fo::G
 				wTypeL = fo::GetWeaponType(protoL->item.flagsExt);
 				if (wTypeL == AttackSubType::GUNS) return; // the attacker **not move away** if the target(dude) has a firearm
 				wTypeLs = fo::GetWeaponType(protoL->item.flagsExt >> 4);
+			} else if (!itemHandR) {
+				// dude is unarmed
+				long damage = fo::func::stat_level(target, Stat::STAT_melee_dmg);
+				if (damage * 4 < source->critter.health) return;
 			}
 		}
+moveAway:
 		// if attacker is aggressive then **not move away** from any throwing weapons (include grenades)
 		if (cap->disposition == AIpref::aggressive) {
 			if (wTypeRs == AttackSubType::THROWING || wTypeLs == AttackSubType::THROWING) return;
-			if (wTypeR ==  AttackSubType::THROWING || wTypeL == AttackSubType::THROWING) return;
+			if (wTypeR  == AttackSubType::THROWING || wTypeL  == AttackSubType::THROWING) return;
 		} else {
 			// the attacker **not move away** if the target has a throwing weapon and it is a grenade
-			if (wTypeR == AttackSubType::THROWING && protoR->item.weapon.damageType != DamageType::DMG_normal) return;
-			if (wTypeL == AttackSubType::THROWING && protoL->item.weapon.damageType != DamageType::DMG_normal) return;
+			if (protoR && wTypeR == AttackSubType::THROWING && protoR->item.weapon.damageType != DamageType::DMG_normal) return;
+			if (protoL && wTypeL == AttackSubType::THROWING && protoL->item.weapon.damageType != DamageType::DMG_normal) return;
 		}
 		distance = 4 - distance;
 	}
