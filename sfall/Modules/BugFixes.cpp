@@ -72,8 +72,6 @@ void ResetBodyState() {
 }
 
 static void Initialization() {
-	*(DWORD*)FO_VAR_gDialogMusicVol = *(DWORD*)FO_VAR_background_volume; // fix dialog music
-
 	// Restore calling original engine functions from HRP hacks (there is no difference in HRP functions)
 	__int64 data = 0xC189565153;
 	SafeWriteBytes(0x4D78CC, (BYTE*)&data, 5); // win_get_top_win_
@@ -3341,6 +3339,9 @@ void BugFixes::init()
 	MakeCall(0x4123F8, action_loot_container_hack, 1);
 	SafeWrite8(0x4123F2, CommonObj::protoId);
 	BlockCall(0x4123F3);
+
+	// Fix the music volume when entering in the dialog
+	SafeWrite32(0x44525D, (DWORD)FO_VAR_background_volume);
 
 	// Animation fix for the barter button in the dialog window when first entering to the dialog
 	HookCall(0x44A77C, gdialog_window_create_hook);
