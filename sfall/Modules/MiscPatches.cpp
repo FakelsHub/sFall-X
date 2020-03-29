@@ -376,6 +376,26 @@ playWalkMovie:
 	}
 }
 
+static void __declspec(naked) ListDrvdStats_hook() {
+	static const DWORD ListDrvdStats_Ret = 0x4354D9;
+	__asm {
+		call fo::IsRadInfluence;
+		test eax, eax;
+		jnz  influence;
+		mov  eax, ds:[FO_VAR_obj_dude];
+		jmp  fo::funcoffs::critter_get_rads_;
+influence:
+		xor  ecx, ecx;
+		mov  cl, ds:[FO_VAR_RedColor];
+		cmp  dword ptr [esp], 0x4354BE + 5;
+		jne  skip;
+		mov  cl, 129; // color index for selected
+skip:
+		add  esp, 4;
+		jmp  ListDrvdStats_Ret;
+	}
+}
+
 void AdditionalWeaponAnimsPatch() {
 	if (GetConfigInt("Misc", "AdditionalWeaponAnims", 0)) {
 		dlog("Applying additional weapon animations patch.", DL_INIT);
@@ -808,6 +828,9 @@ void MiscPatches::init() {
 		SafeWriteBatch<BYTE>(0, {0x4836D6, 0x4836DB});
 		dlogr(" Done", DL_INIT);
 	}
+
+	// Highlight "Radiation" to red color when the player under influence the effects of radiation sickness
+	HookCalls(ListDrvdStats_hook, { 0x43549C, 0x4354BE });
 
 	// Increase the max text width of the information card in the character screen
 	SafeWriteBatch<BYTE>(150, {0x43ACD5, 0x43DD37}); // 136, 133

@@ -789,12 +789,16 @@ struct AIcap {
 #pragma pack(1)
 struct Queue {
 	DWORD time;
-	long type;
+	long  type;
 	GameObject* object;
-	long data;
+	DWORD* data;
 	Queue* next;
 };
 
+struct QueueRadiation {
+	long level;
+	long init; // 1 - for removing effect
+};
 struct QueueDrug {
 	DWORD pid;
 	fo::Stat stat0;
@@ -806,7 +810,7 @@ struct QueueDrug {
 };
 
 struct QueueAddict {
-	long  init;      // 1 = perk is not active yet
+	long  init;      // 1 - perk is not active yet
 	DWORD drugPid;
 	fo::Perk perkId; // effect of addiction
 };
@@ -814,8 +818,8 @@ struct QueueAddict {
 #pragma pack(1)
 struct DrugInfoList {
 	DWORD itemPid;
-	long addictGvar;
-	long numEffects;
+	long  addictGvar;
+	long  numEffects;
 };
 
 }

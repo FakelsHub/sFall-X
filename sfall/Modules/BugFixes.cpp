@@ -978,20 +978,32 @@ static void __declspec(naked) MultiHexAIMissHitFix() {
 		mov  ebx, [esi];                    // source
 		test [ebx + flags + 1], 0x08;       // is MultiHex?
 		jz   skip;
-		//
-		push eax;
+		// check tile
+		push eax;                           // tile form tile_num_beyond_
 		mov  edx, [ebx + tile];             // source tile
 		call fo::funcoffs::tile_dist_;
 		cmp  eax, 2;
 		pop  eax;
-		jge  skip;
-		mov  eax, [ebx + tile];             // source tile
-		mov  edx, [ebx + rotation];
-		mov  ebx, dword ptr [esp];          // distance weaponRange
-		call fo::funcoffs::tile_num_in_direction_;  // return new tile for miss projectile
+		jl   fix;                           // distance greater than 1, so everything okay
 skip:
 		add  esp, 4;
 		retn;
+fix:	// get correct tile
+		mov  eax, [ebx + tile];             // source tile
+		mov  edx, [esi + 0x20];             // ctd.target
+		mov  ebx, edx;
+		mov  edx, [edx + tile]              // target tile
+		call fo::funcoffs::tile_dist_;
+		pop  edx;                           // distance weaponRange
+		sub  edx, eax;
+		mov  eax, 1;
+		cmovle edx, eax;                    // if dist <= 0
+		call fo::funcoffs::roll_random_;
+		push eax;
+		mov  eax, [ebx + tile];             // target tile
+		mov  edx, [ebx + rotation];
+		pop  ebx;                           // distance from target
+		jmp  fo::funcoffs::tile_num_in_direction_; // return new tile for miss projectile
 	}
 }
 
@@ -1124,37 +1136,31 @@ skip:
 }
 
 static void __declspec(naked) combat_ctd_init_hack() {
+	static const DWORD combat_ctd_init_Ret = 0x422F11;
 	__asm {
-		mov  [esi+0x24], eax                      // ctd.targetTile
-		mov  eax, [ebx + whoHitMe]                // pobj.who_hit_me
-		inc  eax
-		jnz  end
-		mov  [ebx + whoHitMe], eax                // pobj.who_hit_me
+		mov  [esi + 0x24], eax;                   // ctd.targetTile
+		mov  eax, [ebx + whoHitMe];               // pobj.who_hit_me
+		inc  eax;
+		jnz  end;                                 // jump if whoHitMe != -1
+		mov  [ebx + whoHitMe], eax;               // pobj.who_hit_me = 0
 end:
-		push 0x422F11
-		retn
+		jmp  combat_ctd_init_Ret;
 	}
 }
 
 static void __declspec(naked) obj_save_hack() {
-	__asm {
-		inc  eax
-		jz   end
-		dec  eax
-		mov  edx, [esp+0x1C]                      // combat_data
-		mov  eax, [eax + cid]                     // pobj.who_hit_me.cid
-		test byte ptr ds:[FO_VAR_combat_state], 1 // in combat?
-		jz   clear                                // No
-		cmp  dword ptr [edx], 0                   // in combat?
-		jne  skip                                 // Yes
+	__asm { // edx - combat_data
+		mov  eax, [eax + cid];                    // pobj.who_hit_me.cid
+		test byte ptr ds:[FO_VAR_combat_state], 1;// in combat?
+		jz   clear;                               // No
+		cmp  dword ptr [edx], 0;                  // in combat?
+		jne  skip;                                // Yes
 clear:
-		xor  eax, eax
-		dec  eax
+		xor  eax, eax;
+		dec  eax; // -1
 skip:
-		mov  [edx+0x18], eax                      // combat_data.who_hit_me
-end:
-		push 0x489422
-		retn
+		mov  [edx + 0x18], eax;                   // combat_data.who_hit_me
+		retn;
 	}
 }
 
@@ -1511,11 +1517,14 @@ static void __declspec(naked) ResetPlayer_hook() {
 	}
 }
 
-static const DWORD obj_move_to_tile_Ret = 0x48A74E;
 static void __declspec(naked) obj_move_to_tile_hack() {
+	static const DWORD obj_move_to_tile_Ret = 0x48A74E;
 	__asm {
-		cmp dword ptr ds:[FO_VAR_map_state], 0; // map number, -1 exit to worldmap
+		cmp ds:[FO_VAR_loadingGame], 0;
+		jnz skip;
+		cmp dword ptr ds:[FO_VAR_map_state], 0; // map number, -1 exit to worldmap (probably don't need it anymore)
 		jz  mapLeave;
+skip:
 		add esp, 4;
 		jmp obj_move_to_tile_Ret;
 mapLeave:
@@ -1902,7 +1911,32 @@ noRange:
 	}
 }
 
+static void __declspec(naked) process_rads_hack() {
+	static const DWORD process_rads_Ret = 0x42D708;
+	__asm {
+		test ebp, ebp;
+		jl   fix;
+		test byte ptr [ecx + damageFlags], DAM_DEAD;
+		jnz  fix;
+		retn;
+fix:
+		add  esp, 4;
+		jmp  process_rads_Ret;
+	}
+}
+
 static void __declspec(naked) process_rads_hook() {
+	__asm {
+		test ebp, ebp;
+		jg   skip;
+		mov  esi, 999; // msg number
+		mov  [esp + 0x20 - 0x20 + 4], esi;
+skip:
+		jmp  fo::funcoffs::message_search_;
+	}
+}
+
+static void __declspec(naked) process_rads_hook_msg() {
 	__asm {
 		push eax; // death message for DialogOut
 		call fo::funcoffs::display_print_;
@@ -2905,7 +2939,7 @@ void BugFixes::init()
 
 	// Fix the impact in itself in case of a miss hit for multihex critters when using throwing weapon
 	// Note: in fact, the bug is in tile_num_beyond_ and related functions, in case of fix, this crutch will need to be removed
-	if (GetConfigInt("Misc", "MultiHexSelfHitFix", 0)) { // TODO: Re-write fix
+	if (GetConfigInt("Misc", "MultiHexSelfHitFix", 1)) {
 		dlog("Applying multihex critter self hit fix.", DL_INIT);
 		HookCalls(MultiHexAIMissHitFix, { 0x423B44, 0x42315D });
 		dlogr(" Done", DL_INIT);
@@ -2936,7 +2970,7 @@ void BugFixes::init()
 	dlog("Applying fix for explosives bugs.", DL_INIT);
 	// Fix crashes when killing critters with explosives
 	MakeJump(0x422F05, combat_ctd_init_hack);
-	MakeJump(0x489413, obj_save_hack);
+	MakeCall(0x48941C, obj_save_hack, 1);
 	// Fix for destroy_p_proc not being called if the critter is killed by explosives when you leave the map
 	MakeCall(0x4130C3, action_explode_hack);
 	MakeCall(0x4130E5, action_explode_hack1);
@@ -3158,8 +3192,15 @@ void BugFixes::init()
 	// Fix for determine_to_hit_func_ engine function taking distance into account when called from determine_to_hit_no_range_
 	HookCall(0x4244C3, determine_to_hit_func_hook);
 
+	// Radiation fixes
+	MakeCall(0x42D6C3, process_rads_hack, 1); // prevents death player's when removing radiation effects if stats is less than one
+	HookCall(0x42D67A, process_rads_hook);    // fix message (remove)
+	// Displaying messages for the active geiger counter about radiation
+	if (GetConfigInt("Misc", "ActiveGeigerMsg", 1)) {
+		SafeWriteBatch<BYTE>(0x74, { 0x42D424, 0x42D444 }); // jnz > jz
+	}
 	// Display a pop-up messages box about death from radiation
-	HookCall(0x42D733, process_rads_hook);
+	HookCall(0x42D733, process_rads_hook_msg);
 
 	// Fix for AI not taking chem_primary_desire in AI.txt as drug use preference when using drugs in their inventory
 	if (GetConfigInt("Misc", "AIDrugUsePerfFix", 0)) {
