@@ -1925,11 +1925,13 @@ fix:
 	}
 }
 
+int32_t radiationEffectsMsgNum = 3003; // "You feel better" for removed effects
+
 static void __declspec(naked) process_rads_hook() {
 	__asm {
 		test ebp, ebp;
 		jg   skip;
-		mov  esi, 999; // msg number
+		mov  esi, radiationEffectsMsgNum;
 		mov  [esp + 0x20 - 0x20 + 4], esi;
 skip:
 		jmp  fo::funcoffs::message_search_;
@@ -3193,11 +3195,14 @@ void BugFixes::init()
 	HookCall(0x4244C3, determine_to_hit_func_hook);
 
 	// Radiation fixes
-	MakeCall(0x42D6C3, process_rads_hack, 1); // prevents death player's when removing radiation effects if stats is less than one
-	HookCall(0x42D67A, process_rads_hook);    // fix message (remove)
-	// Displaying messages for the active geiger counter about radiation
-	if (GetConfigInt("Misc", "ActiveGeigerMsg", 1)) {
+	MakeCall(0x42D6C3, process_rads_hack, 1); // prevents player's death if a stat is less than 1 when removing radiation effects
+	HookCall(0x42D67A, process_rads_hook);    // fix for the same message being displayed when removing radiation effects
+	radiationEffectsMsgNum = GetConfigInt("Misc", "RadEffectsRemovalMsg", radiationEffectsMsgNum);
+	// Display messages about radiation for the active geiger counter
+	if (GetConfigInt("Misc", "ActiveGeigerMsgs", 1)) {
+		dlog("Applying active geiger counter messages patch.", DL_INIT);
 		SafeWriteBatch<BYTE>(0x74, { 0x42D424, 0x42D444 }); // jnz > jz
+		dlogr(" Done", DL_INIT);
 	}
 	// Display a pop-up messages box about death from radiation
 	HookCall(0x42D733, process_rads_hook_msg);
