@@ -80,7 +80,8 @@ void __declspec(naked) op_get_mouse_y() {
 	}
 }
 
-#define MOUSE_MIDDLE_BTN        (4)
+enum { MOUSE_MIDDLE_BTN = 4 };
+
 void sf_get_mouse_buttons(OpcodeContext& ctx) {
 	DWORD button = fo::var::last_buttons;
 	if (button == 0 && middleMouseDown) {
@@ -250,7 +251,7 @@ void sf_is_iface_tag_active(OpcodeContext &ctx) {
 	if (tag >= 0 && tag < 5) {
 		if (tag == 1 || tag == 2) { // Poison/Radiation
 			tag += 2;
-			int* boxslot = (int*)FO_VAR_bboxslot;
+			int32_t* boxslot = (int32_t*)FO_VAR_bboxslot;
 			for (int i = 0; i < 6; i++) {
 				int value = boxslot[i];
 				if (value == tag || value == -1) {

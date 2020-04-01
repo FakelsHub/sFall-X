@@ -425,7 +425,7 @@ void DebugEditor::init() {
 	debugEditorKey = GetConfigInt("Input", "DebugEditorKey", 0);
 	if (debugEditorKey != 0) {
 		OnKeyPressed() += [](DWORD scanCode, bool pressed) {
-			if (scanCode == debugEditorKey && pressed && IsMapLoaded()) {
+			if (scanCode == debugEditorKey && pressed && IsGameLoaded()) {
 				RunDebugEditor();
 			}
 		};

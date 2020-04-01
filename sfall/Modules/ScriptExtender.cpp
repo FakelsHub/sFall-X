@@ -624,7 +624,7 @@ static void RunGlobalScriptsOnMainLoop() {
 }
 
 static void RunGlobalScriptsOnInput() {
-	if (IsMapLoaded()) {
+	if (IsGameLoaded()) {
 		RunGlobalScripts(1, 1);
 	}
 }
