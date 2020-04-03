@@ -266,6 +266,62 @@ end:
 	}
 }
 
+static int32_t __fastcall sf_ai_weapon_reload(fo::GameObject* weapon, fo::GameObject* ammo, fo::GameObject* critter) {
+	fo::Proto* proto = nullptr;
+	int32_t result = -1;
+	long maxAmmo;
+
+	bool ammoIsDestroy = false;
+	fo::GameObject* _ammo = ammo;
+
+	while (ammo)
+	{
+		ammoIsDestroy = false;
+		result = fo::func::item_w_reload(weapon, ammo);
+		if (result != 0) break; // 1 - reload done, or -1 can't reload
+
+		if (!proto) {
+			proto = fo::GetProto(weapon->protoId);
+			maxAmmo = proto->item.weapon.maxAmmo;
+		}
+		if (weapon->item.charges >= maxAmmo) break; // magazine is fully
+
+		long pidAmmo = ammo->protoId;
+		fo::func::obj_destroy(ammo);
+		ammoIsDestroy = true;
+		ammo = nullptr;
+
+		DWORD currentSlot = -1; // begin find first slot
+		while (fo::GameObject* ammoFind = fo::func::inven_find_type(critter, fo::item_type_ammo, &currentSlot))
+		{
+			if (ammoFind->protoId == pidAmmo) {
+				ammo = ammoFind;
+				break;
+			}
+		}
+	}
+	if (!ammoIsDestroy && _ammo != ammo) {
+		fo::func::obj_destroy(ammo);
+		return 1; // notifies the engine that the ammo have already been destroyed
+	}
+	return result;
+}
+
+static void __declspec(naked) item_w_reload_hook() {
+	__asm {
+		cmp  dword ptr [eax + protoId], PID_SOLAR_SCORCHER;
+		je   skip;
+		push ecx;
+		push esi;      // source
+		mov  ecx, eax; // weapon
+		call sf_ai_weapon_reload; // edx - ammo
+		pop  ecx;
+		retn;
+skip:
+		jmp fo::funcoffs::item_w_reload_;
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 static void __fastcall CombatAttackHook(fo::GameObject* source, fo::GameObject* target) {
@@ -301,6 +357,12 @@ void AI::init() {
 		HookCall(0x422B94, RetryCombatHook); // combat_turn_
 		dlogr(" Done", DL_INIT);
 	}
+
+	// Fixed weapon reloading for NPCs if the weapon has more ammo capacity than there are ammo in the pack
+	HookCalls(item_w_reload_hook, {
+		0x42AF15,           // cai_attempt_w_reload_
+		0x42A970, 0x42AA56, // ai_try_attack_
+	});
 
 	///////////////////// Combat AI behavior fixes /////////////////////////
 
