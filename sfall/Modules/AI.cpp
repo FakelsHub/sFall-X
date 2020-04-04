@@ -34,8 +34,8 @@ using namespace Fields;
 static std::unordered_map<fo::GameObject*, fo::GameObject*> targets;
 static std::unordered_map<fo::GameObject*, fo::GameObject*> sources;
 
-static const DWORD ai_search_environ_ret = 0x429D3E;
 static void __declspec(naked) ai_search_environ_hook() {
+	static const DWORD ai_search_environ_ret = 0x429D3E;
 	__asm {
 		call fo::funcoffs::obj_dist_;
 		cmp  [esp + 0x28 + 0x1C + 4], item_type_ammo;
@@ -72,8 +72,8 @@ static void __declspec(naked) ai_try_attack_hook_FleeFix() {
 	}
 }
 
-static const DWORD combat_ai_hook_flee_Ret = 0x42B22F;
 static void __declspec(naked) combat_ai_hook_FleeFix() {
+	static const DWORD combat_ai_hook_flee_Ret = 0x42B22F;
 	__asm {
 		test byte ptr [ebp], 8; // 'ReTarget' flag (critter.combat_state)
 		jnz  reTarget;
@@ -88,8 +88,9 @@ reTarget:
 }
 
 static bool npcPercentMinHP = false;
-static const DWORD combat_ai_hack_Ret = 0x42B204;
+
 static void __declspec(naked) combat_ai_hack() {
+	static const DWORD combat_ai_hack_Ret = 0x42B204;
 	__asm {
 		mov  edx, [ebx + 0x10];             // cap.min_hp
 		test npcPercentMinHP, 0xFF;
@@ -240,6 +241,7 @@ noSwitch:
 }
 
 static DWORD RetryCombatMinAP;
+
 static void __declspec(naked) RetryCombatHook() {
 	static DWORD RetryCombatLastAP = 0;
 	__asm {
@@ -271,12 +273,10 @@ static int32_t __fastcall sf_ai_weapon_reload(fo::GameObject* weapon, fo::GameOb
 	int32_t result = -1;
 	long maxAmmo;
 
-	bool ammoIsDestroy = false;
 	fo::GameObject* _ammo = ammo;
 
 	while (ammo)
 	{
-		ammoIsDestroy = false;
 		result = fo::func::item_w_reload(weapon, ammo);
 		if (result != 0) break; // 1 - reload done, or -1 can't reload
 
@@ -288,10 +288,9 @@ static int32_t __fastcall sf_ai_weapon_reload(fo::GameObject* weapon, fo::GameOb
 
 		long pidAmmo = ammo->protoId;
 		fo::func::obj_destroy(ammo);
-		ammoIsDestroy = true;
 		ammo = nullptr;
 
-		DWORD currentSlot = -1; // begin find first slot
+		DWORD currentSlot = -1; // begin find at first slot
 		while (fo::GameObject* ammoFind = fo::func::inven_find_type(critter, fo::item_type_ammo, &currentSlot))
 		{
 			if (ammoFind->protoId == pidAmmo) {
@@ -300,7 +299,7 @@ static int32_t __fastcall sf_ai_weapon_reload(fo::GameObject* weapon, fo::GameOb
 			}
 		}
 	}
-	if (!ammoIsDestroy && _ammo != ammo) {
+	if (!result && _ammo != ammo) {
 		fo::func::obj_destroy(ammo);
 		return 1; // notifies the engine that the ammo have already been destroyed
 	}
@@ -407,22 +406,22 @@ void AI::init() {
 	CombatAIBehaviorInit();
 }
 
-fo::GameObject* _stdcall AI::AIGetLastAttacker(fo::GameObject* target) {
+fo::GameObject* __stdcall AI::AIGetLastAttacker(fo::GameObject* target) {
 	const auto itr = sources.find(target);
 	return (itr != sources.end()) ? itr->second : 0;
 }
 
-fo::GameObject* _stdcall AI::AIGetLastTarget(fo::GameObject* source) {
+fo::GameObject* __stdcall AI::AIGetLastTarget(fo::GameObject* source) {
 	const auto itr = targets.find(source);
 	return (itr != targets.end()) ? itr->second : 0;
 }
 
-void _stdcall AI::AICombatStart() {
+void __stdcall AI::AICombatStart() {
 	targets.clear();
 	sources.clear();
 }
 
-void _stdcall AI::AICombatEnd() {
+void __stdcall AI::AICombatEnd() {
 	targets.clear();
 	sources.clear();
 }
