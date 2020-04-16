@@ -2439,10 +2439,12 @@ end:
 static void __declspec(naked) combat_should_end_hack() {
 	static const DWORD combat_should_end_break = 0x422D00;
 	__asm { // ecx = dude.team_num
-		cmp  ecx, [ebp + 0x50]; // npc who_hit_me.team_num
-		je   break;
-		test byte ptr [edx], 1; // npc combat_data.combat_state
-		jnz  break;
+		cmp  ecx, [ebp + teamNum];          // npc->combat_data.who_hit_me.team_num (engine code)
+		je   break;                         // attacks the player's team
+		test [ebp + damageFlags], DAM_DEAD; // npc->combat_data.who_hit_me.damageFlags
+		jz   break;                         // the target is still alive
+		test byte ptr [edx], 1;             // npc->combat_data.combat_state
+		jnz  break;                         // npc in combat
 		retn; // check next critter
 break:
 		add  esp, 4;
