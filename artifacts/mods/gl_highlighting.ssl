@@ -30,7 +30,7 @@
 #define OBJECT_IS_EMPTY(obj)     (critter_inven_obj2(obj, INVEN_TYPE_INV_COUNT) == 0)
 
 #define FLAG_CRT_LOOK            (0x200000) // unused flag #22
-#define SET_OBJECT_USED(obj)     if obj_item_subtype(objPtr) == item_type_container then   \
+#define SET_OBJECT_USED(obj)     if obj_item_subtype(obj) == item_type_container then      \
                                     set_flags(obj, (get_flags(obj) bwor FLAG_USED));       \
                                  else set_flags(obj, (get_flags(obj) bwor FLAG_CRT_LOOK))
 
@@ -50,7 +50,7 @@ variable begin
    checkLOS := 2;
    fogEnabled;
    motionScanner;
-   allowUnsafeScripting;
+   isUnsafe;
 
    highlightFailMsg1;
    highlightFailMsg2;
@@ -61,7 +61,7 @@ variable begin
    emptyOutlineColor;
 
    checkObject;
-   once;
+   lootObject;
 end
 
 procedure start;
@@ -71,14 +71,13 @@ procedure CheckMotionSensor;
 procedure ToggleHighlight(variable enable);
 procedure ToggleHighlightObject(variable obj, variable enable, variable container);
 procedure GetHighlightColor(variable obj, variable container);
-procedure CheckTileObjects(variable array);
 procedure CheckLineOfSight(variable object);
 procedure CheckObjectUsed(variable objPtr);
 procedure InventoryMoveHandler;
 
 procedure start begin
 
-   variable objectArray;
+   variable objectArray, obj;
 
    if game_loaded then begin
 
@@ -86,13 +85,15 @@ procedure start begin
 
       call InitConfigs;
 
-      allowUnsafeScripting := GetIniConfig("Debugging", "AllowUnsafeScripting", 0, "ddraw.ini");
+      isUnsafe := GetIniConfig("Debugging", "AllowUnsafeScripting", 0, "ddraw.ini");
 
       highlightKey := GetConfig(configSection, "Key", 42);
       alsoContainer := GetConfig(configSection, "Containers", 1);
       alsoCorpse := GetConfig(configSection, "Corpses", 1);
-      fogEnabled := GetIniConfig("Maps", "Fog_of_War", 0, "f2_res.ini");
+
+      fogEnabled := GetIniConfig("MAPS", "FOG_OF_WAR", 0, "f2_res.ini");
       if (fogEnabled == false) then checkLOS := GetConfig(configSection, "CheckLOS", 1);
+
       outlineColor := GetConfig(configSection, "OutlineColor", 16);
       defOutlineColor := GetConfig(configSection, "DefaultOutlineColor", 32);
       lookOutlineColor := GetConfig(configSection, "LookOutlineColor", 64);
@@ -115,14 +116,17 @@ procedure start begin
    else begin
       if (checkObject) then begin
          if (get_game_mode bwand INTFACELOOT) then begin
-            if not(once) then begin
-               once := true;
-               objectArray := tile_get_objs(tile_num_in_direction(dude_tile, obj_get_rot(dude_obj), 1), dude_elevation);
-               if CheckTileObjects(objectArray) == false then
-                  call CheckTileObjects(tile_get_objs(dude_tile, dude_elevation)); //second check
+            obj = loot_obj;
+            if (lootObject != obj) then begin
+               lootObject = obj;
+               if (obj_item_subtype(lootObject) == item_type_container or
+                  (obj_type(lootObject) == OBJ_TYPE_CRITTER andAlso critter_state(lootObject) == CRITTER_IS_DEAD)) then
+               begin
+                  SET_OBJECT_USED(lootObject);
+               end
             end
          end
-         else if (once) then once := false;
+         else lootObject = 0;
       end
       // off highlight in cases when key hook is not triggered
       if (isHighlight and key_pressed(highlightKey) == false) then begin
@@ -207,7 +211,7 @@ procedure ToggleHighlight(variable enable) begin
       end
    end
    // set _Flat and remove _TransNone flags
-   if (allowUnsafeScripting) then begin
+   if (isUnsafe) then begin
       if (enable) then write_short(0x48F404, 0x4008); else write_short(0x48F404, 0xC000);
    end
    tile_refresh_display;
@@ -247,20 +251,6 @@ procedure GetHighlightColor(variable obj, variable container) begin
       color := outlineColor;
 
    return color;
-end
-
-procedure CheckTileObjects(variable array) begin
-   variable objPtr;
-
-   foreach (objPtr in array) begin
-      if (objPtr != dude_obj and (obj_type(objPtr) == OBJ_TYPE_CRITTER and not(CheckObjectUsed(objPtr))))
-      or obj_item_subtype(objPtr) == item_type_container then begin
-         SET_OBJECT_USED(objPtr);
-         return true;
-      end
-   end
-
-   return false;
 end
 
 procedure CheckLineOfSight(variable object) begin
