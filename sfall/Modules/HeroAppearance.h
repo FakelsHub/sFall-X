@@ -31,7 +31,6 @@ public:
 	void exit() override;
 
 	static bool appModEnabled;
-
 };
 
 void _stdcall HeroSelectWindow(int raceStyleFlag);

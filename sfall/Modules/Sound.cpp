@@ -1,7 +1,19 @@
 /*
  *    sfall
- *    Copyright (C) 2008 - 2020  The sfall team
+ *    Copyright (C) 2008-2020  The sfall team
  *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <dshow.h>
@@ -29,7 +41,7 @@ enum SoundMode : long {
 	single_play = 0, // uses sfx volume
 	loop_play   = 1, // uses sfx volume
 	music_play  = 2, // uses background volume
-	engine_music_play = -1 // used when playing game music in an alternative format (don't used from script)
+	engine_music_play = -1 // used when playing game music in an alternative format (not used from scripts)
 };
 
 enum SoundFlags : uint32_t {
@@ -54,7 +66,7 @@ DWORD playID = 0;
 DWORD loopID = 0;
 
 static HWND soundwindow = 0;
-static sDSSound* backgroundMusic = nullptr; // current playing sfall background music
+static sDSSound* backgroundMusic = nullptr; // currently playing sfall background music
 //static char playingMusicFile[256];
 
 static void FreeSound(sDSSound* sound) {
@@ -172,10 +184,10 @@ static long CalculateVolumeDB(long masterVolume, long passVolume) {
 	sfx_volume:        sound=0 type=game_sfx passVolume=sndfx_volume
  */
 static void __cdecl SfallSoundVolume(sDSSound* sound, SoundType type, long passVolume) {
-	long volume, sfxVolume, masterVolume = *(DWORD*)FO_VAR_master_volume;
+	long volume, sfxVolume, masterVolume = fo::var::master_volume;
 
 	volume = CalculateVolumeDB(masterVolume, passVolume);
-	if (type == SoundType::game_master) sfxVolume = CalculateVolumeDB(masterVolume, *(DWORD*)FO_VAR_sndfx_volume);
+	if (type == SoundType::game_master) sfxVolume = CalculateVolumeDB(masterVolume, fo::var::sndfx_volume);
 
 	if (sound) {
 		sound->pAudio->put_Volume(volume);
@@ -201,12 +213,12 @@ static void __cdecl SfallSoundVolume(sDSSound* sound, SoundType type, long passV
 }
 
 static bool IsMute(bool type) {
-	//if (*(DWORD*)FO_VAR_master_volume == 0) return true;
+	//if (fo::var::master_volume == 0) return true;
 	int value;
 	if (type) {
-		value = *(DWORD*)FO_VAR_background_volume;
+		value = fo::var::background_volume;
 	} else {
-		value = *(DWORD*)FO_VAR_sndfx_volume;
+		value = fo::var::sndfx_volume;
 	}
 	return (value == 0);
 }
@@ -259,10 +271,10 @@ static sDSSound* PlayingSound(wchar_t* path, SoundMode mode) {
 
 	if (isLoop) {
 		loopingSounds.push_back(sound);
-		SfallSoundVolume(sound, SoundType::sfx_loop, (mode == SoundMode::loop_play) ? *(DWORD*)FO_VAR_sndfx_volume : *(DWORD*)FO_VAR_background_volume);
+		SfallSoundVolume(sound, SoundType::sfx_loop, (mode == SoundMode::loop_play) ? fo::var::sndfx_volume : fo::var::background_volume);
 	} else {
 		playingSounds.push_back(sound);
-		SfallSoundVolume(sound, SoundType::sfx_single, *(DWORD*)FO_VAR_sndfx_volume);
+		SfallSoundVolume(sound, SoundType::sfx_single, fo::var::sndfx_volume);
 	}
 	return sound;
 }
@@ -328,7 +340,9 @@ void __stdcall Sound::StopSfallSound(uint32_t id) {
 			sound->pControl->Stop();
 			FreeSound(sound);
 			loopingSounds.erase(loopingSounds.begin() + i);
-			if (!(id & SoundFlags::engine) && id & SoundFlags::restore) __asm call fo::funcoffs::gsound_background_restart_last_;
+			if (!(id & SoundFlags::engine) && id & SoundFlags::restore) {
+				__asm call fo::funcoffs::gsound_background_restart_last_;
+			}
 			return;
 		}
 	}
@@ -543,13 +557,13 @@ void Sound::init() {
 	LoadGameHook::OnGameReset() += WipeSounds;
 	LoadGameHook::OnBeforeGameClose() += WipeSounds;
 
-	HookCalls(gmovie_play_hook_pause, { 0x44E816 });
-	HookCalls(gmovie_play_hook_unpause, { 0x44EA84 });
+	HookCall(0x44E816, gmovie_play_hook_pause);
+	HookCall(0x44EA84, gmovie_play_hook_unpause);
 	MakeCall(0x450525, gsound_background_volume_set_hack);
 	MakeCall(0x4503CA, gsound_master_volume_set_hack, 1);
 	MakeCall(0x45042C, gsound_set_sfx_volume_hack);
 
-	// Pause and resume playback sounds when the game lost focus
+	// Pause and resume sound playback when the game loses focus
 	fo::func::set_focus_func(SoundLostFocus);
 
 	if (int allowDShowSound = GetConfigInt("Sound", "AllowDShowSound", 0) > 0) {

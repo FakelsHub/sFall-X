@@ -136,9 +136,9 @@ fail:
 	}
 }
 
-static const DWORD ScannerHookRet  = 0x41BC1D;
-static const DWORD ScannerHookFail = 0x41BC65;
 static void __declspec(naked) automap_hack() {
+	static const DWORD ScannerHookRet  = 0x41BC1D;
+	static const DWORD ScannerHookFail = 0x41BC65;
 	using fo::PID_MOTION_SENSOR;
 	__asm {
 		mov  eax, ds:[FO_VAR_obj_dude];
@@ -746,13 +746,13 @@ debug:
 }
 
 void EngineOptimizationPatches() {
-	// Just for speeding up display_msg function
+	// Speed up display_msg script function
 	HookCall(0x455404, op_display_msg_hook);
 
 	// Remove duplicate code from intface_redraw_ engine function
 	BlockCall(0x45EBBF);
 
-	// Performance of the data conversion of script interpreter
+	// Improve performance of the data conversion of script interpreter
 	// mov eax, [edx+eax]; bswap eax; ret;
 	SafeWrite32(0x4672A4, 0x0F02048B);
 	SafeWrite16(0x4672A8, 0xC3C8);
@@ -829,7 +829,7 @@ void MiscPatches::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Highlight "Radiation" to red color when the player under influence the effects of radiation sickness
+	// Highlight "Radiated" in red color when the player is under the influence of negative effects of radiation
 	HookCalls(ListDrvdStats_hook, { 0x43549C, 0x4354BE });
 
 	// Increase the max text width of the information card in the character screen

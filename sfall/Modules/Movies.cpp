@@ -155,7 +155,7 @@ public:
 		return ++RefCount;
 	}
 
-	ULONG _stdcall Release() {
+	ULONG __stdcall Release() {
 		if (--RefCount == 0) {
 			TerminateDevice(-2);
 			if (pAllocNotify) {
@@ -327,11 +327,11 @@ static DWORD __fastcall PreparePlayMovie(const DWORD id) {
 	// Verify that the VMR exists on this system
 	if (isNotWMR == -1) {
 		IBaseFilter* pBF = nullptr;
-		if(SUCCEEDED(CoCreateInstance(CLSID_VideoMixingRenderer9, 0, CLSCTX_INPROC, IID_IBaseFilter, (LPVOID*)&pBF))) {
+		if (SUCCEEDED(CoCreateInstance(CLSID_VideoMixingRenderer9, 0, CLSCTX_INPROC, IID_IBaseFilter, (LPVOID*)&pBF))) {
 			pBF->Release();
 			isNotWMR = 0;
 		} else {
-			dlog("Error: Video Mixing Renderer (VMR9) capabilities are required.\n", DL_MAIN);
+			dlogr("Error: Video Mixing Renderer (VMR9) capabilities are required.", DL_MAIN);
 			isNotWMR = 1;
 		}
 	}

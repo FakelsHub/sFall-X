@@ -318,14 +318,14 @@ jLoop:
 	}
 }
 
-// Fallout 1 behavior: No radius for uncovering locations on the worldmap
-// for the mark_area_known script function when the mark_state argument of function is set to 3
+// Fallout 1 behavior: No radius for uncovered locations on the world map
+// for the mark_area_known script function when the mark_state argument of the function is set to 3
 long __declspec(naked) Worldmap::AreaMarkStateIsNoRadius() {
 	__asm {
-		xor   eax, eax;
-		cmp   esi, 3; // esi - mark_state value
-		jne   skip;
-		mov   esi, 1; // revert value to town known state
+		xor  eax, eax;
+		cmp  esi, 3; // esi - mark_state value
+		jne  skip;
+		mov  esi, 1; // revert value to town known state
 skip:
 		cmove eax, esi; // eax: 1 for Fallout 1 behavior
 		retn;
@@ -506,7 +506,7 @@ void Worldmap::SaveData(HANDLE file) {
 	DWORD sizeWrite, count = mapRestInfo.size();
 	WriteFile(file, &count, 4, &sizeWrite, 0);
 	std::unordered_map<int, levelRest>::iterator it;
-	for (it = mapRestInfo.begin(); it != mapRestInfo.end(); it++) {
+	for (it = mapRestInfo.begin(); it != mapRestInfo.end(); ++it) {
 		WriteFile(file, &it->first, 4, &sizeWrite, 0);
 		WriteFile(file, &it->second, sizeof(levelRest), &sizeWrite, 0);
 	}

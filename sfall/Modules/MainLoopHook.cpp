@@ -45,7 +45,7 @@ static void __declspec(naked) CombatLoopHook() {
 		//pop  eax;
 		pop  edx;
 		call fo::funcoffs::get_input_;
-		pop  ecx; // fix bug: prevent next combat turn after pressing alt+tab keys
+		pop  ecx; // fix to prevent the combat turn from being skipped after using Alt+Tab keys
 		retn;
 	}
 }

@@ -467,8 +467,8 @@ static void FileSystemLoad() {
 	}
 }
 
-static const DWORD LoadHookRetAddr = 0x47CCEE;
 static void __declspec(naked) FSLoadHook() {
+	static const DWORD LoadHookRetAddr = 0x47CCEE;
 	__asm {
 		pushadc;
 		call FileSystemLoad;

@@ -66,8 +66,8 @@ static void __declspec(naked) intface_init_hack() {
 	}
 }
 
-static const DWORD intface_update_move_points_ret = 0x45EE3E;
 static void __declspec(naked) intface_update_move_points_hack() {
+	static const DWORD intface_update_move_points_ret = 0x45EE3E;
 	__asm {
 		mov  eax, 16 * 9
 		push eax;
@@ -237,8 +237,8 @@ static const DWORD wmViewportEndBottom[] = {
 	0x4C44BE,                                                   // wmCursorIsVisible_
 };
 
-static const DWORD wmInterfaceInit_Ret = 0x4C23A7;
 static void __declspec(naked) wmInterfaceInit_hack() {
+	static const DWORD wmInterfaceInit_Ret = 0x4C23A7;
 	__asm {
 		push eax;
 		mov  eax, 640 - WMAP_WIN_WIDTH;
@@ -881,9 +881,9 @@ void Interface::init() {
 	WorldMapInterfacePatch();
 	SpeedInterfaceCounterAnimsPatch();
 
-	// Fix for interface window with 'Hidden' and 'ScriptWindow' flags
-	// Hidden - will not toggle the mouse cursor when the mouse cursor is hover a window and the window is hidden
-	// ScriptWindow - prevents player movement when clicking on the window if the 'Transparent'flag is not set
+	// Fix for interface windows with 'Hidden' and 'ScriptWindow' flags
+	// Hidden - will not toggle the mouse cursor when the cursor hovers over a hidden window
+	// ScriptWindow - prevents the player from moving when clicking on the window if the 'Transparent' flag is not set
 	HookCall(0x44B737, gmouse_bk_process_hook);
 	LoadGameHook::OnBeforeGameInit() += []() {
 		if (hrpVersionValid) IFACE_BAR_MODE = *(BYTE*)HRPAddress(0x1006EB0C) != 0;

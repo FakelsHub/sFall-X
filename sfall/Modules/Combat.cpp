@@ -132,9 +132,9 @@ static void __declspec(naked) ai_search_inven_weap_hook() {
 }
 
 // switch weapon mode from secondary to primary if there is not enough ammo to shoot
-static const DWORD ai_try_attack_search_ammo = 0x42AA1E;
-static const DWORD ai_try_attack_continue = 0x42A929;
 static void __declspec(naked) ai_try_attack_hook() {
+	static const DWORD ai_try_attack_search_ammo = 0x42AA1E;
+	static const DWORD ai_try_attack_continue = 0x42A929;
 	using namespace fo;
 	using namespace Fields;
 	__asm {
@@ -221,8 +221,8 @@ static void __declspec(naked) compute_damage_hack() {
 	}
 }
 
-static const DWORD KnockbackRetAddr = 0x4136E1;
 static void __declspec(naked) compute_dmg_damage_hack() {
+	static const DWORD KnockbackRetAddr = 0x4136E1;
 	__asm {
 		push ecx
 		push esi;               // Target
@@ -237,8 +237,8 @@ static void __declspec(naked) compute_dmg_damage_hack() {
 	}
 }
 
-static const DWORD compute_damage_hack_knockback_Ret = 0x424AF1;
 static void __declspec(naked) compute_damage_hack_knockback() {
+	static const DWORD compute_damage_hack_knockback_Ret = 0x424AF1;
 	using namespace fo;
 	__asm {
 		cmp [esi + 8], 0; // ctd.weapon
@@ -396,9 +396,9 @@ static int __fastcall AimedShotTest(DWORD pid) {
 	return 0;
 }
 
-static const DWORD aimedShotRet1 = 0x478EE4;
-static const DWORD aimedShotRet2 = 0x478EEA;
 static void __declspec(naked) item_w_called_shot_hook() {
+	static const DWORD aimedShotRet1 = 0x478EE4;
+	static const DWORD aimedShotRet2 = 0x478EEA;
 	__asm {
 		push edx;
 		mov  ecx, edx;       // item

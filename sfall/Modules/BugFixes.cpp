@@ -1,4 +1,3 @@
-
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "HookScripts\InventoryHs.h"
@@ -43,7 +42,7 @@ void BugFixes::DrugsSaveFix(HANDLE file) {
 	DWORD sizeWrite, count = drugsPid.size();
 	WriteFile(file, &count, 4, &sizeWrite, 0);
 	if (!count) return;
-	for (auto it = drugsPid.begin(); it != drugsPid.end(); it++) {
+	for (auto it = drugsPid.begin(); it != drugsPid.end(); ++it) {
 		int pid = *it;
 		WriteFile(file, &pid, 4, &sizeWrite, 0);
 	}
@@ -80,8 +79,8 @@ static void Initialization() {
 }
 
 // fix for vanilla negate operator not working on floats
-static const DWORD NegateFixHack_Back = 0x46AB77;
 static void __declspec(naked) NegateFixHack() {
+	static const DWORD NegateFixHack_Back = 0x46AB77;
 	__asm {
 		mov  eax, [ecx + 0x1C];
 		cmp  si, VAR_TYPE_FLOAT;
@@ -101,8 +100,8 @@ isFloat:
 	}
 }
 
-static const DWORD UnarmedAttacksFixEnd = 0x423A0D;
 static void __declspec(naked) compute_attack_hack() {
+	static const DWORD UnarmedAttacksFixEnd = 0x423A0D;
 	__asm {
 		mov  ecx, 5;                        // 5% chance of critical hit
 		cmp  edx, ATKTYPE_POWERKICK;        // Power Kick
@@ -197,8 +196,8 @@ static void __declspec(naked) scr_write_ScriptNode_hook() {
 		xor  eax, eax;
 		retn;                                     // don't save the current ScriptBlock
 writeBlock:
-		sub  dword ptr [esp + 0xEC + 4], ecx;     // number_of_scripts (reduce number [e.g.: 24-16=8] or set it to 0)
-		xchg dword ptr [ebp + 0xE00], ecx;        // ScriptBlocks.num (keep and sets correct value: 16 or previous value of number_of_scripts)
+		sub  dword ptr [esp + 0xEC + 4], ecx;     // number_of_scripts (reduce number [e.g. 24-16=8] or set it to 0)
+		xchg dword ptr [ebp + 0xE00], ecx;        // ScriptBlocks.num (keep and set correct value: 16 or previous value of number_of_scripts)
 		xor  esi, esi;
 		xchg dword ptr [ebp + 0xE04], esi;        // ScriptBlocks.NextBlock (keep pointer and set it to 0)
 		call fo::funcoffs::scr_write_ScriptNode_;
@@ -902,8 +901,8 @@ static void __declspec(naked) op_wield_obj_critter_adjust_ac_hook() {
 	}
 }
 
-static const DWORD partyMember_init_End = 0x493D16;
 static void __declspec(naked) NPCStage6Fix1() {
+	static const DWORD partyMember_init_End = 0x493D16;
 	__asm {
 		imul eax, edx, 204;                 // multiply record size 204 bytes by number of NPC records in party.txt
 		mov  ebx, eax;                      // copy total record size for later memset
@@ -912,8 +911,8 @@ static void __declspec(naked) NPCStage6Fix1() {
 	}
 }
 
-static const DWORD partyMemberGetAIOptions_End = 0x49423A;
 static void __declspec(naked) NPCStage6Fix2() {
+	static const DWORD partyMemberGetAIOptions_End = 0x49423A;
 	__asm {
 		imul edx, 204;                      // multiply record size 204 bytes by NPC number as listed in party.txt
 		mov  eax, dword ptr ds:[FO_VAR_partyMemberAIOptions]; // get starting offset of internal NPC table
@@ -934,8 +933,8 @@ end:
 	}
 }
 
-static const DWORD ai_move_steps_closer_move_object_ret = 0x42A192;
 static void __declspec(naked) MultiHexCombatMoveFix() {
+	static const DWORD ai_move_steps_closer_move_object_ret = 0x42A192;
 	__asm {
 		test [edi + flags + 1], 0x08; // is target multihex?
 		jnz  multiHex;
@@ -952,8 +951,8 @@ moveTile:
 	}
 }
 
-static const DWORD ai_move_steps_closer_run_object_ret = 0x42A169;
 static void __declspec(naked) MultiHexCombatRunFix() {
+	static const DWORD ai_move_steps_closer_run_object_ret = 0x42A169;
 	__asm {
 		test [edi + flags + 1], 0x08; // is target multihex?
 		jnz  multiHex;
@@ -1071,8 +1070,8 @@ end:
 	}
 }
 
-static const DWORD obj_load_func_Ret = 0x488F14;
 static void __declspec(naked) obj_load_func_hack() {
+	static const DWORD obj_load_func_Ret = 0x488F14;
 	__asm {
 		test word ptr [eax + flags], Temp; // engine code
 		jz   fix;
@@ -1151,16 +1150,16 @@ end:
 
 static void __declspec(naked) obj_save_hack() {
 	__asm { // edx - combat_data
-		mov  eax, [eax + cid];                    // pobj.who_hit_me.cid
-		test byte ptr ds:[FO_VAR_combat_state], 1;// in combat?
-		jz   clear;                               // No
-		cmp  dword ptr [edx], 0;                  // in combat?
-		jne  skip;                                // Yes
+		mov  eax, [eax + cid];                     // pobj.who_hit_me.cid
+		test byte ptr ds:[FO_VAR_combat_state], 1; // in combat?
+		jz   clear;                                // No
+		cmp  dword ptr [edx], 0;                   // in combat?
+		jne  skip;                                 // Yes
 clear:
 		xor  eax, eax;
 		dec  eax; // -1
 skip:
-		mov  [edx + 0x18], eax;                   // combat_data.who_hit_me
+		mov  [edx + 0x18], eax;                    // combat_data.who_hit_me
 		retn;
 	}
 }
@@ -1424,6 +1423,32 @@ end:
 	}
 }
 
+static int __stdcall ItemCountFix(fo::GameObject* who, fo::GameObject* item) {
+	int count = 0;
+	for (int i = 0; i < who->invenSize; i++) {
+		auto tableItem = &who->invenTable[i];
+		if (tableItem->object == item) {
+			count += tableItem->count;
+		} else if (fo::func::item_get_type(tableItem->object) == fo::item_type_container) {
+			count += ItemCountFix(tableItem->object, item);
+		}
+	}
+	return count;
+}
+
+static void __declspec(naked) item_count_hack() {
+	__asm {
+		push ecx;
+		push edx; // save state
+		push edx; // item
+		push eax; // container-object
+		call ItemCountFix;
+		pop  edx;
+		pop  ecx; // restore
+		retn;
+	}
+}
+
 static void __declspec(naked) Save_as_ASCII_hack() {
 	__asm {
 		mov  edx, STAT_sequence;
@@ -1521,15 +1546,15 @@ static void __declspec(naked) ResetPlayer_hook() {
 static void __declspec(naked) obj_move_to_tile_hack() {
 	static const DWORD obj_move_to_tile_Ret = 0x48A74E;
 	__asm {
-		cmp ds:[FO_VAR_loadingGame], 0; // prevents leave map when next loading saved game if the player death (from radiation) on worldmap
-		jnz skip;
-		cmp dword ptr ds:[FO_VAR_map_state], 0; // map number, -1 exit to worldmap
-		jz  mapLeave;
+		cmp  ds:[FO_VAR_loadingGame], 0; // prevents leaving the map after loading a saved game if the player died
+		jnz  skip;                       // on the world map from radiation (or in some cases on another map)
+		cmp  dword ptr ds:[FO_VAR_map_state], 0; // map number, -1 exit to worldmap
+		jz   mapLeave;
 skip:
-		add esp, 4;
-		jmp obj_move_to_tile_Ret;
+		add  esp, 4;
+		jmp  obj_move_to_tile_Ret;
 mapLeave:
-		mov ebx, 16;
+		mov  ebx, 16;
 		retn;
 	}
 }
@@ -1577,8 +1602,8 @@ static void __fastcall InstantDeathFix(fo::ComputeAttackResult &ctd) {
 	}
 }
 
-static const DWORD ComputeDamageRet = 0x424BA7;
 static void __declspec(naked) compute_damage_hack() {
+	static const DWORD ComputeDamageRet = 0x424BA7;
 	__asm {
 		mov  ecx, esi; // ctd
 		call InstantDeathFix;
@@ -1604,7 +1629,7 @@ static void __stdcall AppendText(const char* text, const char* desc) {
 		}
 		tempBuffer[len++] = ' ';
 		tempBuffer[len] = 0;
-		currDescLen  = len;
+		currDescLen = len;
 	} else if (currDescLen == 0) {
 		tempBuffer[0] = 0;
 	}
@@ -1646,8 +1671,8 @@ skip:
 	}
 }
 
-static const DWORD ObjExamineFuncWeapon_Ret = 0x49B63C;
 static void __declspec(naked) obj_examine_func_hack_weapon() {
+	static const DWORD ObjExamineFuncWeapon_Ret = 0x49B63C;
 	__asm {
 		cmp  dword ptr [esp + 0x1AC - 0x14], 0x445448; // gdialogDisplayMsg_
 		jnz  skip;
@@ -1681,8 +1706,8 @@ static void __declspec(naked) combat_give_exps_hook() {
 	}
 }
 
-static const DWORD LootContainerExp_Ret = 0x4745E3;
 static void __declspec(naked) loot_container_exp_hack() {
+	static const DWORD LootContainerExp_Ret = 0x4745E3;
 	__asm {
 		mov  edx, [esp + 0x150 - 0x18];  // experience
 		xchg edx, eax;
@@ -1743,16 +1768,16 @@ end:
 
 static void __declspec(naked) op_obj_can_hear_obj_hack() {
 	__asm {
-		mov eax, [esp + 0x28 - 0x28 + 4];  // target
-		mov edx, [esp + 0x28 - 0x24 + 4];  // source
+		mov  eax, [esp + 0x28 - 0x28 + 4];  // target
+		mov  edx, [esp + 0x28 - 0x24 + 4];  // source
 		retn;
 	}
 }
 
 static void __declspec(naked) ai_best_weapon_hook() {
 	__asm {
-		mov eax, [esp + 0xF4 - 0x10 + 4]; // prev.item
-		jmp fo::funcoffs::item_w_perk_;
+		mov  eax, [esp + 0xF4 - 0x10 + 4];  // prev.item
+		jmp  fo::funcoffs::item_w_perk_;
 	}
 }
 
@@ -1767,32 +1792,6 @@ static void __declspec(naked) wmSetupRandomEncounter_hook() {
 		add  esp, 16;
 		mov  eax, edi;
 		jmp  fo::funcoffs::display_print_;
-	}
-}
-
-static int __stdcall ItemCountFix(fo::GameObject* who, fo::GameObject* item) {
-	int count = 0;
-	for (int i = 0; i < who->invenSize; i++) {
-		auto tableItem = &who->invenTable[i];
-		if (tableItem->object == item) {
-			count += tableItem->count;
-		} else if (fo::func::item_get_type(tableItem->object) == fo::item_type_container) {
-			count += ItemCountFix(tableItem->object, item);
-		}
-	}
-	return count;
-}
-
-static void __declspec(naked) item_count_hack() {
-	__asm {
-		push ecx;
-		push edx; // save state
-		push edx; // item
-		push eax; // container-object
-		call ItemCountFix;
-		pop  edx;
-		pop  ecx; // restore
-		retn;
 	}
 }
 
@@ -1926,13 +1925,13 @@ fix:
 	}
 }
 
-int32_t radiationEffectsMsgNum = 3003; // "You feel better" for removed effects
+static long radEffectsMsgNum = 3003; // "You feel better" for removing effects
 
 static void __declspec(naked) process_rads_hook() {
 	__asm {
 		test ebp, ebp;
 		jg   skip;
-		mov  esi, radiationEffectsMsgNum;
+		mov  esi, radEffectsMsgNum;
 		mov  [esp + 0x20 - 0x20 + 4], esi;
 skip:
 		jmp  fo::funcoffs::message_search_;
@@ -1958,8 +1957,8 @@ skip:
 }
 
 static DWORD firstItemDrug = -1;
-static const DWORD ai_check_drugs_hack_Ret = 0x42878B;
 static void __declspec(naked) ai_check_drugs_hack_break() {
+	static const DWORD ai_check_drugs_hack_Ret = 0x42878B;
 	__asm {
 		mov  eax, -1;
 		cmp  firstItemDrug, eax;
@@ -1990,8 +1989,8 @@ checkDrugs:
 	}
 }
 
-static const DWORD ai_check_drugs_hack_Loop = 0x428675;
 static void __declspec(naked) ai_check_drugs_hack_use() {
+	static const DWORD ai_check_drugs_hack_Loop = 0x428675;
 	__asm {
 		cmp  eax, 3;
 		jge  beginLoop;
@@ -2006,10 +2005,10 @@ skip:
 	}
 }
 
-static const DWORD config_get_values_hack_Get  = 0x42C13F;
-static const DWORD config_get_values_hack_OK   = 0x42C14D;
-static const DWORD config_get_values_hack_Fail = 0x42C131;
 static void __declspec(naked) config_get_values_hack() {
+	static const DWORD config_get_values_hack_Get = 0x42C13F;
+	static const DWORD config_get_values_hack_OK = 0x42C14D;
+	static const DWORD config_get_values_hack_Fail = 0x42C131;
 	__asm {
 		cmp ebp, 1;                        // counter value
 		jl  getOK;
@@ -2044,9 +2043,9 @@ skip:
 
 static void __declspec(naked) op_attack_hook() {
 	__asm {
-		mov esi, dword ptr [esp + 0x3C + 4];   // free_move
-		mov ebx, dword ptr [esp + 0x40 + 4];   // add amount damage to target
-		jmp fo::funcoffs::gdialogActive_;
+		mov  esi, dword ptr [esp + 0x3C + 4];   // free_move
+		mov  ebx, dword ptr [esp + 0x40 + 4];   // add amount damage to target
+		jmp  fo::funcoffs::gdialogActive_;
 	}
 }
 
@@ -2095,27 +2094,27 @@ fail:
 	}
 }
 
-static const DWORD combat_End = 0x422E45;
-static const DWORD combat_Load = 0x422E91;
 static void __declspec(naked) combat_hack_load() {
+	static const DWORD combat_End = 0x422E45;
+	static const DWORD combat_Load = 0x422E91;
 	__asm {
-		cmp eax, -1;
-		je  skip;
+		cmp  eax, -1;
+		je   skip;
 		retn;
 skip:
-		add esp, 4; // destroy addr
-		cmp ds:[FO_VAR_combat_end_due_to_load], 0;
-		jnz isLoad;
-		jmp combat_End;
+		add  esp, 4; // destroy addr
+		cmp  ds:[FO_VAR_combat_end_due_to_load], 0;
+		jnz  isLoad;
+		jmp  combat_End;
 isLoad:
-		jmp combat_Load;
+		jmp  combat_Load;
 	}
 }
 
 static void __declspec(naked) JesseContainerFid() {
 	__asm {
-		dec edx; // set fid to -1
-		jmp fo::funcoffs::obj_new_;
+		dec  edx; // set fid to -1
+		jmp  fo::funcoffs::obj_new_;
 	}
 }
 
@@ -2203,11 +2202,11 @@ static void __declspec(naked) obj_load_dude_hook1() {
 
 static void __declspec(naked) PrintAMList_hook() {
 	__asm {
-		cmp ebp, 20; // max line count
-		jle skip;
-		mov ebp, 20;
+		cmp  ebp, 20; // max line count
+		jle  skip;
+		mov  ebp, 20;
 skip:
-		jmp fo::funcoffs::qsort_;
+		jmp  fo::funcoffs::qsort_;
 	}
 }
 
@@ -2287,8 +2286,8 @@ dude:
 }
 
 static long blockingTileObj = 0;
-static const DWORD anim_move_to_tile_jmp = 0x416D91;
 static void __declspec(naked) anim_move_to_tile_hook() {
+	static const DWORD anim_move_to_tile_jmp = 0x416D91;
 	__asm {
 		call fo::funcoffs::obj_blocking_at_;
 		mov  blockingTileObj, eax;
@@ -2325,16 +2324,16 @@ getTile:
 
 static void __declspec(naked) action_use_an_item_on_object_hack() {
 	__asm {
-		add ebx, ds:[FO_VAR_combat_free_move];
-		mov eax, 2; // RB_RESERVED
+		add  ebx, ds:[FO_VAR_combat_free_move];
+		mov  eax, 2; // RB_RESERVED
 		retn;
 	}
 }
 
 static void __declspec(naked) action_climb_ladder_hack() {
 	__asm {
-		add ecx, ds:[FO_VAR_combat_free_move];
-		mov eax, 2; // RB_RESERVED
+		add  ecx, ds:[FO_VAR_combat_free_move];
+		mov  eax, 2; // RB_RESERVED
 		retn;
 	}
 }
@@ -2376,12 +2375,12 @@ largeLoc:
 		jnz  skip;
 		inc  ebx; // set 1
 skip:
-		///////// check result F1 behavior radius /////////
+		///////// check F1 behavior radius result /////////
 		cmp isNoRadius, 1;
 		je  noRadius;
 		///////////////////////////////////////////////////
 		cmp  [ecx + 0x38], 1; // wmAreaInfoList.start_state
-		jne  noRadius;        // hidden locaton
+		jne  noRadius;        // hidden location
 		cmp  esi, 2;          // mark visited state
 		jne  fixRadius;
 		call fo::funcoffs::wmMarkSubTileRadiusVisited_;
@@ -2401,19 +2400,19 @@ fixRadius:
 
 static void __declspec(naked) wmWorldMap_hack() {
 	__asm {
-		mov ebx, [ebx + 0x34]; // wmAreaInfoList.size
-		cmp ebx, 1;
-		jg  largeLoc;
-		je  mediumLoc;
+		mov  ebx, [ebx + 0x34]; // wmAreaInfoList.size
+		cmp  ebx, 1;
+		jg   largeLoc;
+		je   mediumLoc;
 //smallLoc:
-		sub eax, 5;
-		lea edx, [edx - 5];
+		sub  eax, 5;
+		lea  edx, [edx - 5];
 mediumLoc:
-		sub eax, 10;
-		lea edx, [edx - 10];
+		sub  eax, 10;
+		lea  edx, [edx - 10];
 largeLoc:
-		xor ebx, ebx;
-		jmp fo::funcoffs::wmPartyInitWalking_;
+		xor  ebx, ebx;
+		jmp  fo::funcoffs::wmPartyInitWalking_;
 	}
 }
 
@@ -2440,11 +2439,11 @@ static void __declspec(naked) combat_should_end_hack() {
 	static const DWORD combat_should_end_break = 0x422D00;
 	__asm { // ecx = dude.team_num
 		cmp  ecx, [ebp + teamNum];          // npc->combat_data.who_hit_me.team_num (engine code)
-		je   break;                         // attacks the player's team
+		je   break;                         // attacker is in the player's team
 		test [ebp + damageFlags], DAM_DEAD; // npc->combat_data.who_hit_me.damageFlags
-		jz   break;                         // the target is still alive
+		jz   break;                         // target is still alive
 		test byte ptr [edx], 1;             // npc->combat_data.combat_state
-		jnz  break;                         // npc in combat
+		jnz  break;                         // npc is in combat
 		retn; // check next critter
 break:
 		add  esp, 4;
@@ -2454,14 +2453,14 @@ break:
 
 static void __declspec(naked) wmInterfaceInit_hack() {
 	__asm {
-		mov eax, GVAR_CAR_PLACED_TILE;
-		cmp eax, dword ptr ds:[FO_VAR_num_game_global_vars];
-		jge skip;
-		mov edx, ds:[FO_VAR_game_global_vars];
-		lea edx, [edx + eax * 4];
-		mov dword ptr [edx], -1; // set gvar
+		mov  eax, GVAR_CAR_PLACED_TILE;
+		cmp  eax, dword ptr ds:[FO_VAR_num_game_global_vars];
+		jge  skip;
+		mov  edx, ds:[FO_VAR_game_global_vars];
+		lea  edx, [edx + eax * 4];
+		mov  dword ptr [edx], -1; // set gvar
 skip:
-		mov edx, 12;
+		mov  edx, 12;
 		retn;
 	}
 }
@@ -2689,7 +2688,7 @@ fix:
 jback:
 		xor  ecx, ecx;
 		dec  esi;
-		cmovnz ebp, ecx; // ebp=0 for continue uncover sub-tiles
+		cmovnz ebp, ecx; // ebp=0 to continue uncovering sub-tiles
 		dec  dword ptr [esp + 0x1C - 0x14]; // subtract one tile from the left
 		jmp  wmSubTileMarkRadiusVisited_Ret;
 checkTiles:
@@ -2863,8 +2862,8 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	//}
 
-	// Fix party members with level 6 protos to reach level 6
-	//if (GetConfigInt("Misc", "NPCStage6Fix", 0)) {
+	// Enable party members with level 6 protos to reach level 6
+	//if (GetConfigInt("Misc", "NPCStage6Fix", 1)) {
 		dlog("Applying NPC Stage 6 Fix.", DL_INIT);
 		MakeJump(0x493CE9, NPCStage6Fix1); // partyMember_init_
 		MakeJump(0x494224, NPCStage6Fix2); // partyMemberGetAIOptions_
@@ -3045,6 +3044,9 @@ void BugFixes::init()
 	// Fix crash when clicking on empty space in the inventory list opened by "Use Inventory Item On" (backpack) action icon
 	MakeCall(0x471A94, use_inventory_on_hack);
 
+	// Fix item_count function returning incorrect value when there is a container-item inside
+	MakeJump(0x47808C, item_count_hack); // replacing item_count_ function
+
 	// Fix for Sequence stat value not being printed correctly when using "print to file" option
 	MakeCall(0x4396F5, Save_as_ASCII_hack, 2);
 
@@ -3094,9 +3096,8 @@ void BugFixes::init()
 
 	// Fix missing AC/DR mod stats when examining ammo in the barter screen
 	dlog("Applying fix for displaying ammo stats in barter screen.", DL_INIT);
-	MakeCalls(obj_examine_func_hack_ammo0, {0x49B4AD, 0x49B504});
-	SafeWrite16(0x49B4B2, 0x9090);
-	SafeWrite16(0x49B509, 0x9090);
+	MakeCall(0x49B4AD, obj_examine_func_hack_ammo0, 2);
+	MakeCall(0x49B504, obj_examine_func_hack_ammo0, 2);
 	MakeCall(0x49B563, obj_examine_func_hack_ammo1, 2);
 	dlogr(" Done", DL_INIT);
 
@@ -3158,10 +3159,7 @@ void BugFixes::init()
 	// Fix for being unable to sell/give items in the barter screen when the player/party member is overloaded
 	HookCalls(barter_attempt_transaction_hook_weight, {0x474C73, 0x474CCA});
 
-	// Fix item_count function returning incorrect value when there is a container-item inside
-	MakeJump(0x47808C, item_count_hack); // replacing item_count_ function
-
-	// Fix draw line, correction of the line position if the items name is carry to a new line
+	// Fix for the underline position in the inventory display window when the item name is longer than one line
 	MakeCall(0x472F5F, inven_obj_examine_func_hack, 1);
 
 	// Fix for the exploit that allows you to gain excessive skill points from Tag! perk before leaving the character screen
@@ -3199,15 +3197,15 @@ void BugFixes::init()
 
 	// Radiation fixes
 	MakeCall(0x42D6C3, process_rads_hack, 1); // prevents player's death if a stat is less than 1 when removing radiation effects
-	HookCall(0x42D67A, process_rads_hook);    // fix for the same message being displayed when removing radiation effects
-	radiationEffectsMsgNum = GetConfigInt("Misc", "RadEffectsRemovalMsg", radiationEffectsMsgNum);
+	HookCall(0x42D67A, process_rads_hook);    // fix for the same effect message being displayed when removing radiation effects
+	radEffectsMsgNum = GetConfigInt("Misc", "RadEffectsRemovalMsg", radEffectsMsgNum);
 	// Display messages about radiation for the active geiger counter
 	if (GetConfigInt("Misc", "ActiveGeigerMsgs", 1)) {
 		dlog("Applying active geiger counter messages patch.", DL_INIT);
-		SafeWriteBatch<BYTE>(0x74, { 0x42D424, 0x42D444 }); // jnz > jz
+		SafeWriteBatch<BYTE>(0x74, {0x42D424, 0x42D444}); // jnz > jz
 		dlogr(" Done", DL_INIT);
 	}
-	// Display a pop-up messages box about death from radiation
+	// Display a pop-up message box about death from radiation
 	HookCall(0x42D733, process_rads_hook_msg);
 
 	// Fix for AI not taking chem_primary_desire in AI.txt as drug use preference when using drugs in their inventory
@@ -3389,19 +3387,19 @@ void BugFixes::init()
 	SafeWrite8(0x4123F2, CommonObj::protoId);
 	BlockCall(0x4123F3);
 
-	// Fix the music volume when entering in the dialog
+	// Fix the music volume when entering the dialog
 	SafeWrite32(0x44525D, (DWORD)FO_VAR_background_volume);
 
-	// Animation fix for the barter button in the dialog window when first entering to the dialog
+	// Fix animation for the barter button on the dialog window when first entering to the dialog
 	HookCall(0x44A77C, gdialog_window_create_hook);
 
 	// Fix displaying money of the player's in the dialogue when exiting the barter/control interface
 	HookCall(0x447ACD, gdialog_bk_hook);
 
-	// Fix a crash or glitch of the critter animation in combat when an explosion (from explosive items)
+	// Fix crash or animation glitch of the critter in combat when an explosion from explosives item
 	// and the AI attack animation are performed simultaneously
-	// Note: all events in the combat will occur before the AI (party member) attack
-	HookCall(0x422E5F, combat_ai_hook); // execution of the all events after end of the combat sequence
+	// Note: all events in combat will occur before the AI (party member) attack
+	HookCall(0x422E5F, combat_ai_hook); // execute all events after the end of the combat sequence
 
 	// Fix for the "Fill_W" flag in worldmap.txt not uncovering all tiles to the left edge of the world map
 	MakeJump(0x4C372B, wmSubTileMarkRadiusVisited_hack);

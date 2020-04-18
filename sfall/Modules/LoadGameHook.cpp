@@ -716,8 +716,8 @@ void LoadGameHook::init() {
 	SafeWrite32(0x5194C0, (DWORD)&EndLoadHook);
 	HookCalls(SaveGame_hook, {0x443AAC, 0x443B1C, 0x48FCFF});
 	HookCalls(game_reset_hook, {
-				0x47DD6B, // LoadSlot_ (on error load)
-				0x47DDF3, // LoadSlot_ (on error load)
+				0x47DD6B, // LoadSlot_ (on load error)
+				0x47DDF3, // LoadSlot_ (on load error)
 				//0x480708, // RestoreLoad_ (never called)
 				0x480AD3, // gnw_main_ (game ended after playing via New Game)
 				0x480BCC, // gnw_main_ (game ended after playing via Load Game)

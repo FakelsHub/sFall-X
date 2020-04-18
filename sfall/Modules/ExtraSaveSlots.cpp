@@ -41,9 +41,9 @@ void SavePageOffsets() {
 	sprintf_s(SavePath, MAX_PATH, filename, fo::var::patches);
 
 	_itoa_s(fo::var::slot_cursor, buffer, 10);
-	WritePrivateProfileString("POSITION", "ListNum", buffer, SavePath);
+	WritePrivateProfileStringA("POSITION", "ListNum", buffer, SavePath);
 	_itoa_s(LSPageOffset, buffer, 10);
-	WritePrivateProfileString("POSITION", "PageOffset", buffer, SavePath);
+	WritePrivateProfileStringA("POSITION", "PageOffset", buffer, SavePath);
 }
 
 //------------------------------------------
@@ -445,7 +445,6 @@ static long quickSavePage = 0;
 static FILETIME ftPrevSlot;
 
 static DWORD __stdcall QuickSaveGame(fo::DbFile* file, char* filename) {
-
 	long currSlot = fo::var::slot_cursor;
 
 	if (file) { // This slot is not empty

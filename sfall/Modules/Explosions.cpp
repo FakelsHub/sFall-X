@@ -105,7 +105,7 @@ static void __declspec(naked) explosion_lighting_fix2() {
 		call fo::funcoffs::register_object_funset_;
 
 		mov  eax, [esp + 24]; // explosion obj ptr
-		mov  edx, 0xFFFF0008; // maximum radius + intensity (see anim_set_check__light_fix)
+		mov  edx, 0xFFFF0008; // maximum radius + intensity (see anim_set_check_light_fix)
 		xor  ebx, ebx;
 		call fo::funcoffs::register_object_light_;
 
@@ -150,7 +150,7 @@ static void __declspec(naked) fire_dance_lighting_fix1() {
 		push edx;
 		push ebx;
 		mov  eax, esi;        // projectile ptr - 1st arg
-		mov  edx, 0xFFFF0002; // maximum radius + intensity (see anim_set_check__light_fix)
+		mov  edx, 0xFFFF0002; // maximum radius + intensity (see anim_set_check_light_fix)
 		xor  ebx, ebx;
 		call fo::funcoffs::register_object_light_;
 		mov  eax, esi;
@@ -158,7 +158,7 @@ static void __declspec(naked) fire_dance_lighting_fix1() {
 		pop  edx;
 		call fo::funcoffs::register_object_animate_; // overwritten call
 		mov  eax, esi;                               // projectile ptr - 1st arg
-		mov  edx, 0x00010000;                        // maximum radius + intensity (see anim_set_check__light_fix)
+		mov  edx, 0x00010000;                        // maximum radius + intensity (see anim_set_check_light_fix)
 		mov  ebx, -1;
 		call fo::funcoffs::register_object_light_;
 		jmp  fire_dance_lighting_back; // jump back

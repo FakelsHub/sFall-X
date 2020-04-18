@@ -296,16 +296,16 @@ void RunDebugEditor() {
 	WSACleanup();
 }
 
-static const DWORD dbg_error_ret = 0x453FD8;
 static void __declspec(naked) dbg_error_hack() {
+	static const DWORD dbg_error_ret = 0x453FD8;
 	__asm {
-		cmp ebx, 1;
-		je  hide;
-		sub esp, 0x104;
-		jmp dbg_error_ret;
+		cmp  ebx, 1;
+		je   hide;
+		sub  esp, 0x104;
+		jmp  dbg_error_ret;
 hide:
-		pop esi;
-		pop ecx;
+		pop  esi;
+		pop  ecx;
 		retn;
 	}
 }
