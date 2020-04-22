@@ -1493,15 +1493,16 @@ end:
 static void __declspec(naked) combat_display_hack() {
 	__asm {
 		test [esi + flags], Flat;                 // ctd.mainTarget
-		jnz  flatTarget;                          // _flat is set
-		mov  ebx, 0x42536B;
-		je   end;                                 // This is a critter?
+		jnz  end;                                 // target is flat (engine jump)
+		cmp  eax, (OBJ_TYPE_CRITTER << 24);       // This is a critter?
+		je   end;                                 // Yes (engine no jump)
 		cmp  dword ptr [ecx + scriptId], -1;      // Does the target have a script?
-		jne  end;                                 // Yes
-flatTarget:
-		mov  ebx, 0x425413;
+//		jne  hasScript;                           // Yes (engine no jump)
+		lahf;
+		xor  ah, 0x40; // invert ZF (01000000b)
+		sahf;          // if there is a script, do not jump (ZF is set)
 end:
-		jmp  ebx;
+		retn;
 	}
 }
 
@@ -3063,7 +3064,7 @@ void BugFixes::init()
 
 	// Fix for the displayed message when the attack randomly hits a target that is not a critter and has a script attached (meaning of this fix is not clear)
 	// Tweak: if the main target has a set Flat flag displays the message "You missed" instead of the message about hit another object
-	MakeJump(0x425365, combat_display_hack, 1);
+	MakeCall(0x42535F, combat_display_hack, 1);
 
 	// Fix for damage_p_proc being called for misses if the target is not a critter
 	MakeCall(0x424CD2, apply_damage_hack);
