@@ -35,7 +35,7 @@ namespace sfall
 static const DWORD bodypartAddr[] = {
 	0x425562,                     // combat_display_
 	0x42A68F, 0x42A739,           // ai_called_shot_
-	0x429E82, 0x429EC2, 0x429EFF, // ai_pick_hit_mode_
+//	0x429E82, 0x429EC2, 0x429EFF, // ai_pick_hit_mode_
 	0x423231, 0x423268,           // check_ranged_miss_
 	0x4242D4,                     // attack_crit_failure_
 	// for combat_ctd_init_ func
@@ -285,7 +285,7 @@ static long __fastcall CheckDisableBurst(fo::GameObject* critter) {
 	return 0;
 }
 
-static void __declspec(naked) ai_pick_hit_mode_hack() {
+static void __declspec(naked) ai_pick_hit_mode_hack_noSecondary() {
 	__asm {
 		mov  ebx, [eax + 0x94]; // cap->area_attack_mode
 		push eax;
@@ -470,6 +470,13 @@ static void BodypartHitReadConfig() {
 	bodypartHit.Uncalled  = static_cast<long>(GetConfigInt("Misc", "BodyHit_Torso_Uncalled", 0));
 }
 
+static void __declspec(naked)  ai_pick_hit_mode_hack() {
+	__asm {
+		mov  ebx, 8; // replace Body_Torso to Body_Uncalled
+		jmp  fo::funcoffs::determine_to_hit_;
+	}
+}
+
 static void __declspec(naked) apply_damage_hack() {
 	__asm {
 		xor  edx, edx;
@@ -513,7 +520,7 @@ void Combat::init() {
 	BlockCall(0x424796);
 
 	// Actually disables all secondary attacks for the critter, regardless of whether the weapon has a burst attack
-	MakeCall(0x429E44, ai_pick_hit_mode_hack, 1);   // NoBurst
+	MakeCall(0x429E44, ai_pick_hit_mode_hack_noSecondary, 1);   // NoBurst
 
 	if (GetConfigInt("Misc", "CheckWeaponAmmoCost", 0)) {
 		MakeCall(0x4234B3, compute_spray_hack, 1);
@@ -535,6 +542,7 @@ void Combat::init() {
 	BlockCall(0x42303F); // block Body_Torso check (combat_attack_)
 	SafeWrite8(0x42A713, 7); // Body_Uncalled > Body_Groin (ai_called_shot_)
 	SafeWriteBatch<BYTE>(8, bodypartAddr); // replace Body_Torso with Body_Uncalled
+	HookCalls(ai_pick_hit_mode_hack, { 0x429E8C, 0x429ECC, 0x429F09 });
 
 	LoadGameHook::OnGameReset() += ResetOnGameLoad;
 }
