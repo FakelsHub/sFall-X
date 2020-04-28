@@ -350,16 +350,15 @@ evaluation:
 
 static void __declspec(naked) cai_perform_distance_prefs_hack() {
 	__asm {
-		push eax;      // current distance to target
+		mov  ecx, eax; // current distance to target
 		mov  eax, esi;
 		xor  ebx, ebx; // no called shot
 		mov  edx, ATKTYPE_RWEAPON_PRIMARY;
 		call fo::funcoffs::item_w_mp_cost_;
 		mov  edx, [esi + movePoints];
 		sub  edx, eax; // ap - cost = free AP's
-		pop  eax;
 		jle  moveAway; // <= 0
-		lea  edx, [edx + eax - 1];
+		lea  edx, [edx + ecx - 1];
 		cmp  edx, 5;   // minimal threshold distance
 		jge  skipMove; // distance >= 5?
 moveAway:
@@ -371,7 +370,75 @@ skipMove:
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+
+static int32_t hitChance;
+static int32_t loopCounter = 0;
+
+static void __declspec(naked) combat_safety_invalidate_weapon_func_hook_init() {
+	__asm {
+		mov  loopCounter, 0;
+		jmp  fo::funcoffs::combat_ctd_init_;
+	}
+}
+
+static void __declspec(naked) combat_safety_invalidate_weapon_func_hook() {
+	__asm {
+		mov  hitChance, edx; // keep chance_to_hit
+		jmp  fo::funcoffs::compute_spray_;
+	}
+}
+
+static DWORD safety_invalidate_weapon_burst_loop = 0x42168B;
+static DWORD safety_invalidate_weapon_burst_exit = 0x4217AB;
+
+static void __declspec(naked) combat_safety_invalidate_weapon_func_hack1() { // jump
+	__asm {
+		dec  loopCounter;
+		jz   break;
+		jl   startLoop;
+		mov  eax, hitChance;            // set hit chance for compute_spray_
+		jmp  safety_invalidate_weapon_burst_loop;
+startLoop:
+		mov  eax, [esp + 0xF4 - 0x10];  // attacker
+		mov  edx, STAT_iq;
+		call fo::funcoffs::stat_level_; // number of checks depends on the attacker's IQ
+		shl  eax, 4;                    // multiply by 16 (max 160 check attempts)
+		mov  loopCounter, eax;
+		mov  eax, hitChance;            // set hit chance for compute_spray_
+		jmp  safety_invalidate_weapon_burst_loop;
+break:
+		jmp  safety_invalidate_weapon_burst_exit;
+	}
+}
+
+static void __declspec(naked) combat_safety_invalidate_weapon_func_hack2() { // call
+	__asm {
+		add  ecx, 4;
+		cmp  edi, ebp;
+		//////////////
+		jge  checkLoop; // all targets are checked
+break:
+		retn; // engine jl
+checkLoop:
+		dec  loopCounter;
+		jz   break;
+		lea  esp, [esp + 4];            // destroy ret addr
+		jl   startLoop;
+		mov  eax, hitChance;            // set hit chance for compute_spray_
+		jmp  safety_invalidate_weapon_burst_loop;
+startLoop:
+		mov  eax, [esp + 0xF4  - 0x10]; // attacker
+		mov  edx, STAT_iq;
+		call fo::funcoffs::stat_level_; // number of checks depends on the attacker's IQ
+		shl  eax, 4;                    // multiply by 16 (max 160 check attempts)
+		mov  loopCounter, eax;
+		mov  eax, hitChance;            // set hit chance for compute_spray_
+		jmp  safety_invalidate_weapon_burst_loop;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 static void __fastcall CombatAttackHook(fo::GameObject* source, fo::GameObject* target) {
 	sources[target] = source; // who attacked the 'target' for the last time
@@ -415,6 +482,13 @@ void AI::init() {
 
 	// Adds for AI checks the distance to the target and the range of the weapon in choosing the best weapon shot mode
 	HookCall(0x429F6D, ai_pick_hit_mode_hook);
+
+	// Fix friendly fire for shooting burst
+	// Modification function of safe use of weapon when the AI uses burst shooting mode
+	HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
+	HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
+	HookCall(0x4216F7, combat_safety_invalidate_weapon_func_hack1); // jle combat_safety_invalidate_weapon_func_hack1
+	MakeCall(0x4217A0, combat_safety_invalidate_weapon_func_hack2);
 
 	///////////////////// Combat AI behavior fixes /////////////////////////
 
