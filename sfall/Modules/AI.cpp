@@ -21,8 +21,6 @@
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 
-//#include "HookScripts\MiscHS.h"
-
 #include "SubModules\AI.Behavior.h"
 
 #include "AI.h"
@@ -324,15 +322,17 @@ skip:
 	}
 }
 
-static int32_t __fastcall CheckWeaponRangeAndHitToTarget(fo::GameObject* source, fo::GameObject* target, fo::GameObject* weapon) {
+static int32_t __fastcall CheckWeaponRangeAndHitToTarget(fo::GameObject* source, fo::GameObject* target) {
 
 	long weaponRange = fo::func::item_w_range(source, fo::ATKTYPE_RWEAPON_SECONDARY);
 	long targetRange = fo::func::obj_dist(source, target);
-	if (targetRange > weaponRange) return 0; // don't use secondary mode
+	return (weaponRange >= targetRange); // 0 - don't use secondary mode
 
-	long primaryHitChance = fo::func::determine_to_hit(source, target, 8, fo::ATKTYPE_RWEAPON_PRIMARY);
-	long secondaryHitChance = fo::func::determine_to_hit(source, target, 8, fo::ATKTYPE_RWEAPON_SECONDARY) + 10;
-	return (secondaryHitChance >= primaryHitChance); // 1 - use secondary mode
+	///if (targetRange > weaponRange) return 0; // don't use secondary mode
+
+	///long primaryHitChance = fo::func::determine_to_hit(source, target, 8, fo::ATKTYPE_RWEAPON_PRIMARY);
+	///long secondaryHitChance = fo::func::determine_to_hit(source, target, 8, fo::ATKTYPE_RWEAPON_SECONDARY) + 5;
+	///return (secondaryHitChance >= primaryHitChance); // 1 - use secondary mode
 }
 
 static void __declspec(naked) ai_pick_hit_mode_hook() {
@@ -342,213 +342,32 @@ static void __declspec(naked) ai_pick_hit_mode_hook() {
 		jnz  evaluation;
 		retn;
 evaluation:
-		push ebp;
 		mov  edx, edi;
 		mov  ecx, esi;
-		call CheckWeaponRangeAndHitToTarget;
-		retn;
+		jmp  CheckWeaponRangeAndHitToTarget;
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-static int32_t __fastcall sf_combat_check_bad_shot(fo::GameObject* source, fo::GameObject* target) {
-	long distance = 1, tile = -1;
-	long hitMode = fo::ATKTYPE_RWEAPON_PRIMARY;
-
-	if (target && target->critter.damageFlags & fo::DAM_DEAD) return 4; // target is dead
-
-	fo::GameObject* item = fo::func::inven_right_hand(source);
-	if (!item) return 0; // unarmed
-
-	if (target) {
-		tile = target->tile;
-		distance = fo::func::obj_dist(source, target);
-		hitMode = fo::func::ai_pick_hit_mode(source, item, target);
-	}
-
-	long flags = source->critter.damageFlags;
-	if (flags & fo::DAM_CRIP_ARM_LEFT && flags & fo::DAM_CRIP_ARM_RIGHT) {
-		return 3; // crippled both hands
-	}
-	///if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && fo::func::item_w_is_2handed(item)) {
-	///	return 3; // one of the hands is crippled, can't use a two-handed weapon
-	///}
-
-	long attackRange = fo::func::item_w_range(source, hitMode);
-	if (attackRange > 1 && fo::func::combat_is_shot_blocked(source, source->tile, tile, target, 0)) {
-		return 2; // shot to target is blocked
-	}
-	return (attackRange < distance); // 1 - target is out of range of the attack
-}
-
-fo::GameObject* rememberTarget = nullptr;
-
-// Sets a target for the AI from whoHitMe if an alternative target was not found
-// or chooses a near target between the currently find target and rememberTarget
-static void __declspec(naked) combat_ai_hook_revert_target() {
+static void __declspec(naked) cai_perform_distance_prefs_hack() {
 	__asm {
-		cmp   rememberTarget, 0;
-		jnz   pickNearTarget;
-		test  edi, edi; // find target?
-		cmovz edi, [esi + whoHitMe];
-		mov   edx, edi;
-		jmp   fo::funcoffs::cai_perform_distance_prefs_;
-
-pickNearTarget:
-		test  edi, edi; // find target?
-		jz    pickRemember;
-		call  fo::funcoffs::obj_dist_; // dist1: source & target
-		push  eax;
-		mov   eax, esi;
-		mov   edx, rememberTarget
-		call  fo::funcoffs::obj_dist_; // dist2: source & rememberTarget
-		pop   edx;
-		cmp   eax, edx;             // compare distance
-		cmovbe edi, rememberTarget; // dist2 <= dist1
-		mov   edx, edi;
-		mov   eax, esi; // restore source
-		mov   rememberTarget, 0;
-		jmp   fo::funcoffs::cai_perform_distance_prefs_;
-
-pickRemember:
-		mov   edi, rememberTarget;
-		mov   edx, edi;
-		mov   rememberTarget, 0;
-		jmp   fo::funcoffs::cai_perform_distance_prefs_;
-	}
-}
-
-static void __declspec(naked) ai_danger_source_hook() {
-	__asm {
-		cmp  dword ptr [esp + 56], 0x42B235 + 5; // called fr. combat_ai_
-		je   fix;
-		jmp  fo::funcoffs::combat_check_bad_shot_;
-fix:
-		mov  ecx, eax; // source
-		call sf_combat_check_bad_shot;
-		cmp  eax, 1;   // check result
-		jne  skip;
-		// weapon out of range
-		cmp  rememberTarget, 0;
-		jnz  skip;
-		mov  edx, [esp + edi + 4]; // offset from target1
-		mov  rememberTarget, edx;  // remember the target to return to it later
-skip:
+		push eax;      // current distance to target
+		mov  eax, esi;
+		xor  ebx, ebx; // no called shot
+		mov  edx, ATKTYPE_RWEAPON_PRIMARY;
+		call fo::funcoffs::item_w_mp_cost_;
+		mov  edx, [esi + movePoints];
+		sub  edx, eax; // ap - cost = free AP's
+		pop  eax;
+		jle  moveAway; // <= 0
+		lea  edx, [edx + eax - 1];
+		cmp  edx, 5;   // minimal threshold distance
+		jge  skipMove; // distance >= 5?
+moveAway:
+		mov  ebx, 10;  // move away max distance
 		retn;
-	}
-}
-
-static void __declspec(naked) ai_danger_source_hook_party_member() {
-	__asm {
-		cmp  dword ptr [esp + 56], 0x42B235 + 5; // called fr. combat_ai_
-		je   fix;
-		jmp  fo::funcoffs::combat_check_bad_shot_;
-fix:
-		mov  ecx, eax; // source
-		call sf_combat_check_bad_shot;
-		cmp  eax, 1;   // check result
-		setg al;       // set 0 for result OK
+skipMove:
+		xor ebx, ebx;  // skip the move away at the beginning of the turn
 		retn;
-	}
-}
-
-static int32_t __fastcall ai_try_move_steps_closer(fo::GameObject* source, fo::GameObject* target) {
-	///long result = sf_is_within_perception(source, target);
-	///if (!result) return 1; // the attacker can't see the target
-
-	long getTile = -1, dist = -1;
-
-	fo::GameObject* itemHand = fo::func::inven_right_hand(source);
-	if (itemHand) {
-		long mode = fo::func::ai_pick_hit_mode(source, itemHand, target);
-		long cost = fo::func::item_w_mp_cost(source, mode, 0);
-
-		// check the distance and number of remaining AP's
-		long weaponRange = fo::func::item_w_range(source, mode);
-		dist = fo::func::obj_dist(source, target) - weaponRange; // required approach distance
-		long ap = source->critter.movePoints - dist; // subtract the number of action points to the move, leaving the number for the shot
-		long remainingAP = ap - cost;
-
-		bool notEnoughAP = (cost > ap); // check whether the critter has enough AP to perform the attack
-
-		char rotationData[800];
-		long pathLength = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, (void*)fo::funcoffs::obj_blocking_at_);
-
-		if (pathLength > 0) {
-			if (notEnoughAP) return 1;
-
-			dist += remainingAP; // add remaining AP's to distance
-			if (dist > pathLength) dist = pathLength;
-
-			getTile = source->tile;
-
-			// get tile to perform an attack
-			for (long i = 0; i < dist; i++)	{
-				getTile = fo::func::tile_num_in_direction(getTile, rotationData[i], 1);
-			}
-		}
-		else if (!notEnoughAP) {
-			long dir = fo::func::tile_dir(source->tile, target->tile);
-			getTile = fo::func::tile_num_in_direction(source->tile, dir, dist); // get tile to move to
-
-			// make a path and check the actual distance of the path
-			pathLength = fo::func::make_path_func(source, source->tile, getTile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-			if (pathLength > dist) {
-				long diff = pathLength - dist;
-				if (diff > remainingAP) return 1;
-			}
-
-			long _dir = dir, _getTile = getTile;
-			long i = 0;
-			while (true)
-			{
-				// check if the tile is blocked
-				if (!fo::func::obj_blocking_at(source, _getTile, source->elevation)) {
-					getTile = _getTile;
-					break; // OK, tile is free
-				}
-				if (++i > 2) return 1; // neighboring tiles are also blocked
-				if (i == 1) {
-					if (++_dir > 5) _dir = 0;
-				} else {
-					_dir = dir - 1;
-					if (_dir < 0) _dir = 5;
-				}
-				if (remainingAP < 1) _dir = (_dir + 3) % 6; // invert direction, если в резерве имеются AP
-				_getTile = fo::func::tile_num_in_direction(getTile, _dir, 1);
-			}
-			// Note: here the value of dist and the distance between getTile and source tile may not match by 1 unit
-		}
-		// make sure that the distance is within the range of the weapon and the attack is not blocked
-		if (getTile != -1 && (fo::func::obj_dist_with_tile(source, getTile, target, target->tile) > weaponRange ||
-			fo::func::combat_is_shot_blocked(source, getTile, target->tile, target, 0)))
-		{
-			return 1;
-		}
-	}
-	if (getTile == -1) return 1;
-	//if (dist == -1) dist = source->critter.movePoints; // in dist - the distance to move
-
-	fo::func::register_begin(fo::RB_RESERVED);
-	fo::func::register_object_move_to_tile(source, getTile, source->elevation, dist, -1);
-	long result = fo::func::register_end();
-	if (!result) __asm call fo::funcoffs::combat_turn_run_;
-
-	return result;
-}
-
-static void __declspec(naked) ai_try_attack_hook_out_of_range() {
-	__asm {
-		pushadc;
-		mov  ecx, eax;
-		call ai_try_move_steps_closer;
-		test eax, eax;
-		popadc;
-		jnz  defaultMove;
-		retn;
-defaultMove:
-		jmp fo::funcoffs::ai_move_steps_closer_; // default behavior
 	}
 }
 
@@ -594,7 +413,7 @@ void AI::init() {
 		0x42A970, 0x42AA56, // ai_try_attack_
 	});
 
-	// Adds for AI an evaluation the hit chance, and checks the distance to the target and the range of the weapon in choosing the best weapon shot mode
+	// Adds for AI checks the distance to the target and the range of the weapon in choosing the best weapon shot mode
 	HookCall(0x429F6D, ai_pick_hit_mode_hook);
 
 	///////////////////// Combat AI behavior fixes /////////////////////////
@@ -643,13 +462,9 @@ void AI::init() {
 	// Disable fleeing when NPC cannot move closer to target
 	BlockCall(0x42ADF6); // ai_try_attack_
 
-	// Changes the behavior of the AI so that the AI moves to its target to perform an attack/shot when the range of its weapon is less than 
-	// the distance to the target or the AI will choose the nearest target if any other targets are available
-	HookCall(0x42918A, ai_danger_source_hook);
-	HookCall(0x42903A, ai_danger_source_hook_party_member);
-	HookCall(0x42B240, combat_ai_hook_revert_target);
-	// Forces the AI to move to target closer to make an attack on the target when the distance exceeds the range of the weapon
-	HookCall(0x42ABD7, ai_try_attack_hook_out_of_range);
+	// Fix AI behavior for distance preference "Snipe"
+	// The Attacker will try to shoot back from the attacker instead of always run away from him at the beginning of the turn
+	MakeCall(0x42B086, cai_perform_distance_prefs_hack);
 }
 
 fo::GameObject* __stdcall AI::AIGetLastAttacker(fo::GameObject* target) {
