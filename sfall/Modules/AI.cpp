@@ -329,7 +329,6 @@ static int32_t __fastcall CheckWeaponRangeAndHitToTarget(fo::GameObject* source,
 	return (weaponRange >= targetRange); // 0 - don't use secondary mode
 
 	///if (targetRange > weaponRange) return 0; // don't use secondary mode
-
 	///long primaryHitChance = fo::func::determine_to_hit(source, target, 8, fo::ATKTYPE_RWEAPON_PRIMARY);
 	///long secondaryHitChance = fo::func::determine_to_hit(source, target, 8, fo::ATKTYPE_RWEAPON_SECONDARY) + 5;
 	///return (secondaryHitChance >= primaryHitChance); // 1 - use secondary mode
@@ -377,7 +376,11 @@ static int32_t loopCounter = 0;
 
 static void __declspec(naked) combat_safety_invalidate_weapon_func_hook_init() {
 	__asm {
-		mov  loopCounter, 0;
+		xor  ecx, ecx;
+		cmp  edi, ANIM_fire_burst;
+		setne cl; // set to 1 to skip check attempts for ANIM_fire_continuous weapon anim
+		mov  loopCounter, ecx;
+		mov  ecx, ebp;
 		jmp  fo::funcoffs::combat_ctd_init_;
 	}
 }
@@ -483,16 +486,18 @@ void AI::init() {
 	// Adds for AI checks the distance to the target and the range of the weapon in choosing the best weapon shot mode
 	HookCall(0x429F6D, ai_pick_hit_mode_hook);
 
-	// Fix friendly fire for shooting burst
-	// Modification function of safe use of weapon when the AI uses burst shooting mode
-	HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
-	HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
-	HookCall(0x4216F7, combat_safety_invalidate_weapon_func_hack1); // jle combat_safety_invalidate_weapon_func_hack1
-	MakeCall(0x4217A0, combat_safety_invalidate_weapon_func_hack2);
-
 	///////////////////// Combat AI behavior fixes /////////////////////////
 
 	CombatAIBehaviorInit();
+
+	// Fix friendly fire for shooting burst mode
+	// Modification function of safe use of weapon when the AI uses burst shooting mode
+	if (GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 1)) {
+		HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
+		HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
+		HookCall(0x4216F7, combat_safety_invalidate_weapon_func_hack1); // jle combat_safety_invalidate_weapon_func_hack1
+		MakeCall(0x4217A0, combat_safety_invalidate_weapon_func_hack2);
+	}
 
 	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
 	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
