@@ -34,6 +34,22 @@ using namespace Fields;
 static std::unordered_map<fo::GameObject*, fo::GameObject*> targets;
 static std::unordered_map<fo::GameObject*, fo::GameObject*> sources;
 
+fo::GameObject* AI::sf_check_critters_on_fireline(fo::GameObject* object, DWORD checkTile, DWORD team) {
+	if (object && object->Type() == ObjType::OBJ_TYPE_CRITTER && object->critter.teamNum != team) { // not friendly fire
+		if (object->tile == checkTile) return nullptr;
+		fo::GameObject*	obj = nullptr; // continue check the line_of_fire from object to checkTile
+		fo::func::make_straight_path_func(object, object->tile, checkTile, 0, (DWORD*)&obj, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
+		if (!sf_check_critters_on_fireline(obj, checkTile, team)) return nullptr;
+	}
+	return object;
+}
+
+fo::GameObject* __fastcall AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
+	fo::GameObject* object = nullptr;
+	fo::func::make_straight_path_func(attacker, attacker->tile, target->tile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
+	return sf_check_critters_on_fireline(object, target->tile, attacker->critter.teamNum); // 0 if there are no friendly critters
+}
+
 static void __declspec(naked) ai_search_environ_hook() {
 	static const DWORD ai_search_environ_ret = 0x429D3E;
 	__asm {
@@ -373,15 +389,34 @@ skipMove:
 
 static int32_t hitChance;
 static int32_t loopCounter = 0;
+static int32_t checkBurstFriendlyFireMode;
 
 static void __declspec(naked) combat_safety_invalidate_weapon_func_hook_init() {
 	__asm {
 		xor  ecx, ecx;
 		cmp  edi, ANIM_fire_burst;
-		setne cl; // set to 1 to skip check attempts for ANIM_fire_continuous weapon anim
+		setne cl; // set to 1 to skip check attempts for weapon ANIM_fire_continuous animation
 		mov  loopCounter, ecx;
 		mov  ecx, ebp;
 		jmp  fo::funcoffs::combat_ctd_init_;
+	}
+}
+
+static void __declspec(naked) combat_safety_invalidate_weapon_func_hook_check() {
+	static DWORD safety_invalidate_weapon_burst_friendly = 0x4216C9;
+	__asm {
+		pushadc;
+		mov  ecx, esi; // target
+		call AI::CheckFriendlyFire;
+		test eax, eax;
+		jnz  friendly;
+		popadc;
+		cmp  checkBurstFriendlyFireMode, 3;
+		je   combat_safety_invalidate_weapon_func_hook_init;
+		jmp  fo::funcoffs::combat_ctd_init_;
+friendly:
+		lea  esp, [esp + 8 + 3*4];
+		jmp  safety_invalidate_weapon_burst_friendly; // "Friendly was in the way!"
 	}
 }
 
@@ -492,8 +527,13 @@ void AI::init() {
 
 	// Fix friendly fire for shooting burst mode
 	// Modification function of safe use of weapon when the AI uses burst shooting mode
-	if (GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 1)) {
-		HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
+	switch (checkBurstFriendlyFireMode = GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 2)) {
+	case 3: // both mode
+	case 1:
+		HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_check);
+		if (checkBurstFriendlyFireMode == 1) break;
+	case 2:
+		if (checkBurstFriendlyFireMode == 2) HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
 		HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
 		HookCall(0x4216F7, combat_safety_invalidate_weapon_func_hack1); // jle combat_safety_invalidate_weapon_func_hack1
 		MakeCall(0x4217A0, combat_safety_invalidate_weapon_func_hack2);

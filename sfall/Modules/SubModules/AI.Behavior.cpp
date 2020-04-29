@@ -76,14 +76,6 @@ end:
 	}
 }
 
-static fo::GameObject* sf_check_critters_on_fireline(fo::GameObject* object, DWORD checkTile, DWORD team) {
-	if (object && object->Type() == ObjType::OBJ_TYPE_CRITTER && object->critter.teamNum != team) { // not friendly fire
-		fo::GameObject*	obj = nullptr; // continue check the line_of_fire from object to checkTile
-		fo::func::make_straight_path_func(object, object->tile, checkTile, 0, (DWORD*)&obj, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-		if (!sf_check_critters_on_fireline(obj, checkTile, team)) return 0;
-	}
-	return object;
-}
 
 // Функция попытается найти свободный гекс для совершения выстрела AI по цели, в случаях когда цель для AI заблокировнна для выстрела каким либо объектом
 // если таковой гекс не будет найден то выполнится действия поумолчанию в функции ai_move_steps_closer_
@@ -116,7 +108,7 @@ static uint32_t __fastcall sf_ai_move_steps_closer(fo::GameObject* source, fo::G
 
 		fo::GameObject* object = nullptr; // check the line_of_fire from target to checkTile
 		fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-		if (!sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
+		if (!AI::sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
 			shotTile = checkTile;
 			distance = i + 2;
 			break;
@@ -135,7 +127,7 @@ static uint32_t __fastcall sf_ai_move_steps_closer(fo::GameObject* source, fo::G
 					checkTile = fo::func::tile_num_in_direction(checkTile, rotationData[i], 1);
 					fo::GameObject* object = nullptr; // check the line_of_fire from target to checkTile
 					fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-					if (!sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
+					if (!AI::sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
 						newTile = checkTile;
 					}
 					if (!--leftAP) break;
