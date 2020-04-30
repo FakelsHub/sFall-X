@@ -44,7 +44,8 @@ fo::GameObject* AI::sf_check_critters_on_fireline(fo::GameObject* object, DWORD 
 	return object;
 }
 
-fo::GameObject* __fastcall AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
+// The return of the friendly critter that are located on the line of fire
+fo::GameObject* AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
 	fo::GameObject* object = nullptr;
 	fo::func::make_straight_path_func(attacker, attacker->tile, target->tile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
 	return sf_check_critters_on_fireline(object, target->tile, attacker->critter.teamNum); // 0 if there are no friendly critters
@@ -387,9 +388,17 @@ skipMove:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static int32_t hitChance;
-static int32_t loopCounter = 0;
+static int32_t hitChance, loopCounter = 0;
 static int32_t checkBurstFriendlyFireMode;
+
+static int32_t __fastcall RollFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
+	if (AI::CheckFriendlyFire(target, attacker)) {
+		if (checkBurstFriendlyFireMode > 0) return 1;
+		long dice = fo::func::roll_random(1, 10);
+		return (fo::func::stat_level(attacker, fo::STAT_iq) >= dice); // 1 - is friendly
+	}
+	return 0;
+}
 
 static void __declspec(naked) combat_safety_invalidate_weapon_func_hook_init() {
 	__asm {
@@ -407,7 +416,7 @@ static void __declspec(naked) combat_safety_invalidate_weapon_func_hook_check() 
 	__asm {
 		pushadc;
 		mov  ecx, esi; // target
-		call AI::CheckFriendlyFire;
+		call RollFriendlyFire;
 		test eax, eax;
 		jnz  friendly;
 		popadc;
@@ -527,12 +536,13 @@ void AI::init() {
 
 	// Fix friendly fire for shooting burst mode
 	// Modification function of safe use of weapon when the AI uses burst shooting mode
-	switch (checkBurstFriendlyFireMode = GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 2)) {
-	case 3: // both mode
-	case 1:
+	switch (checkBurstFriendlyFireMode = GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 0)) { // -1 disable fix
+	case 3: // both 1 and 2 mode
+	case 0: // add roll check
+	case 1: // always prevent a burst shot if there is a friendly NPC on the line of fire
 		HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_check);
-		if (checkBurstFriendlyFireMode == 1) break;
-	case 2:
+		if (checkBurstFriendlyFireMode <= 1) break;
+	case 2: // adds additional evaluation checks
 		if (checkBurstFriendlyFireMode == 2) HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
 		HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
 		HookCall(0x4216F7, combat_safety_invalidate_weapon_func_hack1); // jle combat_safety_invalidate_weapon_func_hack1
