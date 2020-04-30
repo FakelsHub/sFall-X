@@ -377,11 +377,19 @@ static void __declspec(naked) cai_perform_distance_prefs_hack() {
 		lea  edx, [edx + ecx - 1];
 		cmp  edx, 5;   // minimal threshold distance
 		jge  skipMove; // distance >= 5?
+		// check combat rating
+		mov  eax, esi;
+		call fo::funcoffs::combatai_rating_;
+		mov  edx, eax; // source rating
+		mov  eax, edi;
+		call fo::funcoffs::combatai_rating_;
+		cmp  eax, edx; // target vs source rating
+		jl   skipMove; // target rating is low
 moveAway:
 		mov  ebx, 10;  // move away max distance
 		retn;
 skipMove:
-		xor ebx, ebx;  // skip the move away at the beginning of the turn
+		xor  ebx, ebx;  // skip the move away at the beginning of the turn
 		retn;
 	}
 }
@@ -591,7 +599,7 @@ void AI::init() {
 	// Disable fleeing when NPC cannot move closer to target
 	BlockCall(0x42ADF6); // ai_try_attack_
 
-	// Fix AI behavior for distance preference "Snipe"
+	// Fix AI behavior for "Snipe" distance preference
 	// The Attacker will try to shoot back from the attacker instead of always run away from him at the beginning of the turn
 	MakeCall(0x42B086, cai_perform_distance_prefs_hack);
 }
