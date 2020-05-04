@@ -53,37 +53,6 @@ fo::GameObject* AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* at
 	return sf_check_critters_on_fireline(object, target->tile, attacker->critter.teamNum); // 0 if there are no friendly critters
 }
 
-static void __declspec(naked) ai_search_environ_hook() {
-	static const DWORD ai_search_environ_ret = 0x429D3E;
-	__asm {
-		call fo::funcoffs::obj_dist_;
-		cmp  [esp + 0x28 + 0x1C + 4], item_type_ammo;
-		je   end;
-		//
-		push edx;
-		push eax;
-		mov  edx, STAT_max_move_points;
-		mov  eax, esi;
-		call fo::funcoffs::stat_level_;
-		mov  edx, [esi + movePoints];    // source current ap
-		cmp  edx, eax;                   // npc already used their ap?
-		pop  eax;
-		jge  skip;                       // yes
-		// distance & AP check
-		sub  edx, 3;                     // pickup cost ap
-		cmp  edx, eax;                   // eax - distance to the object
-		jl   continue;
-skip:
-		pop  edx;
-end:
-		retn;
-continue:
-		pop  edx;
-		add  esp, 4;                     // destroy return
-		jmp  ai_search_environ_ret;      // next object
-	}
-}
-
 static void __declspec(naked) ai_try_attack_hook_FleeFix() {
 	__asm {
 		or  byte ptr [esi + combatState], 8; // set new 'ReTarget' flag
@@ -217,45 +186,27 @@ skip:
 	}
 }
 
+static void __declspec(naked) ai_danger_source_hack_pm_newfind() {
+	__asm {
+		mov  ecx, [ebp + 0x18]; // source combat_data.who_hit_me
+		test ecx, ecx;
+		jnz  hasTarget;
+		retn;
+hasTarget:
+		test [ecx + damageFlags], DAM_DEAD;
+		jz   isNotDead;
+		xor  ecx, ecx;
+isNotDead:
+		mov  dword ptr [ebp + 0x18], 0; // combat_data.who_hit_me (engine code)
+		retn;
+	}
+}
+
 static void __declspec(naked) ai_danger_source_hack() {
 	__asm {
 		mov  eax, esi;
 		call fo::funcoffs::ai_get_attack_who_value_;
 		mov  dword ptr [esp + 0x34 - 0x1C + 4], eax; // attack_who
-		retn;
-	}
-}
-
-static long __fastcall sf_ai_check_weapon_switch(fo::GameObject* target, fo::GameObject* source) {
-	fo::GameObject* item = fo::func::ai_search_inven_weap(source, 1, target);
-	if (!item) return true; // no weapon in inventory, true to allow the to search continue weapon on the map
-
-	long wType = fo::func::item_w_subtype(item, AttackType::ATKTYPE_RWEAPON_PRIMARY);
-	if (wType < AttackSubType::THROWING) { // melee weapon, check the distance before switching
-		if (fo::func::obj_dist(source, target) > 2) return false;
-	}
-	return true;
-}
-
-static void __declspec(naked) ai_try_attack_hook_switch_fix() {
-	__asm {
-		mov  eax, [eax + movePoints];
-		test eax, eax;
-		jz   noSwitch; // if movePoints == 0
-		cmp  dword ptr [esp + 0x364 - 0x3C + 4], 0;
-		jz   switch;   // no weapon in hand slot
-		push edx;
-		mov  edx, esi;
-		call sf_ai_check_weapon_switch;
-		pop  edx;
-		test eax, eax;
-		jz   noSwitch;
-		mov  ecx, ebp;
-switch:
-		mov  eax, esi;
-		jmp  fo::funcoffs::ai_switch_weapons_;
-noSwitch:
-		dec  eax; // -1 - for exit from ai_try_attack_
 		retn;
 	}
 }
@@ -531,13 +482,22 @@ void AI::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
+	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
+	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
+		MakeCall(0x428F70, ai_danger_source_hack, 3);
+	}
+
+	// Enables the use of the RunAwayMode value from the AI-packet for the NPC
+	// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
+	npcPercentMinHP = (GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
+
 	// Fixed weapon reloading for NPCs if the weapon has more ammo capacity than there are ammo in the pack
 	HookCalls(item_w_reload_hook, {
 		0x42AF15,           // cai_attempt_w_reload_
 		0x42A970, 0x42AA56, // ai_try_attack_
 	});
 
-	// Adds for AI checks the distance to the target and the range of the weapon in choosing the best weapon shot mode
+	// Adds for AI checks the distance to the target and the range of the weapon in choosing the weapon shot mode
 	HookCall(0x429F6D, ai_pick_hit_mode_hook);
 
 	///////////////////// Combat AI behavior fixes /////////////////////////
@@ -559,28 +519,6 @@ void AI::init() {
 		MakeCall(0x4217A0, combat_safety_invalidate_weapon_func_hack2);
 	}
 
-	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
-	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
-		MakeCall(0x428F70, ai_danger_source_hack, 3);
-	}
-
-	// Enables the use of the RunAwayMode value from the AI-packet for the NPC
-	// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
-	npcPercentMinHP = (GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
-
-	// When npc does not have enough AP to use the weapon, it begin looking in the inventory another weapon to use,
-	// if no suitable weapon is found, then are search the nearby objects(weapons) on the ground to pick-up them
-	// This fix prevents pick-up of the object located on the ground, if npc does not have the full amount of AP (ie, the action does occur at not the beginning of its turn)
-	// or if there is not enough AP to pick up the object on the ground. Npc will not spend its AP for inappropriate use
-	if (GetConfigInt("CombatAI", "ItemPickUpFix", 0)) {
-		HookCall(0x429CAF, ai_search_environ_hook);
-	}
-
-	// Fixed switching weapons when action points is zero
-	if (GetConfigInt("CombatAI", "NPCSwitchingWeaponFix", 0)) {
-		HookCall(0x42AB57, ai_try_attack_hook_switch_fix);
-	}
-
 	// Fix adding duplicates the critters to the list of potential targets for AI
 	MakeCall(0x428E75, ai_find_attackers_hack_target2, 2);
 	MakeCall(0x428EB5, ai_find_attackers_hack_target3);
@@ -589,6 +527,11 @@ void AI::init() {
 	#ifndef NDEBUG
 	if (GetConfigInt("Debugging", "AIBugFixes", 1) == 0) return;
 	#endif
+
+	// Tweak for the find of new targets of party members
+	// Save the current target in the 'target1' variable and find other targets
+	MakeCall(0x429074, ai_danger_source_hack_pm_newfind);
+	SafeWrite16(0x429074 + 5, 0x47EB); // jmp 0x4290C2
 
 	// Fix to allow fleeing NPC to use drugs
 	MakeCall(0x42B1DC, combat_ai_hack);

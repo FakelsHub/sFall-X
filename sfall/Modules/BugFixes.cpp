@@ -936,36 +936,38 @@ end:
 static void __declspec(naked) MultiHexCombatMoveFix() {
 	static const DWORD ai_move_steps_closer_move_object_ret = 0x42A192;
 	__asm {
+		mov  edx, [esp + 4];          // source's destination tilenum
+		cmp  [edi + tile], edx;       // target's tilenum
+		je   checkObj;
+		retn;                         // tilenum in not equal, always move to tile
+checkObj:
 		test [edi + flags + 1], 0x08; // is target multihex?
 		jnz  multiHex;
 		test [esi + flags + 1], 0x08; // is source multihex?
-		jz   moveTile;
+		jnz  multiHex;
+		retn;                         // move to tile
 multiHex:
-		mov  edx, [esp + 4];          // source's destination tilenum
-		cmp  [edi + tile], edx;       // target's tilenum
-		jnz  moveTile;
 		add  esp, 4;
-		jmp  ai_move_steps_closer_move_object_ret;
-moveTile:
-		retn;
+		jmp  ai_move_steps_closer_move_object_ret; // move to object
 	}
 }
 
 static void __declspec(naked) MultiHexCombatRunFix() {
 	static const DWORD ai_move_steps_closer_run_object_ret = 0x42A169;
 	__asm {
+		mov  edx, [esp + 4];          // source's destination tilenum
+		cmp  [edi + tile], edx;       // target's tilenum
+		je   checkObj;
+		retn;                         // tilenum in not equal, always run to tile
+checkObj:
 		test [edi + flags + 1], 0x08; // is target multihex?
 		jnz  multiHex;
 		test [esi + flags + 1], 0x08; // is source multihex?
-		jz   runTile;
+		jnz  multiHex;
+		retn;                         // run to tile
 multiHex:
-		mov  edx, [esp + 4];          // source's destination tilenum
-		cmp  [edi + tile], edx;       // target's tilenum
-		jnz  runTile;
 		add  esp, 4;
-		jmp  ai_move_steps_closer_run_object_ret;
-runTile:
-		retn;
+		jmp  ai_move_steps_closer_run_object_ret; // run to object
 	}
 }
 
@@ -2939,7 +2941,7 @@ void BugFixes::init()
 	//if (GetConfigInt("Misc", "MultiHexPathingFix", 1)) {
 		dlog("Applying MultiHex Pathing Fix.", DL_INIT);
 		MakeCalls(MultiHexFix, {0x42901F, 0x429170});
-		// Fix for multihex critters moving too close and overlapping their targets in combat
+		// Fix for multihex critters moving too close and overlapping their targets in combat and move to retarget tile
 		MakeCall(0x42A14F, MultiHexCombatRunFix, 1);
 		MakeCall(0x42A178, MultiHexCombatMoveFix, 1);
 		dlogr(" Done", DL_INIT);
@@ -3144,14 +3146,12 @@ void BugFixes::init()
 	if (bestWeaponPerkMod > 0) {
 		dlog("Applying AI best weapon choose fix.", DL_INIT);
 		HookCall(0x42954B, ai_best_weapon_hook);
-		// also corrected calculate weapon perk modifier: multiply by 2 + modificator (default modifier should be set to 5)
+		// also corrected calculate weapon perk modifier
 		if (bestWeaponPerkMod > 1) {
-			if (bestWeaponPerkMod > 100) bestWeaponPerkMod = 100;
-			SafeWriteBatch<DWORD>(bestWeaponPerkMod, {0x42955F, 0x4296E8});
-			SafeWrite16(0x42955C, 0xD201);  // add edx, edx
-			SafeWrite8(0x42955E,  0xB8);    // mov eax, imm
-			SafeWrite16(0x4296E5, 0xD201);  // add edx, edx
-			SafeWrite8(0x4296E7,  0xB8);    // mov eax, imm
+			// Score x 3 it seems that this is the best way to fix it, because the difference >5 between the values is preserved, as with x5 (example: 7x3=21 and 9x3=27)
+			SafeWriteBatch<BYTE>(0x55, {0x42955E, 0x4296E7}); // lea eax, [edx * 2];
+			// Score x 2
+			if (bestWeaponPerkMod > 2) SafeWriteBatch<WORD>(0x9066, {0x429563, 0x4296EC}); // nop
 		}
 		dlogr(" Done", DL_INIT);
 	}
