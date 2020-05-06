@@ -292,16 +292,13 @@ skip:
 	}
 }
 
-static int32_t __fastcall CheckWeaponRangeAndHitToTarget(fo::GameObject* source, fo::GameObject* target) {
+static int32_t __fastcall CheckWeaponRangeAndActionPoint(fo::GameObject* source, fo::GameObject* target) {
 
 	long weaponRange = fo::func::item_w_range(source, fo::ATKTYPE_RWEAPON_SECONDARY);
 	long targetRange = fo::func::obj_dist(source, target);
-	return (weaponRange >= targetRange); // 0 - don't use secondary mode
+	if (targetRange > weaponRange) return 0; // don't use secondary mode
 
-	///if (targetRange > weaponRange) return 0; // don't use secondary mode
-	///long primaryHitChance = fo::func::determine_to_hit(source, target, 8, fo::ATKTYPE_RWEAPON_PRIMARY);
-	///long secondaryHitChance = fo::func::determine_to_hit(source, target, 8, fo::ATKTYPE_RWEAPON_SECONDARY) + 5;
-	///return (secondaryHitChance >= primaryHitChance); // 1 - use secondary mode
+	return (source->critter.movePoints >= sf_item_w_mp_cost(source, fo::ATKTYPE_RWEAPON_SECONDARY, 0)); // 1 - allow secondary mode
 }
 
 static void __declspec(naked) ai_pick_hit_mode_hook() {
@@ -313,7 +310,7 @@ static void __declspec(naked) ai_pick_hit_mode_hook() {
 evaluation:
 		mov  edx, edi;
 		mov  ecx, esi;
-		jmp  CheckWeaponRangeAndHitToTarget;
+		jmp  CheckWeaponRangeAndActionPoint;
 	}
 }
 
