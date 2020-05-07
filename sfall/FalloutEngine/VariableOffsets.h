@@ -275,15 +275,18 @@
 
 // colors
 #define FO_VAR_BlueColor                  0x6A38EF
-#define FO_VAR_DARK_GREY_Color            0x6A59D8
-#define FO_VAR_DarkGreenColor             0x6A3A90
-#define FO_VAR_DarkGreenGreyColor         0x6A3DF1
 #define FO_VAR_DullPinkColor              0x6AB718
 #define FO_VAR_GoodColor                  0x6AB4EF
 #define FO_VAR_GreenColor                 0x6A3CB0
-#define FO_VAR_LIGHT_RED_Color            0x6AB61A
+#define FO_VAR_DarkGreenColor             0x6A3A90
+#define FO_VAR_DarkGreenGreyColor         0x6A3DF1
 #define FO_VAR_LIGHT_GREY_Color           0x6A76BF
+#define FO_VAR_DARK_GREY_Color            0x6A59D8
 #define FO_VAR_PeanutButter               0x6A82F3
+#define FO_VAR_LIGHT_RED_Color            0x6AB61A
 #define FO_VAR_RedColor                   0x6AB4D0
+#define FO_VAR_DarkRedColor               0x6AA8D0
 #define FO_VAR_WhiteColor                 0x6AB8CF
-#define FO_VAR_YellowColor                0x6AB8BB
+#define FO_VAR_YellowColor                0x6AB8BB // Light
+#define FO_VAR_DarkYellowColor            0x6AB472
+

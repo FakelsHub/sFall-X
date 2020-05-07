@@ -112,7 +112,7 @@ DWORD __fastcall Combat::check_item_ammo_cost(fo::GameObject* weapon, DWORD hitM
 	}
 	long currAmmo = fo::func::item_w_curr_ammo(weapon);
 
-	DWORD cost = 1; // default cost
+	long cost = 1; // default cost
 	if (currAmmo > 0) {
 		cost = rounds / currAmmo;
 		if (rounds % currAmmo) cost++; // round up
@@ -512,8 +512,10 @@ static void CombatProcFix() {
 	dlogr(" Done", DL_INIT);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+
 // Returns the distance to the target or -1 if the attack is not possible
-static int32_t DudeCanMeleeAttack(fo::GameObject* target, int32_t hitMode, int32_t isCalledShot, fo::GameObject* weapon) {
+static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCalledShot, fo::GameObject* weapon) {
 	long wType = fo::func::item_w_subtype(weapon, hitMode);
 	if (wType > fo::AttackSubType::MELEE) return -1;
 
@@ -521,6 +523,7 @@ static int32_t DudeCanMeleeAttack(fo::GameObject* target, int32_t hitMode, int32
 	long cost = sf_item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
 	long dudeAP = fo::var::obj_dude->critter.movePoints + fo::var::combat_free_move;
 	long distance = fo::func::obj_dist(fo::var::obj_dude, target);
+	distance -= fo::func::item_w_range(fo::var::obj_dude, hitMode);
 
 	bool result = ((distance + cost - 1) > dudeAP);
 	return (result) ? -1 : distance;
@@ -563,6 +566,8 @@ static int32_t __fastcall CheckMeleeAttack(fo::GameObject* target, int32_t hitMo
 	return DudeCanMeleeAttack(target, hitMode, isCalledShot, weapon);
 }
 
+static int16_t setHitColor = 0;
+
 static void __declspec(naked) combat_to_hit_hack() {
 	static const DWORD combat_to_hit_hack_Ret = 0x426786;
 	__asm {
@@ -580,8 +585,19 @@ checkMelee:
 		jge  canAttack;                    // >=0
 		retn 8;
 canAttack:
+		mov  setHitColor, 1;
 		mov  [esp], eax;                   // set NoRange for determine_to_hit_func_
 		jmp  combat_to_hit_hack_Ret;
+	}
+}
+
+static void __declspec(naked) gmouse_bk_process_hack() {
+	__asm {
+		mov   al, ds:[FO_VAR_WhiteColor]; // default color
+		cmp   setHitColor, 0;
+		cmovne ax, ds:[FO_VAR_DarkYellowColor];
+		mov   setHitColor, 0;
+		retn;
 	}
 }
 
@@ -625,6 +641,7 @@ void Combat::init() {
 	if (GetConfigInt("Misc", "AutoMoveToAttack", 0)) {
 		MakeCall(0x42690C, combat_attack_this_hack);
 		MakeCall(0x42677A, combat_to_hit_hack);
+		MakeCall(0x44BBD2, gmouse_bk_process_hack);
 	}
 
 	BodypartHitReadConfig();
