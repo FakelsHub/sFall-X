@@ -49,7 +49,9 @@ WRAP_WATCOM_FFUNC3(long, obj_new_sid_inst, GameObject*, object, long, sType, lon
 WRAP_WATCOM_FFUNC3(long, object_under_mouse, long, crSwitch, long, inclDude, long, elevation)
 WRAP_WATCOM_FFUNC4(void, qsort, void*, base, long, number, long, elSize, DWORD, comp)
 WRAP_WATCOM_FFUNC4(void, register_object_call, long*, target, long*, source, void*, func, long, delay)
+WRAP_WATCOM_FFUNC4(long, register_object_move_to_object, GameObject*, source, GameObject*, target, long, distance, long, delay)
 WRAP_WATCOM_FFUNC5(long, register_object_move_to_tile, GameObject*, source, long, tile, long, elev, long, distance, long, delay)
+WRAP_WATCOM_FFUNC4(long, register_object_run_to_object, GameObject*, source, GameObject*, target, long, distance, long, delay)
 WRAP_WATCOM_FFUNC3(long, scr_get_local_var, long, sid, long, varId, long*, value)
 WRAP_WATCOM_FFUNC3(long, scr_set_local_var, long, sid, long, varId, long, value)
 WRAP_WATCOM_FFUNC3(long, tile_num_in_direction, long, tile, long, rotation,long, distance)
@@ -110,6 +112,7 @@ WRAP_WATCOM_FUNC2(long, is_within_perception, GameObject*, source, GameObject*, 
 WRAP_WATCOM_FUNC1(long, item_c_curr_size, GameObject*, critter)
 WRAP_WATCOM_FUNC1(long, item_caps_total, GameObject*, object)
 WRAP_WATCOM_FUNC1(long, item_cost, GameObject*, item)
+WRAP_WATCOM_FUNC2(GameObject*, item_hit_with, GameObject*, critter, long, hitMode)
 WRAP_WATCOM_FUNC1(long, item_size, GameObject*, item)
 WRAP_WATCOM_FUNC1(long, item_total_cost, GameObject*, object)
 WRAP_WATCOM_FUNC1(long, item_total_weight, GameObject*, object)
@@ -177,13 +180,11 @@ WRAP_WATCOM_FUNC1(long, register_object_inc_rotation, GameObject*, object)
 WRAP_WATCOM_FUNC3(long, register_object_light, GameObject*, object, long, lightRadius, long, delay)
 // WRAP_WATCOM_FUNC3(long, register_object_move_on_stairs_, GameObject*, object;
 // WRAP_WATCOM_FUNC3(long, register_object_move_straight_to_tile_, GameObject*, object;
-// WRAP_WATCOM_FUNC3(long, register_object_move_to_object_, GameObject*, object;
 // WRAP_WATCOM_FUNC3(long, register_object_move_to_tile_, GameObject*, object;
 // WRAP_WATCOM_FUNC3(long, register_object_must_call_, GameObject*, object;
 WRAP_WATCOM_FUNC1(long, register_object_must_erase, GameObject*, object)
 // WRAP_WATCOM_FUNC3(long, register_object_outline_, GameObject*, object;
 // WRAP_WATCOM_FUNC3(long, register_object_play_sfx_, GameObject*, object;
-// WRAP_WATCOM_FUNC3(long, register_object_run_to_object_, GameObject*, object;
 // WRAP_WATCOM_FUNC3(long, register_object_run_to_tile_, GameObject*, object;
 WRAP_WATCOM_FUNC3(long, register_object_take_out, GameObject*, object, long, holdFrameId, long, nothing)
 WRAP_WATCOM_FUNC3(long, register_object_turn_towards, GameObject*, object, long, tileNum, long, nothing)

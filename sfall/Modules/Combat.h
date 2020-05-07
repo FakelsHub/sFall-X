@@ -27,6 +27,8 @@ class Combat : public Module {
 public:
 	const char* name() { return "Combat"; }
 	void init();
+
+	static DWORD __fastcall check_item_ammo_cost(fo::GameObject* weapon, DWORD hitMode);
 };
 
 struct ChanceModifier {

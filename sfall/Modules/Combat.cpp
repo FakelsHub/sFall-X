@@ -27,6 +27,8 @@
 
 #include "SubModules\CombatBlock.h"
 
+#include "HookScripts\CombatHS.h"
+
 #include "Combat.h"
 
 namespace sfall
@@ -83,10 +85,23 @@ static bool hookedAimedShot;
 static std::vector<DWORD> disabledAS;
 static std::vector<DWORD> forcedAS;
 
-static DWORD __fastcall add_check_for_item_ammo_cost(register fo::GameObject* weapon, DWORD hitMode) {
+// may need to move it to engine utilities
+static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
+	fo::func::register_begin(fo::RB_RESERVED);
+	if (dist > 3) { // 5 default engine distance w/o sfall tweak
+		fo::func::register_object_run_to_object(source, target, dist, -1);
+	} else {
+		fo::func::register_object_move_to_object(source, target, dist, -1);
+	}
+	long result = fo::func::register_end();
+	if (!result) __asm call fo::funcoffs::combat_turn_run_;
+	return result; // 0 - ok, -1 - error
+}
+
+DWORD __fastcall Combat::check_item_ammo_cost(fo::GameObject* weapon, DWORD hitMode) {
 	DWORD rounds = 1;
 
-	DWORD anim = fo::func::item_w_anim_weap(weapon, hitMode);
+	long anim = fo::func::item_w_anim_weap(weapon, hitMode);
 	if (anim == fo::Animation::ANIM_fire_burst || anim == fo::Animation::ANIM_fire_continuous) {
 		rounds = fo::func::item_w_rounds(weapon); // ammo in burst
 	}
@@ -95,7 +110,7 @@ static DWORD __fastcall add_check_for_item_ammo_cost(register fo::GameObject* we
 	} else if (rounds == 1) {
 		fo::func::item_w_compute_ammo_cost(weapon, &rounds);
 	}
-	DWORD currAmmo = fo::func::item_w_curr_ammo(weapon);
+	long currAmmo = fo::func::item_w_curr_ammo(weapon);
 
 	DWORD cost = 1; // default cost
 	if (currAmmo > 0) {
@@ -111,7 +126,7 @@ static void __declspec(naked) combat_check_bad_shot_hook() {
 		push edx;
 		push ecx;         // weapon
 		mov  edx, edi;    // hitMode
-		call add_check_for_item_ammo_cost;
+		call Combat::check_item_ammo_cost;
 		pop  ecx;
 		pop  edx;
 		retn;
@@ -125,7 +140,7 @@ static void __declspec(naked) ai_search_inven_weap_hook() {
 		push ecx;
 		mov  ecx, eax;                      // weapon
 		mov  edx, ATKTYPE_RWEAPON_PRIMARY;  // hitMode
-		call add_check_for_item_ammo_cost;  // enough ammo?
+		call Combat::check_item_ammo_cost;  // enough ammo?
 		pop  ecx;
 		retn;
 	}
@@ -183,7 +198,7 @@ static void __declspec(naked) compute_spray_hack() {
 }
 
 static double ApplyModifiers(std::vector<KnockbackModifier>* mods, fo::GameObject* object, double val) {
-	for (DWORD i = 0; i < mods->size(); i++) {
+	for (size_t i = 0; i < mods->size(); i++) {
 		KnockbackModifier* mod = &(*mods)[i];
 		if (mod->id == object->id) {
 			switch (mod->type) {
@@ -258,7 +273,7 @@ knockback:
 }
 
 static int _fastcall HitChanceMod(int base, fo::GameObject* critter) {
-	for (DWORD i = 0; i < hitChanceMods.size(); i++) {
+	for (size_t i = 0; i < hitChanceMods.size(); i++) {
 		if (critter->id == hitChanceMods[i].id) {
 			return min(base + hitChanceMods[i].mod, hitChanceMods[i].maximum);
 		}
@@ -321,7 +336,7 @@ void _stdcall KnockbackSetMod(fo::GameObject* object, DWORD type, float val, DWO
 			: Objects::SetObjectUniqueID(object);
 
 	KnockbackModifier mod = { id, type, (double)val };
-	for (DWORD i = 0; i < mods->size(); i++) {
+	for (size_t i = 0; i < mods->size(); i++) {
 		if ((*mods)[i].id == id) {
 			(*mods)[i] = mod;
 			return;
@@ -345,7 +360,7 @@ void _stdcall KnockbackRemoveMod(fo::GameObject* object, DWORD mode) {
 	default:
 		return;
 	}
-	for (DWORD i = 0; i < mods->size(); i++) {
+	for (size_t i = 0; i < mods->size(); i++) {
 		if ((*mods)[i].id == object->id) {
 			mods->erase(mods->begin() + i);
 			if (mode == 0) Objects::SetNewEngineID(object); // revert to engine range id
@@ -362,7 +377,7 @@ void _stdcall SetHitChanceMax(fo::GameObject* critter, DWORD maximum, DWORD mod)
 	}
 	if (critter->Type() != fo::OBJ_TYPE_CRITTER) return;
 	long id = Objects::SetObjectUniqueID(critter);
-	for (DWORD i = 0; i < hitChanceMods.size(); i++) {
+	for (size_t i = 0; i < hitChanceMods.size(); i++) {
 		if (id == hitChanceMods[i].id) {
 			hitChanceMods[i].maximum = maximum;
 			hitChanceMods[i].mod = mod;
@@ -387,10 +402,10 @@ void _stdcall SetNoBurstMode(fo::GameObject* critter, bool on) {
 
 static int __fastcall AimedShotTest(DWORD pid) {
 	if (pid) pid = ((fo::GameObject*)pid)->protoId;
-	for (DWORD i = 0; i < disabledAS.size(); i++) {
+	for (size_t i = 0; i < disabledAS.size(); i++) {
 		if (disabledAS[i] == pid) return -1;
 	}
-	for (DWORD i = 0; i < forcedAS.size(); i++) {
+	for (size_t i = 0; i < forcedAS.size(); i++) {
 		if (forcedAS[i] == pid) return 1;
 	}
 	return 0;
@@ -425,10 +440,10 @@ static void HookAimedShots() {
 
 void _stdcall DisableAimedShots(DWORD pid) {
 	if (!hookedAimedShot) HookAimedShots();
-	for (DWORD i = 0; i < forcedAS.size(); i++) {
+	for (size_t i = 0; i < forcedAS.size(); i++) {
 		if (forcedAS[i] == pid) forcedAS.erase(forcedAS.begin() + (i--));
 	}
-	for (DWORD i = 0; i < disabledAS.size(); i++) {
+	for (size_t i = 0; i < disabledAS.size(); i++) {
 		if (disabledAS[i] == pid) return;
 	}
 	disabledAS.push_back(pid);
@@ -436,10 +451,10 @@ void _stdcall DisableAimedShots(DWORD pid) {
 
 void _stdcall ForceAimedShots(DWORD pid) {
 	if (!hookedAimedShot) HookAimedShots();
-	for (DWORD i = 0; i < disabledAS.size(); i++) {
+	for (size_t i = 0; i < disabledAS.size(); i++) {
 		if (disabledAS[i] == pid) disabledAS.erase(disabledAS.begin() + (i--));
 	}
-	for (DWORD i = 0; i < forcedAS.size(); i++) {
+	for (size_t i = 0; i < forcedAS.size(); i++) {
 		if (forcedAS[i] == pid) return;
 	}
 	forcedAS.push_back(pid);
@@ -497,6 +512,79 @@ static void CombatProcFix() {
 	dlogr(" Done", DL_INIT);
 }
 
+// Returns the distance to the target or -1 if the attack is not possible
+static int32_t DudeCanMeleeAttack(fo::GameObject* target, int32_t hitMode, int32_t isCalledShot, fo::GameObject* weapon) {
+	long wType = fo::func::item_w_subtype(weapon, hitMode);
+	if (wType > fo::AttackSubType::MELEE) return -1;
+
+	// unarmed and melee weapon, check the distance and cost AP
+	long cost = sf_item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
+	long dudeAP = fo::var::obj_dude->critter.movePoints + fo::var::combat_free_move;
+	long distance = fo::func::obj_dist(fo::var::obj_dude, target);
+
+	bool result = ((distance + cost - 1) > dudeAP);
+	return (result) ? -1 : distance;
+}
+
+static int32_t __fastcall DudeMoveToAttackTarget(fo::GameObject* target, int32_t hitMode, int32_t isCalledShot) {
+	fo::GameObject* weapon = fo::func::item_hit_with(fo::var::obj_dude, hitMode);
+	long distance = DudeCanMeleeAttack(target, hitMode, isCalledShot, weapon);
+	if (distance == -1) return -1;
+
+	// check ammo
+	int result = ((fo::func::item_w_max_ammo(weapon) > 0) && !Combat::check_item_ammo_cost(weapon, hitMode));
+	return (result || CombatMoveToObject(fo::var::obj_dude, target, distance));
+}
+
+static void __declspec(naked) combat_attack_this_hack() {
+	static const DWORD combat_attack_this_hack_Ret1 = 0x4269F0;
+	static const DWORD combat_attack_this_hack_Ret2 = 0x4268AA;
+	__asm {
+		mov  ecx, esi;                     // target
+		mov  edx, [esp + 0xAC - 0x20 + 4]; // hit mode
+		push [esp + 0xAC - 0x1C + 4];      // called shot
+		call DudeMoveToAttackTarget;
+		test eax, eax;
+		jl   outRange;
+		jg   noAmmo;
+		add  esp, 4;
+		jmp  combat_attack_this_hack_Ret1; // attack target
+noAmmo:
+		add  esp, 4;
+		jmp  combat_attack_this_hack_Ret2; // no ammo report
+outRange:
+		mov  ecx, 102; // engine code
+		retn;
+	}
+}
+
+static int32_t __fastcall CheckMeleeAttack(fo::GameObject* target, int32_t hitMode, int32_t isCalledShot) {
+	fo::GameObject* weapon = fo::func::item_hit_with(fo::var::obj_dude, hitMode);
+	return DudeCanMeleeAttack(target, hitMode, isCalledShot, weapon);
+}
+
+static void __declspec(naked) combat_to_hit_hack() {
+	static const DWORD combat_to_hit_hack_Ret = 0x426786;
+	__asm {
+		cmp  eax, 2;                       // out of range result combat_check_bad_shot_
+		je   checkMelee;
+		xor  eax,eax;                      // engine code
+		retn 8;
+checkMelee:
+		mov  ecx, esi;                     // target
+		mov  edx, [esp + 0x18 - 0x14 + 4]; // hit mode
+		push [esp + 0x18 - 0x18 + 4];      // called shot
+		call CheckMeleeAttack;
+		test eax, eax;
+		mov  eax, 0;
+		jge  canAttack;                    // >=0
+		retn 8;
+canAttack:
+		mov  [esp], eax;                   // set NoRange for determine_to_hit_func_
+		jmp  combat_to_hit_hack_Ret;
+	}
+}
+
 static void ResetOnGameLoad() {
 	baseHitChance.SetDefault();
 	mTargets.clear();
@@ -532,6 +620,11 @@ void Combat::init() {
 	SimplePatch<DWORD>(0x424FA7, "Misc", "KnockoutTime", 35, 35, 100);
 	if (GetConfigInt("Misc", "DisablePunchKnockback", 0)) {
 		MakeCall(0x424AD7, compute_damage_hack_knockback, 1);
+	}
+
+	if (GetConfigInt("Misc", "AutoMoveToAttack", 0)) {
+		MakeCall(0x42690C, combat_attack_this_hack);
+		MakeCall(0x42677A, combat_to_hit_hack);
 	}
 
 	BodypartHitReadConfig();
