@@ -20,6 +20,12 @@ namespace sfall
 using namespace fo;
 using namespace Fields;
 
+#ifndef NDEBUG
+#define DEV_PRINTF(info)			fo::func::debug_printf(info)
+#define DEV_PRINTF1(info, a)		fo::func::debug_printf(info, a)
+#define DEV_PRINTF2(info, a, b)		fo::func::debug_printf(info, a, b)
+#endif
+
 static void __declspec(naked) ai_search_environ_hook() {
 	static const DWORD ai_search_environ_ret = 0x429D3E;
 	__asm {
@@ -51,38 +57,40 @@ continue:
 	}
 }
 
-static long __fastcall sf_ai_check_weapon_switch(fo::GameObject* target, fo::GameObject* source) {
+static long __fastcall sf_ai_check_weapon_switch(fo::GameObject* target, long &hitMode, fo::GameObject* source, fo::GameObject* weapon) {
+	if (source->critter.movePoints <= 0) return -1;
+	if (!weapon) return 1; // no weapon in hand slot
+
+	long _hitMode;
+	if ((_hitMode = fo::func::ai_pick_hit_mode(source, weapon, target)) != hitMode) {
+		hitMode = _hitMode;
+		return 0; // сменили режим
+	}
+
 	fo::GameObject* item = fo::func::ai_search_inven_weap(source, 1, target);
-	if (!item) return true; // no weapon in inventory, true to allow the to search continue weapon on the map
+	if (!item) return 1; // no weapon in inventory, true to allow the to search continue weapon on the map
 
 	long wType = fo::func::item_w_subtype(item, AttackType::ATKTYPE_RWEAPON_PRIMARY);
 	if (wType <= AttackSubType::MELEE) { // unarmed and melee weapon, check the distance before switching
-		if (fo::func::obj_dist(source, target) > 2) return false;
+		if (fo::func::obj_dist(source, target) > 2) return -1;
 	}
-	return true;
+	return 1;
 }
 
 static void __declspec(naked) ai_try_attack_hook_switch_fix() {
 	__asm {
-		mov  eax, [eax + movePoints];
-		test eax, eax;
-		jz   noSwitch; // if movePoints == 0
-
-		cmp  dword ptr [esp + 0x364 - 0x3C + 4], 0;
-		jz   switch;   // no weapon in hand slot
 		push edx;
-		mov  edx, esi;
-		call sf_ai_check_weapon_switch;
+		push [ebx];//push dword ptr [esp + 0x364 - 0x3C + 8]; // weapon
+		push esi;                                // source
+		call sf_ai_check_weapon_switch;          // edx - hit mode
 		pop  edx;
 		test eax, eax;
-		jz   noSwitch;
+		jle  noSwitch; // <= 0
 		mov  ecx, ebp;
-switch:
 		mov  eax, esi;
 		jmp  fo::funcoffs::ai_switch_weapons_;
 noSwitch:
-		dec  eax; // -1 - for exit from ai_try_attack_
-		retn;
+		retn; // -1 - for exit from ai_try_attack_
 	}
 }
 
@@ -92,7 +100,12 @@ static long CombatMoveToTile(fo::GameObject* source, long tile, long dist) {
 	fo::func::register_begin(fo::RB_RESERVED);
 	fo::func::register_object_move_to_tile(source, tile, source->elevation, dist, -1);
 	long result = fo::func::register_end();
-	if (!result) __asm call fo::funcoffs::combat_turn_run_;
+	if (!result) {
+		__asm call fo::funcoffs::combat_turn_run_;
+		if (source->critter.damageFlags & (fo::DamageFlag::DAM_DEAD | fo::DamageFlag::DAM_KNOCKED_OUT | fo::DamageFlag::DAM_LOSE_TURN)) {
+			source->critter.movePoints = 0; // для предотвращения дальнейших действий в бою
+		}
+	}
 	return result; // 0 - ok, -1 - error
 }
 
@@ -154,10 +167,22 @@ end:
 	}
 }
 
+static fo::GameObject* sf_check_block_line_of_fire(fo::GameObject* source, long destTile) {
+	fo::GameObject* object = nullptr; // check the line of fire from target to checkTile
+
+	fo::func::make_straight_path_func(source, source->tile, destTile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
+	if (object) {
+		//if (object->tile == destTile) return nullptr; // объект расположен на гексе назначения, это может быть дверь или другой проходимый объект
+		if (object->TypeFid() == fo::OBJ_TYPE_CRITTER) object = sf_check_block_line_of_fire(object, destTile);
+	}
+	return object;
+}
+
 // Функция попытается найти свободный гекс для совершения выстрела AI по цели, в случаях когда цель для AI заблокировнна для выстрела каким либо объектом
 // если таковой гекс не будет найден то выполнится действия поумолчанию в функции ai_move_steps_closer_
 // TODO: Необходимо улучшить алгоритм для поиска гекса для совершения выcтрела, для снайперов должна быть применена другая тактика
-static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::GameObject* target, int32_t hitMode) {
+// Добавить учет открывание двереь при потроении пути.
+static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::GameObject* target, int32_t &hitMode) {
 	long distance, shotTile = 0;
 
 	fo::GameObject* itemHand = fo::func::inven_right_hand(source);
@@ -172,64 +197,95 @@ static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::Game
 
 	char rotationData[800];
 	long pathLength = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, (void*)fo::funcoffs::obj_blocking_at_);
-	if (ap > pathLength) ap = pathLength;
+	if (pathLength > ap) pathLength = ap;
 
 	long checkTile = source->tile;
-	for (int i = 0; i < ap; i++)
+	for (int i = 0; i < pathLength; i++)
 	{
 		checkTile = fo::func::tile_num_in_direction(checkTile, rotationData[i], 1);
+		DEV_PRINTF1("\n[AI] sf_ai_move_steps_tile: path tile %d", checkTile);
 
 		fo::GameObject* object = nullptr; // check the line of fire from target to checkTile
 		fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-		if (!object) {
-			if (!AI::sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
-				shotTile = checkTile;
-				distance = i + 1;
-				break;
+
+		DEV_PRINTF1("\n[AI] Object Type on fire line: %d", (object) ? object->Type() : -1);
+
+		object = AI::sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum);
+		if (!object) { // if there are no friendly critters
+			shotTile = checkTile;
+			distance = i + 1;
+			DEV_PRINTF2("\n[AI] Get shot tile:%d, dist:%d", checkTile, distance);
+			break;
+		}
+		// запоминаем первый простреливаемый гекс, с которого имеются дружественные NPC на линии огня, будем проверять следующие гексы
+		if (!shotTile) {
+/*checkDoor:  // учитываем двери которые NPC открывает при проходе (реализовать позже вместе с правкой движка т.к. критеры не учитываю заблокированные гексы дверей)
+			long objType = object->TypeFid();
+			if (objType == ObjType::OBJ_TYPE_SCENERY) {
+				if (object->tile != checkTile) continue; // объект находятся на пути прохода
+
+				fo::Proto* proto = fo::GetProto(object->protoId);
+				if (proto->scenery.type != ScenerySubType::DOOR) continue; // это не двери
+
+				// проверить простреливается ли цель от дверей
+				if (sf_check_block_line_of_fire(target, object->tile)) continue;
+
+				// теперь NPC всанет в проеме дверей, что не есть хорошо!!!
+				// смотрим есть ли еще ходы в запасе?
+				//if (i + 1 < ap) continue; // есть
+				goto getTile;
 			}
-			// гекс совободен но имеются дружественные NPC на линии огня, будем проверять следующие гексы
-			if (!shotTile) {
-				shotTile = checkTile; // запоминаем первый простреливаемый гекс
-				distance = i + 1;
-			}
+			else if (objType != ObjType::OBJ_TYPE_CRITTER) continue;
+
+			object = sf_check_block_line_of_fire(object, checkTile); // проверяем простреливается ли путь за критером
+			if (object) goto checkDoor;
+getTile:*/
+			if (object->TypeFid() != ObjType::OBJ_TYPE_CRITTER || sf_check_block_line_of_fire(object, checkTile)) continue;
+			shotTile = checkTile;
+			distance = i + 1;
+			DEV_PRINTF2("\n[AI] Get friendly fire shot tile:%d, Dist:%d", checkTile, distance);
 		}
 	}
 	if (shotTile && ap > distance) {
 		fo::AIcap* cap = fo::func::ai_cap(source);
 		if (cap->distance != AIpref::distance::snipe) { // оставляем AP для поведения "Snipe"
-			long leftAP = distance - ap; // оставшиеся AP после подхода и выстрела
-			if (leftAP > 0) { // spend left APs
-				long newTile = checkTile = shotTile;
-				long dist;
-				for (int i = (distance - 1); i < pathLength; i++) // начинаем со следующего тайла и идем до конца пути
-				{
-					checkTile = fo::func::tile_num_in_direction(checkTile, rotationData[i], 1);
+			long leftAP = ap - distance; // оставшиеся AP после подхода и выстрела
+			// spend left APs
+			long newTile = checkTile = shotTile;
+			long dist;
+			for (int i = distance; i < pathLength; i++) // начинаем со следующего тайла и идем до конца пути
+			{
+				checkTile = fo::func::tile_num_in_direction(checkTile, rotationData[i], 1);
 
-					fo::GameObject* object = nullptr; // check the line of fire from target to checkTile
-					fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-					if (!AI::sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
-						newTile = checkTile;
-						dist = i;
-					}
-					if (!--leftAP) break;
+				fo::GameObject* object = nullptr; // check the line of fire from target to checkTile
+				fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
+				if (!AI::sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
+					newTile = checkTile;
+					dist = i;
 				}
-				if (newTile != shotTile) {
-					distance += dist + 1; //fo::func::tile_dist(newTile, shotTile);
-					shotTile = newTile;
-				}
+				if (!--leftAP) break;
+			}
+			if (newTile != shotTile) {
+				distance = dist + 1; //fo::func::tile_dist(newTile, shotTile);
+				shotTile = newTile;
+				DEV_PRINTF2("\n[AI] Get extra tile:%d, dist:%d", shotTile, distance);
 			}
 		}
 	}
 	if (shotTile && isDebug) fo::func::debug_printf("\n[AI] %s: Move to tile for shot.", fo::func::critter_name(source));
 
-	return (shotTile && CombatMoveToTile(source, shotTile, distance) == 0) ? 1 : 0;
+	int result = (shotTile && CombatMoveToTile(source, shotTile, distance) == 0) ? 1 : 0;
+	if (result) hitMode = fo::func::ai_pick_hit_mode(source, itemHand, target); // try pick new weapon mode after step move
+
+	return result;
 }
 
 static void __declspec(naked) ai_try_attack_hook_shot_blocked() {
 	__asm {
 		pushadc;
-		push [esp + 0x364 - 0x38 + 12 + 4]; // hit mode
 		mov  ecx, eax;                      // source
+		lea  eax, [esp + 0x364 - 0x38 + 12 + 4];
+		push eax;                           // hit mode
 		call sf_ai_move_steps_tile;         // edx - target
 		test eax, eax;
 		jz   defaultMove;
@@ -297,9 +353,8 @@ static void __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObjec
 
 	fo::GameObject* itemHand   = fo::func::inven_right_hand(source); // current item
 	fo::GameObject* bestWeapon = itemHand;
-	#ifndef NDEBUG
-	if (itemHand) fo::func::debug_printf("\n[AI] HandPid: %d", itemHand->protoId);
-	#endif
+
+	DEV_PRINTF1("\n[AI] HandPid: %d", (itemHand) ? itemHand->protoId : -1);
 
 	DWORD slotNum = -1;
 	while (true)
@@ -320,9 +375,7 @@ static void __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObjec
 			}
 		}
 	}
-	#ifndef NDEBUG
-	if (bestWeapon) fo::func::debug_printf("\n[AI] BestWeaponPid: %d", bestWeapon->protoId);
-	#endif
+	DEV_PRINTF1("\n[AI] BestWeaponPid: %d", (bestWeapon) ? bestWeapon->protoId : -1);
 
 	// выбрать лучшее на основе навыка
 	if (itemHand != bestWeapon)	bestWeapon = sf_ai_skill_weapon(source, itemHand, bestWeapon);
@@ -331,12 +384,11 @@ static void __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObjec
 
 		// построить путь до цели (зачем?)
 		int toDistTarget = fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-		if ((source->critter.movePoints - 3) >= toDistTarget) goto notRetrieve; // не поднимать, если у NPC хватате очков сделать удар по цели
+		if ((source->critter.movePoints - 3) >= toDistTarget) goto notRetrieve; // не поднимать, если у NPC хватает очков сделать удар по цели
 
 		fo::GameObject* itemGround = sf_ai_search_weapon_environ(source, bestWeapon, target);
-		#ifndef NDEBUG
-		if (itemGround) fo::func::debug_printf("\n[AI] OnGroundPid: %d", itemGround->protoId);
-		#endif
+
+		DEV_PRINTF1("\n[AI] OnGroundPid: %d", (itemGround) ? itemGround->protoId : -1);
 
 		if (itemGround != bestWeapon) {
 			if (itemGround && (!bestWeapon || itemGround->protoId != bestWeapon->protoId)) {
@@ -346,13 +398,11 @@ static void __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObjec
 				fo::GameObject* item = sf_ai_skill_weapon(source, bestWeapon, itemGround);
 				if (item != itemGround) goto notRetrieve;
 
-				fo::func::dev_printf("\n[AI] TryRetrievePid: %d MP: %d", itemGround->protoId, source->critter.movePoints);
+				fo::func::dev_printf("\n[AI] TryRetrievePid: %d AP: %d", itemGround->protoId, source->critter.movePoints);
 
 				fo::GameObject* itemRetrieve = fo::func::ai_retrieve_object(source, itemGround); // pickup item
 
-				#ifndef NDEBUG
-				fo::func::debug_printf("\n[AI] PickupPid: %d MP: %d", (itemRetrieve) ? itemRetrieve->protoId : 0, source->critter.movePoints);
-				#endif
+				DEV_PRINTF2("\n[AI] PickupPid: %d AP: %d", (itemRetrieve) ? itemRetrieve->protoId : -1, source->critter.movePoints);
 
 				if (itemRetrieve && itemRetrieve->protoId == itemGround->protoId) {
 					// if there is not enough action points to use the weapon, then just pick up this item
@@ -362,16 +412,14 @@ static void __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObjec
 		}
 	}
 notRetrieve:
-	#ifndef NDEBUG
-	fo::func::debug_printf("\n[AI] BestWeaponPid: %d MP: %d", ((bestWeapon) ? bestWeapon->protoId : 0), source->critter.movePoints);
-	#endif
+	DEV_PRINTF2("\n[AI] BestWeaponPid: %d AP: %d", ((bestWeapon) ? bestWeapon->protoId : 0), source->critter.movePoints);
 
 	if (bestWeapon && (!itemHand || itemHand->protoId != bestWeapon->protoId)) {
 		weapon = (DWORD)bestWeapon;
 		hitMode = fo::func::ai_pick_hit_mode(source, bestWeapon, target);
 		fo::func::inven_wield(source, bestWeapon, fo::InvenType::INVEN_TYPE_RIGHT_HAND);
 		__asm call fo::funcoffs::combat_turn_run_;
-		if (isDebug) fo::func::debug_printf("\n[AI] Wield best weapon pid: %d MP: %d", bestWeapon->protoId, source->critter.movePoints);
+		if (isDebug) fo::func::debug_printf("\n[AI] Wield best weapon pid: %d AP: %d", bestWeapon->protoId, source->critter.movePoints);
 	}
 }
 
@@ -381,7 +429,7 @@ static void __declspec(naked) ai_try_attack_hook() {
 	__asm {
 		test edi, edi;                        // first attack loop ?
 		jnz  end;
-		test weaponIsSwitch, 1;
+		test weaponIsSwitch, 1;               // оружие уже было сменено кодом в движке (ai_try_attack_hook_switch)
 		jnz  end;
 		cmp  [esp + 0x364 - 0x44 + 4], 0;     // check safety_range
 		jnz  end;
@@ -493,22 +541,20 @@ reTarget:
 	}
 }
 
-static long GetTargetDistance(fo::GameObject* source, fo::GameObject* &target) {
+static unsigned long GetTargetDistance(fo::GameObject* source, fo::GameObject* &target) {
 	unsigned long distanceLast = -1; // inactive
 
 	fo::GameObject* lastAttacker = AI::AIGetLastAttacker(source);
 	if (lastAttacker && lastAttacker != target && !(lastAttacker->critter.damageFlags & (DamageFlag::DAM_DEAD | DamageFlag::DAM_KNOCKED_OUT | DamageFlag::DAM_LOSE_TURN))) {
 		distanceLast = fo::func::obj_dist(source, lastAttacker);
 	}
-	if (lastAttacker == target) return distanceLast;
-
 	// target is active?
 	unsigned long distance = (!(target->critter.damageFlags & (DamageFlag::DAM_DEAD | DamageFlag::DAM_KNOCKED_OUT | DamageFlag::DAM_LOSE_TURN)))
 							 ? fo::func::obj_dist(source, target)
 							 : -1; // inactive
 
-	if (distance >= 3 && distanceLast >= 3) return -1;
-	if (distance >= distanceLast) target = lastAttacker; // attacker critter has priority
+	if (distance >= 3 && distanceLast >= 3) return -1;   // also distances == -1
+	if (distance >= distanceLast) target = lastAttacker; // replace target (attacker critter has priority)
 
 	return (distance >= distanceLast) ? distanceLast : distance;
 }
@@ -529,7 +575,7 @@ static void __fastcall sf_ai_move_away_from_target(fo::GameObject* source, fo::G
 
 	if (fo::GetCritterKillType(source) > KillType::KILL_TYPE_women) return; // critter is not men & women
 
-	long distance = source->critter.movePoints; // coward: отойдет на максимально возможную дистанцию
+	unsigned long distance = source->critter.movePoints; // coward: отойдет на максимально возможную дистанцию
 
 	if (cap->disposition != AIpref::disposition::coward) {
 		if (distance >= 3) return; // source still has a lot of action points
@@ -537,7 +583,7 @@ static void __fastcall sf_ai_move_away_from_target(fo::GameObject* source, fo::G
 		long wTypeR = fo::func::item_w_subtype(sWeapon, hit);
 		if (wTypeR <= AttackSubType::MELEE) return; // source has a melee weapon or unarmed
 
-		if (GetTargetDistance(source, target) == -1) return;
+		if ((distance = GetTargetDistance(source, target)) > 2) return;
 
 		fo::Proto* protoR = nullptr;
 		fo::Proto* protoL = nullptr;
@@ -582,7 +628,7 @@ moveAway:
 			if (protoR && wTypeR == AttackSubType::THROWING && protoR->item.weapon.damageType != DamageType::DMG_normal) return;
 			if (protoL && wTypeL == AttackSubType::THROWING && protoL->item.weapon.damageType != DamageType::DMG_normal) return;
 		}
-		distance = 3; // отойти на дистанцию в 3 гекса от цели
+		distance -= 3; // всегда держаться на дистанции в 2 гекса от цели
 	}
 	else if (GetTargetDistance(source, target) == -1) return;
 
@@ -593,7 +639,8 @@ moveAway:
 		fo::func::debug_printf("\n[AI] %s: Away from: %s, Dist: %d, MP: %d.", fo::func::critter_name(source), fo::func::critter_name(target), distance, source->critter.movePoints);
 		#endif
 	}
-	fo::func::ai_move_away(source, target, distance);
+	fo::func::ai_move_away(source, target, distance); // функция принимате отрицательный аргумент дистанции для того чтобы держаться на определенной дитанции
+	// если отанутся неиспользованные AP то включенная опция NPCsTryToSpendExtraAP попытатся их потратить и снова приблизит npc к цели
 }
 
 static void __declspec(naked) ai_try_attack_hack_move() {
@@ -716,7 +763,7 @@ fix:
 	}
 }
 
-static int32_t __fastcall ai_try_move_steps_closer(fo::GameObject* source, fo::GameObject* target) {
+static int32_t __fastcall ai_try_move_steps_closer(fo::GameObject* source, fo::GameObject* target, int32_t &outHitMode) {
 	///long result = sf_is_within_perception(source, target);
 	///if (!result) return 1; // the attacker can't see the target
 
@@ -793,13 +840,18 @@ static int32_t __fastcall ai_try_move_steps_closer(fo::GameObject* source, fo::G
 	//if (dist == -1) dist = source->critter.movePoints; // in dist - the distance to move
 	if (getTile != -1 && isDebug) fo::func::debug_printf("\n[AI] %s: Weapon out of range. Move to tile for shot.", fo::func::critter_name(source));
 
-	return (getTile != -1) ? CombatMoveToTile(source, getTile, dist) : 1;
+	int result = (getTile != -1) ? CombatMoveToTile(source, getTile, dist) : 1;
+	if (!result) outHitMode = fo::func::ai_pick_hit_mode(source, itemHand, target); // try pick new weapon mode after step move
+
+	return result;
 }
 
 static void __declspec(naked) ai_try_attack_hook_out_of_range() {
 	__asm {
 		pushadc;
 		mov  ecx, eax;
+		lea  eax, [esp + 0x364 - 0x38 + 12 + 4];
+		push eax;
 		call ai_try_move_steps_closer;
 		test eax, eax;
 		popadc;
@@ -856,8 +908,8 @@ void CombatAIBehaviorInit() { /////////////////// Combat AI improve behavior ///
 		HookCall(0x429CAF, ai_search_environ_hook);
 	}
 
-	// Fixed switching weapons when action points is zero
-	if (GetConfigInt("CombatAI", "NPCSwitchingWeaponFix", 0)) {
+	// Fixed switching weapons when action points is not enough
+	if (GetConfigInt("CombatAI", "NPCSwitchingWeaponFix", 1)) {
 		HookCall(0x42AB57, ai_try_attack_hook_switch_fix);
 	}
 }
