@@ -85,19 +85,6 @@ static bool hookedAimedShot;
 static std::vector<DWORD> disabledAS;
 static std::vector<DWORD> forcedAS;
 
-// may need to move it to engine utilities
-static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
-	fo::func::register_begin(fo::RB_RESERVED);
-	if (dist > 3) { // 5 default engine distance w/o sfall tweak
-		fo::func::register_object_run_to_object(source, target, dist, -1);
-	} else {
-		fo::func::register_object_move_to_object(source, target, dist, -1);
-	}
-	long result = fo::func::register_end();
-	if (!result) __asm call fo::funcoffs::combat_turn_run_;
-	return result; // 0 - ok, -1 - error
-}
-
 DWORD __fastcall Combat::check_item_ammo_cost(fo::GameObject* weapon, DWORD hitMode) {
 	DWORD rounds = 1;
 
@@ -514,6 +501,23 @@ static void CombatProcFix() {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
+	fo::func::register_begin(fo::RB_RESERVED);
+	if (dist > 3) {
+		fo::func::register_object_run_to_object(source, target, dist, -1);
+	} else {
+		fo::func::register_object_move_to_object(source, target, dist, -1);
+	}
+	long result = fo::func::register_end();
+	if (!result) {
+		__asm call fo::funcoffs::combat_turn_run_;
+		if (source->critter.damageFlags & (fo::DamageFlag::DAM_DEAD /*| fo::DamageFlag::DAM_KNOCKED_OUT | fo::DamageFlag::DAM_LOSE_TURN*/)) {
+			return -2; // break attack
+		}
+	}
+	return result; // 0 - ok, -1 - error
+}
+
 // Returns the distance to the target or -1 if the attack is not possible
 static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCalledShot, fo::GameObject* weapon) {
 	long wType = fo::func::item_w_subtype(weapon, hitMode);
@@ -542,6 +546,7 @@ static int32_t __fastcall DudeMoveToAttackTarget(fo::GameObject* target, int32_t
 static void __declspec(naked) combat_attack_this_hack() {
 	static const DWORD combat_attack_this_hack_Ret1 = 0x4269F0;
 	static const DWORD combat_attack_this_hack_Ret2 = 0x4268AA;
+	static const DWORD combat_attack_this_hack_Ret3 = 0x426938;
 	__asm {
 		mov  ecx, esi;                     // target
 		mov  edx, [esp + 0xAC - 0x20 + 4]; // hit mode
@@ -556,8 +561,13 @@ noAmmo:
 		add  esp, 4;
 		jmp  combat_attack_this_hack_Ret2; // no ammo report
 outRange:
+		cmp  eax, -2;
+		jz   breakAttack;
 		mov  ecx, 102; // engine code
 		retn;
+breakAttack:
+		add  esp, 4;
+		jmp  combat_attack_this_hack_Ret3;
 	}
 }
 

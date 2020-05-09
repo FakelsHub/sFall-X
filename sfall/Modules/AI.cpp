@@ -344,6 +344,22 @@ skipMove:
 	}
 }
 
+static void __declspec(naked) ai_move_away_hook() {
+	static const DWORD ai_move_away_hook_ret = 0x4289DA;
+	__asm {
+		test ebx, ebx;
+		jl   fix; // distance arg < 0
+		jmp  fo::funcoffs::ai_cap_;
+fix:
+		neg  ebx;
+		mov  eax, [esi + movePoints]; // Current Action Points
+		cmp  ebx, eax;
+		cmovg ebx, eax; // if (distance > ap) dist = ap
+		add  esp, 4;
+		jmp  ai_move_away_hook_ret;
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
 static int32_t hitChance, loopCounter = 0;
@@ -539,11 +555,18 @@ void AI::init() {
 	HookCall(0x42B1E3, combat_ai_hook_FleeFix);
 	HookCalls(ai_try_attack_hook_FleeFix, { 0x42ABA8, 0x42ACE5 });
 	// Disable fleeing when NPC cannot move closer to target
-	BlockCall(0x42ADF6); // ai_try_attack_
+	BlockCall(0x42ADF6); // ai_try_attack_ (TODO: Add custom behavior)
 
 	// Fix AI behavior for "Snipe" distance preference
 	// The Attacker will try to shoot back from the attacker instead of always run away from him at the beginning of the turn
 	MakeCall(0x42B086, cai_perform_distance_prefs_hack);
+
+	// Fix the ai_move_away_ function that didn't work correctly in cases when needed move a distance away from the target
+	// now the function also takes the distance argument in a negative value when need move away at distance
+	HookCall(0x4289A7, ai_move_away_hook);
+	// also patching combat_safety_invalidate_weapon_func_ for return out_range argument in à negative value
+	SafeWrite8(0x421628, 0xD0);    // sub edx, eax >> sub eax, edx
+	SafeWrite16(0x42162A, 0xFF40); // lea eax, [edx+1] >> lea eax, [eax-1]
 }
 
 fo::GameObject* __stdcall AI::AIGetLastAttacker(fo::GameObject* target) {
