@@ -24,6 +24,10 @@ using namespace Fields;
 #define DEV_PRINTF(info)			fo::func::debug_printf(info)
 #define DEV_PRINTF1(info, a)		fo::func::debug_printf(info, a)
 #define DEV_PRINTF2(info, a, b)		fo::func::debug_printf(info, a, b)
+#else
+#define DEV_PRINTF(info)
+#define DEV_PRINTF1(info, a)
+#define DEV_PRINTF2(info, a, b)
 #endif
 
 static void __declspec(naked) ai_search_environ_hook() {
@@ -178,10 +182,10 @@ static fo::GameObject* sf_check_block_line_of_fire(fo::GameObject* source, long 
 	return object;
 }
 
-// Функция попытается найти свободный гекс для совершения выстрела AI по цели, в случаях когда цель для AI заблокировнна для выстрела каким либо объектом
-// если таковой гекс не будет найден то выполнится действия поумолчанию в функции ai_move_steps_closer_
-// TODO: Необходимо улучшить алгоритм для поиска гекса для совершения выcтрела, для снайперов должна быть применена другая тактика
-// Добавить учет открывание двереь при потроении пути.
+// Функция попытается найти свободный гекс для совершения выстрела AI по цели, в случаях когда цель для AI заблокирована для выстрела каким либо объектом
+// если таковой гекс не будет найден то выполнится действия по умолчанию в функции ai_move_steps_closer_
+// TODO: Необходимо улучшить алгоритм для поиска гекса для совершения выстрела, для снайперов должна быть применена другая тактика
+// Добавить учет открывание дверь при построении пути.
 static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::GameObject* target, int32_t &hitMode) {
 	long distance, shotTile = 0;
 
@@ -217,8 +221,8 @@ static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::Game
 			DEV_PRINTF2("\n[AI] Get shot tile:%d, dist:%d", checkTile, distance);
 			break;
 		}
-		// запоминаем первый простреливаемый гекс, с которого имеются дружественные NPC на линии огня, будем проверять следующие гексы
-		if (!shotTile) {
+		// запоминаем первый простреливаемый гекс, с которого имеются дружественные NPC на линии огня (будем проверять следующие гексы)
+		//if (!shotTile) {
 /*checkDoor:  // учитываем двери которые NPC открывает при проходе (реализовать позже вместе с правкой движка т.к. критеры не учитываю заблокированные гексы дверей)
 			long objType = object->TypeFid();
 			if (objType == ObjType::OBJ_TYPE_SCENERY) {
@@ -244,7 +248,8 @@ getTile:*/
 			shotTile = checkTile;
 			distance = i + 1;
 			DEV_PRINTF2("\n[AI] Get friendly fire shot tile:%d, Dist:%d", checkTile, distance);
-		}
+			break;
+		//}
 	}
 	if (shotTile && ap > distance) {
 		fo::AIcap* cap = fo::func::ai_cap(source);
@@ -256,6 +261,7 @@ getTile:*/
 			for (int i = distance; i < pathLength; i++) // начинаем со следующего тайла и идем до конца пути
 			{
 				checkTile = fo::func::tile_num_in_direction(checkTile, rotationData[i], 1);
+				DEV_PRINTF1("\n[AI] sf_ai_move_steps_tile: path extra tile %d", checkTile);
 
 				fo::GameObject* object = nullptr; // check the line of fire from target to checkTile
 				fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
@@ -502,12 +508,12 @@ static bool __fastcall sf_ai_check_target(fo::GameObject* source, fo::GameObject
 			int hitMode = fo::func::ai_pick_hit_mode(source, itemHand, target);
 			int maxRange = fo::func::item_w_range(source, hitMode);
 			int diff = distance - maxRange;
-			if (diff > 0) { // shot out of range (положительное число нехватает дистанции для оружия)
+			if (diff > 0) { // shot out of range (положительное число не хватает дистанции для оружия)
 				/*if (!pathToTarget) return true; // move block to target and shot out of range -> picking alternate target (это больше не нужно т.к. есть твик к подходу)*/
 				if (cap->disposition == AIpref::coward && diff > fo::func::roll_random(8, 12)) return true;
 
 				long cost = sf_item_w_mp_cost(source, hitMode, 0);
-				if (diff > (source->critter.movePoints - cost)) return true; // нехватит очков действия для подхода и выстрела -> picking alternate target
+				if (diff > (source->critter.movePoints - cost)) return true; // не хватит очков действия для подхода и выстрела -> picking alternate target
 			}
 		} // can shot or move, and item not weapon
 	} // can shot and move / can move and block shot / can shot and block move
@@ -560,7 +566,7 @@ static unsigned long GetTargetDistance(fo::GameObject* source, fo::GameObject* &
 }
 
 // Функция анализирует используемое оружие у цели, и если цель использует оружие ближнего действия то атакующий AI
-// по завершению хода попытается отойти от атакуещей его цели на небольшое расстояние
+// по завершению хода попытается отойти от атакующей его цели на небольшое расстояние
 // Executed after the NPC attack
 static void __fastcall sf_ai_move_away_from_target(fo::GameObject* source, fo::GameObject* target, fo::GameObject* sWeapon, long hit) {
 	if (target->critter.damageFlags & fo::DamageFlag::DAM_DEAD || target->critter.health <= 0) return;
@@ -639,8 +645,8 @@ moveAway:
 		fo::func::debug_printf("\n[AI] %s: Away from: %s, Dist: %d, MP: %d.", fo::func::critter_name(source), fo::func::critter_name(target), distance, source->critter.movePoints);
 		#endif
 	}
-	fo::func::ai_move_away(source, target, distance); // функция принимате отрицательный аргумент дистанции для того чтобы держаться на определенной дитанции
-	// если отанутся неиспользованные AP то включенная опция NPCsTryToSpendExtraAP попытатся их потратить и снова приблизит npc к цели
+	fo::func::ai_move_away(source, target, distance); // функция принимает отрицательный аргумент дистанции для того чтобы держаться на определенной дистанции
+	// если останутся неиспользованные AP то включенная опция NPCsTryToSpendExtraAP попытается их потратить и снова приблизит npc к цели
 }
 
 static void __declspec(naked) ai_try_attack_hack_move() {
