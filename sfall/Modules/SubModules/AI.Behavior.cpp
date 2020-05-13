@@ -355,7 +355,7 @@ static bool LookupOnGround = false;
 
 // Атакующий попытается найти лучшее оружие в своем инвентаре перед совершением атаки или подобрать близлежащее на земле оружие
 // Executed once when the NPC starts attacking
-static void __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObject* target, DWORD &weapon, DWORD &hitMode) {
+static int32_t __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObject* target, fo::GameObject* &weapon, uint32_t &hitMode) {
 
 	fo::GameObject* itemHand   = fo::func::inven_right_hand(source); // current item
 	fo::GameObject* bestWeapon = itemHand;
@@ -420,13 +420,15 @@ static void __fastcall sf_ai_search_weapon(fo::GameObject* source, fo::GameObjec
 notRetrieve:
 	DEV_PRINTF2("\n[AI] BestWeaponPid: %d AP: %d", ((bestWeapon) ? bestWeapon->protoId : 0), source->critter.movePoints);
 
+	int32_t _hitMode = -1;
 	if (bestWeapon && (!itemHand || itemHand->protoId != bestWeapon->protoId)) {
-		weapon = (DWORD)bestWeapon;
-		hitMode = fo::func::ai_pick_hit_mode(source, bestWeapon, target);
+		weapon = bestWeapon;
+		hitMode = _hitMode = fo::func::ai_pick_hit_mode(source, bestWeapon, target);
 		fo::func::inven_wield(source, bestWeapon, fo::InvenType::INVEN_TYPE_RIGHT_HAND);
 		__asm call fo::funcoffs::combat_turn_run_;
 		if (isDebug) fo::func::debug_printf("\n[AI] Wield best weapon pid: %d AP: %d", bestWeapon->protoId, source->critter.movePoints);
 	}
+	return _hitMode;
 }
 
 static bool weaponIsSwitch = 0;
@@ -446,6 +448,8 @@ static void __declspec(naked) ai_try_attack_hook() {
 		push eax;
 		mov  ecx, esi;                        // source
 		call sf_ai_search_weapon;             // edx - target
+		test eax, eax;
+		cmovge ebx, eax;                      // >= 0
 		// restore value reg.
 		mov  eax, esi;
 		mov  edx, ebp;
@@ -569,11 +573,11 @@ static unsigned long GetTargetDistance(fo::GameObject* source, fo::GameObject* &
 // по завершению хода попытается отойти от атакующей его цели на небольшое расстояние
 // Executed after the NPC attack
 static void __fastcall sf_ai_move_away_from_target(fo::GameObject* source, fo::GameObject* target, fo::GameObject* sWeapon, long hit) {
-	if (target->critter.damageFlags & fo::DamageFlag::DAM_DEAD || target->critter.health <= 0) return;
+	///if (target->critter.damageFlags & fo::DamageFlag::DAM_DEAD || target->critter.health <= 0) return;
 
 	fo::AIcap* cap = fo::func::ai_cap(source);
 	if (cap->disposition == AIpref::disposition::berserk ||
-		cap->distance == AIpref::distance::stay || // stay в ai_move_away запрещает движение
+		///cap->distance == AIpref::distance::stay || // stay в ai_move_away запрещает движение
 		cap->distance == AIpref::distance::charge) // charge в движке используется для сближения с целью
 	{
 		return;
