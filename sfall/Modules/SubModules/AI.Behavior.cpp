@@ -196,8 +196,15 @@ static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::Game
 
 	long ap = source->critter.movePoints;
 	long cost = sf_item_w_mp_cost(source, hitMode, 0);
-	ap -= cost; // left ap for distance move
-	if (ap <= 0) return 0;
+	if (ap <= cost) return 0;
+
+	long shots = ap / cost; // количество атак которые сможет сделать NPC за ход
+	long freeMove = ap % cost;
+	if (freeMove == 0) {
+		ap -= cost * (shots - 1); // left ap for distance move
+	} else {
+		ap = freeMove;
+	}
 
 	char rotationData[800];
 	long pathLength = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, (void*)fo::funcoffs::obj_blocking_at_);
