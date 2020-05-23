@@ -30,7 +30,7 @@ public:
 	const char* name() { return "AI"; }
 	void init();
 
-	static fo::GameObject* sf_check_critters_on_fireline(fo::GameObject* object, DWORD checkTile, DWORD team);
+	static fo::GameObject* CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object, long targetTile, long team);
 	static fo::GameObject* CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker);
 
 	// TODO: use subscription instead

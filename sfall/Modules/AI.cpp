@@ -36,12 +36,21 @@ using namespace Fields;
 static std::unordered_map<fo::GameObject*, fo::GameObject*> targets;
 static std::unordered_map<fo::GameObject*, fo::GameObject*> sources;
 
-fo::GameObject* AI::sf_check_critters_on_fireline(fo::GameObject* object, DWORD checkTile, DWORD team) {
-	if (object && object->Type() == ObjType::OBJ_TYPE_CRITTER && object->critter.teamNum != team) { // not friendly fire
-		if (object->tile == checkTile) return nullptr;
-		fo::GameObject*	obj = nullptr; // continue check the line_of_fire from object to checkTile
-		fo::func::make_straight_path_func(object, object->tile, checkTile, 0, (DWORD*)&obj, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-		if (!sf_check_critters_on_fireline(obj, checkTile, team)) return nullptr;
+// The return of the friendly critter that are located on the line of fire or any object blocking the line
+fo::GameObject* AI::CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object, long targetTile, long team) {
+	if (object && object->Type() == ObjType::OBJ_TYPE_CRITTER && object->critter.teamNum != team) { // is not friendly fire
+		long objTile = object->tile;
+		if (objTile == targetTile) return nullptr;
+
+		if (object->flags & fo::ObjectFlag::MultiHex) {
+			long dir = fo::func::tile_dir(objTile, targetTile);
+			objTile = fo::func::tile_num_in_direction(objTile, dir, 1);
+			if (objTile == targetTile) return nullptr; // just in case
+		}
+		// continue check the line_of_fire from object tile to targetTile
+		fo::GameObject*	obj = object; // for the ignore object (multi-hex) when building the path
+		fo::func::make_straight_path_func(object, objTile, targetTile, 0, (DWORD*)&obj, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
+		if (!CheckShootAndTeamCritterOnLineOfFire(obj, targetTile, team)) return nullptr;
 	}
 	return object;
 }
@@ -50,7 +59,7 @@ fo::GameObject* AI::sf_check_critters_on_fireline(fo::GameObject* object, DWORD 
 fo::GameObject* AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
 	fo::GameObject* object = nullptr;
 	fo::func::make_straight_path_func(attacker, attacker->tile, target->tile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-	object = sf_check_critters_on_fireline(object, target->tile, attacker->critter.teamNum);
+	object = CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum);
 	return (!object || object->TypeFid() == fo::ObjType::OBJ_TYPE_CRITTER) ? object : nullptr; // 0 if there are no friendly critters
 }
 

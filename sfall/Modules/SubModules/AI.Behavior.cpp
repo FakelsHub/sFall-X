@@ -170,7 +170,7 @@ end:
 		retn;
 	}
 }
-
+/*
 static fo::GameObject* sf_check_block_line_of_fire(fo::GameObject* source, long destTile) {
 	fo::GameObject* object = nullptr; // check the line of fire from target to checkTile
 
@@ -181,7 +181,7 @@ static fo::GameObject* sf_check_block_line_of_fire(fo::GameObject* source, long 
 	}
 	return object;
 }
-
+*/
 // Функция попытается найти свободный гекс для совершения выстрела AI по цели, в случаях когда цель для AI заблокирована для выстрела каким либо объектом
 // если таковой гекс не будет найден то выполнится действия по умолчанию в функции ai_move_steps_closer_
 // TODO: Необходимо улучшить алгоритм для поиска гекса для совершения выстрела, для снайперов должна быть применена другая тактика
@@ -196,15 +196,8 @@ static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::Game
 
 	long ap = source->critter.movePoints;
 	long cost = sf_item_w_mp_cost(source, hitMode, 0);
-	if (ap <= cost) return 0;
-
-	long shots = ap / cost; // количество атак которые сможет сделать NPC за ход
-	long freeMove = ap % cost;
-	if (freeMove == 0) {
-		ap -= cost * (shots - 1); // left ap for distance move
-	} else {
-		ap = freeMove;
-	}
+	ap -= cost; // left ap for distance move
+	if (ap <= 0) return 0;
 
 	char rotationData[800];
 	long pathLength = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, (void*)fo::funcoffs::obj_blocking_at_);
@@ -221,7 +214,7 @@ static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::Game
 
 		DEV_PRINTF1("\n[AI] Object Type on fire line: %d", (object) ? object->Type() : -1);
 
-		object = AI::sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum);
+		object = AI::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum);
 		if (!object) { // if there are no friendly critters
 			shotTile = checkTile;
 			distance = i + 1;
@@ -229,39 +222,17 @@ static int32_t __fastcall sf_ai_move_steps_tile(fo::GameObject* source, fo::Game
 			break;
 		}
 		// запоминаем первый простреливаемый гекс, с которого имеются дружественные NPC на линии огня (будем проверять следующие гексы)
-		//if (!shotTile) {
-/*checkDoor:  // учитываем двери которые NPC открывает при проходе (реализовать позже вместе с правкой движка т.к. критеры не учитываю заблокированные гексы дверей)
-			long objType = object->TypeFid();
-			if (objType == ObjType::OBJ_TYPE_SCENERY) {
-				if (object->tile != checkTile) continue; // объект находятся на пути прохода
-
-				fo::Proto* proto = fo::GetProto(object->protoId);
-				if (proto->scenery.type != ScenerySubType::DOOR) continue; // это не двери
-
-				// проверить простреливается ли цель от дверей
-				if (sf_check_block_line_of_fire(target, object->tile)) continue;
-
-				// теперь NPC всанет в проеме дверей, что не есть хорошо!!!
-				// смотрим есть ли еще ходы в запасе?
-				//if (i + 1 < ap) continue; // есть
-				goto getTile;
-			}
-			else if (objType != ObjType::OBJ_TYPE_CRITTER) continue;
-
-			object = sf_check_block_line_of_fire(object, checkTile); // проверяем простреливается ли путь за критером
-			if (object) goto checkDoor;
-getTile:*/
-			if (object->TypeFid() != ObjType::OBJ_TYPE_CRITTER || sf_check_block_line_of_fire(object, checkTile)) continue;
+		if (!shotTile) {                                       // проверяем простреливается ли путь за критером
+			if (object->TypeFid() != ObjType::OBJ_TYPE_CRITTER || fo::func::combat_is_shot_blocked(object, object->tile, checkTile, 0, 0)) continue;
 			shotTile = checkTile;
 			distance = i + 1;
 			DEV_PRINTF2("\n[AI] Get friendly fire shot tile:%d, Dist:%d", checkTile, distance);
-			break;
-		//}
+		}
 	}
 	if (shotTile && ap > distance) {
 		fo::AIcap* cap = fo::func::ai_cap(source);
 		if (cap->distance != AIpref::distance::snipe) { // оставляем AP для поведения "Snipe"
-			long leftAP = ap - distance; // оставшиеся AP после подхода и выстрела
+			long leftAP = (ap - distance) % cost;       // оставшиеся свободные AP после подхода и выстрела
 			// spend left APs
 			long newTile = checkTile = shotTile;
 			long dist;
@@ -272,14 +243,14 @@ getTile:*/
 
 				fo::GameObject* object = nullptr; // check the line of fire from target to checkTile
 				fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-				if (!AI::sf_check_critters_on_fireline(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
+				if (!AI::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
 					newTile = checkTile;
 					dist = i;
 				}
 				if (!--leftAP) break;
 			}
 			if (newTile != shotTile) {
-				distance = dist + 1; //fo::func::tile_dist(newTile, shotTile);
+				distance = dist + 1;
 				shotTile = newTile;
 				DEV_PRINTF2("\n[AI] Get extra tile:%d, dist:%d", shotTile, distance);
 			}
