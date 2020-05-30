@@ -137,11 +137,12 @@ long GetCurrentAttackMode() {
 }
 
 AttackSubType GetWeaponType(long weaponFlag) {
-	static const AttackSubType weapon_types[8] =
+	static const AttackSubType weapon_types[9] =
 	{
 		AttackSubType::NONE,
 		AttackSubType::UNARMED,
 		AttackSubType::UNARMED,
+		AttackSubType::MELEE,
 		AttackSubType::MELEE,
 		AttackSubType::THROWING,
 		AttackSubType::GUNS,
