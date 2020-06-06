@@ -100,7 +100,7 @@ end:	// force exit func
 	}
 }
 
-static long _stdcall FindDrugTime(DWORD pid) {
+static long __stdcall FindDrugTime(DWORD pid) {
 	for (int i = 0; i < drugsCount; i++) {
 		if (drugs[i].drugPid == pid) {
 			if (drugs[i].addictTimeOff <= 0) break;
@@ -129,9 +129,9 @@ static bool IsEngineAddictGvar(long gNum) {
 }
 
 static long __fastcall PrintAddictionList(long isSeparator) {
-	std::vector<int> gVars; // gvar list already displayed addiction
+	std::vector<int> gVars; // gvar list of already displayed addictions
 	long isSelect = 0;
-	
+
 	for (int i = 0; i < drugsCount; i++)
 	{
 		if (drugs[i].skip) continue;

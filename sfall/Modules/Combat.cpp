@@ -259,7 +259,7 @@ knockback:
 	}
 }
 
-static int _fastcall HitChanceMod(int base, fo::GameObject* critter) {
+static int __fastcall HitChanceMod(int base, fo::GameObject* critter) {
 	for (size_t i = 0; i < hitChanceMods.size(); i++) {
 		if (critter->id == hitChanceMods[i].id) {
 			return min(base + hitChanceMods[i].mod, hitChanceMods[i].maximum);
@@ -302,7 +302,7 @@ static void __declspec(naked) ai_pick_hit_mode_hack_noSecondary() {
 	}
 }
 
-void _stdcall KnockbackSetMod(fo::GameObject* object, DWORD type, float val, DWORD mode) {
+void __stdcall KnockbackSetMod(fo::GameObject* object, DWORD type, float val, DWORD mode) {
 	std::vector<KnockbackModifier>* mods;
 	switch (mode) {
 	case 0:
@@ -332,7 +332,7 @@ void _stdcall KnockbackSetMod(fo::GameObject* object, DWORD type, float val, DWO
 	mods->push_back(mod);
 }
 
-void _stdcall KnockbackRemoveMod(fo::GameObject* object, DWORD mode) {
+void __stdcall KnockbackRemoveMod(fo::GameObject* object, DWORD mode) {
 	std::vector<KnockbackModifier>* mods;
 	switch (mode) {
 	case 0:
@@ -356,7 +356,7 @@ void _stdcall KnockbackRemoveMod(fo::GameObject* object, DWORD mode) {
 	}
 }
 
-void _stdcall SetHitChanceMax(fo::GameObject* critter, DWORD maximum, DWORD mod) {
+void __stdcall SetHitChanceMax(fo::GameObject* critter, DWORD maximum, DWORD mod) {
 	if ((DWORD)critter == -1) {
 		baseHitChance.maximum = maximum;
 		baseHitChance.mod = mod;
@@ -374,7 +374,7 @@ void _stdcall SetHitChanceMax(fo::GameObject* critter, DWORD maximum, DWORD mod)
 	hitChanceMods.emplace_back(id, maximum, mod);
 }
 
-void _stdcall SetNoBurstMode(fo::GameObject* critter, bool on) {
+void __stdcall SetNoBurstMode(fo::GameObject* critter, bool on) {
 	if (critter == fo::var::obj_dude || critter->Type() != fo::OBJ_TYPE_CRITTER) return;
 
 	long id = Objects::SetObjectUniqueID(critter);
@@ -425,7 +425,7 @@ static void HookAimedShots() {
 	hookedAimedShot = true;
 }
 
-void _stdcall DisableAimedShots(DWORD pid) {
+void __stdcall DisableAimedShots(DWORD pid) {
 	if (!hookedAimedShot) HookAimedShots();
 	for (size_t i = 0; i < forcedAS.size(); i++) {
 		if (forcedAS[i] == pid) forcedAS.erase(forcedAS.begin() + (i--));
@@ -436,7 +436,7 @@ void _stdcall DisableAimedShots(DWORD pid) {
 	disabledAS.push_back(pid);
 }
 
-void _stdcall ForceAimedShots(DWORD pid) {
+void __stdcall ForceAimedShots(DWORD pid) {
 	if (!hookedAimedShot) HookAimedShots();
 	for (size_t i = 0; i < disabledAS.size(); i++) {
 		if (disabledAS[i] == pid) disabledAS.erase(disabledAS.begin() + (i--));
@@ -472,9 +472,9 @@ static void BodypartHitReadConfig() {
 	bodypartHit.Uncalled  = static_cast<long>(GetConfigInt("Misc", "BodyHit_Torso_Uncalled", 0));
 }
 
-static void __declspec(naked)  ai_pick_hit_mode_hack() {
+static void __declspec(naked)  ai_pick_hit_mode_hook_bodypart() {
 	__asm {
-		mov  ebx, 8; // replace Body_Torso to Body_Uncalled
+		mov  ebx, 8; // replace Body_Torso with Body_Uncalled
 		jmp  fo::funcoffs::determine_to_hit_;
 	}
 }
@@ -662,7 +662,7 @@ void Combat::init() {
 	BlockCall(0x42303F); // block Body_Torso check (combat_attack_)
 	SafeWrite8(0x42A713, 7); // Body_Uncalled > Body_Groin (ai_called_shot_)
 	SafeWriteBatch<BYTE>(8, bodypartAddr); // replace Body_Torso with Body_Uncalled
-	HookCalls(ai_pick_hit_mode_hack, { 0x429E8C, 0x429ECC, 0x429F09 });
+	HookCalls(ai_pick_hit_mode_hook_bodypart, { 0x429E8C, 0x429ECC, 0x429F09 });
 
 	LoadGameHook::OnGameReset() += ResetOnGameLoad;
 }

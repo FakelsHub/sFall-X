@@ -16,7 +16,8 @@ namespace sfall
 	void Inject_RestTimerHook();
 	void Inject_ExplosiveTimerHook();
 	void Inject_EncounterHook();
-	
-	// Implementing the is_within_perception_ engine function with the hook
+
+	// Implementation of is_within_perception_ engine function with the hook
 	long __fastcall sf_is_within_perception(fo::GameObject* watcher, fo::GameObject* target);
+
 }

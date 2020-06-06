@@ -203,7 +203,7 @@ void Objects::LoadProtoAutoMaxLimit() {
 	MakeCall(0x4A21B2, proto_ptr_hack);
 }
 
-// Places the PID_CORPSE_BLOOD object to the lower layer of objects on the tile
+// Places the PID_CORPSE_BLOOD object on the lower layer of objects on the tile
 static void __declspec(naked) obj_insert_hack() {
 	using namespace fo;
 	using namespace Fields;
@@ -216,13 +216,13 @@ static void __declspec(naked) obj_insert_hack() {
 		retn;
 insert: //----------
 		mov  esi, [ecx]; // esi - inserted object
-		mov  edi, [edi]; // object placed on tile
+		mov  edi, [edi]; // object placed on the tile
 		xor  edx, edx;
 		cmp  dword ptr [esi + protoId], PID_CORPSE_BLOOD;
 		je   fix;
 		cmp  dword ptr [edi + protoId], PID_CORPSE_BLOOD;
 		jne  skip;
-		sete dl; // set to 1 if PID_CORPSE_BLOOD already located on the map
+		sete dl; // set to 1 if PID_CORPSE_BLOOD is already located on the map
 fix:
 		mov  esi, [esi + elevation];
 		cmp  [edi + elevation], esi;
@@ -356,7 +356,7 @@ void Objects::init() {
 	// Additionally fix object IDs for queued events
 	MakeCall(0x4A25BA, queue_add_hack);
 
-	// Place some objects on the tile to the lower z-layer
+	// Place some objects on the lower z-layer of the tile
 	MakeCall(0x48D918, obj_insert_hack, 1);
 
 	// Adds the "Line of Sight" function for items and critters object

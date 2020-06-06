@@ -33,7 +33,7 @@ static DWORD __fastcall CalcDeathAnimHook_Script(DWORD damage, fo::GameObject* t
 			fo::GameObject* object = nullptr;
 			if (fo::func::obj_pid_new((fo::GameObject*)&object, pid) != -1) { // create new object
 				createNewObj = true;
-				weapon = object; // replace pointer to new created weapon object
+				weapon = object; // replace pointer with newly created weapon object
 			}
 			cRet = 0; // reset rets from HOOK_DEATHANIM1
 		}
@@ -74,7 +74,7 @@ static void __declspec(naked) CalcDeathAnim2Hook() {
 	__asm {
 		call fo::funcoffs::check_death_; // call original function
 		HookBegin;
-		mov	ebx, [esp + 60];
+		mov ebx, [esp + 60];
 		mov args[4], ebx;    // attacker
 		mov args[8], esi;    // target
 		mov ebx, [esp + 12];
@@ -129,8 +129,8 @@ static void __declspec(naked) OnDeathHook2() {
 	RunHookScript(HOOK_ONDEATH);
 	EndHook();
 
-	_asm popad;
-	_asm retn;
+	__asm popad;
+	__asm retn;
 }
 
 void Inject_DeathAnim1Hook() {

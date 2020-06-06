@@ -256,7 +256,7 @@ skip:
 	}
 }
 
-// Implementing the is_within_perception_ engine function with the hook
+// Implementation of is_within_perception_ engine function with the hook
 long __fastcall sf_is_within_perception(fo::GameObject* watcher, fo::GameObject* target) {
 
 	long result = fo::func::is_within_perception(watcher, target);
@@ -381,8 +381,8 @@ static void CarTravelHook_Script() {
 	EndHook();
 }
 
-static const DWORD CarTravelHack_back = 0x4BFF43;
 static void __declspec(naked) CarTravelHack() {
+	static const DWORD CarTravelHack_back = 0x4BFF43;
 	__asm {
 		pushad;
 		call CarTravelHook_Script;
@@ -428,7 +428,7 @@ static void __declspec(naked) SetGlobalVarHook() {
 }
 
 static int restTicks;
-static long _stdcall RestTimerHook_Script() {
+static long __stdcall RestTimerHook_Script() {
 	DWORD addrHook;
 	__asm {
 		mov addrHook, ebx;
@@ -697,7 +697,7 @@ void Inject_UseSkillOnHook() {
 	MakeCall(0x4127BA, UseSkillOnHack, 1);
 	MakeCalls(skill_use_hack, {0x4AB05D, 0x4AB558, 0x4ABA60}); // fix checking obj_dude's target
 
-	// replace _obj_dude to source skill user (skill_use_ function)
+	// replace _obj_dude with source skill user (skill_use_ function)
 	SafeWriteBatch<DWORD>((DWORD)&sourceSkillOn, {0x4AAF47, 0x4AB051, 0x4AB3FB, 0x4AB550, 0x4AB8FA, 0x4ABA54});
 	SafeWriteBatch<DWORD>((DWORD)&sourceSkillOn, {0x4AB0EF, 0x4AB5C0, 0x4ABAF2}); // fix for time
 }

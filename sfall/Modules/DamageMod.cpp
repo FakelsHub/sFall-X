@@ -270,7 +270,7 @@ void DamageMod::DamageYAAM(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamag
 		if (calcDT < 0) calcDT = 0;
 
 		rawDamage -= calcDT;                                // Raw Damage = Raw Damage - DT
-		if (rawDamage <= 0) continue;                       // Is Raw Damage <= 0 If yes, skip damage calculation and go to bottom of loop
+		if (rawDamage <= 0) continue;                       // Is Raw Damage <= 0? If yes, skip damage calculation and go to bottom of loop
 
 		rawDamage *= multiplyDamage;                        // Raw Damage = Raw Damage * Damage Multiplier
 		if (ammoDivisor != 0) {                             // avoid divide by zero error

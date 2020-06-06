@@ -37,9 +37,9 @@ extern DWORD cRetTmp; // how many return values were set by specific hook script
 void LoadHookScript(const char* name, int id);
 bool LoadHookScriptFile(std::string filePath, const char* name, int id, bool fullPath);
 
-void _stdcall BeginHook();
-void _stdcall RunHookScript(DWORD hook);
-void _stdcall EndHook();
+void __stdcall BeginHook();
+void __stdcall RunHookScript(DWORD hook);
+void __stdcall EndHook();
 
 #define HookBegin pushadc __asm call BeginHook popadc
 #define HookEnd   pushadc __asm call EndHook   popadc

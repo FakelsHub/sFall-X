@@ -939,7 +939,7 @@ static void __declspec(naked) MultiHexCombatMoveFix() {
 		mov  edx, [esp + 4];          // source's destination tilenum
 		cmp  [edi + tile], edx;       // target's tilenum
 		je   checkObj;
-		retn;                         // tilenum in not equal, always move to tile
+		retn;                         // tilenums are not equal, always move to tile
 checkObj:
 		test [edi + flags + 1], 0x08; // is target multihex?
 		jnz  multiHex;
@@ -958,7 +958,7 @@ static void __declspec(naked) MultiHexCombatRunFix() {
 		mov  edx, [esp + 4];          // source's destination tilenum
 		cmp  [edi + tile], edx;       // target's tilenum
 		je   checkObj;
-		retn;                         // tilenum in not equal, always run to tile
+		retn;                         // tilenums are not equal, always run to tile
 checkObj:
 		test [edi + flags + 1], 0x08; // is target multihex?
 		jnz  multiHex;
@@ -1495,8 +1495,8 @@ end:
 static void __declspec(naked) combat_display_hack() {
 	__asm {
 		test [esi + flags], Flat;                 // ctd.mainTarget
-		jnz  end;                                 // target is flat (engine jump)
-		cmp  eax, (OBJ_TYPE_CRITTER << 24);       // This is a critter?
+		jnz  end;                                 // Main target is flat (engine jump)
+		cmp  eax, OBJ_TYPE_CRITTER << 24;         // Is this a critter?
 		je   end;                                 // Yes (engine no jump)
 		cmp  dword ptr [ecx + scriptId], -1;      // Does the target have a script?
 //		jne  hasScript;                           // Yes (engine no jump)
@@ -1623,6 +1623,7 @@ static void __declspec(naked) compute_damage_hack() {
 
 static int  currDescLen = 0;
 static bool showItemDescription = false;
+
 static void __stdcall AppendText(const char* text, const char* desc) {
 	if (showItemDescription && currDescLen == 0) {
 		strncpy_s(tempBuffer, desc, 161);
@@ -1696,6 +1697,7 @@ skip:
 }
 
 static DWORD expSwiftLearner; // experience points for print
+
 static void __declspec(naked) statPCAddExperienceCheckPMs_hack() {
 	__asm {
 		mov  expSwiftLearner, edi;
@@ -2712,8 +2714,8 @@ checkTiles:
 void BugFixes::init()
 {
 	#ifndef NDEBUG
-		LoadGameHook::OnBeforeGameClose() += PrintAddrList;
-		if ((GetConfigInt("Debugging", "BugFixes", 1) == 0)) return;
+	LoadGameHook::OnBeforeGameClose() += PrintAddrList;
+	if ((GetConfigInt("Debugging", "BugFixes", 1) == 0)) return;
 	#endif
 
 	// Missing game initialization
@@ -2731,7 +2733,7 @@ void BugFixes::init()
 	// Fix for vanilla division operator treating negative integers as unsigned
 	if (GetConfigInt("Misc", "DivisionOperatorFix", 1)) {
 		dlog("Applying division operator fix.", DL_INIT);
-		SafeWrite32(0x46A51D, 0xFBF79990); // xor edx, edx; div ebx -> cdq; idiv ebx
+		SafeWrite32(0x46A51D, 0xFBF79990); // xor edx, edx; div ebx > cdq; idiv ebx
 		dlogr(" Done", DL_INIT);
 	}
 
@@ -3064,8 +3066,8 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	//}
 
-	// Fix for the displayed message when the attack randomly hits a target that is not a critter and has a script attached (meaning of this fix is not clear)
-	// Tweak: if the main target has a set Flat flag displays the message "You missed" instead of the message about hit another object
+	// Fix for the displayed message when the attack randomly hits a target that is not a critter and has a script attached
+	// Tweak: if the main target has Flat flag set, display the "You missed" message instead of the message of hitting another object
 	MakeCall(0x42535F, combat_display_hack, 1);
 
 	// Fix for damage_p_proc being called for misses if the target is not a critter
@@ -3095,9 +3097,9 @@ void BugFixes::init()
 	// Fix for critters killed in combat by scripting still being able to move in their combat turn if the distance parameter
 	// in their AI packages is set to stay_close/charge, or NPCsTryToSpendExtraAP is enabled
 	HookCalls(ai_combat_turn_run_hook, {
-		0x42A1A8, // ai_move_steps_closer_  (old 0x42B24D)
-		0x42898D, // ai_run_away_  (potencial fix)
-		0x428AB3  // ai_move_away_ (potencial fix)
+		0x42A1A8, // ai_move_steps_closer_ (old 0x42B24D)
+		0x42898D, // ai_run_away_  (potential fix)
+		0x428AB3  // ai_move_away_ (potential fix)
 	});
 
 	// Fix instant death critical
@@ -3402,10 +3404,10 @@ void BugFixes::init()
 	// Fix animation for the barter button on the dialog window when first entering to the dialog
 	HookCall(0x44A77C, gdialog_window_create_hook);
 
-	// Fix displaying money of the player's in the dialogue when exiting the barter/control interface
+	// Fix for the player's money not being displayed in the dialog window after leaving the barter/combat control interface
 	HookCall(0x447ACD, gdialog_bk_hook);
 
-	// Fix crash or animation glitch of the critter in combat when an explosion from explosives item
+	// Fix crash or animation glitch of the critter in combat when an explosion from explosives
 	// and the AI attack animation are performed simultaneously
 	// Note: all events in combat will occur before the AI (party member) attack
 	HookCall(0x422E5F, combat_ai_hook); // execute all events after the end of the combat sequence
@@ -3415,7 +3417,8 @@ void BugFixes::init()
 	SafeWrite16(0x4C3723, 0xC931); // mov ecx, esi > xor ecx, ecx
 	SafeWrite8(0x4C3727, 0x51);    // push esi > push ecx
 
-	// Fix the code combat_is_shot_blocked_ to correctly get the next tile from a multi-hex object instead of the previous object or source tile
+	// Fix the code in combat_is_shot_blocked_ to correctly get the next tile from a multihex object instead of the previous
+	// object or source tile
 	// Note: this bug does not cause an error in the function work
 	__int64 data = 0x840F04708B90; // remove jnz and modify jmp > jz
 	SafeWriteBytes(0x426D60, (BYTE*)&data, 6);

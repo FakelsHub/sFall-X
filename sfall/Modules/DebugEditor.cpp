@@ -384,7 +384,7 @@ static void DebugModePatch() {
 		if (iniGetInt("Debugging", "HideObjIsNullMsg", 0, ::sfall::ddrawIni)) {
 			MakeJump(0x453FD2, dbg_error_hack);
 		}
-		// prints a debug message about missing art file for critters to both debug.log and the message window in sfall debug mode
+		// prints a debug message about missing art file for critters to both debug.log and the message window in sfall debugging mode
 		HookCall(0x419B65, art_data_size_hook);
 
 		// Fix to prevent crashes when there is a '%' character in the printed message
