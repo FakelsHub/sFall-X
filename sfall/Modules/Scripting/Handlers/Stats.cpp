@@ -37,7 +37,7 @@ namespace script
 const char* invalidStat   = "%s() - stat number out of range.";
 const char* objNotCritter = "%s() - the object is not a critter.";
 
-void sf_set_pc_base_stat(OpcodeContext& ctx) {
+void op_set_pc_base_stat(OpcodeContext& ctx) {
 	int stat = ctx.arg(0).rawValue();
 	if (stat >= 0 && stat < fo::STAT_max_stat) {
 		((long*)FO_VAR_pc_proto)[9 + stat] = ctx.arg(1).rawValue();
@@ -46,7 +46,7 @@ void sf_set_pc_base_stat(OpcodeContext& ctx) {
 	}
 }
 
-void sf_set_pc_extra_stat(OpcodeContext& ctx) {
+void op_set_pc_extra_stat(OpcodeContext& ctx) {
 	int stat = ctx.arg(0).rawValue();
 	if (stat >= 0 && stat < fo::STAT_max_stat) {
 		((long*)FO_VAR_pc_proto)[44 + stat] = ctx.arg(1).rawValue();
@@ -55,7 +55,7 @@ void sf_set_pc_extra_stat(OpcodeContext& ctx) {
 	}
 }
 
-void sf_get_pc_base_stat(OpcodeContext& ctx) {
+void op_get_pc_base_stat(OpcodeContext& ctx) {
 	int value = 0,
 		stat = ctx.arg(0).rawValue();
 	if (stat >= 0 && stat < fo::STAT_max_stat) {
@@ -66,7 +66,7 @@ void sf_get_pc_base_stat(OpcodeContext& ctx) {
 	ctx.setReturn(value);
 }
 
-void sf_get_pc_extra_stat(OpcodeContext& ctx) {
+void op_get_pc_extra_stat(OpcodeContext& ctx) {
 	int value = 0,
 		stat = ctx.arg(0).rawValue();
 	if (stat >= 0 && stat < fo::STAT_max_stat) {
@@ -77,7 +77,7 @@ void sf_get_pc_extra_stat(OpcodeContext& ctx) {
 	ctx.setReturn(value);
 }
 
-void sf_set_critter_base_stat(OpcodeContext& ctx) {
+void op_set_critter_base_stat(OpcodeContext& ctx) {
 	fo::GameObject* obj = ctx.arg(0).object();
 	if (obj && obj->Type() == fo::OBJ_TYPE_CRITTER) {
 		int stat = ctx.arg(1).rawValue();
@@ -91,7 +91,7 @@ void sf_set_critter_base_stat(OpcodeContext& ctx) {
 	}
 }
 
-void sf_set_critter_extra_stat(OpcodeContext& ctx) {
+void op_set_critter_extra_stat(OpcodeContext& ctx) {
 	fo::GameObject* obj = ctx.arg(0).object();
 	if (obj && obj->Type() == fo::OBJ_TYPE_CRITTER) {
 		int stat = ctx.arg(1).rawValue();
@@ -105,7 +105,7 @@ void sf_set_critter_extra_stat(OpcodeContext& ctx) {
 	}
 }
 
-void sf_get_critter_base_stat(OpcodeContext& ctx) {
+void op_get_critter_base_stat(OpcodeContext& ctx) {
 	int result = 0;
 	fo::GameObject* obj = ctx.arg(0).object();
 	if (obj && obj->Type() == fo::OBJ_TYPE_CRITTER) {
@@ -121,7 +121,7 @@ void sf_get_critter_base_stat(OpcodeContext& ctx) {
 	ctx.setReturn(result);
 }
 
-void sf_get_critter_extra_stat(OpcodeContext& ctx) {
+void op_get_critter_extra_stat(OpcodeContext& ctx) {
 	int result = 0;
 	fo::GameObject* obj = ctx.arg(0).object();
 	if (obj && obj->Type() == fo::OBJ_TYPE_CRITTER) {
@@ -137,10 +137,10 @@ void sf_get_critter_extra_stat(OpcodeContext& ctx) {
 	ctx.setReturn(result);
 }
 
-void sf_set_critter_skill_points(OpcodeContext& ctx) {
+void op_set_critter_skill_points(OpcodeContext& ctx) {
 	unsigned long skill = ctx.arg(1).rawValue();
 	if (skill > 17) {
-		ctx.printOpcodeError("%s() - wrong skill number.", ctx.getOpcodeName());
+		ctx.printOpcodeError("%s() - incorrect skill number.", ctx.getOpcodeName());
 		return;
 	}
 
@@ -153,10 +153,10 @@ void sf_set_critter_skill_points(OpcodeContext& ctx) {
 	}
 }
 
-void sf_get_critter_skill_points(OpcodeContext& ctx) {
+void op_get_critter_skill_points(OpcodeContext& ctx) {
 	unsigned long skill = ctx.arg(1).rawValue();
 	if (skill > 17) {
-		ctx.printOpcodeError("%s() - wrong skill number.", ctx.getOpcodeName());
+		ctx.printOpcodeError("%s() - incorrect skill number.", ctx.getOpcodeName());
 		return;
 	}
 
@@ -213,7 +213,7 @@ void __declspec(naked) op_get_critter_current_ap() {
 	using namespace fo;
 	using namespace Fields;
 	__asm {
-		_GET_ARG_INT(fail); // Get function arg and check are valid
+		_GET_ARG_INT(fail); // Get function arg and check if valid
 		test eax, eax;
 		jz   fail;
 		mov  edx, [eax + protoId];
@@ -224,21 +224,20 @@ void __declspec(naked) op_get_critter_current_ap() {
 end:
 		mov  eax, ebx;
 		_J_RET_VAL_TYPE(VAR_TYPE_INT); // Pass back the result
-		/////////////////////////////
 fail:
 		xor  edx, edx;
 		jmp  end;
 	}
 }
 
-void sf_set_critter_current_ap(OpcodeContext& ctx) {
+void op_set_critter_current_ap(OpcodeContext& ctx) {
 	fo::GameObject* obj = ctx.arg(0).object();
 	if (obj->Type() == fo::OBJ_TYPE_CRITTER) {
 		long ap = ctx.arg(1).rawValue();
 		if (ap < 0) ap = 0;
 		obj->critter.movePoints = ap;
 
-		if (obj == fo::var::obj_dude) fo::func::intface_update_move_points(ap, *(DWORD*)FO_VAR_combat_free_move);
+		if (obj == fo::var::obj_dude) fo::func::intface_update_move_points(ap, fo::var::combat_free_move);
 	} else {
 		ctx.printOpcodeError(objNotCritter, ctx.getOpcodeName());
 	}
@@ -278,7 +277,7 @@ end:
 	}
 }
 
-void sf_set_critter_hit_chance_mod(OpcodeContext& ctx) {
+void op_set_critter_hit_chance_mod(OpcodeContext& ctx) {
 	fo::GameObject* obj = ctx.arg(0).object();
 	if (obj->Type() == fo::OBJ_TYPE_CRITTER) {
 		SetHitChanceMax(obj, ctx.arg(1).rawValue(), ctx.arg(2).rawValue());
@@ -305,7 +304,7 @@ end:
 	}
 }
 
-void sf_set_critter_pickpocket_mod(OpcodeContext& ctx) {
+void op_set_critter_pickpocket_mod(OpcodeContext& ctx) {
 	fo::GameObject* obj = ctx.arg(0).object();
 	if (obj->Type() == fo::OBJ_TYPE_CRITTER) {
 		SetPickpocketMax(obj, ctx.arg(1).rawValue(), ctx.arg(2).rawValue());
@@ -332,7 +331,7 @@ end:
 	}
 }
 
-void sf_set_critter_skill_mod(OpcodeContext& ctx) {
+void op_set_critter_skill_mod(OpcodeContext& ctx) {
 	fo::GameObject* obj = ctx.arg(0).object();
 	if (obj->Type() == fo::OBJ_TYPE_CRITTER) {
 		SetSkillMax(obj, ctx.arg(1).rawValue());
@@ -494,7 +493,7 @@ static void __declspec(naked) statPCAddExperienceCheckPMs_hack() {
 	}
 }
 
-void sf_set_xp_mod(OpcodeContext& ctx) {
+void op_set_xp_mod(OpcodeContext& ctx) {
 	static bool xpModPatch = false;
 	long percent = ctx.arg(0).rawValue() & 0xFFFF;
 	Stats::experienceMod = percent / 100.0f;
