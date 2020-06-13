@@ -259,21 +259,21 @@ isNotReading:
 
 static void __declspec(naked) CheckHeroExist() {
 	__asm {
-		cmp  esi, critterArraySize;       // check if loading hero art
-		jle  endFunc;
 		mov  eax, FO_VAR_art_name;        // critter art file name address (file name)
+		cmp  esi, critterArraySize;       // check if loading hero art
+		jg   checkArt;
+		retn;
+checkArt:
 		call fo::funcoffs::db_access_;    // check art file exists
 		test eax, eax;
-		jnz  endFunc;
-
-		// if file not found load regular critter art instead
+		jz   notExists;
+		mov  eax, FO_VAR_art_name;
+		retn;
+notExists: // if file not found load regular critter art instead
 		sub  esi, critterArraySize;
 		add  esp, 4;                      // drop func ret address
 		mov  eax, 0x4194E2;
 		jmp  eax;
-endFunc:
-		mov  eax, FO_VAR_art_name;
-		retn;
 	}
 }
 
@@ -365,6 +365,11 @@ static long __stdcall AddHeroCritNames() { // art_init_
 		CritList += 13;
 	}
 	return critterArt.total;
+}
+
+static void DoubleArtAlias() {
+	DWORD* crittersAliasData = *(DWORD**)FO_VAR_anon_alias;
+	std::memcpy(crittersAliasData + critterListSize, crittersAliasData, critterListSize * 4);
 }
 
 ///////////////////////////////////////////////////////////////GRAPHICS HERO FUNCTIONS///////////////////////////////////////////////////////////////
@@ -488,8 +493,8 @@ reset:  // set race and style to defaults
 		call LoadHeroDat;
 		pop  ecx;
 		pop  edx;
-		call fo::funcoffs::proto_dude_update_gender_;
 endFunc:
+		call fo::funcoffs::proto_dude_update_gender_;
 		mov  eax, 1;
 		retn;
 	}
@@ -1428,6 +1433,9 @@ static void EnableHeroAppearanceMod() {
 
 	// Double size of critter art index creating a new area for hero art (art_read_lst_)
 	HookCall(0x4196B0, DoubleArt);
+
+	// Copying inheritance values of critters art into the extended part of the _anon_alias array
+	HookCall(0x418CA2, DoubleArtAlias);
 
 	// Add new hero critter names at end of critter list (art_init_)
 	MakeCall(0x418B39, AddHeroCritNames);
