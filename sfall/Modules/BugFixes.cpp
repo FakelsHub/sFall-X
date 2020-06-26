@@ -3154,7 +3154,8 @@ void BugFixes::init()
 		HookCall(0x42954B, ai_best_weapon_hook);
 		// also corrected calculate weapon perk modifier
 		if (bestWeaponPerkMod > 1) {
-			// Score x 3 it seems that this is the best way to fix it, because the difference >5 between the values is preserved, as with x5 (example: 7x3=21 and 9x3=27)
+			// Score x 3 it seems that this is the best way to fix it, because the difference >5 between the values is preserved,
+			// as with x5 (example: 7x3=21 and 9x3=27)
 			SafeWriteBatch<BYTE>(0x55, {0x42955E, 0x4296E7}); // lea eax, [edx * 2];
 			// Score x 2
 			if (bestWeaponPerkMod > 2) SafeWriteBatch<WORD>(0x9066, {0x429563, 0x4296EC}); // nop
@@ -3417,11 +3418,17 @@ void BugFixes::init()
 	SafeWrite16(0x4C3723, 0xC931); // mov ecx, esi > xor ecx, ecx
 	SafeWrite8(0x4C3727, 0x51);    // push esi > push ecx
 
-	// Fix the code in combat_is_shot_blocked_ to correctly get the next tile from a multihex object instead of the previous
-	// object or source tile
+	// Fix the code in combat_is_shot_blocked_ to correctly get the next tile from a multihex object instead of the previous object or source tile
 	// Note: this bug does not cause an error in the function work
-	__int64 data = 0x840F04708B90; // remove jnz and modify jmp > jz
-	SafeWriteBytes(0x426D60, (BYTE*)&data, 6);
+	uint8_t codeData[] = {
+		0x8B, 0x70, 0x04,       // mov  esi, [eax + 4]
+		0xF6, 0x40, 0x25, 0x08, // test [eax + flags2], MultiHex_
+		0x74, 0x1E,             // jz   0x426D83
+		0x39, 0xEE,             // cmp  esi, ebp
+		0x74, 0x1A,             // jz   0x426D83
+		0x90
+	};
+	SafeWriteBytes(0x426D5C, codeData, 14);
 }
 
 }
