@@ -935,18 +935,21 @@ end:
 
 static void __declspec(naked) MultiHexReTargetTileFix() {
 	__asm {
-		push  edx;                     // retarget tile
-		call  fo::funcoffs::tile_dist_;
-		pop   edx;
-		test  [ebp + flags + 1], 0x08; // source multihex
-		jnz   isMultiHex;
+		push edx;                           // retargeted tile
+		call fo::funcoffs::obj_blocking_at_;
+		pop  edx;
+		test eax, eax;
+		jz   isFreeTile;
+		retn;
+isFreeTile:
+		test [ebp + flags + 1], 0x08;      // source is multihex?
+		jnz  isMultiHex
 		retn;
 isMultiHex:
-		mov   eax, [esp + 0x3DC - 0x3D8 + 4];
-		mov   eax, [eax + tile];       // target tile
-		call  fo::funcoffs::tile_dist_;
-		cmp   eax, 2;                  // distance from target to retarget tile
-		cmovl eax, edi;
+		push ecx;
+		mov  ecx, ebp;
+		call fo::BlockingArcNeighborTiles;
+		pop  ecx;
 		retn;
 	}
 }
@@ -2964,9 +2967,9 @@ void BugFixes::init()
 		// Fix for multihex critters moving too close and overlapping their targets in combat and move to retarget tile
 		MakeCall(0x42A14F, MultiHexCombatRunFix, 1);
 		MakeCall(0x42A178, MultiHexCombatMoveFix, 1);
-		// Prevent retarget to a tile if the distance from the tile to the target is less than 2 tile
-		HookCall(0x42A3C1, MultiHexReTargetTileFix); // cai_retargetTileFromFriendlyFire_
-		// TODO: cai_retargetTileFromFriendlyFireSubFunc_ need to add the correct implementation of retargeting tile for multihex critters
+		// Checking neighboring tiles to prevent overlapping of the critter and other object tiles when move to the retargeting tile
+		SafeWrite16(0x42A3A6, 0xE889); // xor eax, eax > mov eax, ebp (fix retargeting tile for multihex critter)
+		HookCall(0x42A3A8, MultiHexReTargetTileFix); // cai_retargetTileFromFriendlyFire_
 		dlogr(" Done", DL_INIT);
 	//}
 
