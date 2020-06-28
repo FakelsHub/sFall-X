@@ -480,8 +480,8 @@ Some utility/math functions are available:
 - sets the current cursor mode
 
 > void sfall_func0("display_stats")
-- displays player stats in the inventory screen display window
-- works only in opened inventory
+- updates player stats in the inventory display window or character screen
+- Note: works only when the interface window is open
 
 > int sfall_func1("lock_is_jammed", object)
 - returns 1 if the lock (container or scenery) is currently jammed, 0 otherwise
