@@ -3218,11 +3218,6 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Fix loss of unused perks
-	SafeWrite16(0x43C369, 0x0DFE);   // replaces mov byte ptr ds:[0x570A29], dh > dec byte ptr ds:[0x570A29]
-	// If there are unused perks, then call the selection window of perks
-	SafeWrite8(0x43C370, 0xB1);      // jump 0x43C322
-
 	// Fix for Heave Ho! perk, don't increase Strength stat above 10 when determining the maximum range of thrown weapons
 	dlog("Applying Heave Ho! perk fix.", DL_INIT);
 	HookCall(0x478AD9, item_w_range_hook);
