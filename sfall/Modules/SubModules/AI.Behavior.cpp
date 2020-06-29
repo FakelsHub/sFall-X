@@ -752,18 +752,18 @@ fix:
 }
 
 static int32_t __fastcall ai_try_move_steps_closer(fo::GameObject* source, fo::GameObject* target, int32_t &outHitMode) {
-	///long result = sf_is_within_perception(source, target);
-	///if (!result) return 1; // the attacker can't see the target
-
 	long getTile = -1, dist = -1;
 
 	fo::GameObject* itemHand = fo::func::inven_right_hand(source);
 	if (itemHand) {
 		long mode = fo::func::ai_pick_hit_mode(source, itemHand, target);
-		long cost = sf_item_w_mp_cost(source, mode, 0);
 
 		// check the distance and number of remaining AP's
 		long weaponRange = fo::func::item_w_range(source, mode);
+		if (weaponRange <= 2) {
+			return 1;
+		}
+		long cost = sf_item_w_mp_cost(source, mode, 0);
 		dist = fo::func::obj_dist(source, target) - weaponRange; // required approach distance
 		long ap = source->critter.movePoints - dist; // subtract the number of action points to the move, leaving the number for the shot
 		long remainingAP = ap - cost;
