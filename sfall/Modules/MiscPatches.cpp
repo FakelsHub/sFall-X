@@ -120,9 +120,9 @@ static void __declspec(naked) intface_item_reload_hook() {
 		push eax;
 		mov  eax, dword ptr ds:[FO_VAR_obj_dude];
 		call fo::funcoffs::register_clear_;
-		xor  edx, edx;
-		xor  ebx, ebx;
-		lea  eax, [edx + 1]; // idle anim
+		xor  edx, edx;       // ANIM_stand
+		xor  ebx, ebx;       // delay (unused)
+		lea  eax, [edx + 1]; // RB_UNRESERVED
 		call fo::funcoffs::register_begin_;
 		mov  eax, dword ptr ds:[FO_VAR_obj_dude];
 		call fo::funcoffs::register_object_animate_;
