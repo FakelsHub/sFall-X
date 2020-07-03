@@ -1467,7 +1467,7 @@ void Perks::init() {
 	SafeWrite8(0x43C370, 0xB1);    // jump 0x43C322
 
 	// Don't show an empty perks selection dialog box
-	HookCall(0x43C80B, perks_dialog_hook);
+	if (!isDebug) HookCall(0x43C80B, perks_dialog_hook);
 
 	// Disable gain perks for bonus stats
 	for (int i = STAT_st; i <= STAT_lu; i++) SafeWrite8(GainStatPerks[i][0], (BYTE)GainStatPerks[i][1]);
