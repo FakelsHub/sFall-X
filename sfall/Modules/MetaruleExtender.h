@@ -1,6 +1,6 @@
 /*
  *    sfall
- *    Copyright (C) 2008-2018  The sfall team
+ *    Copyright (C) 2008-2020  The sfall team
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -18,14 +18,19 @@
 
 #pragma once
 
-#define TARGETVERSION "Fallout 2 v1.02 US"
+#include "..\main.h"
 
-#define LEGAL_COPYRIGHT "Copyright © 2006-2020, sfall team"
+#include "Module.h"
 
-#define VERSION_MAJOR 4
-#define VERSION_MINOR 2
-#define VERSION_BUILD 7
-#define VERSION_REV 0
+namespace sfall
+{
 
-#define VERSION_STRING "4.2.7"
+class MetaruleExtender : public Module {
+public:
+	const char* name() { return "MetaruleExtender"; }
+	void init();
+	//void exit() override;
 
+};
+
+}

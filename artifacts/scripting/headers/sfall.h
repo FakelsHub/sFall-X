@@ -277,7 +277,15 @@
                                                         if (get_flags(obj1) bwand FLAG_MULTIHEX) distance--; \
                                                         if (get_flags(obj2) bwand FLAG_MULTIHEX) distance--
 
-// sfall_funcX macros
+
+/* sfall metalure3 function	macros */
+#define SET_HORRIGAN_ENCOUNTER                          (200)
+
+// sets the number of days (range 1...127) for a special Frank Horrigan encounter, or disable the encounter if days is set to 0
+#define set_horrigan_days(day)                          metarule3(SET_HORRIGAN_ENCOUNTER, day, 0, 0)
+
+
+/* sfall_funcX macros */
 #define add_extra_msg_file(name)                        sfall_func1("add_extra_msg_file", name)
 #define add_global_timer_event(time, fixedParam)        sfall_func2("add_g_timer_event", time, fixedParam)
 #define add_iface_tag                                   sfall_func0("add_iface_tag")
