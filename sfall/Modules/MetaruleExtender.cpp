@@ -13,19 +13,22 @@
 namespace sfall
 {
 
+#define HorriganEncounterDays                   (0x4C06EA)
+#define HorriganEncounterCheck                  (0x4C06D8)
+
 static signed char HorriganEncounterDefaultDays = 35;
 static signed char HorriganEncounterSetDays = 35;
 static bool HorriganEncounterDisabled = false;
 
 enum class MetaruleFunction : long
 {
-	SET_HORRIGAN_ENCOUNTER = 200, // sets the number of days for the Fran Horrigan meeting or disable encounter
+	SET_HORRIGAN_ENCOUNTER  = 200, // sets the number of days for the Fran Horrigan meeting or disable encounter
 };
 
 /*
 	args - contains a pointer to an array (size of 3) of arguments for the metarule3 function [located on the stack]
 */
-static int32_t __fastcall op_metarule3_ext(int32_t metafunc, int32_t* &args) {
+static int32_t __fastcall op_metarule3_ext(int32_t metafunc, int32_t* args) {
 	int32_t result = 0;
 
 	switch (static_cast<MetaruleFunction>(metafunc)) {
@@ -33,12 +36,13 @@ static int32_t __fastcall op_metarule3_ext(int32_t metafunc, int32_t* &args) {
 		{
 			int32_t argValue = args[0];     // arg1
 			if (argValue <= 0) {            // set horrigan disable
-				if (*(BYTE*)0x4C06D8 == 0xEB) break;
-				SafeWrite8(0x4C06D8, 0xEB); // skip the Horrigan encounter check
-				HorriganEncounterDisabled = true;
+				if (*(BYTE*)HorriganEncounterCheck == CodeType::JumpNZ) {
+					SafeWrite8(HorriganEncounterCheck, CodeType::JumpShort); // skip the Horrigan encounter check
+					HorriganEncounterDisabled = true;
+				}
 			} else {
 				if (argValue > 127) argValue = 127;
-				SafeWrite8(0x4C06EA, argValue);
+				SafeWrite8(HorriganEncounterDays, argValue);
 				HorriganEncounterSetDays = argValue;
 			}
 			break;
@@ -58,33 +62,31 @@ static void __declspec(naked) op_metarule3_hack() {
 		jnz  extended;
 		retn;
 extended:
-		lea  edx, [esp + 0x4C - 0x4C + 4];
-		push edx; // pointer to args
+		lea  edx, [esp + 0x4C - 0x4C + 4]; // pointer to args
 		// swap arg1 <> arg3
 		mov  eax, [edx];       // get: arg3
 		xchg eax, [edx + 2*4]; // get: arg1, set: arg3 > arg1
 		mov  [edx], eax;       // set: arg1 > arg3
 		//
-		mov  edx, esp;
-		call op_metarule3_ext;
-		add  esp, 8;
+		call op_metarule3_ext; // ecx - metafunc arg
+		add  esp, 4;
 		jmp  op_metarule3_hack_Ret;
 	}
 }
 
 static void Reset() {
 	if (HorriganEncounterSetDays != HorriganEncounterDefaultDays) {
-		SafeWrite8(0x4C06EA, HorriganEncounterDefaultDays);
+		SafeWrite8(HorriganEncounterDays, HorriganEncounterDefaultDays);
 	}
 	if (HorriganEncounterDisabled) {
 		HorriganEncounterDisabled = false;
-		SafeWrite8(0x4C06D8, 0x75); // enable
+		SafeWrite8(HorriganEncounterCheck, CodeType::JumpNZ); // enable
 	}
 }
 
 void MetaruleExtender::init() {
 	// Keep default value
-	HorriganEncounterDefaultDays = *(BYTE*)0x4C06EA;
+	HorriganEncounterDefaultDays = *(BYTE*)HorriganEncounterDays;
 
 	MakeCall(0x457322, op_metarule3_hack);
 

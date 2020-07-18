@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include "..\main.h"
-
 #include "Module.h"
 
 namespace sfall
