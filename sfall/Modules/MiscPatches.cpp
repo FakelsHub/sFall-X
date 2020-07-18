@@ -625,7 +625,7 @@ static void DisableHorriganPatch() {
 		LoadGameHook::OnAfterNewGame() += []() {
 			fo::var::Meet_Frank_Horrigan = true;
 		};
-		//SafeWrite8(0x4C06D8, 0xEB); // skip the Horrigan encounter check
+		SafeWrite8(0x4C06D8, 0xEB); // skip the Horrigan encounter check
 	}
 }
 

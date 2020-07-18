@@ -33,6 +33,7 @@ static int32_t __fastcall op_metarule3_ext(int32_t metafunc, int32_t* &args) {
 		{
 			int32_t argValue = args[0];     // arg1
 			if (argValue <= 0) {            // set horrigan disable
+				if (*(BYTE*)0x4C06D8 == 0xEB) break;
 				SafeWrite8(0x4C06D8, 0xEB); // skip the Horrigan encounter check
 				HorriganEncounterDisabled = true;
 			} else {
