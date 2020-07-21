@@ -19,6 +19,8 @@ public:
 
 	static long PlaySfallSound(const char* path, long mode);
 	static void __stdcall StopSfallSound(uint32_t id);
+
+	static long CalculateVolumeDB(long masterVolume, long passVolume);
 };
 
 }
