@@ -523,10 +523,14 @@ void Movies::init() {
 		WIP: Task
 		Implement subtitle output from the need to play an mve file in the background.
 	*/
-	if (Graphics::mode != 0 && GetConfigInt("Graphics", "AllowDShowMovies", 0)) {
-		MakeJump(0x44E690, gmovie_play_hack);
-		HookCall(0x44E993, gmovie_play_hook_stop);
-		/* NOTE: At this address 0x487781, HRP changes the callback procedure to display mve frames. */
+	if (Graphics::mode != 0) {
+		int val = GetConfigInt("Graphics", "AllowDShowMovies", 0);
+		if (val) {
+			if (val >= 2) Graphics::AviMovieWidthFit = true;
+			MakeJump(0x44E690, gmovie_play_hack);
+			HookCall(0x44E993, gmovie_play_hook_stop);
+			/* NOTE: At this address 0x487781, HRP changes the callback procedure to display mve frames. */
+		}
 	}
 	dlogr(" Done", DL_INIT);
 
