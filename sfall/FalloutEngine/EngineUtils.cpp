@@ -426,6 +426,27 @@ void DrawToSurface(long width, long height, long fromX, long fromY, long fromWid
 	}
 }
 
+// Fills the specified non-script interface window to black color
+void ClearWindow(long winID, bool refresh) {
+	__asm {
+		xor  ebx, ebx;
+		push ebx;
+		mov  eax, winID;
+		call fo::funcoffs::win_height_;
+		push eax;
+		mov  eax, winID;
+		call fo::funcoffs::win_width_;
+		mov  ecx, eax;
+		mov  edx, ebx;
+		mov  eax, winID; //dword ptr ds:[0x5195B8];
+		call fo::funcoffs::win_fill_;
+	}
+	if (refresh) {
+		__asm mov  eax, winID;
+		__asm call fo::funcoffs::win_draw_;
+	}
+}
+
 //---------------------------------------------------------
 // print text to surface
 void PrintText(char* displayText, BYTE colorIndex, DWORD xPos, DWORD yPos, DWORD txtWidth, DWORD toWidth, BYTE* toSurface) {
@@ -536,6 +557,16 @@ void RedrawObject(GameObject* obj) {
 	BoundRect rect;
 	func::obj_bound(obj, &rect);
 	func::tile_refresh_rect(&rect, obj->elevation);
+}
+
+// Redraws all interface windows
+void RefreshGNW() {
+	*(DWORD*)FO_VAR_doing_refresh_all = 1;
+	for (size_t i = 0; i < *(DWORD*)FO_VAR_num_windows; i++)
+	{
+		func::GNW_win_refresh(fo::var::window[i], &fo::var::scr_size, 0);
+	}
+	*(DWORD*)FO_VAR_doing_refresh_all = 0;
 }
 
 /////////////////////////////////////////////////////////////////UNLISTED FRM FUNCTIONS////////////////////////////////////////////////////////////////////////
