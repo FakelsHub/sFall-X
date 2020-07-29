@@ -480,9 +480,7 @@ void Graphics::SetMovieTexture(IDirect3DTexture9* tex) {
 	}
 	else if (aviAspect < winAspect) {
 		if (Graphics::AviMovieWidthFit || (hrpIsEnabled && *(DWORD*)HRPAddress(0x1006EC10) == 2)) {
-			// scales the movie surface to the screen width size
-			aviAspect = (float)gWidth / (float)desc.Width;
-			desc.Width *= aviAspect;
+			desc.Width = gWidth; // scales the movie surface to the screen width size
 		} else {
 			// scales width to aspect ratio and placement the movie surface to the centre of the window by the X-axis
 			aviAspect = (float)desc.Height / (float)gHeight;
