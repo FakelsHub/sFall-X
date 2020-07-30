@@ -3324,16 +3324,17 @@ void BugFixes::init()
 		HookCall(0x456D4A, op_attack_hook);
 		SafeWrite8(0x456D61, 0x74); // mov [esp+x], esi
 		SafeWrite8(0x456D92, 0x5C); // mov [esp+x], ebx
+
+		// fixes setting flags argument results for the attacker and the target
+		SafeWrite16(0x456D95, 0xC085); // cmp eax, ebx > test eax, eax
+		MakeCall(0x456D9A, op_attack_hook_flags);
+		SafeWrite8(0x456D9F, CodeType::JumpNZ); // jz > jnz
+		SafeWrite16(0x456DA7, 0x8489); // mov [gcsd.changeFlags], 1 > mov [gcsd.changeFlags], eax
+		SafeWrite8(0x456DAB, 0);
+		SafeWrite8(0x456DAE, CodeType::Nop);
 		dlogr(" Done", DL_INIT);
 	}
-	// fixes setting flags argument results for the attacker and the target
-	SafeWrite16(0x456D95, 0xC085); // cmp eax, ebx > test eax, eax
-	MakeCall(0x456D9A, op_attack_hook_flags);
-	SafeWrite8(0x456D9F, CodeType::JumpNZ); // jz > jnz
-	SafeWrite16(0x456DA7, 0x8489); // mov [gcsd.changeFlags], 1 > mov [gcsd.changeFlags], eax
-	SafeWrite8(0x456DAB, 0);
-	SafeWrite8(0x456DAE, CodeType::Nop);
-	// fix set flags to attacker and target
+	// Fix set flags to attacker and target when using attack_complex function
 	MakeCall(0x42302B, combat_attack_hack_gcsdFlags, 4);
 
 	// Fix for attack_complex still causing minimum damage to the target when the attacker misses
