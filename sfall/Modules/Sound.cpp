@@ -170,9 +170,9 @@ static void CreateSndWnd() {
 static uint32_t GetSpeechDurationTime() {
 	if (!speechSound || !speechSound->pSeek) return 0;
 	speechSound->pSeek->SetTimeFormat(&TIME_FORMAT_MEDIA_TIME);
-	__int64 outVal;
+	__int64 outVal = -1;
 	speechSound->pSeek->GetDuration(&outVal);
-	return static_cast<uint32_t>(outVal / 10000000) + 1;
+	return (outVal != -1) ? static_cast<uint32_t>(outVal / 10000000) + 1 : 0;
 }
 
 static uint32_t GetSpeechPlayningPosition() {
@@ -328,7 +328,7 @@ enum PlayType : int8_t {
 	music  = 1,
 	lips   = 2,
 	speech = 3,
-	slider = 4 // speech for end game sliders
+	slides = 4 // speech for end game slides
 };
 
 static const wchar_t *SoundExtensions[] = { L"wav", L"mp3", L"wma" };
@@ -392,7 +392,7 @@ static bool __fastcall SoundFileLoad(PlayType playType, const char* path) {
 		backgroundMusic = PlayingSound(buf, SoundMode::engine_music_play); // background music loop
 		if (!backgroundMusic) return false;
 	} else {
-		if (!PlayingSound(buf, ((playType >= PlayType::lips) ? SoundMode::speech_play : SoundMode::single_play), (playType == PlayType::slider))) {
+		if (!PlayingSound(buf, ((playType >= PlayType::lips) ? SoundMode::speech_play : SoundMode::single_play), (playType == PlayType::slides))) {
 			return false;
 		}
 		if (playType == PlayType::lips) {
@@ -486,7 +486,7 @@ static void __declspec(naked) soundLoad_hack() {
 		sete cl;
 		inc  cl;
 jlips:
-		add  cl, 2; // PlayType::lips / PlayType::speech / PlayType::slider
+		add  cl, 2; // PlayType::lips / PlayType::speech / PlayType::slides
 skip:
 		call SoundFileLoad;
 		pop  edx;
@@ -523,7 +523,7 @@ playSfall:
 	}
 }
 
-//////////////////////// SLIDER SPEECH SOUND CONTROL //////////////////////////
+//////////////////////// SLIDES SPEECH SOUND CONTROL //////////////////////////
 
 static void __declspec(naked) endgame_load_voiceover_hack() {
 	__asm {
@@ -779,7 +779,7 @@ static void __declspec(naked) combatai_msg_hook() {
 	__asm {
 		mov  edi, [esp + 0xC]; // lip file from msg
 		push eax;
-		cmp  eax, FO_VAR_target_str; // why? bug?
+		cmp  eax, FO_VAR_target_str;
 		jne  attacker;
 		lea  eax, targetSnd;
 		jmp  skip;
@@ -848,7 +848,7 @@ void Sound::init() {
 		MakeCall(0x440286, endgame_load_voiceover_hack, 2);
 		MakeCall(0x43FCED, endgame_pan_desert_hack, 1);
 		HookCall(0x43FCF9, endgame_pan_desert_hook);
-		// play slider speech
+		// play slides speech
 		MakeCall(0x43FEF3, endgame_pan_desert_hack_play, 1);
 		MakeCall(0x43FF37, endgame_pan_desert_hack_play, 1);
 		MakeCall(0x4400B2, endgame_display_image_hack, 1);
@@ -863,8 +863,8 @@ void Sound::init() {
 	}
 
 	int sBuff = GetConfigInt("Sound", "NumSoundBuffers", 0);
-	if (sBuff > 0 && sBuff <= 32) {
-		SafeWrite8(0x451129, (BYTE)sBuff);
+	if (sBuff > 0) {
+		SafeWrite8(0x451129, (sBuff > 32) ? (BYTE)32 : (BYTE)sBuff);
 	}
 
 	if (GetConfigInt("Sound", "AllowSoundForFloats", 0)) {
