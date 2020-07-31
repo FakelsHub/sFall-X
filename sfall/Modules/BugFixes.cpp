@@ -2078,12 +2078,12 @@ static void __declspec(naked) combat_attack_hack_gcsdFlags() {
 		test bl, 2;
 		jz   checkTarget;
 		// set source
-		mov  eax, dword ptr ds:[FO_VAR_main_ctd + 0x14]; // flagsSource
+		mov  eax, ds:[FO_VAR_main_ctd + 0x14]; // flagsSource
 		and  eax, DAM_DEAD;
 		or   edx, eax; // don't unset DAM_DEAD flag
-		mov  dword ptr ds:[FO_VAR_main_ctd + 0x14], edx; // flagsSource
+		mov  ds:[FO_VAR_main_ctd + 0x14], edx; // flagsSource
 checkTarget:
-		mov  eax, dword ptr ds:[FO_VAR_main_ctd + 0x30]; // flagsTarget
+		mov  eax, ds:[FO_VAR_main_ctd + 0x30]; // flagsTarget
 		test bl, 1;
 		jnz  setTarget;
 		retn;
@@ -2092,6 +2092,31 @@ setTarget:
 		and  eax, DAM_DEAD;
 		or   ebp, eax; // don't unset DAM_DEAD flag
 		mov  eax, ebp;
+		retn;
+	}
+}
+
+static void __declspec(naked) combat_attack_hack_gcsdMinDamage() {
+	__asm {
+		mov  ds:[FO_VAR_main_ctd + 0x2C], ecx; // amountTarget (min)
+		mov  edx, ecx;
+		lea  ebx, ds:[FO_VAR_main_ctd + 0x30]; // flagsTarget
+		mov  eax, ds:[FO_VAR_main_ctd + 0x20]; // Target
+		jmp  fo::funcoffs::check_for_death_;   // set DAM_DEAD
+	}
+}
+
+static void __declspec(naked) combat_attack_hack_gcsdMaxDamage() {
+	__asm {
+		mov  ds:[FO_VAR_main_ctd + 0x2C], ebp; // amountTarget (max)
+		mov  eax, ds:[FO_VAR_main_ctd + 0x20]; // Target
+		call fo::funcoffs::critter_get_hits_;
+		cmp  eax, ebp; // curr.HP <= max.DMG
+		jle  skip;
+		cmp  eax, edx; // curr.HP > curr.DMG
+		jg   skip;
+		and  byte ptr ds:[FO_VAR_main_ctd + 0x30], ~DAM_DEAD; // flagsTarget (unset)
+skip:
 		retn;
 	}
 }
@@ -3336,6 +3361,9 @@ void BugFixes::init()
 	}
 	// Fix set flags to attacker and target when using attack_complex function
 	MakeCall(0x42302B, combat_attack_hack_gcsdFlags, 4);
+	// set/unset the DAM_DEAD flag when changing the maximum/minimum damage to the target
+	MakeCall(0x422FFF, combat_attack_hack_gcsdMinDamage, 1);
+	MakeCall(0x423017, combat_attack_hack_gcsdMaxDamage, 1);
 
 	// Fix for attack_complex still causing minimum damage to the target when the attacker misses
 	MakeCall(0x422FE5, combat_attack_hack, 1);
