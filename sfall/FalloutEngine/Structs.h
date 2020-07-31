@@ -822,4 +822,17 @@ struct DrugInfoList {
 	long  numEffects;
 };
 
+struct CombatGcsd {
+	GameObject* source;
+	GameObject* target;
+	long freeAP;
+	long bonusToHit;
+	long bonusDamage;
+	long minDamage;
+	long maxDamage;
+	long changeFlags;
+	DWORD flagsSource;
+	DWORD flagsTarget;
+};
+
 }

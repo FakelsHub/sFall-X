@@ -23,6 +23,7 @@ WRAP_WATCOM_FFUNC3(long, ai_have_ammo, GameObject*, critter, GameObject*, item, 
 WRAP_WATCOM_FFUNC3(long, ai_pick_hit_mode, GameObject*, source, GameObject*, item, GameObject*, target)
 WRAP_WATCOM_FFUNC3(long, ai_move_away, GameObject*, source, GameObject*, target, long, distance)
 WRAP_WATCOM_FFUNC3(GameObject*, ai_search_inven_weap, GameObject*, source, long, apCheck, GameObject*, target)
+WRAP_WATCOM_FFUNC3(void, check_for_death, GameObject*, critter, long, amountDamage, long*, flags)
 WRAP_WATCOM_FFUNC4(long, combat_check_bad_shot, GameObject*, source, GameObject*, target, long, hitMode, long, isSecondary)
 WRAP_WATCOM_FFUNC5(bool, combat_is_shot_blocked, GameObject*, source, DWORD, tileSource, DWORD, tileTarget, GameObject*, target, long*, accumulator)
 WRAP_WATCOM_FFUNC6(long, combat_safety_invalidate_weapon_func, GameObject*, source, GameObject*, weapon, DWORD, hitMode, GameObject*, targetA, DWORD*, safetyRange, GameObject*, targetB)
