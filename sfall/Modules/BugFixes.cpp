@@ -2051,8 +2051,8 @@ skip:
 
 static void __declspec(naked) op_attack_hook() {
 	__asm {
-		mov  esi, dword ptr [esp + 0x3C + 4];   // free_move
-		mov  ebx, dword ptr [esp + 0x40 + 4];   // add amount damage to target
+		mov  esi, dword ptr [esp + 0x3C + 4]; // free_move
+		mov  ebx, dword ptr [esp + 0x40 + 4]; // add amount damage to target
 		jmp  fo::funcoffs::gdialogActive_;
 	}
 }
@@ -2060,9 +2060,10 @@ static void __declspec(naked) op_attack_hook() {
 static void __declspec(naked) op_attack_hook_flags() {
 	__asm {
 		and  eax, 0xFF;
+		shl  al, 1; // shift to bit 2
 		test ebp, ebp;
 		jz   skip;
-		or   al, 2; // set bit 2
+		or   al, 1;
 skip:
 		// EAX: gcsd.changeFlags contains the attribute value for the flags setting
 		// bit 1 - set for target flags result, bit 2 - set for attacker flags result
@@ -2077,7 +2078,7 @@ static void __declspec(naked) combat_attack_hack_gcsdFlags() {
 		mov  ebx, [eax + 0x1C]; // gcsd.changeFlags
 		test bl, 2;
 		jz   checkTarget;
-		// set source
+		// set attacker
 		mov  eax, ds:[FO_VAR_main_ctd + 0x14]; // flagsSource
 		and  eax, DAM_DEAD;
 		or   edx, eax; // don't unset DAM_DEAD flag
@@ -3347,18 +3348,21 @@ void BugFixes::init()
 	if (GetConfigInt("Misc", "AttackComplexFix", 0)) {
 		dlog("Applying attack_complex arguments fix.", DL_INIT);
 		HookCall(0x456D4A, op_attack_hook);
-		SafeWrite8(0x456D61, 0x74); // mov [esp+x], esi
-		SafeWrite8(0x456D92, 0x5C); // mov [esp+x], ebx
+		SafeWrite8(0x456D61, 0x74); // mov [gcsd.free_move], esi
+		SafeWrite8(0x456D92, 0x5C); // mov [gcsd.amount], ebx
 
 		// fixes setting flags argument results for the attacker and the target
-		SafeWrite16(0x456D95, 0xC085); // cmp eax, ebx > test eax, eax
+		SafeWrite16(0x456D95, 0xC085); // cmp eax, ebp > test eax, eax
 		MakeCall(0x456D9A, op_attack_hook_flags);
-		SafeWrite8(0x456D9F, CodeType::JumpNZ); // jz > jnz
 		SafeWrite16(0x456DA7, 0x8489); // mov [gcsd.changeFlags], 1 > mov [gcsd.changeFlags], eax
 		SafeWrite8(0x456DAB, 0);
 		SafeWrite8(0x456DAE, CodeType::Nop);
 		dlogr(" Done", DL_INIT);
+	} else {
+		// fixes setting flag argument results for the target
+		SafeWrite16(0x456D95, 0xED85); // cmp eax, ebp > test ebp, ebp
 	}
+	SafeWrite8(0x456D9F, CodeType::JumpNZ); // jz > jnz
 	// Fix set flags to attacker and target when using attack_complex function
 	MakeCall(0x42302B, combat_attack_hack_gcsdFlags, 4);
 	// set/unset the DAM_DEAD flag when changing the maximum/minimum damage to the target
