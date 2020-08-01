@@ -2082,15 +2082,24 @@ static void __declspec(naked) CheckDeath() {
 }
 
 static void __stdcall combat_attack_gcsd() {
-	// only for AttackComplexFix
-	if (fo::var::gcsd->changeFlags & 2) {
+	if (fo::var::gcsd->changeFlags & 2) { // only for AttackComplexFix
 		long flags = fo::var::gcsd->flagsSource;
-		flags |= fo::var::main_ctd.attackerFlags & (fo::DamageFlag::DAM_HIT | fo::DamageFlag::DAM_DEAD); // don't unset DAM_HIT and DAM_DEAD flags
+		if (flags & fo::DamageFlag::DAM_PRESERVE_FLAGS) {
+			flags &= ~fo::DamageFlag::DAM_PRESERVE_FLAGS;
+			flags |= fo::var::main_ctd.attackerFlags & ~fo::DamageFlag::DAM_PRESERVE_FLAGS;
+		} else {
+			flags |= fo::var::main_ctd.attackerFlags & (fo::DamageFlag::DAM_HIT | fo::DamageFlag::DAM_DEAD); // don't unset DAM_HIT and DAM_DEAD flags
+		}
 		fo::var::main_ctd.attackerFlags = flags;
 	}
-	if (fo::var::gcsd->changeFlags & 1 && fo::var::gcsd->target == fo::var::main_ctd.target) {
+	if (fo::var::gcsd->changeFlags & 1) {
 		long flags = fo::var::gcsd->flagsTarget;
-		flags |= fo::var::main_ctd.targetFlags & fo::DamageFlag::DAM_DEAD; // don't unset DAM_DEAD flag
+		if (flags & fo::DamageFlag::DAM_PRESERVE_FLAGS) {
+			flags &= ~fo::DamageFlag::DAM_PRESERVE_FLAGS;
+			flags |= fo::var::main_ctd.targetFlags;
+		} else {
+			flags |= fo::var::main_ctd.targetFlags & fo::DamageFlag::DAM_DEAD; // don't unset DAM_DEAD flag (fix animation death)
+		}
 		fo::var::main_ctd.targetFlags = flags;
 	}
 
@@ -2100,16 +2109,15 @@ static void __stdcall combat_attack_gcsd() {
 		if (fo::var::main_ctd.targetDamage < fo::var::gcsd->minDamage) {
 			fo::var::main_ctd.targetDamage = fo::var::gcsd->minDamage;
 		}
-		// checks the health points and set the DAM_DEAD flag
-		if (damage != fo::var::main_ctd.targetDamage) CheckDeath();
+		if (damage < fo::var::main_ctd.targetDamage) CheckDeath(); // checks the health points and set the DAM_DEAD flag
 
 		if (fo::var::main_ctd.targetDamage > fo::var::gcsd->maxDamage) {
 			fo::var::main_ctd.targetDamage = fo::var::gcsd->maxDamage;
-			if (fo::var::main_ctd.target->Type() == fo::ObjType::OBJ_TYPE_CRITTER) {
-				long cHP = fo::var::main_ctd.target->critter.health;
-				if (cHP > fo::var::gcsd->maxDamage && cHP <= damage) {
-					fo::var::main_ctd.targetFlags &= ~fo::DamageFlag::DAM_DEAD; // unset
-				}
+		}
+		if (damage > fo::var::main_ctd.targetDamage && fo::var::main_ctd.target->Type() == fo::ObjType::OBJ_TYPE_CRITTER) {
+			long cHP = fo::var::main_ctd.target->critter.health;
+			if (cHP > fo::var::gcsd->maxDamage && cHP <= damage) {
+				fo::var::main_ctd.targetFlags &= ~fo::DamageFlag::DAM_DEAD; // unset
 			}
 		}
 	}
@@ -3350,9 +3358,9 @@ void BugFixes::init()
 		SafeWrite16(0x456D95, 0xED85); // cmp eax, ebp > test ebp, ebp
 	}
 	SafeWrite8(0x456D9F, CodeType::JumpNZ); // jz > jnz
-	// Fix set flags to attacker and target when using attack_complex function
+	// Fix result flags for the attacker and the target when using attack_complex function
 	// also set/unset the DAM_DEAD flag when changing the minimum/maximum damage to the target
-	// Fix still causing minimum damage to the target when the attacker misses
+	// and fix still causing minimum damage to the target when the attacker misses
 	MakeJump(0x422FE5, combat_attack_hack, 1);
 
 	// Fix for critter_mod_skill taking a negative amount value as a positive

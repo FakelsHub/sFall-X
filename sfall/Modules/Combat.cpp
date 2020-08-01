@@ -503,7 +503,7 @@ static void CombatProcFix() {
 
 static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
 	fo::func::register_begin(fo::RB_RESERVED);
-	if (dist > 3) {
+	if (dist >= 3) {
 		fo::func::register_object_run_to_object(source, target, dist, -1);
 	} else {
 		fo::func::register_object_move_to_object(source, target, dist, -1);
@@ -529,7 +529,7 @@ static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCall
 	long distance = fo::func::obj_dist(fo::var::obj_dude, target);
 	distance -= fo::func::item_w_range(fo::var::obj_dude, hitMode);
 
-	bool result = ((distance + cost - 1) > dudeAP);
+	bool result = ((distance + cost) > dudeAP);
 	return (result) ? -1 : distance;
 }
 
