@@ -553,12 +553,14 @@ static void ObjCanSeeShootThroughPatch() {
 	}
 }
 
-static const char* musicOverridePath = "data\\sound\\music\\";
 static void OverrideMusicDirPatch() {
+	static const char* musicOverridePath = "data\\sound\\music\\";
+
 	if (long overrideMode = GetConfigInt("Sound", "OverrideMusicDir", 0)) {
-		SafeWriteBatch<DWORD>((DWORD)musicOverridePath, {0x4449C2, 0x4449DB});
+		SafeWriteBatch<DWORD>((DWORD)musicOverridePath, {0x4449C2, 0x4449DB}); // sets paths in .cfg if is file not exist
 		if (overrideMode == 2) {
 			SafeWriteBatch<DWORD>((DWORD)musicOverridePath, {0x518E78, 0x518E7C});
+			SafeWrite16(0x44FCF3, 0x40EB); // jmp 0x44FD35 (skip paths initialization)
 		}
 	}
 }
