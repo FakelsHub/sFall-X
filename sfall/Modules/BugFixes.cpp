@@ -2086,7 +2086,7 @@ static void __stdcall combat_attack_gcsd() {
 		long flags = fo::var::gcsd->flagsSource;
 		if (flags & fo::DamageFlag::DAM_PRESERVE_FLAGS) {
 			flags &= ~fo::DamageFlag::DAM_PRESERVE_FLAGS;
-			flags |= fo::var::main_ctd.attackerFlags & ~fo::DamageFlag::DAM_PRESERVE_FLAGS;
+			flags |= fo::var::main_ctd.attackerFlags;
 		} else {
 			flags |= fo::var::main_ctd.attackerFlags & (fo::DamageFlag::DAM_HIT | fo::DamageFlag::DAM_DEAD); // don't unset DAM_HIT and DAM_DEAD flags
 		}

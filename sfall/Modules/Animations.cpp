@@ -224,6 +224,22 @@ skip:
 	}
 }
 
+static void __declspec(naked) art_alias_fid_hack() {
+	static const DWORD art_alias_fid_Ret = 0x419A6D;
+	__asm {
+		cmp  eax, ANIM_called_shot_pic;
+		je   skip;
+		cmp  eax, ANIM_charred_body;
+		je   skip;
+		cmp  eax, ANIM_charred_body_sf;
+		je   skip;
+		add  esp, 4;
+		jmp  art_alias_fid_Ret;
+skip:
+		retn;
+	}
+}
+
 void ApplyAnimationsAtOncePatches(signed char aniMax) {
 	if (aniMax <= 32) return;
 
@@ -346,6 +362,9 @@ void Animations::init() {
 
 	// Fix player stuck at "climbing" frame after ladder animation
 	HookCall(0x411E1F, action_climb_ladder_hook);
+
+	// Added ANIM_charred_body/ANIM_charred_body_sf animation to art aliases
+	MakeCall(0x419A17, art_alias_fid_hack);
 }
 
 void Animations::exit() {

@@ -27,6 +27,9 @@ class LoadOrder : public Module {
 public:
 	const char* name() { return "LoadOrder"; }
 	void init();
+
+	static void art_get_name_hack();
+
 };
 
 }

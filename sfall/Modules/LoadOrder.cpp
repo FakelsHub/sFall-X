@@ -60,6 +60,7 @@ static void CheckPlayerGender() {
 }
 
 static const DWORD scr_get_dialog_msg_file_Back = 0x4A6BD2;
+
 static void __declspec(naked) scr_get_dialog_msg_file_hack1() {
 	__asm {
 		cmp  isFemale, 1;
@@ -312,6 +313,7 @@ end:
 }
 
 #define _F_PATHFILE 0x6143F4
+
 static void __declspec(naked) GameMap2Slot_hack() { // save party pids
 	__asm {
 		push ecx;
@@ -379,7 +381,7 @@ using namespace fo;
 		call ResetReadOnlyAttr;
 		or   eax, 1; // reset ZF
 end:
-		retn 0x8;
+		retn 8;
 	}
 }
 
@@ -388,6 +390,48 @@ end:
 
 static void RemoveSavFiles() {
 	fo::func::MapDirErase(_F_PROTO_CRITTERS, _F_SAV);
+}
+
+static uint32_t aliasFID = -1;
+
+static void __declspec(naked) art_get_name_hook() {
+	__asm {
+		call fo::funcoffs::art_alias_fid_;
+		cmp  eax, -1;
+		jne  artAlias;
+		retn; // if aliasFID here is not equal -1, then the algorithm is not work correctly
+artAlias:
+		cmp  eax, edx;
+		je   skip;
+		mov  aliasFID, eax;
+skip:
+		mov  eax, -1;
+		retn;
+	}
+}
+
+void __declspec(naked) LoadOrder::art_get_name_hack() {
+	static const DWORD art_get_name_Alias = 0x41944A;
+	__asm {
+		mov  eax, FO_VAR_art_name;
+		cmp  aliasFID, -1;
+		jne  artHasAlias;
+		retn;
+artHasAlias:
+		sub  esp, 4;
+		mov  edx, esp;
+		call fo::funcoffs::db_dir_entry_;
+		add  esp, 4;
+		cmp  eax, -1;
+		je   artNotExist;
+		mov  aliasFID, -1;
+		mov  eax, FO_VAR_art_name;
+		retn;
+artNotExist:
+		xchg eax, aliasFID
+		add  esp, 4;
+		jmp  art_get_name_Alias; // get name of art alias
+	}
 }
 
 void LoadOrder::init() {
@@ -426,6 +470,14 @@ void LoadOrder::init() {
 			};
 		}
 		dlogr(" Done", DL_INIT);
+	}
+
+	// Predefined behavior for replacing art aliases for critters
+	// first checked the existence of the art file of the current critter, and then there is a substitution to an art alias
+	HookCall(0x419440, art_get_name_hook);
+	SafeWrite16(0x419521, 0x003B); // jmp 0x419560
+	if (GetConfigInt("Misc", "EnableHeroAppearanceMod", 0) <= 0) { // Hero Appearance Mod uses an additional code
+		MakeCall(0x419560, art_get_name_hack);
 	}
 
 	dlog("Applying party member protos save/load patch.", DL_INIT);
