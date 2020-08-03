@@ -523,10 +523,13 @@ static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCall
 	long wType = fo::func::item_w_subtype(weapon, hitMode);
 	if (wType > fo::AttackSubType::MELEE) return -1;
 
+	long distance = fo::func::make_path_func(fo::var::obj_dude, fo::var::obj_dude->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
+	if (distance == 0) return -1;
+
 	// unarmed and melee weapon, check the distance and cost AP
-	long cost = sf_item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
 	long dudeAP = fo::var::obj_dude->critter.movePoints + fo::var::combat_free_move;
-	long distance = fo::func::obj_dist(fo::var::obj_dude, target);
+	if (distance > dudeAP) return -1;
+	long cost = sf_item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
 	distance -= fo::func::item_w_range(fo::var::obj_dude, hitMode);
 
 	bool result = ((distance + cost) > dudeAP);

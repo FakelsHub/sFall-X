@@ -226,6 +226,7 @@ skip:
 
 static void __declspec(naked) art_alias_fid_hack() {
 	static const DWORD art_alias_fid_Ret = 0x419A6D;
+	using namespace fo;
 	__asm {
 		cmp  eax, ANIM_called_shot_pic;
 		je   skip;

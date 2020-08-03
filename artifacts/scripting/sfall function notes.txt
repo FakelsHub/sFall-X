@@ -433,7 +433,9 @@ Some utility/math functions are available:
 
 > void sfall_func2("set_outline", object, int color)
 - sets the outline color of an object
-- 0 means or any value above 0x00FFFFFF disables the outline
+- color values of the macros OUTLINE_* are defined in the sfall.h
+- also can set custom color from the game palette by set the color index value of the palette to the second byte value: 0xCC00 where CC is the palette index (available since sfall 2.4.7)
+- 0 means disables the outline
 - call "tile_refresh_display" after changing outline of objects to properly redraw the scene
 
 > int sfall_func1("get_flags", object)
