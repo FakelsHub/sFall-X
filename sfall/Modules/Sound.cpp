@@ -336,6 +336,7 @@ static const wchar_t *SoundExtensions[] = { L"wav", L"mp3", L"wma" };
 /*
 	TODO: For [sfx] sounds wav format, playback must be performed using the game functions (DirectSound)
 	since there is a small freeze (delay of ~50-100ms) when playing using DirectShow
+	sfx - environment effects must set their volume relative to the location from the player (see gsound_compute_relative_volume_)
 */
 static bool __fastcall SoundFileLoad(PlayType playType, const char* path) {
 	if (!path) return false;
