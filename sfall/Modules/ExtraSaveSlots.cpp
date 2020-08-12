@@ -26,7 +26,6 @@
 namespace sfall
 {
 
-//extern
 DWORD LSPageOffset = 0;
 
 int LSButtDN = 0;
@@ -34,7 +33,6 @@ BYTE* SaveLoadSurface = nullptr;
 
 static const char* filename = "%s\\savegame\\slotdat.ini";
 
-//--------------------------------------
 void SavePageOffsets() {
 	char SavePath[MAX_PATH], buffer[6];
 
@@ -46,7 +44,6 @@ void SavePageOffsets() {
 	WritePrivateProfileStringA("POSITION", "PageOffset", buffer, SavePath);
 }
 
-//------------------------------------------
 static void __declspec(naked) save_page_offsets(void) {
 	__asm {
 		// save last slot position values to file
@@ -57,7 +54,6 @@ static void __declspec(naked) save_page_offsets(void) {
 	}
 }
 
-//--------------------------------------
 void LoadPageOffsets() {
 	char LoadPath[MAX_PATH];
 
@@ -73,7 +69,6 @@ void LoadPageOffsets() {
 	}
 }
 
-//------------------------------------------
 static void __declspec(naked) load_page_offsets(void) {
 	__asm {
 		// load last slot position values from file
@@ -84,7 +79,6 @@ static void __declspec(naked) load_page_offsets(void) {
 	}
 }
 
-//------------------------------------------
 static void CreateButtons() {
 	DWORD winRef = fo::var::lsgwin;
 
@@ -103,13 +97,11 @@ static void CreateButtons() {
 static void __declspec(naked) create_page_buttons(void) {
 	__asm {
 		call CreateButtons;
-		// restore original code
-		mov  eax, 0x65;
-		ret;
+		mov  eax, 0x65; // restore original code
+		retn;
 	}
 }
 
-//------------------------------------------------------
 void SetPageNum() {
 	DWORD winRef = fo::var::lsgwin; // load/save winref
 	if (winRef == 0) {
@@ -208,7 +200,6 @@ void SetPageNum() {
 	SaveLoadWin = nullptr;
 }
 
-//------------------------------------------
 static long __fastcall CheckPage(long button) {
 	switch (button) {
 		case 0x14B:                        // left button
@@ -264,7 +255,6 @@ CheckUp:
 	}
 }
 
-//------------------------------------------
 void DrawPageText() {
 	if (fo::var::lsgwin == 0) {
 		return;
@@ -337,19 +327,16 @@ void DrawPageText() {
 	SaveLoadWin = nullptr;
 }
 
-//------------------------------------------
 static void __declspec(naked) draw_page_text(void) {
 	__asm {
 		pushad
 		call DrawPageText
 		popad
-		// restore original code
-		mov  ebp, 0x57
-		ret
+		mov  ebp, 0x57; // restore original code
+		retn;
 	}
 }
 
-//------------------------------------------
 // add page num offset when reading and writing various save data files
 static void __declspec(naked) AddPageOffset01(void) {
 	__asm {
@@ -359,7 +346,6 @@ static void __declspec(naked) AddPageOffset01(void) {
 	}
 }
 
-//------------------------------------------
 // getting info for the 10 currently displayed save slots from save.dats
 static void __declspec(naked) AddPageOffset02(void) {
 	__asm {
@@ -371,7 +357,6 @@ static void __declspec(naked) AddPageOffset02(void) {
 	}
 }
 
-//------------------------------------------
 // printing current 10 slot numbers
 static void __declspec(naked) AddPageOffset03(void) {
 	__asm {
@@ -382,7 +367,6 @@ static void __declspec(naked) AddPageOffset03(void) {
 	}
 }
 
-//--------------------------------------------------------------------------
 void EnableSuperSaving() {
 
 	// save/load button setup func
@@ -429,6 +413,7 @@ static void GetSaveFileTime(char* filename, FILETIME* ftSlot) {
 }
 
 static const char* commentFmt = "%02d/%02d/%d - %02d:%02d:%02d";
+
 static void CreateSaveComment(char* bufstr) {
 	SYSTEMTIME stUTC, stLocal;
 	GetSystemTime(&stUTC);
@@ -498,6 +483,31 @@ static void __declspec(naked) SaveGame_hack1() {
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+static void __fastcall SetSaveComment(char* comment) {
+	int i = 0;
+	const char* mapName = fo::func::map_get_short_name(fo::var::map_number);
+	do {
+		comment[i] = mapName[i];
+	} while (++i < 20 && mapName[i]);
+	comment[i++] = ':';
+	comment[i] = '\0';
+}
+
+static void __declspec(naked) GetComment_hack() {
+	__asm {
+		cmp [ecx], 0;
+		jne notEmpty;
+		pushadc;
+		call SetSaveComment;
+		popadc;
+notEmpty:
+		push 0x47F031;
+		jmp  fo::funcoffs::get_input_str2_;
+	}
+}
+
 void ExtraSaveSlots::init() {
 
 	bool extraSaveSlots = (GetConfigInt("Misc", "ExtraSaveSlots", 0) != 0);
@@ -526,6 +536,9 @@ void ExtraSaveSlots::init() {
 		MakeJump(0x47B984, SaveGame_hack0);
 		dlogr(" Done", DL_INIT);
 	}
+
+	// Adds a description for the save slot
+	MakeJump(0x47F02C, GetComment_hack);
 }
 
 void ExtraSaveSlots::exit() {

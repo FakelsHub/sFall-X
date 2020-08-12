@@ -311,8 +311,8 @@ hide:
 	}
 }
 
-static char* artDbgMsg = "\nERROR: File not found: %s\n";
 static void __declspec(naked) art_data_size_hook() {
+	static char* artDbgMsg = "\nERROR: File not found: %s\n";
 	__asm {
 		test edi, edi;
 		jz   artNotExist;
@@ -335,6 +335,20 @@ display:
 		add  esp, 20;
 		lea  eax, [esp + 4];
 		jmp  fo::funcoffs::display_print_;
+	}
+}
+
+static void __declspec(naked) proto_load_pid_hack() {
+	static char* proDbgMsg = "\nERROR reading the prototype file: %s\n";
+	__asm {
+		mov  dword ptr [esp + 0x120 - 0x1C + 4], -1;
+		lea  eax, [esp + 0x120 - 0x120 + 4]; // pro file
+		push eax;
+		push proDbgMsg;
+		call fo::funcoffs::debug_printf_;
+		add  esp, 8;
+		mov  eax, 0x500494; // "IISXXXX1"
+		jmp  fo::funcoffs::gsound_play_sfx_file_;
 	}
 }
 
@@ -418,6 +432,9 @@ void AlwaysReloadMsgs() {
 
 void DebugEditor::init() {
 	DebugModePatch();
+
+	// Notifies and prints a message to the debug log about a corrupted .pro file
+	MakeCall(0x4A1D73, proto_load_pid_hack, 6);
 
 	if (!isDebug) return;
 	DontDeleteProtosPatch();
