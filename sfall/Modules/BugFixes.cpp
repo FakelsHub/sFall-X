@@ -2848,7 +2848,6 @@ isDeath:
 static void __declspec(naked) obj_move_to_tile_hack_ondeath() {
 	static const DWORD obj_move_to_tile_Ret = 0x48A759;
 	__asm {
-		test esi, esi;
 		jz   skip;
 		cmp  dudeIsAnimDeath, 0;
 		jnz  skip;
@@ -2856,6 +2855,16 @@ static void __declspec(naked) obj_move_to_tile_hack_ondeath() {
 skip:
 		add  esp, 4;
 		jmp  obj_move_to_tile_Ret;
+	}
+}
+
+static void __declspec(naked) action_knockback_hack() {
+	__asm {
+		mov  ecx, 15; // knockback cap distance
+		cmp  ebp, ecx;
+		cmovg ebp, ecx;
+		mov  ecx, 1;
+		retn;
 	}
 }
 
@@ -3601,10 +3610,13 @@ void BugFixes::init()
 	// Fix to prevent critter_p_proc execution and game events when playing movies (same as when the dialog is active)
 	HookCall(0x4A3C89, doBkProcesses_hook);
 
-	// Preventing exit to another map/global map, during the player's death animation (such as, fire dance or knockback animation)
-	// and crossing the exit grid tile
+	// Fix to prevent the player from leaving the map when the death animation causes the player to cross an exit grid
+	// (e.g. fire dance or knockback animation)
 	MakeCall(0x41094B, show_damage_to_object_hack, 1);
 	MakeCall(0x48A6CB, obj_move_to_tile_hack_ondeath, 1);
+
+	// Fix for limiting the rollback distance for Knockback animation
+	MakeCall(0x4104D5, action_knockback_hack);
 }
 
 }
