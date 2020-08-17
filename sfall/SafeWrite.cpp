@@ -106,6 +106,12 @@ void MakeJump(DWORD addr, void* func, int len) {
 	SafeWriteFunc(CodeType::Jump, addr, func, len);
 }
 
+void MakeJumps(void* func, std::initializer_list<DWORD> addrs) {
+	for (auto& addr : addrs) {
+		MakeJump(addr, func);
+	}
+}
+
 void HookCalls(void* func, std::initializer_list<DWORD> addrs) {
 	for (auto& addr : addrs) {
 		HookCall(addr, func);

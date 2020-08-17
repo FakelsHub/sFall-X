@@ -60,6 +60,7 @@ void MakeJump(DWORD addr, void* func);
 void MakeJump(DWORD addr, void* func, int len);
 void BlockCall(DWORD addr);
 
+void MakeJumps(void* func, std::initializer_list<DWORD> addrs);
 void HookCalls(void* func, std::initializer_list<DWORD> addrs);
 void MakeCalls(void* func, std::initializer_list<DWORD> addrs);
 
