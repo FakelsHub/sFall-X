@@ -29,7 +29,7 @@ variable i := 1, sectionAmmo;
 
    if game_loaded then begin
       enabled := get_ini_setting("ddraw.ini|Misc|DamageFormula");
-      if (enabled == 1 or enabled == 2) then
+      if (enabled == 1 orElse enabled == 2) then
          iniAmmo := "AmmoGlovz.ini";
       else if (enabled == 5) then
          iniAmmo := "AmmoYAAM.ini";
@@ -42,6 +42,8 @@ variable i := 1, sectionAmmo;
       end
       enabled := get_ini_setting(iniAmmo + "|1|pid");
       if (enabled <= 0) then return;
+
+      debug_msg("Ammo Rebalance mod uses a configuration file: " + iniAmmo);
 
       ammoData := create_array_map;
       sectionAmmo := get_ini_section(iniAmmo, "" + i);
@@ -56,7 +58,7 @@ variable i := 1, sectionAmmo;
          sectionAmmo := get_ini_section(iniAmmo, "" + i);
       end
       call map_enter_p_proc;
-      debug_msg("AmmoMod: Applying modificators to ammo prototypes.");
+      debug_msg("Ammo Rebalance mod: Applying modificators to ammo prototypes.");
    end
 end
 

@@ -1,13 +1,14 @@
 /*
-
-   Sfall game play mods
-
-   NOTE: this script requires compiler from sfall modderspack with -s option
-   (short circuit evaluation)
-
-   version 1.0
-
+ *
+ *  Sfall game play mods
+ *
 */
+
+#ifdef  DEBUG
+#define DEBUGMSG(x)                                  debug_msg(x);
+#else
+#define DEBUGMSG(x)
+#endif
 
 #include "..\headers\define.h"
 #include "..\headers\command.h"
@@ -347,21 +348,27 @@ procedure UseSkillOnHandler begin
    variable object, member, skill, dudeSkill, memberSkill, memberUse, useOnSelf, medicSkill, allow;
 
    if (party_member_count(DONT_LIST_HIDDEN_MEMBERS) == 0 orElse get_sfall_arg != dude_obj) then return;
+   debug_msg("Party member skill...");
 
-   object := get_sfall_arg;
+   object := get_sfall_arg; // object use on
    skill  := get_sfall_arg;
 
    useOnSelf  := (object == dude_obj);
    medicSkill := (skill == SKILL_DOCTOR orElse skill == SKILL_FIRST_AID);
 
    if (useOnSelf andAlso medicSkill == false) then return; // exit, when using skills on himself (except for the skill of the doctor and first aid)
+   DEBUGMSG("> check point: 0")
+
    if (medicSkill andAlso obj_type(object) != OBJ_TYPE_CRITTER) then return;
+   DEBUGMSG("> check point: 1")
 
    if (skill != SKILL_LOCKPICK andAlso skill != SKILL_TRAPS andAlso skill != SKILL_SCIENCE andAlso skill != SKILL_REPAIR andAlso medicSkill == false) then return;
-   if ((skill == SKILL_LOCKPICK orElse skill == SKILL_TRAPS) orElse obj_type(object) == OBJ_TYPE_CRITTER) then return;
+   DEBUGMSG("> check point: 2")
 
+   if ((skill == SKILL_LOCKPICK orElse skill == SKILL_TRAPS) andAlso obj_type(object) == OBJ_TYPE_CRITTER) then return;
    dudeSkill := critter_skill_level(dude_obj, skill);
 
+   DEBUGMSG("> check point: 3")
    foreach (member in party_member_list_critters) begin
       if (member != dude_obj andAlso proto_data(obj_pid(member), cr_body_type) == CR_BODY_BIPED) then begin
          memberSkill := critter_skill_level(member, skill);
@@ -371,9 +378,10 @@ procedure UseSkillOnHandler begin
          end
       end
    end
-   if (memberUse andAlso
-      (memberUse != object orElse medicSkill)) then
+
+   if (memberUse andAlso (memberUse != object orElse medicSkill)) then
    begin
+      DEBUGMSG("> check point: 4")
       if (useOnSelf) then begin // the skill of the medic is applied to itself
          allow := (tile_distance_objs(memberUse, object) < 3); // allow a party member to apply the skill to a player if it is located nearby
       end
@@ -384,6 +392,7 @@ procedure UseSkillOnHandler begin
          float_msg(memberUse, message_str_game(GAME_MSG_SKILL, random(1000, 1005)), FLOAT_MSG_NORMAL);
          set_sfall_arg(0, memberUse);
          set_sfall_return(memberUse);
+         debug_msg("> force use of the party member: " + obj_name(memberUse) + "\n");
          return;
       end
       else if ((medicSkill orElse random(0, 10) == 0) andAlso anim_busy(memberUse) == false) then begin

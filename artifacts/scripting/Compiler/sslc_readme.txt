@@ -338,6 +338,8 @@ There are several changes in this version of sslc which may result in problems f
 =================
 === Changelog ===
 =================
+> sslc v1.2.2:
+- added ability to declare a local variable procedures anywhere in the procedure body.
 
 > sslc v1.2:
 - added new "div" operator for unsigned integer division for sfall 4.2.3/3.8.23

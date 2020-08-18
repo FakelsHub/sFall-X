@@ -69,7 +69,7 @@ DWORD InCombat();
 
 DWORD InDialog();
 
-enum LoopFlag : long {
+enum LoopFlag : unsigned long {
 	WORLDMAP    = 1 << 0, // 0x1
 //	RESERVED    = 1 << 1, // 0x2 (unused)
 	DIALOG      = 1 << 2, // 0x4
