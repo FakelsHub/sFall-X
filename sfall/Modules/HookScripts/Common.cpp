@@ -1,4 +1,5 @@
 #include "..\..\FalloutEngine\Fallout2.h"
+#include "..\LoadGameHook.h"
 
 #include "Common.h"
 
@@ -43,7 +44,7 @@ void LoadHookScript(const char* name, int id) {
 		name = filePath;
 	}
 
-	bool hookIsLoaded = LoadHookScriptFile(filePath, name, id, customPath);
+	bool hookIsLoaded = HookScripts::LoadHookScriptFile(filePath, name, id, customPath);
 	if (hookIsLoaded || (HookScripts::injectAllHooks && id != HOOK_SUBCOMBATDAMAGE)) {
 		HookScripts::InjectingHook(id); // inject hook to engine code
 
@@ -53,24 +54,34 @@ void LoadHookScript(const char* name, int id) {
 	}
 }
 
-bool LoadHookScriptFile(std::string filePath, const char* name, int id, bool fullPath) {
-	ScriptProgram prog;
-	if (fo::func::db_access(filePath.c_str())) {
-		dlog(">" + filePath, DL_HOOK);
-		LoadScriptProgram(prog, name, fullPath);
-		if (prog.ptr) {
-			dlogr(" Done", DL_HOOK);
-			HookScript hook;
-			hook.prog = prog;
-			hook.callback = -1;
-			hook.isGlobalScript = 0;
-			hooks[id].push_back(hook);
-			ScriptExtender::AddProgramToMap(prog);
-		} else {
-			dlogr(" Error!", DL_HOOK);
-		}
+
+DWORD HookCommon::GetHSArgCount() {
+	return argCount;
+}
+
+DWORD HookCommon::GetHSArg() {
+	return (cArg == argCount) ? 0 : args[cArg++];
+}
+
+void HookCommon::SetHSArg(DWORD id, DWORD value) {
+	if (id < argCount) args[id] = value;
+}
+
+DWORD* HookCommon::GetHSArgs() {
+	return args;
+}
+
+DWORD HookCommon::GetHSArgAt(long id) {
+	return args[id];
+}
+
+void __stdcall HookCommon::SetHSReturn(DWORD value) {
+	if (cRetTmp < maxRets) {
+		rets[cRetTmp++] = value;
 	}
-	return (prog.ptr != nullptr);
+	if (cRetTmp > cRet) {
+		cRet = cRetTmp;
+	}
 }
 
 // List of hooks that are not allowed to be called recursively
@@ -167,6 +178,52 @@ void __stdcall EndHook() {
 	} else {
 		currentRunHook = -1;
 	}
+}
+
+// BEGIN HOOKS
+void HookCommon::KeyPressHook(DWORD* dxKey, bool pressed, DWORD vKey) {
+	if (!IsGameLoaded() || !HookScripts::HookHasScript(HOOK_KEYPRESS)) {
+		return;
+	}
+	BeginHook();
+	argCount = 3;
+	args[0] = (DWORD)pressed;
+	args[1] = *dxKey;
+	args[2] = vKey;
+	RunHookScript(HOOK_KEYPRESS);
+	if (cRet != 0) *dxKey = rets[0];
+	EndHook();
+}
+
+void __stdcall HookCommon::MouseClickHook(DWORD button, bool pressed) {
+	if (!IsGameLoaded() || !HookScripts::HookHasScript(HOOK_MOUSECLICK)) {
+		return;
+	}
+	BeginHook();
+	argCount = 2;
+	args[0] = (DWORD)pressed;
+	args[1] = button;
+	RunHookScript(HOOK_MOUSECLICK);
+	EndHook();
+}
+
+static unsigned long previousGameMode = 0;
+
+void HookCommon::GameModeChangeHook(DWORD exit) {
+	if (HookScripts::HookHasScript(HOOK_GAMEMODECHANGE)) {
+		BeginHook();
+		argCount = 2;
+		args[0] = exit;
+		args[1] = previousGameMode;
+		RunHookScript(HOOK_GAMEMODECHANGE);
+		EndHook();
+	}
+	previousGameMode = GetLoopFlags();
+}
+// END HOOKS
+
+void HookCommon::Reset() {
+	previousGameMode = 0;
 }
 
 }

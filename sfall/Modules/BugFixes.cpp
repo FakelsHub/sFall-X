@@ -2860,7 +2860,14 @@ skip:
 
 static void __declspec(naked) action_knockback_hack() {
 	__asm {
-		mov  ecx, 15; // knockback cap distance
+		cmp  ebp, 16;
+		jg   cap;
+		mov  ecx, 1;
+		retn;
+cap:	// knockback = 12 + knockback / 4
+		shr  ebp, 2;
+		add  ebp, 12;
+		mov  ecx, 20; // cap knockback distance
 		cmp  ebp, ecx;
 		cmovg ebp, ecx;
 		mov  ecx, 1;

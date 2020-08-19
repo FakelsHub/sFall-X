@@ -940,7 +940,7 @@ void MiscPatches::init() {
 		HookCall(0x4812DF, main_death_scene_hook);
 	}
 	// Corrects the height of the black background for the subtitles on death screens
-	SafeWrite32(0x48134D, -602 - (640 * 2)); // main_death_scene_  (y-offset shift up to 2-px, w/o HRP)
+	if (hrpIsEnabled == false) SafeWrite32(0x48134D, -602 - (640 * 2));    // main_death_scene_ (y-offset shift up to 2-px, w/o HRP)
 	if (hrpIsEnabled == false || hrpVersionValid) SafeWrite8(0x481345, 4); // main_death_scene_
 	if (hrpVersionValid) SafeWrite8(HRPAddress(0x10011738), 10);
 
