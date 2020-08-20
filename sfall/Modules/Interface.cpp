@@ -179,7 +179,7 @@ run:
 
 static void __declspec(naked) wmInterfaceInit_text_font_hook() {
 	__asm {
-		mov  eax, 0x65; // normal text font
+		mov  eax, 101; // normal text font
 		jmp  fo::funcoffs::text_font_;
 	}
 }
@@ -719,6 +719,14 @@ static void __declspec(naked) wmInterfaceRefreshCarFuel_hack() {
 	}
 }
 
+static void __declspec(naked) main_death_scene_hook() {
+	__asm {
+		mov  eax, 101;
+		call fo::funcoffs::text_font_;
+		jmp  fo::funcoffs::debug_printf_;
+	}
+}
+
 static void WorldMapInterfacePatch() {
 	BlockCall(0x4C2380); // Remove disabling palette animations (can be used as a place to call a hack function in wmInterfaceInit_)
 
@@ -727,6 +735,18 @@ static void WorldMapInterfacePatch() {
 		HookCall(0x4C2343, wmInterfaceInit_text_font_hook);
 		dlogr(" Done", DL_INIT);
 	}
+
+	// Set regular font for death scene subtitles
+	if (GetConfigInt("Misc", "DeathScreenFontPatch", 0)) {
+		HookCall(0x4812DF, main_death_scene_hook);
+	}
+	// Corrects the height of the black background for the subtitles on death screens
+	if (hrpIsEnabled == false || hrpVersionValid) SafeWrite8(0x481345, 4); // main_death_scene_
+	if (hrpVersionValid) SafeWrite8(HRPAddress(0x10011738), 10);
+	LoadGameHook::OnAfterGameInit() += []() {
+		SafeWrite32(0x48134D, 38 - (Graphics::GetGameWidthRes() * 3)); // main_death_scene_ (y-offset shift up to 2-px)
+	};
+
 	// Fix images for up/down buttons
 	SafeWrite32(0x4C2C0A, 199); // index of UPARWOFF.FRM
 	SafeWrite8(0x4C2C7C, 0x43); // dec ebx > inc ebx
