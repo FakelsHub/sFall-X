@@ -736,17 +736,6 @@ static void WorldMapInterfacePatch() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Set regular font for death scene subtitles
-	if (GetConfigInt("Misc", "DeathScreenFontPatch", 0)) {
-		HookCall(0x4812DF, main_death_scene_hook);
-	}
-	// Corrects the height of the black background for the subtitles on death screens
-	if (hrpIsEnabled == false || hrpVersionValid) SafeWrite8(0x481345, 4); // main_death_scene_
-	if (hrpVersionValid) SafeWrite8(HRPAddress(0x10011738), 10);
-	LoadGameHook::OnAfterGameInit() += []() {
-		SafeWrite32(0x48134D, 38 - (Graphics::GetGameWidthRes() * 3)); // main_death_scene_ (y-offset shift up to 2-px)
-	};
-
 	// Fix images for up/down buttons
 	SafeWrite32(0x4C2C0A, 199); // index of UPARWOFF.FRM
 	SafeWrite8(0x4C2C7C, 0x43); // dec ebx > inc ebx
@@ -908,6 +897,18 @@ void Interface::init() {
 	LoadGameHook::OnBeforeGameInit() += []() {
 		if (hrpVersionValid) IFACE_BAR_MODE = *(BYTE*)HRPAddress(0x1006EB0C) != 0;
 		HookCall(0x44C018, gmouse_handle_event_hook); // replaces hack function from HRP
+	};
+
+	// Set regular font for death scene subtitles
+	if (GetConfigInt("Misc", "DeathScreenFontPatch", 0)) {
+		HookCall(0x4812DF, main_death_scene_hook);
+	}
+
+	// Corrects the height of the black background for the subtitles on death screens
+	if (hrpIsEnabled == false || hrpVersionValid) SafeWrite8(0x481345, 4); // main_death_scene_
+	if (hrpVersionValid) SafeWrite8(HRPAddress(0x10011738), 10);
+	LoadGameHook::OnAfterGameInit() += []() {
+		SafeWrite32(0x48134D, 38 - (Graphics::GetGameWidthRes() * 3)); // main_death_scene_ (y-offset shift up to 2-px)
 	};
 }
 

@@ -6,6 +6,7 @@
 namespace sfall
 {
 
+constexpr int maxRets = 8; // Maximum number of return values
 constexpr int maxArgs  = 16;
 constexpr int maxDepth = 8;
 
@@ -30,30 +31,7 @@ DWORD cArg;    // how many arguments were taken by current hook script
 DWORD cRet;    // how many return values were set by current hook script
 DWORD cRetTmp; // how many return values were set by specific hook script (when using register_hook)
 
-std::vector<HookScript> hooks[numHooks];
-
-void LoadHookScript(const char* name, int id) {
-	//if (id >= numHooks || IsGameScript(name)) return;
-	char filePath[MAX_PATH];
-
-	bool customPath = !HookScripts::hookScriptPathFmt.empty();
-	if (!customPath) {
-		sprintf(filePath, "scripts\\%s.int", name);
-	} else {
-		sprintf_s(filePath, HookScripts::hookScriptPathFmt.c_str(), name);
-		name = filePath;
-	}
-
-	bool hookIsLoaded = HookScripts::LoadHookScriptFile(filePath, name, id, customPath);
-	if (hookIsLoaded || (HookScripts::injectAllHooks && id != HOOK_SUBCOMBATDAMAGE)) {
-		HookScripts::InjectingHook(id); // inject hook to engine code
-
-		if (!hookIsLoaded) return;
-		HookFile hookFile = { id, filePath, name };
-		HookScripts::hookScriptFilesList.push_back(hookFile);
-	}
-}
-
+std::vector<HookScript> hooks[HOOK_COUNT];
 
 DWORD HookCommon::GetHSArgCount() {
 	return argCount;

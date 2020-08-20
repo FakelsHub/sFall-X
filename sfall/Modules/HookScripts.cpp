@@ -38,10 +38,13 @@
 namespace sfall
 {
 
+// Number of types of hooks
+static constexpr int numHooks = HOOK_COUNT;
+
 bool newHookRegister = true;
 
 bool HookScripts::injectAllHooks;
-DWORD initingHookScripts;
+DWORD HookScripts::initingHookScripts;
 
 std::string HookScripts::hookScriptPathFmt;
 std::vector<HookFile> HookScripts::hookScriptFilesList;
@@ -57,7 +60,7 @@ static struct HooksPositionInfo {
 	long hsPosition    = 0; // index of the hs_* script, or the beginning of the position for registering scripts using register_hook
 	long positionShift = 0; // offset to the last registered script by the register_hook function
 	bool hasHsScript   = false;
-} hooksInfo[HOOK_COUNT];
+} hooksInfo[numHooks];
 
 static HooksInjectInfo injectHooks[] = {
 	{HOOK_TOHIT,            Inject_ToHitHook,            false},
@@ -182,6 +185,28 @@ void HookScripts::RunHookScriptsAtProc(DWORD procId) {
 	}
 }
 
+void HookScripts::LoadHookScript(const char* name, int id) {
+	//if (id >= numHooks || IsGameScript(name)) return;
+	char filePath[MAX_PATH];
+
+	bool customPath = !HookScripts::hookScriptPathFmt.empty();
+	if (!customPath) {
+		sprintf(filePath, "scripts\\%s.int", name);
+	} else {
+		sprintf_s(filePath, HookScripts::hookScriptPathFmt.c_str(), name);
+		name = filePath;
+	}
+
+	bool hookIsLoaded = HookScripts::LoadHookScriptFile(filePath, name, id, customPath);
+	if (hookIsLoaded || (HookScripts::injectAllHooks && id != HOOK_SUBCOMBATDAMAGE)) {
+		HookScripts::InjectingHook(id); // inject hook to engine code
+
+		if (!hookIsLoaded) return;
+		HookFile hookFile = { id, filePath, name };
+		HookScripts::hookScriptFilesList.push_back(hookFile);
+	}
+}
+
 bool HookScripts::LoadHookScriptFile(std::string filePath, const char* name, int id, bool fullPath) {
 	ScriptProgram prog;
 	if (fo::func::db_access(filePath.c_str())) {
@@ -216,9 +241,9 @@ static void HookScriptInit() {
 		InitObjectHookScripts();
 		InitMiscHookScripts();
 
-		LoadHookScript("hs_keypress", HOOK_KEYPRESS);
-		LoadHookScript("hs_mouseclick", HOOK_MOUSECLICK);
-		LoadHookScript("hs_gamemodechange", HOOK_GAMEMODECHANGE);
+		HookScripts::LoadHookScript("hs_keypress", HOOK_KEYPRESS);
+		HookScripts::LoadHookScript("hs_mouseclick", HOOK_MOUSECLICK);
+		HookScripts::LoadHookScript("hs_gamemodechange", HOOK_GAMEMODECHANGE);
 
 		hooksFilesLoaded = !alwaysFindScripts;
 	} else {
@@ -249,7 +274,7 @@ void HookScripts::HookScriptClear() {
 	for(int i = 0; i < numHooks; i++) {
 		hooks[i].clear();
 	}
-	std::memset(hooksInfo, 0, HOOK_COUNT * sizeof(HooksPositionInfo));
+	std::memset(hooksInfo, 0, numHooks * sizeof(HooksPositionInfo));
 	HookCommon::Reset();
 }
 
