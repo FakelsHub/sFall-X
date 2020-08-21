@@ -719,14 +719,6 @@ static void __declspec(naked) wmInterfaceRefreshCarFuel_hack() {
 	}
 }
 
-static void __declspec(naked) main_death_scene_hook() {
-	__asm {
-		mov  eax, 101;
-		call fo::funcoffs::text_font_;
-		jmp  fo::funcoffs::debug_printf_;
-	}
-}
-
 static void WorldMapInterfacePatch() {
 	BlockCall(0x4C2380); // Remove disabling palette animations (can be used as a place to call a hack function in wmInterfaceInit_)
 
@@ -882,6 +874,14 @@ static void __declspec(naked) gmouse_bk_process_hook() {
 	}
 }
 
+static void __declspec(naked) main_death_scene_hook() {
+	__asm {
+		mov  eax, 101;
+		call fo::funcoffs::text_font_;
+		jmp  fo::funcoffs::debug_printf_;
+	}
+}
+
 void Interface::init() {
 	if (GetConfigInt("Interface", "ActionPointsBar", 0)) {
 		ActionPointsBarPatch();
@@ -899,17 +899,15 @@ void Interface::init() {
 		HookCall(0x44C018, gmouse_handle_event_hook); // replaces hack function from HRP
 	};
 
-	// Set regular font for death scene subtitles
+	// Set normal Fallout font for death scene subtitles
 	if (GetConfigInt("Misc", "DeathScreenFontPatch", 0)) {
 		HookCall(0x4812DF, main_death_scene_hook);
 	}
 
 	// Corrects the height of the black background for the subtitles on death screens
+	if (hrpIsEnabled == false) SafeWrite32(0x48134D, 38 - (640 * 3));      // main_death_scene_ (y-offset shift up to 2-px)
 	if (hrpIsEnabled == false || hrpVersionValid) SafeWrite8(0x481345, 4); // main_death_scene_
 	if (hrpVersionValid) SafeWrite8(HRPAddress(0x10011738), 10);
-	LoadGameHook::OnAfterGameInit() += []() {
-		SafeWrite32(0x48134D, 38 - (Graphics::GetGameWidthRes() * 3)); // main_death_scene_ (y-offset shift up to 2-px)
-	};
 }
 
 void Interface::exit() {
