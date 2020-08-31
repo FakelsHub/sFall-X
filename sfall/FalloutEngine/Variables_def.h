@@ -177,6 +177,7 @@ VAR_(read_callback,              DWORD)
 VAR_(RedColor,                   BYTE)
 VAR_(rotation,                   DWORD)
 VAR2(retvals,                    fo::ElevatorExit, 24, 4)  // 24 elevators, 4 exits each
+VAR_(sampleRate,                 DWORD)
 VAR_(script_path_base,           const char*)
 VAR_(scr_size,                   fo::BoundRect)
 VAR_(scriptListInfo,             fo::ScriptListInfoItem*)  // dynamic array
