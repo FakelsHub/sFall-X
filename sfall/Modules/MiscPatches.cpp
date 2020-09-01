@@ -153,47 +153,60 @@ fail:
 static bool __fastcall SeeIsFront(fo::GameObject* source, fo::GameObject* target) {
 	long dir = source->rotation - fo::func::tile_dir(source->tile, target->tile);
 	if (dir < 0) dir = -dir;
-	if (dir == 1 || dir == 5) { // side seeing, reduce the range for through see (x2 instead of x5)
-		return (fo::func::obj_dist(source, target) <= (fo::func::stat_level(source, fo::STAT_pe) * 2));
+	if (dir == 1 || dir == 5) { // side seeing, reduce the range for through see (x3 instead of x5)
+		return (fo::func::obj_dist(source, target) <= (fo::func::stat_level(source, fo::STAT_pe) * 3));
 	}
 	return (dir == 0); // is fronted seeing
 }
 
 static void __declspec(naked) op_obj_can_see_obj_hook() {
-	static const DWORD op_obj_can_see_obj_Continue = 0x456BAB;
 	using namespace fo;
 	using namespace Fields;
-	using namespace ObjectFlag;
 	__asm {
-		test edx, edx;
-		jnz  end;      // is see
-		mov  ebx, [esp + 0x2C - 0x24 + 4]; // blocking object
-		test ebx, ebx;
-		jz   end;      // no blocking object
-		mov  ecx, [ebx + protoId];
-		shr  ecx, 24;
-		cmp  ecx, OBJ_TYPE_CRITTER;
-		je   checkSee; // see through critter
-		test dword ptr [ebx + flags], ShootThru;
-		jz   end; // flag not set
-checkSee:
+		mov  edi, [esp + 4]; // buf **ret_objStruct
 		test ebp, ebp; // check only once
-		jz   continue;
+		jz   checkSee;
 		xor  ebp, ebp; // for only once
-		mov  edi, edx;
-		mov  edx, [esp + 0x2C - 0x2C + 4]; // target
-		mov  ecx, [esp + 0x2C - 0x28 + 4]; // source
+		push edx;
+		push eax;
+		mov  edx, [edi - 8]; // target
+		mov  ecx, eax;       // source
 		call SeeIsFront;
+		xor  ecx, ecx;
 		test al, al;
-		jnz  continue; // is can see
-		mov  edx, edi;
-		mov  eax, esi;
-end:
-		jmp  fo::funcoffs::interpretPushLong_;
+		pop  eax;
+		pop  edx;
+		jnz  checkSee; // can see
+		// vanilla behavior
+		push 0x10;
+		push edi;
+		call fo::funcoffs::make_straight_path_;
+		retn 8;
+checkSee:
+		push fo::funcoffs::obj_shoot_blocking_at_; // check hex objects func pointer
+		push 0x20;                                 // flags, 0x20 = check ShootThru
+		push edi;
+		call fo::funcoffs::make_straight_path_func_;
+		mov  edx, [edi - 8]; // target
+		mov  ebx, [edi];     // blocking object
+		test ebx, ebx;
+		jz   isSee;          // no blocking object
+		cmp  ebx, edx;
+		jne  checkObj;       // object is not equal target
+		retn 8;
+isSee:
+		mov  [edi], edx;     // fix for target with ShootThru flag
+		retn 8;
+checkObj:
+		mov  eax, [ebx + protoId];
+		shr  eax, 24;
+		cmp  eax, OBJ_TYPE_CRITTER;
+		je   continue; // see through critter
+		retn 8;
 continue:
-		add  esp, 4;
-		mov  [esp + 0x2C - 0x28], ebx;    // replace source to blocking object
-		jmp  op_obj_can_see_obj_Continue; // repeat from the blocking object
+		mov  [edi - 4], ebx;            // replace source to blocking object
+		mov  dword ptr [esp], 0x456BAB; // repeat from the blocking object
+		retn 8;
 	}
 }
 
@@ -630,7 +643,7 @@ static void DisablePipboyAlarmPatch() {
 static void ObjCanSeeShootThroughPatch() {
 	if (GetConfigInt("Misc", "ObjCanSeeObj_ShootThru_Fix", 0)) {
 		dlog("Applying obj_can_see_obj fix for see through critters and ShootThru objects.", DL_INIT);
-		HookCall(0x456BE2, op_obj_can_see_obj_hook);
+		HookCall(0x456BC6, op_obj_can_see_obj_hook);
 		dlogr(" Done", DL_INIT);
 	}
 }

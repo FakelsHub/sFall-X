@@ -647,6 +647,7 @@ void Combat::init() {
 	}
 
 	SimplePatch<DWORD>(0x424FA7, "Misc", "KnockoutTime", 35, 35, 100);
+
 	if (GetConfigInt("Misc", "DisablePunchKnockback", 0)) {
 		MakeCall(0x424AD7, compute_damage_hack_knockback, 1);
 	}
@@ -656,6 +657,13 @@ void Combat::init() {
 		MakeCall(0x42677A, combat_to_hit_hack);
 		MakeCall(0x44BBD2, gmouse_bk_process_hack);
 	}
+
+	//if (GetConfigInt("Misc", "", 0)) {
+		// Fix the combat_is_shot_blocked_ function for counting the number of critters located in the line of fire
+		// for calculating penalties when determining the chance of hitting in the determine_to_hit_func_ function
+		//SafeWriteBatch<BYTE>(0x41, { 0x426D46, 0x426D4E }); // replace target to object (edi > ecx)
+		// set bonus penalty
+	//}
 
 	BodypartHitReadConfig();
 	LoadGameHook::OnBeforeGameStart() += BodypartHitChances; // set on start & load
