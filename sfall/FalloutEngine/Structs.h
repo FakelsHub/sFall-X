@@ -822,5 +822,11 @@ struct FloatText {
 	void* unknown10;
 };
 
+struct SubTitleList {
+	long text;
+	long frame;
+	long* next;
+};
+
 #pragma pack(pop)
 }
