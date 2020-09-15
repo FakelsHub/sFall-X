@@ -341,7 +341,13 @@ static void __stdcall game_init_hook() {
 	onGameInit.invoke();
 }
 
-static void __stdcall GameInitialized() {
+static void __stdcall GameInitialized(int initResult) {
+	#ifdef NDEBUG
+	if (!initResult) {
+		MessageBoxA(0, "Game initialization failed!", "Error", MB_TASKMODAL | MB_ICONERROR);
+		return;
+	}
+	#endif
 	onAfterGameInit.invoke();
 }
 
@@ -360,6 +366,7 @@ static void __declspec(naked) main_init_system_hook() {
 		popadc;
 		call fo::funcoffs::main_init_system_;
 		pushadc;
+		push eax;
 		call GameInitialized;
 		popadc;
 		retn;
