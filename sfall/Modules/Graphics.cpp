@@ -32,7 +32,7 @@ namespace sfall
 #define SAFERELEASE(a) { if (a) { a->Release(); a = nullptr; } }
 
 typedef HRESULT (__stdcall *DDrawCreateProc)(void*, IDirectDraw**, void*);
-//typedef IDirect3D9* (__stdcall *D3DCreateProc)(UINT version);
+///typedef IDirect3D9* (__stdcall *D3DCreateProc)(UINT version);
 
 static IDirectDrawSurface* primaryDDSurface = nullptr;
 
@@ -69,7 +69,7 @@ static DWORD windowTop = 0;
 static HWND  window;
 static DWORD windowStyle = WS_CAPTION | WS_BORDER | WS_MINIMIZEBOX;
 
-static unsigned int windowData;
+static int windowData;
 
 static DWORD ShaderVersion;
 
@@ -120,7 +120,7 @@ static const char* gpuEffect =
 	// blend highlights
 	"if (showhl) {"
 		"float4 h = tex2D(s3, saturate((Tex - cornerhl) / sizehl));"
-		"result = saturate(result + h.rgb);" // saturate(result * (1 - h.a) * h.rgb * h.a)"
+		"result = saturate(result + h);" // saturate(result * (1 - h.a) * h.rgb * h.a)"
 	"}"
 	  "return float4(result.r, result.g, result.b, 1);"
 	"}"
@@ -326,7 +326,7 @@ static void ResetDevice(bool createNew) {
 	//d3d9Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_NONE); //D3DTEXF_LINEAR
 	//d3d9Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_NONE); //D3DTEXF_LINEAR
 
-	//d3d9Device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255, 0, 255), 1.0f, 0); // for debbuging
+	///d3d9Device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255, 0, 255), 1.0f, 0); // for debbuging
 	dlogr(" Done", DL_MAIN);
 }
 
@@ -559,7 +559,7 @@ void Graphics::ShowMovieFrame(IDirect3DTexture9* tex) {
 	Present();
 }
 
-void Graphics::SetHighlightTexture(IDirect3DTexture9* htex) {
+void Graphics::SetHighlightTexture(IDirect3DTexture9* htex, int xPos, int yPos) {
 	gpuBltEffect->SetTexture(gpuBltHighlight, htex);
 
 	float size[2];
@@ -567,11 +567,8 @@ void Graphics::SetHighlightTexture(IDirect3DTexture9* htex) {
 	size[1] = 200.0f * rcpres[1];
 	gpuBltEffect->SetFloatArray(gpuBltHighlightSize, size, 2);
 
-	int xPos = ((GetGameWidthRes() - 640) / 2);
 	size[0] = (126.0f + xPos) * rcpres[0];
-	int h = GetGameHeightRes();
-	int yPos = (h > 480) ? ((h - 480) / 2) - 33 : 14;
-	size[1] = (float)yPos * rcpres[1];
+	size[1] = (16.0f + yPos) * rcpres[1];
 	gpuBltEffect->SetFloatArray(gpuBltHighlightCorner, size, 2);
 }
 
@@ -583,11 +580,6 @@ void Graphics::SetHeadTex(IDirect3DTexture9* tex, int width, int height, int xof
 	size[0] = (float)width  * rcpres[0];
 	size[1] = (float)height * rcpres[1];
 	gpuBltEffect->SetFloatArray(gpuBltHeadSize, size, 2);
-
-	// adjust head texture position for HRP 4.1.8
-	int h = GetGameHeightRes();
-	if (h > 480) yoff += ((h - 480) / 2) - 47; // TODO: get dialog interface position
-	xoff += ((GetGameWidthRes() - 640) / 2);
 
 	size[0] = (126.0f + xoff + ((388 - width) / 2)) * rcpres[0];
 	size[1] = (14.0f + yoff + ((200 - height) / 2)) * rcpres[1];
@@ -662,10 +654,11 @@ public:
 		int pitch = dRect.Pitch;
 
 		if (Graphics::GPUBlt) {
-			char* pBits = (char*)dRect.pBits;
-			for (DWORD y = 0; y < mveDesc.dwHeight; y++) {
-				CopyMemory(&pBits[y * pitch], &lockTarget[y * width], width);
-			}
+			fo::func::buf_to_buf(lockTarget, width, mveDesc.dwHeight, width, dRect.pBits, pitch);
+			///char* pBits = (char*)dRect.pBits;
+			///for (DWORD y = 0; y < mveDesc.dwHeight; y++) {
+			///	CopyMemory(&pBits[y * pitch], &lockTarget[y * width], width);
+			///}
 		} else {
 			pitch /= 4;
 			for (DWORD y = 0; y < mveDesc.dwHeight; y++) {
@@ -878,7 +871,8 @@ public:
 	HRESULT __stdcall SetEntries(DWORD a, DWORD b, DWORD c, LPPALETTEENTRY destPal) { // used to set palette for splash screen, fades, subtitles
 		if (!windowInit || c == 0 || b + c > 256) return DDERR_INVALIDPARAMS;
 
-		CopyMemory(&palette[b], destPal, c * 4);
+		__movsd(&palette[b], (unsigned long*)destPal, c);
+
 		if (Graphics::GPUBlt && gpuPalette) {
 			D3DLOCKED_RECT rect;
 			if (!FAILED(gpuPalette->LockRect(0, &rect, 0, D3DLOCK_DISCARD))) {
@@ -887,10 +881,10 @@ public:
 			}
 		} else {
 			// X8B8G8R8 format
-			for (DWORD i = b; i < b + c; i++) { // swap color B <> R
-				BYTE clr = *(BYTE*)((DWORD)&palette[i]); // B
-				*(BYTE*)((DWORD)&palette[i]) = *(BYTE*)((DWORD)&palette[i] + 2); // R
-				*(BYTE*)((DWORD)&palette[i] + 2) = clr;
+			for (size_t i = b; i < b + c; i++) { // swap color B <> R
+				BYTE clr = *(BYTE*)((long)&palette[i]); // B
+				*(BYTE*)((long)&palette[i]) = *(BYTE*)((long)&palette[i] + 2); // R
+				*(BYTE*)((long)&palette[i] + 2) = clr;
 			}
 			primaryDDSurface->SetPalette(0); // update
 			if (FakeDirectDrawSurface::IsPlayMovie) return DD_OK; // prevents flickering movie at the beginning of playback (w/o HRP & GPUBlt=2)
@@ -1080,8 +1074,12 @@ HRESULT __stdcall InitFakeDirectDrawCreate(void*, IDirectDraw** b, void*) {
 			moveWindowKey[0] &= 0xFF;
 		}
 		windowData = GetConfigInt("Graphics", "WindowData", 0);
-		windowLeft = windowData >> 16;
-		windowTop = windowData & 0xFFFF;
+		if (windowData > 0) {
+			windowLeft = windowData >> 16;
+			windowTop = windowData & 0xFFFF;
+		} else {
+			windowData = 0;
+		}
 	}
 
 	rcpres[0] = 1.0f / (float)gWidth;
@@ -1103,6 +1101,7 @@ static __declspec(naked) void game_init_hook() {
 }
 
 static double fadeMulti;
+
 static __declspec(naked) void palette_fade_to_hook() {
 	__asm {
 		push ebx; // _fade_steps
@@ -1147,13 +1146,16 @@ void Graphics::init() {
 		fadeMulti = ((double)fadeMulti) / 100.0;
 		dlogr(" Done", DL_INIT);
 	}
+
+	// Replacing the srcCopy_ function with an SSE implementation
+	MakeJump(0x4D36D4, fo::func::buf_to_buf); // buf_to_buf_
 }
 
 void Graphics::exit() {
 	if (Graphics::mode) {
 		if (Graphics::mode == 5) {
-			unsigned int data = windowTop | (windowLeft << 16);
-			if (data != windowData) SetConfigInt("Graphics", "WindowData", data);
+			int data = windowTop | (windowLeft << 16);
+			if (data >= 0 && data != windowData) SetConfigInt("Graphics", "WindowData", data);
 		}
 		CoUninitialize();
 	}
