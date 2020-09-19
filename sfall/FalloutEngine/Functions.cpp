@@ -143,12 +143,12 @@ isNotStr:
 // prints scripting error in debug.log and stops current script execution by performing longjmp
 // USE WITH CAUTION
 void __declspec(naked) interpretError(const char* fmt, ...) {
-	__asm jmp fo::funcoffs::interpretError_
+	__asm jmp fo::funcoffs::interpretError_;
 }
 
 long __fastcall tile_num(long x, long y) {
 	__asm push ebx; // don't delete (bug in tile_num_)
-	WRAP_WATCOM_FCALL2(tile_num_, x, y)
+	WRAP_WATCOM_FCALL2(tile_num_, x, y);
 	__asm pop  ebx;
 }
 
@@ -272,7 +272,7 @@ void __fastcall trans_cscale(long i_width, long i_height, long s_width, long s_h
 	}
 }
 
-// Engine function buf_to_buf_ with SSE implementation
+// buf_to_buf_ function with SSE implementation
 void __cdecl buf_to_buf(void* src, long width, long height, long src_width, void* dst, long dst_width) {
 	if (height <= 0 || width <= 0) return;
 
@@ -316,7 +316,7 @@ void __cdecl buf_to_buf(void* src, long width, long height, long src_width, void
 		dec  eax;      // height
 		jnz  startLoop;
 		jmp  end;
-copySmall: // copies the small size data
+	copySmall: // copies the small size data
 		mov  ecx, remainderD;
 		rep  movsd;
 		mov  ecx, remainderB;
