@@ -10,12 +10,12 @@
 #define EdgeSharpen  1.5
 
 
-texture bloomMap;
+texture sharpenTex;
 sampler s0;
 
-sampler BloomSampler : samplerstate
+sampler SharpenSampler : samplerstate
 {
-	Texture = bloomMap;
+	Texture = sharpenTex;
 	MinFilter = Linear;
 	MagFilter = Linear;
 	AddressU = Clamp;
