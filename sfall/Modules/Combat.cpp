@@ -72,6 +72,8 @@ struct KnockbackModifier {
 	double value;
 };
 
+long Combat::determineHitChance; // the value of hit chance w/o any restrictions
+
 static std::vector<long> noBursts; // object id
 
 static std::vector<KnockbackModifier> mTargets;
@@ -260,6 +262,7 @@ knockback:
 }
 
 static int __fastcall HitChanceMod(int base, fo::GameObject* critter) {
+	Combat::determineHitChance = base;
 	for (size_t i = 0; i < hitChanceMods.size(); i++) {
 		if (critter->id == hitChanceMods[i].id) {
 			return min(base + hitChanceMods[i].mod, hitChanceMods[i].maximum);
@@ -359,7 +362,7 @@ void __stdcall KnockbackRemoveMod(fo::GameObject* object, DWORD mode) {
 void __stdcall SetHitChanceMax(fo::GameObject* critter, DWORD maximum, DWORD mod) {
 	if ((DWORD)critter == -1) {
 		baseHitChance.maximum = maximum;
-		baseHitChance.mod = mod;
+		baseHitChance.mod = mod; // always 0?
 		return;
 	}
 	if (critter->Type() != fo::OBJ_TYPE_CRITTER) return;
@@ -657,13 +660,6 @@ void Combat::init() {
 		MakeCall(0x42677A, combat_to_hit_hack);
 		MakeCall(0x44BBD2, gmouse_bk_process_hack);
 	}
-
-	//if (GetConfigInt("Misc", "", 0)) {
-		// Fix the combat_is_shot_blocked_ function for counting the number of critters located in the line of fire
-		// for calculating penalties when determining the chance of hitting in the determine_to_hit_func_ function
-		//SafeWriteBatch<BYTE>(0x41, { 0x426D46, 0x426D4E }); // replace target to object (edi > ecx)
-		// set bonus penalty
-	//}
 
 	BodypartHitReadConfig();
 	LoadGameHook::OnBeforeGameStart() += BodypartHitChances; // set on start & load

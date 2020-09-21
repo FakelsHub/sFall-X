@@ -1,5 +1,6 @@
 #include "..\..\FalloutEngine\Fallout2.h"
 #include "..\..\SafeWrite.h"
+#include "..\Combat.h"
 #include "..\DamageMod.h"
 #include "..\HookScripts.h"
 #include "Common.h"
@@ -28,7 +29,8 @@ static void __declspec(naked) ToHitHook() {
 		pushadc;
 	}
 
-	argCount = 7;
+	argCount = 8;
+	args[7] = Combat::determineHitChance;
 	RunHookScript(HOOK_TOHIT);
 
 	__asm {

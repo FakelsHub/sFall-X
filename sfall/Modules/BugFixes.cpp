@@ -3637,6 +3637,11 @@ void BugFixes::init()
 
 	// Fix for limiting the rollback distance for Knockback animation
 	MakeCall(0x4104D5, action_knockback_hack);
+
+	// Fix the combat_is_shot_blocked_ function for counting the number of critters located in the line of fire
+	// for calculating penalties when determining the chance of hitting in the determine_to_hit_func_ function
+	SafeWriteBatch<BYTE>(0x41, { 0x426D46, 0x426D4E }); // edi > ecx (replace target to object critter)
+	SafeWrite8(0x426D48, fo::DAM_DEAD | fo::DAM_KNOCKED_DOWN | fo::DAM_KNOCKED_OUT);
 }
 
 }
