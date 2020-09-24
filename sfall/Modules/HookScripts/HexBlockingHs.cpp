@@ -12,8 +12,6 @@ static void __declspec(naked) HexMBlockingHook() {
 	static const DWORD _obj_blocking_at = 0x48B84E;
 	__asm {
 		HookBegin;
-		mov argCount, 4;
-
 		mov args[0], eax;
 		mov args[4], edx;
 		mov args[8], ebx;
@@ -31,6 +29,7 @@ return:
 		pushad;
 	}
 
+	argCount = 4;
 	RunHookScript(HOOK_HEXMOVEBLOCKING);
 
 	__asm {
@@ -45,8 +44,6 @@ return:
 static void __declspec(naked) HexABlockingHook() {
 	__asm {
 		HookBegin;
-		mov argCount, 4;
-
 		mov args[0], eax;
 		mov args[4], edx;
 		mov args[8], ebx;
@@ -55,6 +52,7 @@ static void __declspec(naked) HexABlockingHook() {
 		pushad;
 	}
 
+	argCount = 4;
 	RunHookScript(HOOK_HEXAIBLOCKING);
 
 	__asm {
@@ -69,8 +67,6 @@ static void __declspec(naked) HexABlockingHook() {
 static void __declspec(naked) HexShootBlockingHook() {
 	__asm {
 		HookBegin;
-		mov argCount, 4;
-
 		mov args[0], eax;
 		mov args[4], edx;
 		mov args[8], ebx;
@@ -79,6 +75,7 @@ static void __declspec(naked) HexShootBlockingHook() {
 		pushad;
 	}
 
+	argCount = 4;
 	RunHookScript(HOOK_HEXSHOOTBLOCKING);
 
 	__asm {
@@ -93,8 +90,6 @@ static void __declspec(naked) HexShootBlockingHook() {
 static void __declspec(naked) HexSightBlockingHook() {
 	__asm {
 		HookBegin;
-		mov argCount, 4;
-
 		mov args[0], eax;
 		mov args[4], edx;
 		mov args[8], ebx;
@@ -103,6 +98,7 @@ static void __declspec(naked) HexSightBlockingHook() {
 		pushad;
 	}
 
+	argCount = 4;
 	RunHookScript(HOOK_HEXSIGHTBLOCKING);
 
 	__asm {

@@ -934,17 +934,17 @@ fix:
 }
 
 // Haenlomal: Check path to critter for attack
-static void __declspec(naked) MultiHexFix() {
-	__asm {
-		xor  ecx, ecx;                      // argument value for make_path_func: ecx=0 (rotation data arg)
-		test [ebx + flags + 1], 0x08;       // is target multihex?
-		mov  ebx, [ebx + tile];             // argument value for make_path_func: target's tilenum (end_tile)
-		je   end;                           // skip if not multihex
-		inc  ebx;                           // otherwise, increase tilenum by 1
-end:
-		retn;                               // call make_path_func (at 0x429024, 0x429175)
-	}
-}
+//static void __declspec(naked) MultiHexFix() {
+//	__asm {
+//		xor  ecx, ecx;                      // argument value for make_path_func: ecx=0 (rotation data arg)
+//		test [ebx + flags + 1], 0x08;       // is target multihex?
+//		mov  ebx, [ebx + tile];             // argument value for make_path_func: target's tilenum (end_tile)
+//		je   end;                           // skip if not multihex
+//		inc  ebx;                           // otherwise, increase tilenum by 1
+//end:
+//		retn;                               // call make_path_func (at 0x429024, 0x429175)
+//	}
+//}
 
 static void __declspec(naked) MultiHexReTargetTileFix() {
 	__asm {
@@ -3121,7 +3121,8 @@ void BugFixes::init()
 	//if (GetConfigInt("Misc", "MultiHexPathingFix", 1)) {
 		dlog("Applying MultiHex Pathing Fix.", DL_INIT);
 		HookCall(0x416144, make_path_func_hook); // fixes the build of the path to the central hex of the multihex object
-		MakeCalls(MultiHexFix, {0x42901F, 0x429170});
+		//MakeCalls(MultiHexFix, {0x42901F, 0x429170}); // obsolete fix
+
 		// Fix for multihex critters moving too close and overlapping their targets in combat and move to retarget tile
 		MakeCall(0x42A14F, MultiHexCombatRunFix, 1);
 		MakeCall(0x42A178, MultiHexCombatMoveFix, 1);
