@@ -111,7 +111,7 @@ void mf_draw_image(OpcodeContext&);
 
 void mf_draw_image_scaled(OpcodeContext&);
 
-void mf_interface_draw_image(OpcodeContext&);
+void mf_interface_art_draw(OpcodeContext&);
 
 void mf_unwield_slot(OpcodeContext&);
 

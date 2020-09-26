@@ -403,8 +403,9 @@ Some utility/math functions are available:
 - works just like vanilla critter_inven_obj, but correctly reports item in player's inactive hand slot
 
 > void sfall_func0("intface_redraw")
-- redraws main game interface
-- useful after direct changes to current player weapons or stats to reflect changes
+> void sfall_func1("intface_redraw", bool eachWin)
+- redraws main game interface, useful after direct changes to current player weapons or stats to reflect changes
+- eachWin: pass True to redraw all the window interfaces
 
 > void sfall_func0("intface_hide")
 - hides main interface
@@ -733,7 +734,7 @@ optional argument:
 - message: the text in the dialog box. Use the \n control character to move text to a new line (example: "Hello\nWorld!")
 optional arguments:
 - flags: mode flags (see MSGBOX_* constants in define_extra.h). Pass -1 to skip setting the flags (default flags are NORMAL and YESNO)
-- color1/2: the color index in Fallout palette. color1 sets the text color for the first line, and color2 for all subsequent lines of text (default color is 145)
+- color1/color2: the color index in Fallout palette. color1 sets the text color for the first line, and color2 for all subsequent lines of text (default color is 145)
 
 > int sfall_func1("get_stat_min", stat)
 > int sfall_func1("get_stat_max", stat)
@@ -741,6 +742,19 @@ optional arguments:
 > int sfall_func2("get_stat_max", stat, bool who)
 - Returns the maximum or minimum set value for the specified stat (see set_stat_min/max functions)
 - who: passed value 0 (false) or skip of the argument returns the value of the player, 1 (true) returns the value set for all NPCs
+
+> int sfall_func4("interface_art_draw", winType, artFile/artID, x, y)
+> int sfall_func5("interface_art_draw", winType, artFile/artID, x, y, frame)
+> int sfall_func6("interface_art_draw", winType, artFile/artID, x, y, frame, array param)
+- draws the specified PCX or FRM image in the game interface window, returns -1 in case of any error
+- winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
+  this also takes the value of the flag (0x10000) to prevent immediate redrawing of the interface window
+- artFile/artId: path to the PCX/FRM file (e.g. "art\\inven\\5mmap.frm"), or its FRM ID number (e.g. 0x7000026, see specification of the FID format)
+optional arguments:
+- x/y: offset relative to the top-left corner of the window
+  frame: frame number, the first frame starts from zero
+- param: array specifies additional parameters, sprite direction for multi-directional frm, and width/height image size, used to scale the image when displaying it
+  set -1 to either width or height to use the original image size
 
 ------------------------
 ------ MORE INFO -------

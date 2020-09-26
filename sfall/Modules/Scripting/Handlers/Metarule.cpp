@@ -100,7 +100,7 @@ static const SfallMetarule metarules[] = {
 	{"has_fake_perk_npc",       mf_has_fake_perk_npc,       2, 2,  0, {ARG_OBJECT, ARG_STRING}},
 	{"has_fake_trait_npc",      mf_has_fake_trait_npc,      2, 2,  0, {ARG_OBJECT, ARG_STRING}},
 	{"hide_window",             mf_hide_window,             0, 1, -1, {ARG_STRING}},
-	{"interface_draw_image",    mf_interface_draw_image,    2, 6, -1, {ARG_INT, ARG_INTSTR, ARG_INT, ARG_INT, ARG_INT, ARG_INT}},
+	{"interface_art_draw",      mf_interface_art_draw,      4, 6, -1, {ARG_INT, ARG_INTSTR, ARG_INT, ARG_INT, ARG_INT, ARG_INT}},
 	{"intface_hide",            mf_intface_hide,            0, 0},
 	{"intface_is_hidden",       mf_intface_is_hidden,       0, 0},
 	{"intface_redraw",          mf_intface_redraw,          0, 1},
