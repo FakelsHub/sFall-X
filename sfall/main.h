@@ -22,6 +22,8 @@
 #pragma warning(disable:4414)
 #endif
 
+#pragma intrinsic(memcpy, memset)
+
 #include <cassert>
 #include <string>
 #include <initializer_list>

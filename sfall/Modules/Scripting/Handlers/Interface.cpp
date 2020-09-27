@@ -471,26 +471,13 @@ static long GetArtFIDFile(long fid, const char* &file) {
 	return direction;
 }
 
-static fo::FrmFile* LoadArtFile(const char* file, long frameno, long direction, fo::FrmFrameData* &framePtr) {
+static fo::FrmFile* LoadArtFile(const char* file, long frame, long direction, fo::FrmFrameData* &framePtr) {
 	fo::FrmFile* frmPtr = nullptr;
 	if (fo::func::load_frame(file, &frmPtr)) {
 		return nullptr;
 	}
-	framePtr = (fo::FrmFrameData*)&frmPtr->width;
-	if (direction > 0 && direction < 6) {
-		BYTE* offsOriFrame = (BYTE*)framePtr;
-		offsOriFrame += frmPtr->oriFrameOffset[direction];
-		framePtr = (fo::FrmFrameData*)offsOriFrame;
-	}
-	if (frameno > 0) {
-		int maxFrames = frmPtr->frames - 1;
-		if (frameno > maxFrames) frameno = maxFrames;
-		while (frameno-- > 0) {
-			BYTE* offsFrame = (BYTE*)framePtr;
-			offsFrame += framePtr->size + (sizeof(fo::FrmFrameData) - 1);
-			framePtr = (fo::FrmFrameData*)offsFrame;
-		}
-	}
+	framePtr = frmPtr->GetFrameData(direction, frame);
+
 	return frmPtr;
 }
 
@@ -577,7 +564,7 @@ static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* interfaceWin) {
 		long fid = ctx.arg(1).rawValue();
 		if (fid == -1) return -1;
 
-		useShift == (((fid & 0xF000000) >> 24) == fo::OBJ_TYPE_CRITTER);
+		useShift = (((fid & 0xF000000) >> 24) == fo::OBJ_TYPE_CRITTER);
 		direction = GetArtFIDFile(fid, file);
 	} else {
 		file = ctx.arg(1).strValue(); // path to frm/pcx file
@@ -613,8 +600,8 @@ static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* interfaceWin) {
 	int width  = (w >= 0) ? w : framePtr->width;
 	int height = (h >= 0) ? h : framePtr->height;
 
-	fo::func::trans_cscale(framePtr->data, framePtr->width, framePtr->height, framePtr->width, interfaceWin->surface + (y * interfaceWin->width) + x,
-	                       width, height, interfaceWin->width
+	fo::func::trans_cscale(framePtr->data, framePtr->width, framePtr->height, framePtr->width,
+	                       interfaceWin->surface + (y * interfaceWin->width) + x, width, height, interfaceWin->width
 	);
 
 	if (!(ctx.arg(0).rawValue() & 0x10000)) {

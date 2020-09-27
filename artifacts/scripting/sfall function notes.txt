@@ -750,11 +750,12 @@ optional arguments:
 - winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
   this also takes the value of the flag (0x10000) to prevent immediate redrawing of the interface window
 - artFile/artId: path to the PCX/FRM file (e.g. "art\\inven\\5mmap.frm"), or its FRM ID number (e.g. 0x7000026, see specification of the FID format)
-optional arguments:
 - x/y: offset relative to the top-left corner of the window
-  frame: frame number, the first frame starts from zero
-- param: array specifies additional parameters, sprite direction for multi-directional frm, and width/height image size, used to scale the image when displaying it
-  set -1 to either width or height to use the original image size
+optional arguments:
+- frame: frame number, the first frame starts from zero
+- param: an array which specifies additional parameters, where:
+  index 0 - sprite direction for multi-directional FRM
+  index 1/index 2 - the new width/height to scale the image to. Pass -1 to use the original width/height
 
 ------------------------
 ------ MORE INFO -------
