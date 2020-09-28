@@ -71,8 +71,8 @@ static_assert(sizeof(AnimationSet) == 2656, "Incorrect AnimationSet definition."
 struct BoundRect {
 	long x;
 	long y;
-	long offx;
-	long offy;
+	long offx; // left
+	long offy; // bottom
 };
 
 // Game objects (items, critters, etc.), including those stored in inventories.
@@ -266,6 +266,20 @@ struct ElevatorFrms {
 	DWORD buttons;
 };
 
+#pragma pack(push, 2)
+typedef class FrmHeaderData { // sizeof 62
+public:
+	DWORD version;        // version num
+	WORD fps;             // frames per sec
+	WORD actionFrame;
+	WORD numFrames;       // number of frames per direction
+	WORD xCentreShift[6]; // shift in the X direction, of frames with orientations [0-5]
+	WORD yCentreShift[6]; // shift in the Y direction, of frames with orientations [0-5]
+	DWORD oriOffset[6];   // offset of first frame for direction [0-5] from begining of frame area
+	DWORD frameAreaSize;  // size of all frames area
+} FrmHeaderData;
+#pragma pack(pop)
+
 // structures for holding frms loaded with fallout2 functions
 typedef class FrmFrameData { // sizeof 12 + 1 byte
 public:
@@ -277,7 +291,7 @@ public:
 	BYTE data[1]; // begin frame image data
 } FrmFrameData;
 
-struct FrmFile {
+struct FrmFile {			// sizeof 2954
 	long id;				//0x00
 	short fps;				//0x04
 	short actionFrame;		//0x06
@@ -286,11 +300,13 @@ struct FrmFile {
 	short yshift[6];		//0x16
 	long oriFrameOffset[6];	//0x22
 	long frameAreaSize;		//0x3a
-	union {					//0x3e
-		FrmFrameData *frameData;
-		short width;
+	union {
+		FrmFrameData* const frameData;
+		union {
+			short width;	//0x3e
+			short height;	//0x40
+		};
 	};
-	short height;			//0x40
 	long frameSize;			//0x42
 	short xoffset;			//0x46
 	short yoffset;			//0x48
@@ -316,19 +332,7 @@ struct FrmFile {
 	}
 };
 
-#pragma pack(push, 2)
-typedef class FrmHeaderData { // sizeof 62
-public:
-	DWORD version;        // version num
-	WORD fps;             // frames per sec
-	WORD actionFrame;
-	WORD numFrames;       // number of frames per direction
-	WORD xCentreShift[6]; // shift in the X direction, of frames with orientations [0-5]
-	WORD yCentreShift[6]; // shift in the Y direction, of frames with orientations [0-5]
-	DWORD oriOffset[6];   // offset of first frame for direction [0-5] from begining of frame area
-	DWORD frameAreaSize;  // size of all frames area
-} FrmHeaderData;
-#pragma pack(pop)
+static_assert(sizeof(FrmFile) == 2954, "struct FrmFile size is not correct");
 
 // structures for loading unlisted frms
 struct UnlistedFrm {
