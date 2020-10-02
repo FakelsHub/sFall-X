@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "Functions.h"
+#include "Variables.h"
 
 //
 // Various utility functions, based on FO engine functions
@@ -29,12 +30,19 @@
 namespace fo
 {
 
-// returns weapon animation code
-long AnimCodeByWeapon(GameObject* weapon);
-
-inline void DisplayPrint(const std::string& str) {
+__inline void DisplayPrint(const std::string& str) {
 	fo::func::display_print(str.c_str());
 }
+
+// rect_free_ function for inline implementation
+__forceinline void sf_rect_free(fo::RectList* rect) {
+	fo::RectList* front = fo::var::rectList;
+	fo::var::rectList = rect;
+	rect->nextRect = front;
+}
+
+// returns weapon animation code
+long AnimCodeByWeapon(GameObject* weapon);
 
 // returns message string from given file or "Error" when not found
 const char* GetMessageStr(const MessageList* fileAddr, long messageId);

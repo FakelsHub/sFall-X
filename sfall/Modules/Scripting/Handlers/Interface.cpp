@@ -380,7 +380,7 @@ void mf_create_win(OpcodeContext& ctx) {
 	if (fo::func::createWindow(ctx.arg(0).strValue(),
 		ctx.arg(1).rawValue(), ctx.arg(2).rawValue(), // y, x
 		ctx.arg(3).rawValue(), ctx.arg(4).rawValue(), // w, h
-		256, flags) == -1)
+		(flags & fo::WinFlags::Transparent) ? 0 : 256, flags) == -1)
 	{
 		ctx.printOpcodeError("%s() - couldn't create window.", ctx.getMetaruleName());
 		ctx.setReturn(-1);
