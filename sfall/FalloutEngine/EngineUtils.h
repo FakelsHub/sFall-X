@@ -95,7 +95,7 @@ long GetScriptLocalVars(long sid);
 
 fo::GameObject* __fastcall LineOfSight(fo::GameObject* obj);
 
-long __fastcall GetTopWindowID(long xPos, long yPos);
+fo::Window* __fastcall GetTopWindowAtPos(long xPos, long yPos, bool bypassTrans = false);
 
 // Returns an array of objects within the specified radius from the source tile
 void GetObjectsTileRadius(std::vector<fo::GameObject*> &objs, long sourceTile, long radius, long elev, long type = -1);
@@ -120,7 +120,7 @@ void ClearWindow(long winID, bool refresh = true);
 
 // Print text to surface
 void PrintText(char* displayText, BYTE colorIndex, DWORD xPos, DWORD yPos, DWORD txtWidth, DWORD toWidth, BYTE* toSurface);
-void PrintTextFM(char* displayText, BYTE colorIndex, DWORD xPos, DWORD yPos, DWORD txtWidth, DWORD toWidth, BYTE* toSurface);
+void PrintTextFM(const char* displayText, BYTE colorIndex, DWORD xPos, DWORD yPos, DWORD txtWidth, DWORD toWidth, BYTE* toSurface);
 
 // gets the height of the currently selected font
 DWORD GetTextHeight();
