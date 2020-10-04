@@ -269,7 +269,7 @@ void mf_intface_redraw(OpcodeContext& ctx) {
 	if (ctx.arg(0).rawValue() == 0) {
 		fo::func::intface_redraw();
 	} else {
-		fo::func::RefreshGNW(1); // redraw all interfaces
+		fo::func::RefreshGNW(2); // fake redraw all interfaces [TODO: need a real redraw of interface]
 	}
 }
 
@@ -600,7 +600,7 @@ static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* interfaceWin) {
 	int width  = (w >= 0) ? w : framePtr->width;
 	int height = (h >= 0) ? h : framePtr->height;
 
-	fo::func::trans_cscale(framePtr->data, framePtr->width, framePtr->height, framePtr->width,
+	fo::func::trans_cscale(framePtr->width, framePtr->width, framePtr->height, framePtr->data,
 	                       interfaceWin->surface + (y * interfaceWin->width) + x, width, height, interfaceWin->width
 	);
 
@@ -620,7 +620,7 @@ void mf_interface_art_draw(OpcodeContext& ctx) {
 	if (win && (int)win != -1) {
 		result = InterfaceDrawImage(ctx, win);
 	} else {
-		ctx.printOpcodeError("%s() - the game interface window not create or value of the interface specified wrong.", ctx.getMetaruleName());
+		ctx.printOpcodeError("%s() - the game interface window is not created or invalid value for the interface.", ctx.getMetaruleName());
 	}
 	ctx.setReturn(result);
 }
@@ -714,6 +714,40 @@ void mf_get_window_attribute(OpcodeContext& ctx) {
 		break;
 	}
 	ctx.setReturn(result);
+}
+
+void mf_print_text(OpcodeContext& ctx) { // same as vanilla PrintRect
+	fo::Window* win = Interface::GetWindow(ctx.arg(1).rawValue());
+	if (win == nullptr || (int)win == -1) {
+		ctx.printOpcodeError("%s() - the game interface window is not created or invalid value for the interface.", ctx.getMetaruleName());
+		ctx.setReturn(-1);
+		return;
+	}
+	const char* text = ctx.arg(0).strValue();
+	long x = ctx.arg(2).rawValue();
+	long y = ctx.arg(3).rawValue();
+	long color = ctx.arg(4).rawValue();
+	long width = ctx.arg(5).rawValue();
+
+	int maxHeight = win->height - y;
+	int maxWidth = win->width - x;
+	if (width <= 0) {
+		width = maxWidth;
+	} else if (width > maxWidth) {
+		width = maxWidth;
+	}
+
+	color ^= 0x2000000; // fills background to black color if the flag is set
+	if ((color & 0xFF) == 0) {
+		__asm call fo::funcoffs::windowGetTextColor_; // set from SetTextColor
+		__asm mov  byte ptr color, al;
+	}
+	if (color & 0x10000) { // shadow
+		fo::func::windowWrapLineWithSpacing(maxHeight, text, width, win->wID, x, y, 0x201000F, 0, 0);
+		color ^= 0x10000;
+	}
+	ctx.setReturn(fo::func::windowWrapLineWithSpacing(maxHeight, text, width, win->wID, x, y, color, 0, 0));
+	fo::func::GNW_win_refresh(win, &win->rect, 0);
 }
 
 }

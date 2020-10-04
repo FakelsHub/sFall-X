@@ -62,10 +62,12 @@ WRAP_WATCOM_FFUNC4(long, register_object_run_to_object, GameObject*, source, Gam
 WRAP_WATCOM_FFUNC3(long, scr_get_local_var, long, sid, long, varId, long*, value)
 WRAP_WATCOM_FFUNC3(long, scr_set_local_var, long, sid, long, varId, long, value)
 WRAP_WATCOM_FFUNC3(long, tile_num_in_direction, long, tile, long, rotation,long, distance)
-WRAP_WATCOM_FFUNC8(void, trans_cscale, void*, fromBuff, long, width, long, height, long, pitch, void*, toBuff, long, toWidth, long, toHeight, long, toPitch)
 WRAP_WATCOM_FFUNC3(void, win_clip, Window*, window, RectList**, rects, void*, buffer)
 
 WRAP_WATCOM_FFUNC3(const char*, interpretGetString, Program*, scriptPtr, DWORD, dataType, DWORD, strId)
+
+WRAP_WATCOM_FFUNC8e(void, trans_cscale, long, fromPitch, long, width, long, height, void*, fromBuff, void*, toBuff, long, toWidth, long, toHeight, long, toPitch)
+WRAP_WATCOM_FFUNC9e(long, windowWrapLineWithSpacing, long, height, const char*, text, long, widht, long, winID, long, x, long, y, long, color, long, align, long, unknown)
 
 /* stdcall */
 WRAP_WATCOM_FUNC1(AIcap*, ai_cap, GameObject*, critter)

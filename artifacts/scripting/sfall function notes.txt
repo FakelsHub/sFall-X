@@ -736,16 +736,16 @@ optional arguments:
 - flags: mode flags (see MSGBOX_* constants in define_extra.h). Pass -1 to skip setting the flags (default flags are NORMAL and YESNO)
 - color1/color2: the color index in Fallout palette. color1 sets the text color for the first line, and color2 for all subsequent lines of text (default color is 145)
 
-> int sfall_func1("get_stat_min", stat)
-> int sfall_func1("get_stat_max", stat)
-> int sfall_func2("get_stat_min", stat, bool who)
-> int sfall_func2("get_stat_max", stat, bool who)
+> int sfall_func1("get_stat_min", int stat)
+> int sfall_func1("get_stat_max", int stat)
+> int sfall_func2("get_stat_min", int stat, bool who)
+> int sfall_func2("get_stat_max", int stat, bool who)
 - Returns the maximum or minimum set value for the specified stat (see set_stat_min/max functions)
 - who: passed value 0 (false) or skip of the argument returns the value of the player, 1 (true) returns the value set for all NPCs
 
-> int sfall_func4("interface_art_draw", winType, artFile/artID, x, y)
-> int sfall_func5("interface_art_draw", winType, artFile/artID, x, y, frame)
-> int sfall_func6("interface_art_draw", winType, artFile/artID, x, y, frame, array param)
+> int sfall_func4("interface_art_draw", int winType, string artFile/int artID, int x, int y)
+> int sfall_func5("interface_art_draw", int winType, string artFile/int artID, int x, int y, int frame)
+> int sfall_func6("interface_art_draw", int winType, string artFile/int artID, int x, int y, int frame, array param)
 - draws the specified PCX or FRM image in the game interface window, returns -1 in case of any error
 - winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
   this also takes the value of the flag (0x10000) to prevent immediate redrawing of the interface window
@@ -756,6 +756,18 @@ optional arguments:
 - param: an array which specifies additional parameters, where:
   index 0 - sprite direction for multi-directional FRM
   index 1/index 2 - the new width/height to scale the image to. Pass -1 to use the original width/height
+
+> int sfall_func5("print_text", string text, int winType, int x, int y, int color)
+> int sfall_func6("print_text", string text, int winType, int x, int y, int color, int width)
+- displays text in the specified interface window with the current font, to set the font use the SetFont() function
+- text: the text to be printed, are support the character '\n' for new line
+- winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
+- x/y: offset relative to the top-left corner of the window
+- color: index of the color in the game color palette, pass the value 0 if the text color was previously set by the SetTextColor() function
+  it can also define flags (via bwor) for displaying text:
+  0x0010000 - additionally displays a shadow the text, the 'textshadow' compiler constant
+  0x2000000 - fills the background of the text with black color, the 'textnofill' compiler constant (works the other way around)
+- width: the maximum width of the text, if the length of the text exceeds the specified width, will be used text wrapping
 
 ------------------------
 ------ MORE INFO -------

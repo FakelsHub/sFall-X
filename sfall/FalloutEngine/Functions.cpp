@@ -99,9 +99,31 @@ void dev_printf(...) {}
 	__asm push arg7                                                        \
 	WRAP_WATCOM_FCALL6(offs, arg1, arg2, arg3, arg4, arg5, arg6)
 
-#define WRAP_WATCOM_FCALL8(offs, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) \
-	__asm push arg8                                                              \
-	WRAP_WATCOM_FCALL7(offs, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+// TODO: replace all FCALL4-7 functions to FCALL4-7e
+#define WRAP_WATCOM_FCALL4e(offs, arg1, arg2, arg3, arg4) \
+	__asm mov ebx, arg3                                   \
+	__asm mov eax, arg4                                   \
+	WRAP_WATCOM_CALL0(offs)
+
+#define WRAP_WATCOM_FCALL5e(offs, arg1, arg2, arg3, arg4, arg5) \
+	__asm push arg5                                             \
+	WRAP_WATCOM_FCALL4e(offs, arg1, arg2, arg3, arg4)
+
+#define WRAP_WATCOM_FCALL6e(offs, arg1, arg2, arg3, arg4, arg5, arg6) \
+	__asm push arg6                                                   \
+	WRAP_WATCOM_FCALL5e(offs, arg1, arg2, arg3, arg4, arg5)
+
+#define WRAP_WATCOM_FCALL7e(offs, arg1, arg2, arg3, arg4, arg5, arg6, arg7) \
+	__asm push arg7                                                         \
+	WRAP_WATCOM_FCALL6e(offs, arg1, arg2, arg3, arg4, arg5, arg6)
+
+#define WRAP_WATCOM_FCALL8e(offs, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) \
+	__asm push arg8                                                               \
+	WRAP_WATCOM_FCALL7e(offs, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+
+#define WRAP_WATCOM_FCALL9e(offs, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) \
+	__asm push arg9                                                                     \
+	WRAP_WATCOM_FCALL8e(offs, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 
 // prints message to debug.log file
 void __declspec(naked) debug_printf(const char* fmt, ...) {
@@ -265,10 +287,10 @@ void __fastcall window_trans_cscale(long i_width, long i_height, long s_width, l
 		push w_width;
 		push s_height;
 		push s_width;
-		mov  ebx, edx; // i_height
-		mov  edx, ecx; // i_width
 		call fo::funcoffs::windowGetBuffer_;
 		add  eax, xy_shift;
+		mov  ebx, edx; // i_height
+		mov  edx, ecx; // i_width
 		push eax;      // to_buff
 		mov  eax, data;
 		call fo::funcoffs::trans_cscale_; // *from_buff<eax>, i_width<edx>, i_height<ebx>, i_width2<ecx>, to_buff, width, height, to_width
@@ -466,9 +488,34 @@ long __fastcall get_game_config_string(const char* outValue, const char* section
 		WRAP_WATCOM_FCALL7(name##_, arg1, arg2, arg3, arg4, arg5, arg6, arg7) \
 	}
 
-#define WRAP_WATCOM_FFUNC8(retType, name, arg1t, arg1, arg2t, arg2, arg3t, arg3, arg4t, arg4, arg5t, arg5, arg6t, arg6, arg7t, arg7, arg8t, arg8) \
+
+#define WRAP_WATCOM_FFUNC4e(retType, name, arg1t, arg1, arg2t, arg2, arg3t, arg3, arg4t, arg4) \
+	retType __fastcall name(arg1t arg1, arg2t arg2, arg3t arg3, arg4t arg4) { \
+		WRAP_WATCOM_FCALL4e(name##_, arg1, arg2, arg3, arg4) \
+	}
+
+#define WRAP_WATCOM_FFUNC5e(retType, name, arg1t, arg1, arg2t, arg2, arg3t, arg3, arg4t, arg4, arg5t, arg5) \
+	retType __fastcall name(arg1t arg1, arg2t arg2, arg3t arg3, arg4t arg4, arg5t arg5) { \
+		WRAP_WATCOM_FCALL5e(name##_, arg1, arg2, arg3, arg4, arg5) \
+	}
+
+#define WRAP_WATCOM_FFUNC6e(retType, name, arg1t, arg1, arg2t, arg2, arg3t, arg3, arg4t, arg4, arg5t, arg5, arg6t, arg6) \
+	retType __fastcall name(arg1t arg1, arg2t arg2, arg3t arg3, arg4t arg4, arg5t arg5, arg6t arg6) { \
+		WRAP_WATCOM_FCALL6e(name##_, arg1, arg2, arg3, arg4, arg5, arg6) \
+	}
+
+#define WRAP_WATCOM_FFUNC7e(retType, name, arg1t, arg1, arg2t, arg2, arg3t, arg3, arg4t, arg4, arg5t, arg5, arg6t, arg6, arg7t, arg7) \
+	retType __fastcall name(arg1t arg1, arg2t arg2, arg3t arg3, arg4t arg4, arg5t arg5, arg6t arg6, arg7t arg7) { \
+		WRAP_WATCOM_FCALL7e(name##_, arg1, arg2, arg3, arg4, arg5, arg6, arg7) \
+
+#define WRAP_WATCOM_FFUNC8e(retType, name, arg1t, arg1, arg2t, arg2, arg3t, arg3, arg4t, arg4, arg5t, arg5, arg6t, arg6, arg7t, arg7, arg8t, arg8) \
 	retType __fastcall name(arg1t arg1, arg2t arg2, arg3t arg3, arg4t arg4, arg5t arg5, arg6t arg6, arg7t arg7, arg8t arg8) { \
-		WRAP_WATCOM_FCALL8(name##_, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) \
+		WRAP_WATCOM_FCALL8e(name##_, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) \
+	}
+
+#define WRAP_WATCOM_FFUNC9e(retType, name, arg1t, arg1, arg2t, arg2, arg3t, arg3, arg4t, arg4, arg5t, arg5, arg6t, arg6, arg7t, arg7, arg8t, arg8, arg9t, arg9) \
+	retType __fastcall name(arg1t arg1, arg2t arg2, arg3t arg3, arg4t arg4, arg5t arg5, arg6t arg6, arg7t arg7, arg8t arg8, arg9t arg9) { \
+		WRAP_WATCOM_FCALL9e(name##_, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) \
 	}
 
 #include "Functions_def.h"
