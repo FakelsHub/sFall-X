@@ -3643,6 +3643,9 @@ void BugFixes::init()
 	// for calculating penalties when determining the chance of hitting in the determine_to_hit_func_ function
 	SafeWriteBatch<BYTE>(0x41, { 0x426D46, 0x426D4E }); // edi > ecx (replace target to object critter)
 	SafeWrite8(0x426D48, fo::DAM_DEAD | fo::DAM_KNOCKED_DOWN | fo::DAM_KNOCKED_OUT);
+
+	// Fix Print() script function
+	HookCall(0x461AD4, (void*)fo::funcoffs::windowOutput_);
 }
 
 }
