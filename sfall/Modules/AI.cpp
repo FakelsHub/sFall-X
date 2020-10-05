@@ -514,6 +514,10 @@ void AI::init() {
 	// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
 	npcPercentMinHP = (GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
 
+	#ifndef NDEBUG
+	if (GetConfigInt("Debugging", "AIBugFixes", 1) == 0) return;
+	#endif
+
 	// Fix for NPCs not fully reloading a weapon if it has more ammo capacity than a box of ammo
 	HookCalls(item_w_reload_hook, {
 		0x42AF15,           // cai_attempt_w_reload_
@@ -546,10 +550,6 @@ void AI::init() {
 	MakeCall(0x428E75, ai_find_attackers_hack_target2, 2);
 	MakeCall(0x428EB5, ai_find_attackers_hack_target3);
 	MakeCall(0x428EE5, ai_find_attackers_hack_target4, 1);
-
-	#ifndef NDEBUG
-	if (GetConfigInt("Debugging", "AIBugFixes", 1) == 0) return;
-	#endif
 
 	// Tweak for finding new targets for party members
 	// Save the current target in the "target1" variable and find other potential targets
