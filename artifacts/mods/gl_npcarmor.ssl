@@ -129,7 +129,7 @@ end
 
 // for NPCs when they change armor/weapon themselves
 procedure invenwield_handler begin
-   variable critter, item, fid, slot, isWield, canWield, pid;
+   variable critter, item, fid, wfid, slot, isWield, canWield, pid;
    critter := get_sfall_arg;
    item    := get_sfall_arg;
    slot    := get_sfall_arg;
@@ -147,6 +147,15 @@ procedure invenwield_handler begin
          end
          else begin
             fid := get_proto_data(obj_pid(critter), PROTO_FID);
+            wfid = obj_art_fid(critter) bwand 0xF000; // weapon fid
+            if (wfid) then begin
+               wfid = wfid bwor fid;
+               if (art_exists(wfid) == false) then begin
+                  debug_msg("[Error] NPC armor mod. Invenwield missing FID: " + wfid);
+                  set_sfall_return(0); // can't unwield armor
+                  return;
+               end
+            end
          end
          art_change_fid_num(critter, fid);
          return;
