@@ -600,7 +600,7 @@ static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* interfaceWin) {
 	int width  = (w >= 0) ? w : framePtr->width;
 	int height = (h >= 0) ? h : framePtr->height;
 
-	fo::func::trans_cscale(framePtr->width, framePtr->width, framePtr->height, framePtr->data,
+	fo::func::trans_cscale(framePtr->data, framePtr->width, framePtr->height, framePtr->width,
 	                       interfaceWin->surface + (y * interfaceWin->width) + x, width, height, interfaceWin->width
 	);
 
@@ -747,10 +747,10 @@ void mf_interface_print(OpcodeContext& ctx) { // same as vanilla PrintRect
 		__asm mov  byte ptr color, al;
 	}
 	if (color & 0x10000) { // shadow (textshadow)
-		fo::func::windowWrapLineWithSpacing(maxHeight, text, width, win->wID, x, y, 0x201000F, 0, 0);
+		fo::func::windowWrapLineWithSpacing(win->wID, text, width, maxHeight, x, y, 0x201000F, 0, 0);
 		color ^= 0x10000;
 	}
-	ctx.setReturn(fo::func::windowWrapLineWithSpacing(maxHeight, text, width, win->wID, x, y, color, 0, 0)); // returns count print lines
+	ctx.setReturn(fo::func::windowWrapLineWithSpacing(win->wID, text, width, maxHeight, x, y, color, 0, 0)); // returns count print lines
 
 	// no redraw (textdirect)
 	if (!(color & 0x1000000)) fo::func::GNW_win_refresh(win, &win->rect, 0);

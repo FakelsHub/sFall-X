@@ -422,7 +422,7 @@
 #define C_ATTACK_DAMAGE_SOURCE      (0x10) // Amount
 #define C_ATTACK_FLAGS_SOURCE       (0x14) // see DAM_* values in define.h
 #define C_ATTACK_ROUNDS             (0x18)
-#define C_ATTACK_MESSAGE            (0x0C) // message number set from the critical table
+#define C_ATTACK_MESSAGE            (0x1C) // message number set from the critical table
 #define C_ATTACK_TARGET             (0x20)
 #define C_ATTACK_BODY_PART          (0x28)
 #define C_ATTACK_DAMAGE_TARGET      (0x2C) // Amount
