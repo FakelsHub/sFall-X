@@ -55,7 +55,7 @@ struct SkillModifier {
 static std::vector<SkillModifier> skillMaxMods;
 static SkillModifier baseSkillMax;
 
-static uint8_t skillCosts[512 * fo::SKILL_count];
+static BYTE skillCosts[512 * fo::SKILL_count];
 static DWORD basedOnPoints;
 static double* multipliers = nullptr;
 

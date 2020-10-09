@@ -66,8 +66,6 @@ static Delegate<> onBeforeGameClose;
 
 static DWORD inLoop = 0;
 static DWORD saveInCombatFix;
-static bool disableHorrigan = false;
-static bool pipBoyAvailableAtGameStart = false;
 static bool gameLoaded = false;
 
 long LoadGameHook::interfaceWID = -1;
@@ -243,13 +241,13 @@ static bool LoadGame_Before() {
 	}
 
 	GetSavePath(buf, "db");
-	dlogr("Loading data from sfalldb.sav file...", DL_MAIN);
+	dlogr("Loading data from sfalldb.sav...", DL_MAIN);
 	h = CreateFileA(buf, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
 	if (h != INVALID_HANDLE_VALUE) {
 		if (Worldmap::LoadData(h) || CritterStats::LoadStatData(h)) goto errorLoad;
 		CloseHandle(h);
 	} else {
-		dlogr("Cannot open sfalldb.sav file.", DL_MAIN);
+		dlogr("Cannot open sfalldb.sav.", DL_MAIN);
 	}
 	return false;
 
@@ -257,7 +255,7 @@ static bool LoadGame_Before() {
 errorLoad:
 	CloseHandle(h);
 	dlog_f(" ERROR reading data: %s\n", DL_MAIN, buf);
-	fo::func::debug_printf("[SFALL] ERROR reading data from: %s", buf);
+	fo::func::debug_printf("\n[SFALL] ERROR reading data: %s", buf);
 	return (true & !isDebug);
 }
 
@@ -632,7 +630,7 @@ skip:
 
 static void __declspec(naked) BarterInventoryHook() {
 	__asm {
-		and inLoop, ~SPECIAL; // unset flag after animation the dialog panel
+		and inLoop, ~SPECIAL; // unset flag after animating the dialog panel
 		_InLoop(1, BARTER);
 		push [esp + 4];
 		call fo::funcoffs::barter_inventory_;
@@ -661,7 +659,6 @@ static void __declspec(naked) AutomapHook_End() {
 		jmp fo::funcoffs::win_delete_;
 	}
 }
-
 
 static void __declspec(naked) DialogReviewInitHook() {
 	__asm {
@@ -714,7 +711,7 @@ static void __declspec(naked) gdialog_bk_hook() {
 static void __declspec(naked) gdialogUpdatePartyStatus_hook1() {
 	__asm {
 		push edx;
-		_InLoop2(1, SPECIAL); // set the flag before animation the dialog panel when a party member joins
+		_InLoop2(1, SPECIAL); // set the flag before animating the dialog panel when a party member joins/leaves
 		pop  edx;
 		jmp  fo::funcoffs::gdialog_window_destroy_;
 	}

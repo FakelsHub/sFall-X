@@ -251,7 +251,7 @@ static void __declspec(naked) check_page_buttons(void) {
 CheckUp:
 		// restore original code
 		cmp  eax, 0x148;                    // up button
-		ret;
+		retn;
 	}
 }
 
@@ -537,7 +537,7 @@ void ExtraSaveSlots::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Adds a description for the save slot
+	// Adds the city name in the description for empty save slots
 	MakeJump(0x47F02C, GetComment_hack);
 }
 

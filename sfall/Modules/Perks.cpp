@@ -813,7 +813,7 @@ lower:
 }
 
 static bool perkHeaveHoModFix = false;
-void __stdcall ApplyHeaveHoFix() { // This not really a fix
+void __stdcall ApplyHeaveHoFix() { // not really a fix
 	MakeJump(0x478AC4, HeaveHoHook);
 	perks[PERK_heave_ho].strengthMin = 0;
 	perkHeaveHoModFix = true;
@@ -859,7 +859,7 @@ static void PerkEngineInit() {
 
 	// perk_owed hooks
 	MakeCall(0x4AFB2F, LevelUpHack, 1); // replaces 'mov edx, ds:[PlayerLevel]'
-	SafeWrite8(0x43C2EC, 0xEB); // skip the block of code which checks if the player has gained a perk (now handled in level up code)
+	SafeWrite8(0x43C2EC, CodeType::JumpShort); // skip the block of code which checks if the player has gained a perk (now handled in level up code)
 }
 
 static void PerkSetup() {
@@ -1241,7 +1241,7 @@ static void __declspec(naked) item_w_mp_cost_hook() {
 checkType:
 		mov  eax, edi;                      // source
 		mov  edx, ecx;                      // hit_mode
-		call fo::funcoffs::item_hit_with_;
+		call fo::funcoffs::item_hit_with_;  // get pointer to weapon
 		mov  edx, ecx;                      // hit_mode
 		jmp  fo::funcoffs::item_w_subtype_; // eax - item
 	}
@@ -1253,7 +1253,7 @@ static void __declspec(naked) item_w_called_shot_hack() {
 	__asm {
 		mov  edx, ecx;                     // argument for item_hit_with_: hit_mode
 		mov  eax, ebx;                     // argument for item_hit_with_: pointer to source_obj (always dude_obj due to code path)
-		call fo::funcoffs::item_hit_with_; // get weapon's
+		call fo::funcoffs::item_hit_with_; // get pointer to weapon
 		mov  edx, ecx;
 		call fo::funcoffs::item_w_subtype_;
 		cmp  eax, THROWING;                // is weapon type GUNS or THROWING?
@@ -1263,8 +1263,8 @@ checkRange:
 		mov  edx, ecx;                     // argument for item_w_range_: hit_mode
 		mov  eax, ebx;                     // argument for item_w_range_: pointer to source_obj (always dude_obj due to code path)
 		call fo::funcoffs::item_w_range_;  // get weapon's range
-		cmp  eax, 2;                       // is weapon range great than or equal 2 (i.e. melee/unarmed attack)?
-		jge  cantUse;                      // disallow called shot attempt
+		cmp  eax, 2;                       // is weapon range greater than or equal to 2 (i.e. ranged attack)?
+		jge  cantUse;                      // yes, disallow called shot attempt
 		jmp  FastShotTraitFix_End;         // continue processing called shot attempt
 cantUse:
 		xor  eax, eax;                     // clean up and exit function item_w_called_shot
@@ -1496,10 +1496,10 @@ void Perks::init() {
 
 	// Fixes losing unused perks
 	SafeWrite16(0x43C369, 0x0DFE); // mov ds:[_free_perk], dh > dec ds:[_free_perk]
-	// If there are unused perks, then call the selection window of perks
-	SafeWrite8(0x43C370, 0xB1);    // jump 0x43C322
+	// If there are unused perks, then call the perk selection window
+	SafeWrite8(0x43C370, 0xB1);    // jmp 0x43C322
 
-	// Don't show an empty perks selection dialog box
+	// Don't show an empty perk selection window
 	if (!isDebug) HookCall(0x43C80B, perks_dialog_hook);
 
 	// Disable gain perks for bonus stats

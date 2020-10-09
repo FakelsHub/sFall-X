@@ -231,7 +231,7 @@ static void HookScriptInit() {
 	dlogr("Loading hook scripts:", DL_HOOK|DL_INIT);
 
 	static bool hooksFilesLoaded = false;
-	if (!hooksFilesLoaded) { // hook files are already put to list
+	if (!hooksFilesLoaded) { // hook files are already put in the list
 		HookScripts::hookScriptFilesList.clear();
 
 		InitCombatHookScripts();
@@ -253,7 +253,7 @@ static void HookScriptInit() {
 			HookScripts::LoadHookScriptFile(hook.filePath, hook.name.c_str(), hook.id, customPath);
 		}
 	}
-	dlogr("Finished loading hook scripts", DL_HOOK|DL_INIT);
+	dlogr("Finished loading hook scripts.", DL_HOOK|DL_INIT);
 }
 
 void HookScripts::LoadHookScripts() {

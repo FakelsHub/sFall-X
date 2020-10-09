@@ -163,8 +163,8 @@ long CheckAddictByPid(fo::GameObject* critter, long pid) {
 	/* keyword 'return' is not needed, the compiler will do everything correctly */
 }
 
-// Checks whether dude is under the influence of negative effects of radiation
-int32_t __fastcall IsRadInfluence() {
+// Checks whether the player is under the influence of negative effects of radiation
+long __fastcall IsRadInfluence() {
 	fo::QueueRadiation* queue = (fo::QueueRadiation*)fo::func::queue_find_first(fo::var::obj_dude, fo::radiation_event);
 	while (queue) {
 		if (queue->init && queue->level >= 2) return 1;
@@ -197,7 +197,7 @@ long IsPartyMemberByPid(long pid) {
 	return 0;
 }
 
-// Returns True if the NPC belongs to the player's potential (set in party.txt) party members (analog broken isPotentialPartyMember_)
+// Returns True if the NPC belongs to the player's potential (set in party.txt) party members (analog of broken isPotentialPartyMember_)
 bool IsPartyMember(fo::GameObject* critter) {
 	if (critter->id < PLAYER_ID) return false;
 	return (IsPartyMemberByPid(critter->protoId) > 0);
@@ -220,7 +220,7 @@ fo::GameObject* __fastcall LineOfSight(fo::GameObject* obj) {
 
 // Returns window by x/y coordinate (hidden windows are ignored)
 fo::Window* __fastcall GetTopWindowAtPos(long xPos, long yPos, bool bypassTrans) {
-	long num = *(DWORD*)FO_VAR_num_windows - 1;
+	long num = fo::var::num_windows - 1;
 	if (num) {
 		int cflags = fo::WinFlags::Hidden;
 		if (bypassTrans) cflags |= fo::WinFlags::Transparent;
@@ -269,11 +269,10 @@ void GetObjectsTileRadius(std::vector<fo::GameObject*> &objs, long sourceTile, l
 fo::GameObject* CheckAroundBlockingTiles(fo::GameObject* source, long dstTile) {
 	long rotation = 5;
 	do {
-		long _tile = fo::func::tile_num_in_direction(dstTile, rotation, 1);
-		fo::GameObject* obj = fo::func::obj_blocking_at(source, _tile, source->elevation);
+		long chkTile = fo::func::tile_num_in_direction(dstTile, rotation, 1);
+		fo::GameObject* obj = fo::func::obj_blocking_at(source, chkTile, source->elevation);
 		if (obj) return obj;
-	}
-	while (--rotation >= 0);
+	} while (--rotation >= 0);
 
 	return nullptr;
 }
@@ -285,20 +284,20 @@ fo::GameObject* __fastcall MultiHexMoveIsBlocking(fo::GameObject* source, long d
 	// Checks the blocking arc of adjacent tiles
 	long dir = fo::func::tile_dir(source->tile, dstTile);
 
-	long _tile = fo::func::tile_num_in_direction(dstTile, dir, 1);
-	fo::GameObject* obj = fo::func::obj_blocking_at(source, _tile, source->elevation);
+	long chkTile = fo::func::tile_num_in_direction(dstTile, dir, 1);
+	fo::GameObject* obj = fo::func::obj_blocking_at(source, chkTile, source->elevation);
 	if (obj) return obj;
 
 	// +1 direction
 	long rotation = (dir + 1) % 6;
-	_tile = fo::func::tile_num_in_direction(dstTile, rotation, 1);
-	obj = fo::func::obj_blocking_at(source, _tile, source->elevation);
+	chkTile = fo::func::tile_num_in_direction(dstTile, rotation, 1);
+	obj = fo::func::obj_blocking_at(source, chkTile, source->elevation);
 	if (obj) return obj;
 
 	// -1 direction
 	rotation = (dir + 5) % 6;
-	_tile = fo::func::tile_num_in_direction(dstTile, rotation, 1);
-	obj = fo::func::obj_blocking_at(source, _tile, source->elevation);
+	chkTile = fo::func::tile_num_in_direction(dstTile, rotation, 1);
+	obj = fo::func::obj_blocking_at(source, chkTile, source->elevation);
 	if (obj) return obj;
 
 	return nullptr;
@@ -378,7 +377,7 @@ void DrawToSurface(long width, long height, long fromX, long fromY, long fromWid
 	}
 }
 
-// Fills the specified non-script interface window to 0 index color (black color)
+// Fills the specified non-scripted interface window with index color 0 (black color)
 void ClearWindow(long winID, bool refresh) {
 	fo::Window* win = fo::func::GNW_find(winID);
 	for (long i = 0; i < win->height; i++) {
@@ -504,13 +503,13 @@ void RedrawObject(GameObject* obj) {
 // Redraws all interface windows
 void RefreshGNW(size_t from) {
 	*(DWORD*)FO_VAR_doing_refresh_all = 1;
-	for (size_t i = from; i < *(DWORD*)FO_VAR_num_windows; i++) {
+	for (size_t i = from; i < fo::var::num_windows; i++) {
 		fo::func::GNW_win_refresh(fo::var::window[i], &fo::var::scr_size, 0);
 	}
 	*(DWORD*)FO_VAR_doing_refresh_all = 0;
 }
 
-/////////////////////////////////////////////////////////////////UNLISTED FRM FUNCTIONS////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////UNLISTED FRM FUNCTIONS//////////////////////////////////////////////////////////////
 
 static bool LoadFrmHeader(UnlistedFrm *frmHeader, fo::DbFile* frmStream) {
 	if (fo::func::db_freadInt(frmStream, &frmHeader->version) == -1)
@@ -534,7 +533,6 @@ static bool LoadFrmHeader(UnlistedFrm *frmHeader, fo::DbFile* frmStream) {
 }
 
 static bool LoadFrmFrame(UnlistedFrm::Frame *frame, fo::DbFile* frmStream) {
-
 	//FRMframe *frameHeader = (FRMframe*)frameMEM;
 	//BYTE* frameBuff = frame + sizeof(FRMframe);
 
@@ -556,7 +554,6 @@ static bool LoadFrmFrame(UnlistedFrm::Frame *frame, fo::DbFile* frmStream) {
 }
 
 UnlistedFrm *LoadUnlistedFrm(char *frmName, unsigned int folderRef) {
-
 	if (folderRef > fo::OBJ_TYPE_SKILLDEX) return nullptr;
 
 	char *artfolder = fo::var::art[folderRef].path; // address of art type name

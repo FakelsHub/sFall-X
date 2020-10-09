@@ -217,7 +217,7 @@ void __declspec(naked) gdDestroyHeadWindow_hack() {
 	__asm {
 		call Graphics::SetDefaultTechnique;
 		mov  showHighlights, 0;
-		//mov  dialogWin, 0; // uncomment if the dialog window position is supposed to changes
+		//mov  dialogWin, 0; // uncomment if the dialog window position is supposed to change
 		pop  ebp;
 		pop  edi;
 		pop  edx;

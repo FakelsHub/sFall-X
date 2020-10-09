@@ -64,7 +64,7 @@ WRAP_WATCOM_FFUNC3(long, scr_set_local_var, long, sid, long, varId, long, value)
 WRAP_WATCOM_FFUNC3(long, tile_num_in_direction, long, tile, long, rotation,long, distance)
 WRAP_WATCOM_FFUNC8(void, trans_cscale, void*, fromBuff, long, width, long, height, long, fromPitch, void*, toBuff, long, toWidth, long, toHeight, long, toPitch)
 WRAP_WATCOM_FFUNC3(void, win_clip, Window*, window, RectList**, rects, void*, buffer)
-WRAP_WATCOM_FFUNC9(long, windowWrapLineWithSpacing, long, winID, const char*, text, long, widht, long, height, long, x, long, y, long, color, long, alignment, long, lineSpacing)
+WRAP_WATCOM_FFUNC9(long, windowWrapLineWithSpacing, long, winID, const char*, text, long, width, long, height, long, x, long, y, long, color, long, alignment, long, lineSpacing)
 
 WRAP_WATCOM_FFUNC3(const char*, interpretGetString, Program*, scriptPtr, DWORD, dataType, DWORD, strId)
 
@@ -114,7 +114,7 @@ WRAP_WATCOM_FUNC2(long, db_get_file_list, const char*, searchMask, char***, file
 WRAP_WATCOM_FUNC2(long, db_init, const char*, path_dat, const char*, path_patches)
 WRAP_WATCOM_FUNC1(void*, dbase_open, const char*, fileName)
 WRAP_WATCOM_FUNC1(void, dbase_close, void*, dbPtr)
-//////////////////
+////////////////////////
 WRAP_WATCOM_FUNC1(void, display_print, const char*, msg) // Displays message in main UI console window
 WRAP_WATCOM_FUNC0(void, display_stats)
 WRAP_WATCOM_FUNC2(long, combat_turn, GameObject*, critter, long, isDudeTurn) // Perform combat turn for a given critter
@@ -147,7 +147,7 @@ WRAP_WATCOM_FUNC1(long, interpretPopLong, Program*, scriptPtr)  // Pops value fr
 WRAP_WATCOM_FUNC2(long, intface_get_attack, DWORD*, hitMode, DWORD*, isSecondary)
 WRAP_WATCOM_FUNC0(long, intface_is_item_right_hand)
 WRAP_WATCOM_FUNC0(long, intface_is_hidden)
-WRAP_WATCOM_FUNC0(void, intface_redraw) // redraws the main game interface windows (useful after changing some data like active hand, etc.)
+WRAP_WATCOM_FUNC0(void, intface_redraw) // Redraws the main game interface windows (useful after changing some data like active hand, etc.)
 WRAP_WATCOM_FUNC0(void, intface_toggle_item_state)
 WRAP_WATCOM_FUNC1(void, intface_update_ac, long, animate)
 WRAP_WATCOM_FUNC2(void, intface_update_move_points, long, ap, long, freeAP)
@@ -156,7 +156,7 @@ WRAP_WATCOM_FUNC1(GameObject*, inven_left_hand, GameObject*, critter) // Item in
 WRAP_WATCOM_FUNC1(GameObject*, inven_right_hand, GameObject*, critter) // Item in critter's right hand slot
 WRAP_WATCOM_FUNC2(GameObject*, inven_pid_is_carried_ptr, GameObject*, invenObj, long, pid)
 WRAP_WATCOM_FUNC2(long, inven_unwield, GameObject*, critter, long, slot)
-WRAP_WATCOM_FUNC1(GameObject*, inven_worn, GameObject*, critter) // critter worn item (armor)
+WRAP_WATCOM_FUNC1(GameObject*, inven_worn, GameObject*, critter) // Critter worn item (armor)
 WRAP_WATCOM_FUNC1(long, isPartyMember, GameObject*, obj)
 WRAP_WATCOM_FUNC0(long, is_pc_sneak_working)
 WRAP_WATCOM_FUNC2(long, is_within_perception, GameObject*, source, GameObject*, target)

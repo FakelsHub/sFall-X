@@ -247,8 +247,8 @@ static void GetExtraPatches() {
 static void MultiPatchesPatch() {
 	//if (GetConfigInt("Misc", "MultiPatches", 0)) {
 		dlog("Applying load multiple patches patch.", DL_INIT);
-		SafeWrite8(0x444354, 0x90); // Change step from 2 to 1
-		SafeWrite8(0x44435C, 0xC4); // Disable check
+		SafeWrite8(0x444354, CodeType::Nop); // Change step from 2 to 1
+		SafeWrite8(0x44435C, 0xC4);          // Disable check
 		dlogr(" Done", DL_INIT);
 	//}
 }
@@ -343,7 +343,7 @@ end:
 }
 
 static void __declspec(naked) proto_load_pid_hook() {
-using namespace fo;
+	using namespace fo;
 	__asm { // eax - party pid
 		push ecx;
 		mov  ecx, eax;
@@ -372,7 +372,7 @@ static void ResetReadOnlyAttr() {
 }
 
 static void __declspec(naked) SlotMap2Game_hack_attr() {
-using namespace fo;
+	using namespace fo;
 	__asm {
 		cmp  eax, -1;
 		je   end;
@@ -392,14 +392,14 @@ static void RemoveSavFiles() {
 	fo::func::MapDirErase(_F_PROTO_CRITTERS, _F_SAV);
 }
 
-static uint32_t aliasFID = -1;
+static DWORD aliasFID = -1;
 
 static void __declspec(naked) art_get_name_hook() {
 	__asm {
 		call fo::funcoffs::art_alias_fid_;
 		cmp  eax, -1;
 		jne  artAlias;
-		retn; // if aliasFID here is not equal -1, then the algorithm is not work correctly
+		retn; // if aliasFID here is not equal to -1, then the algorithm is not working correctly
 artAlias:
 		cmp  eax, edx;
 		je   skip;
@@ -471,10 +471,10 @@ void LoadOrder::init() {
 	}
 
 	// Redefined behavior for replacing art aliases for critters
-	// first checked the existence of the art file of the current critter, and then there is a substitution to an art alias
+	// first check the existence of the art file of the current critter and then replace the art alias if file not found
 	HookCall(0x419440, art_get_name_hook);
 	SafeWrite16(0x419521, 0x003B); // jmp 0x419560
-	if (GetConfigInt("Misc", "EnableHeroAppearanceMod", 0) <= 0) { // Hero Appearance Mod uses an additional code
+	if (GetConfigInt("Misc", "EnableHeroAppearanceMod", 0) <= 0) { // Hero Appearance mod uses an additional code
 		MakeCall(0x419560, art_get_name_hack);
 	}
 

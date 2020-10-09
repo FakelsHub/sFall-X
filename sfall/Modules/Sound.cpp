@@ -161,7 +161,7 @@ static uint32_t GetSpeechDurationTime() {
 	return (outVal != -1) ? static_cast<uint32_t>(outVal / 10000000) + 1 : 0;
 }
 
-static uint32_t GetSpeechPlayningPosition() {
+static uint32_t GetSpeechPlayingPosition() {
 	if (!speechSound) return 0;
 	__int64 pos;
 	speechSound->pSeek->GetCurrentPosition(&pos);
@@ -251,7 +251,7 @@ static bool IsMute(SoundMode mode) {
 	music_play:  mode 2 - loop sound playback with the background game music turned off
 	speech_play: mode 3 -
 */
-static sDSSound* PlayingSound(const wchar_t* pathFile, SoundMode mode, long adjustVolume = 0, bool IsPaused = false) {
+static sDSSound* PlayingSound(const wchar_t* pathFile, SoundMode mode, long adjustVolume = 0, bool isPaused = false) {
 	if (!soundwindow) CreateSndWnd();
 
 	if (IsMute(mode)) return nullptr;
@@ -306,7 +306,7 @@ static sDSSound* PlayingSound(const wchar_t* pathFile, SoundMode mode, long adju
 	} else {
 		SetSoundVolume(sound, SoundType::sfx_single, ((mode == SoundMode::speech_play) ? fo::var::speech_volume : fo::var::sndfx_volume) - adjustVolume);
 		if (mode == SoundMode::speech_play) speechSound = sound;
-		if (IsPaused) {
+		if (isPaused) {
 			sound->pControl->Pause(); // for delayed playback
 		}
 		playingSounds.push_back(sound);
@@ -319,7 +319,7 @@ enum PlayType : int8_t {
 	music  = 1,
 	lips   = 2,
 	speech = 3,
-	slides = 4 // speech for end game slides
+	slides = 4 // speech for endgame slideshow
 };
 
 static const wchar_t *SoundExtensions[] = { L"wav", L"mp3", L"wma" };
@@ -527,13 +527,13 @@ static void __declspec(naked) endgame_load_voiceover_hack() {
 		mov  [esp + 0x118 - 0xC + 4], esi;
 		retn;
 skip:
-		call  GetSpeechDurationTime;
-		push  eax;
-		fild  dword ptr [esp];
-		fild  dword ptr ds:[FO_VAR_endgame_subtitle_characters];
-		add   esp, 4;
+		call GetSpeechDurationTime;
+		push eax;
+		fild dword ptr [esp];
+		fild dword ptr ds:[FO_VAR_endgame_subtitle_characters];
+		add  esp, 4;
 		fdivp st(1), st;
-		fstp  qword ptr [esp + 0x118 - 0x8 + 4];
+		fstp qword ptr [esp + 0x118 - 0x8 + 4];
 		retn;
 	}
 }
@@ -606,7 +606,7 @@ static void __declspec(naked) lips_bkg_proc_hook() {
 		jnz  skip;
 		jmp  fo::funcoffs::soundGetPosition_;
 skip:
-		jmp  GetSpeechPlayningPosition;
+		jmp  GetSpeechPlayingPosition;
 	}
 }
 
@@ -829,7 +829,7 @@ static void __declspec(naked) soundStartInterpret_hook() {
 		mov  eax, ebp;
 		call fo::funcoffs::soundSetFileIO_;
 		pop  ecx;
-		mov  bx, [esp + 0x18 - 0x18 + 4+2]; // get adjust volume level: 0 - max, 32767 - mute
+		mov  bx, [esp + 0x18 - 0x18 + 4+2]; // get volume adjustment: 0 - max volume, 32767 - mute
 		and  bx, ~0x8000;
 rawFile:
 		xor  edx, edx;
@@ -841,7 +841,7 @@ rawFile:
 	}
 }
 
-constexpr int SampleRate = 44100; // 44.1kHz
+//constexpr int SampleRate = 44100; // 44.1kHz
 
 void Sound::init() {
 
@@ -872,7 +872,7 @@ void Sound::init() {
 		MakeCall(0x440286, endgame_load_voiceover_hack, 2);
 		MakeCall(0x43FCED, endgame_pan_desert_hack, 1);
 		HookCall(0x43FCF9, endgame_pan_desert_hook);
-		// play slides speech
+		// play slideshow speech
 		MakeCall(0x43FEF3, endgame_pan_desert_hack_play, 1);
 		MakeCall(0x43FF37, endgame_pan_desert_hack_play, 1);
 		MakeCall(0x4400B2, endgame_display_image_hack, 1);
@@ -897,11 +897,11 @@ void Sound::init() {
 
 		//Yes, I did leave this in on purpose. Will be of use to anyone trying to add in the sound effects
 		if (isDebug && iniGetInt("Debugging", "Test_ForceFloats", 0, ::sfall::ddrawIni)) {
-			SafeWrite8(0x42B6F5, 0xEB); // bypass chance
+			SafeWrite8(0x42B6F5, CodeType::JumpShort); // bypass chance
 		}
 	}
 
-	// Support for default playback of ACM audio files for the soundplay script function and added adjust volume the playback
+	// Support for ACM audio file playback and volume control for the soundplay script function
 	HookCall(0x4661B3, soundStartInterpret_hook);
 }
 

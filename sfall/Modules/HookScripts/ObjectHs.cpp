@@ -26,7 +26,7 @@ static void __declspec(naked) UseObjOnHook() {
 		cmp cRet, 1;
 		jl  defaultHandler;
 		cmp rets[0], -1;
-		jz  defaultHandler;
+		je  defaultHandler;
 		mov eax, rets[0];
 		HookEnd;
 		retn;
@@ -54,7 +54,7 @@ static void __declspec(naked) Drug_UseObjOnHook() {
 		cmp cRet, 1;
 		jl  defaultHandler;
 		cmp rets[0], -1;
-		jz  defaultHandler;
+		je  defaultHandler;
 		mov eax, rets[0];
 		HookEnd;
 		retn;

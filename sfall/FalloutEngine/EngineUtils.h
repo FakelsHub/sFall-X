@@ -15,6 +15,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
+
 #pragma once
 
 #include <string>
@@ -79,15 +80,15 @@ bool HeroIsFemale();
 
 long CheckAddictByPid(fo::GameObject* critter, long pid);
 
-// Checks whether dude is under the influence of negative effects of radiation
-int32_t __fastcall IsRadInfluence();
+// Checks whether the player is under the influence of negative effects of radiation
+long __fastcall IsRadInfluence();
 
 void ToggleNpcFlag(fo::GameObject* npc, long flag, bool set);
 
 // Returns the position of party member in the existing table (begins from 1)
 long IsPartyMemberByPid(long pid);
 
-// Returns True if the NPC belongs to the player's potential (set in party.txt) party members (analog broken isPotentialPartyMember_)
+// Returns True if the NPC belongs to the player's potential (set in party.txt) party members (analog of broken isPotentialPartyMember_)
 bool IsPartyMember(fo::GameObject* critter);
 
 // Returns the number of local variables of the object script
@@ -95,6 +96,7 @@ long GetScriptLocalVars(long sid);
 
 fo::GameObject* __fastcall LineOfSight(fo::GameObject* obj);
 
+// Returns window by x/y coordinate (hidden windows are ignored)
 fo::Window* __fastcall GetTopWindowAtPos(long xPos, long yPos, bool bypassTrans = false);
 
 // Returns an array of objects within the specified radius from the source tile
@@ -115,7 +117,7 @@ void DrawToSurface(long width, long height, long fromX, long fromY, long fromWid
 
 void DrawToSurface(long width, long height, long fromX, long fromY, long fromWidth, BYTE* fromSurf, long toX, long toY, long toWidth, long toHeight, BYTE* toSurf);
 
-// Fills the specified non-script interface window to black color
+// Fills the specified non-scripted interface window with index color 0 (black color)
 void ClearWindow(long winID, bool refresh = true);
 
 // Print text to surface

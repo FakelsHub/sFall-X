@@ -357,11 +357,11 @@ static long __stdcall AddHeroCritNames() { // art_init_
 	char *CritList = critterArt.names;            // critter list offset
 	char *HeroList = CritList + critterArraySize; // set start of hero critter list after regular critter list
 
-	memset(HeroList, 0, critterArraySize);
+	std::memset(HeroList, 0, critterArraySize);
 
 	for (DWORD i = 0; i < critterListSize; i++) { // copy critter name list to hero name list
 		*HeroList = '_';                          // insert a '_' char at the front of new hero critt names. fallout wont load the same name twice
-		memcpy(HeroList + 1, CritList, 11);
+		std::memcpy(HeroList + 1, CritList, 11);
 		HeroList += 13;
 		CritList += 13;
 	}
@@ -618,8 +618,8 @@ static void DrawCharNote(bool style, int winRef, DWORD xPosWin, DWORD yPosWin, B
 		textHeight = fo::GetTextHeight();
 		fo::PrintText(TitleMsg, colour, 0, 0, 265, 280, PadSurface);
 		// draw line
-		memset(PadSurface + 280 * textHeight, colour, 265);
-		memset(PadSurface + 280 * (textHeight + 1), colour, 265);
+		std::memset(PadSurface + 280 * textHeight, colour, 265);
+		std::memset(PadSurface + 280 * (textHeight + 1), colour, 265);
 	}
 
 	DWORD lineNum = 0;
@@ -1435,7 +1435,7 @@ static void EnableHeroAppearanceMod() {
 	// Double size of critter art index creating a new area for hero art (art_read_lst_)
 	HookCall(0x4196B0, DoubleArt);
 
-	// Copying inheritance values of critters art into the extended part of the _anon_alias array
+	// Copy inherited values of critter art into the extended part of the _anon_alias array (art_init_)
 	HookCall(0x418CA2, DoubleArtAlias);
 
 	// Add new hero critter names at end of critter list (art_init_)
@@ -1512,8 +1512,7 @@ static void EnableHeroAppearanceMod() {
 	HookCall(0x42613A, FixPcCriticalHitMsg);
 
 	// Force Criticals For Testing
-	//SafeWrite32(0x423A8F, 0x90909090);
-	//SafeWrite32(0x423A93, 0x90909090);
+	//SafeMemSet(0x423A8F, CodeType::Nop, 8);
 }
 
 static void HeroAppearanceModExit() {

@@ -231,7 +231,7 @@ static void ResetDevice(bool createNew) {
 	if (createNew) {
 		dlog("Creating D3D9 Device...", DL_MAIN);
 		if (FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_PUREDEVICE | D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &params, &d3d9Device))) {
-			MessageBoxA(window, "Failed to create hardware vertex processing.\nWill be used by software vertex processing.",
+			MessageBoxA(window, "Failed to create hardware vertex processing device.\nUsing software vertex processing instead.",
 			                    "D3D9 Device", MB_TASKMODAL | MB_ICONWARNING);
 			software = true;
 			d3d9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &params, &d3d9Device);
@@ -260,7 +260,7 @@ static void ResetDevice(bool createNew) {
 			Graphics::SetDefaultTechnique();
 		}
 	} else {
-		dlog("Reseting D3D9 Device...", DL_MAIN);
+		dlog("Resetting D3D9 Device...", DL_MAIN);
 		d3d9Device->Reset(&params);
 		if (gpuBltEffect) gpuBltEffect->OnResetDevice();
 		ScriptShaders::OnResetDevice();
@@ -270,7 +270,7 @@ static void ResetDevice(bool createNew) {
 	if (d3d9Device->CreateTexture(ResWidth, ResHeight, 1, D3DUSAGE_DYNAMIC, Graphics::GPUBlt ? D3DFMT_A8 : D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &mainTex, 0) != D3D_OK) {
 		d3d9Device->CreateTexture(ResWidth, ResHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &mainTex, 0);
 		Graphics::GPUBlt = 0;
-		MessageBoxA(window, "Video card unsupported the D3DFMT_A8 texture format.\nNow CPU is used to convert the palette.",
+		MessageBoxA(window, "GPU does not support the D3DFMT_A8 texture format.\nNow CPU is used to convert the palette.",
 		                    "Texture format error", MB_TASKMODAL | MB_ICONWARNING);
 	}
 
@@ -485,7 +485,7 @@ void Graphics::SetMovieTexture(bool state) {
 
 	long offset;
 	if (aviAspect > winAspect) {
-		// scales height to aspect ratio and placement the movie surface to the centre of the window by the Y-axis
+		// scales height proportionally and places the movie surface at the center of the window by the Y-axis
 		aviAspect = (float)desc.Width / (float)gWidth;
 		desc.Height = (int)(desc.Height / aviAspect);
 
@@ -500,9 +500,9 @@ void Graphics::SetMovieTexture(bool state) {
 	}
 	else if (aviAspect < winAspect) {
 		if (Graphics::AviMovieWidthFit || (hrpIsEnabled && *(DWORD*)HRPAddress(0x1006EC10) == 2)) {
-			//desc.Width = gWidth; // scales the movie surface to the screen width size
+			//desc.Width = gWidth; // scales the movie surface to screen width
 		} else {
-			// scales width to aspect ratio and placement the movie surface to the centre of the window by the X-axis
+			// scales width proportionally and places the movie surface at the center of the window by the X-axis
 			aviAspect = (float)desc.Height / (float)gHeight;
 			desc.Width = (int)(desc.Width / aviAspect);
 
@@ -514,7 +514,7 @@ void Graphics::SetMovieTexture(bool state) {
 			shaderVertices[1].x += offset;
 		}
 	}
-	if (subtitleShow) { // decrease size the surface to display the subtitle text of the lower layer of surfaces
+	if (subtitleShow) { // decrease the surface size to display the subtitle text on the lower layer of surfaces
 		int offset = (int)(15.0f * ((float)gHeight / (float)ResHeight));
 		shaderVertices[1].y -= offset;
 		shaderVertices[3].y -= offset;
@@ -543,7 +543,7 @@ void Graphics::ShowMovieFrame(IDirect3DTexture9* tex) {
 		}
 		d3d9Device->SetStreamSource(0, vBuffer2, 0, sizeof(VertexFormat));
 
-		// for show subtitles
+		// for showing subtitles
 		if (Graphics::GPUBlt) {
 			UINT passes;
 			gpuBltEffect->Begin(&passes, 0);
@@ -683,7 +683,7 @@ public:
 
 			d3d9Device->BeginScene();
 			UINT passes;
-			if (textureFilter && Graphics::GPUBlt) { // fixes color palette distortion of movie image when texture filtering and enabled GPUBlt
+			if (textureFilter && Graphics::GPUBlt) { // fixes color palette distortion of movie images when texture filtering and GPUBlt are enabled
 				d3d9Device->SetStreamSource(0, vBuffer, 0, sizeof(VertexFormat));
 				d3d9Device->SetRenderTarget(0, sSurf1);
 
@@ -738,14 +738,14 @@ public:
 		0x48699D movieShowFrame_      [c=1]
 		0x4CBBFA GNW95_zero_vid_mem_  [c=1] (clear surface)
 		0x4F5E91/0x4F5EBB sub_4F5E60  [c=0] (from MVE_rmStepMovie_)
-		0x486861 movie_MVE_ShowFrame_ [c=1] (capture, never call)
+		0x486861 movie_MVE_ShowFrame_ [c=1] (capture, never called)
 	*/
 	HRESULT __stdcall Lock(LPRECT a, LPDDSURFACEDESC b, DWORD c, HANDLE d) {
 		if (DeviceLost) return DDERR_SURFACELOST;
 		if (isPrimary) {
 			if (Graphics::GPUBlt) {
 				D3DLOCKED_RECT buf;
-				if (mainTex->LockRect(0, &buf, a, 0)) goto surface; // fail lock, use old method
+				if (mainTex->LockRect(0, &buf, a, 0)) goto surface; // fail to lock, use old method
 
 				mainTexLock = true;
 
@@ -915,8 +915,7 @@ public:
 	}
 };
 
-class FakeDirectDraw : IDirectDraw
-{
+class FakeDirectDraw : IDirectDraw {
 private:
 	ULONG Refs;
 public:
@@ -1142,7 +1141,7 @@ static __declspec(naked) void palette_fade_to_hook() {
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 static void __forceinline UpdateDDSurface(BYTE* surface, int width, int height, int widthFrom, RECT* rect) {
 	DDSURFACEDESC desc;
@@ -1182,7 +1181,7 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 				UpdateDDSurface(GetBuffer(), w, h, w, updateRect); // update the entire rectangle area
 			}
 		} else {
-			fo::func::mouse_show(); // for update background cursor area
+			fo::func::mouse_show(); // for updating background cursor area
 			RECT mouseRect;
 			__asm {
 				lea  eax, mouseRect;
@@ -1193,11 +1192,11 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 				mov  rects, eax;
 			}
 			while (rects) { // updates everything except the cursor area
-				//__asm {
-				//	mov  eax, win;
-				//	mov  edx, rects;
-				//	call fo::funcoffs::GNW_button_refresh_;
-				//}
+				/*__asm {
+					mov  eax, win;
+					mov  edx, rects;
+					call fo::funcoffs::GNW_button_refresh_;
+				}*/
 				if (!DeviceLost) {
 					int wRect = (rects->wRect.right - rects->wRect.left) + 1;
 					int hRect = (rects->wRect.bottom - rects->wRect.top) + 1;
@@ -1223,8 +1222,8 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 	RECT &rect = rects->wRect;
 
 	/*
-		if the border of the updateRect rectangle is located outside the window, then assign to rects->rect the border of the window rectangle
-		otherwise, rects->rect contains the borders from the update rectangle (updateRect)
+		If the border of the updateRect rectangle is located outside the window, then assign to rects->rect the border of the window rectangle
+		Otherwise, rects->rect contains the borders from the update rectangle (updateRect)
 	*/
 	if (win->wRect.left >= rect.left) rect.left = win->wRect.left;
 	if (win->wRect.top >= rect.top) rect.top = win->wRect.top;
@@ -1258,7 +1257,7 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 			surface = &win->surface[crect.left - win->rect.x] + ((crect.top - win->rect.y) * win->width);
 		} else {
 			surface = new BYTE[height * width](); // black background
-			widthFrom = width; // replace to rectangle
+			widthFrom = width; // replace with rectangle
 		}
 
 		auto drawFunc = (win->flags & fo::WinFlags::Transparent && win->wID) ? fo::func::trans_buf_to_buf : fo::func::buf_to_buf;
@@ -1337,20 +1336,20 @@ void Graphics::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Replacing the srcCopy_ function with an SSE implementation
+	// Replace the srcCopy_ function with a pure SSE implementation
 	MakeJump(0x4D36D4, fo::func::buf_to_buf); // buf_to_buf_
-	// Replacing the transSrcCopy_ function
+	// Replace the transSrcCopy_ function
 	MakeJump(0x4D3704, fo::func::trans_buf_to_buf); // trans_buf_to_buf_
 
-	// Enables support for transparent interface windows
+	// Enable support for transparent interface windows
 	SafeWrite16(0x4D5D46, 0x9090); // win_init_ (create screen_buffer)
-	SafeWrite8(0x42F869, fo::WinFlags::MoveOnTop | fo::WinFlags::OwnerFlag); // addWindow_ remove Transparent flag
+	SafeWrite8(0x42F869, fo::WinFlags::MoveOnTop | fo::WinFlags::OwnerFlag); // addWindow_ (remove Transparent flag)
 	if (Graphics::mode) {
 		// custom implementation of the GNW_win_refresh function
 		MakeJump(0x4D6FD9, GNW_win_refresh_hack, 1);
 		SafeWrite16(0x4D75E6, 0x9090); // win_clip_ (remove _buffering checking)
 	} else { // for default or HRP graphics mode
-		SafeWrite8(0x4D5DAB, 0x1D); // ecx > ebx (_buffering enable)
+		SafeWrite8(0x4D5DAB, 0x1D); // ecx > ebx (enable _buffering)
 		BlockCall(0x431076); // dialogMessage_
 	}
 }

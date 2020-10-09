@@ -31,8 +31,8 @@ namespace sfall
 
 void dlog(const std::string&, int type);
 void dlogr(const std::string&, int type);
-void dlog_f(const char *format, int type, ...);
-void dlogh(const char *format, long, long, long);
+void dlog_f(const char* fmt, int type, ...);
+void dlogh(const char* fmt, long, long, long);
 
 #ifndef NDEBUG
 // Prints debug message to sfall log file for develop build

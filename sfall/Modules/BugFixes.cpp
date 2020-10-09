@@ -926,7 +926,7 @@ static void __declspec(naked) make_path_func_hook() {
 		cmp  ebx, [esp + 0x5C - 0x1C + 4]; // target tile
 		je   fix;
 		jmp  fo::funcoffs::anim_can_use_door_;
-fix:	// replacing the target tile (where the multihex object is located) with the current tile
+fix:	// replace the target tile (where the multihex object is located) with the current tile
 		mov  ebx, [esp + 0x5C - 0x14 + 4]; // current tile
 		mov  [esp + 0x5C - 0x1C + 4], ebx; // target tile
 		retn;
@@ -946,17 +946,17 @@ fix:	// replacing the target tile (where the multihex object is located) with th
 //	}
 //}
 
-static void __declspec(naked) MultiHexReTargetTileFix() {
+static void __declspec(naked) MultiHexRetargetTileFix() {
 	__asm {
-		push edx;                           // retargeted tile
+		push edx;                     // retargeted tile
 		call fo::funcoffs::obj_blocking_at_;
 		pop  edx;
 		test eax, eax;
 		jz   isFreeTile;
 		retn;
 isFreeTile:
-		test [ebp + flags + 1], 0x08;      // source is multihex?
-		jnz  isMultiHex
+		test [ebp + flags + 1], 0x08; // is source multihex?
+		jnz  isMultiHex;
 		retn;
 isMultiHex:
 		push ecx;
@@ -1240,7 +1240,7 @@ static void __declspec(naked) barter_attempt_transaction_hack() {
 		je   found;
 		cmp  edx, PID_ACTIVE_STEALTH_BOY;
 		je   found;
-		mov  eax, 0x474D34;                       // can't sold
+		mov  eax, 0x474D34;                       // Can't sell
 		jmp  eax;
 found:
 		push 0x474D17;                            // Is there any other activated items among the ones being sold?
@@ -1250,7 +1250,7 @@ found:
 
 static void __declspec(naked) item_m_turn_off_hook() {
 	__asm {
-		and  byte ptr [eax + 0x25], ~0x20;        // unset flag of used items
+		and  byte ptr [eax + 0x25], ~0x20;        // Unset flag of used items
 		jmp  fo::funcoffs::queue_remove_this_;
 	}
 }
@@ -2111,7 +2111,7 @@ static void __stdcall combat_attack_gcsd() {
 			flags &= ~fo::DamageFlag::DAM_PRESERVE_FLAGS;
 			flags |= fo::var::main_ctd.targetFlags;
 		} else {
-			flags |= fo::var::main_ctd.targetFlags & fo::DamageFlag::DAM_DEAD; // don't unset DAM_DEAD flag (fix animation death)
+			flags |= fo::var::main_ctd.targetFlags & fo::DamageFlag::DAM_DEAD; // don't unset DAM_DEAD flag (fix death animation)
 		}
 		fo::var::main_ctd.targetFlags = flags;
 	}
@@ -2122,7 +2122,7 @@ static void __stdcall combat_attack_gcsd() {
 		if (fo::var::main_ctd.targetDamage < fo::var::gcsd->minDamage) {
 			fo::var::main_ctd.targetDamage = fo::var::gcsd->minDamage;
 		}
-		if (damage < fo::var::main_ctd.targetDamage) CheckDeath(); // checks the health points and set the DAM_DEAD flag
+		if (damage < fo::var::main_ctd.targetDamage) CheckDeath(); // check the hit points and set the DAM_DEAD flag
 
 		if (fo::var::main_ctd.targetDamage > fo::var::gcsd->maxDamage) {
 			fo::var::main_ctd.targetDamage = fo::var::gcsd->maxDamage;
@@ -2296,7 +2296,7 @@ static void __declspec(naked) exec_script_proc_hack() {
 		mov  eax, [esi + 0x58];
 		test eax, eax;
 		ja   end;
-		inc  eax; // start handler
+		inc  eax; // start proc
 end:
 		retn;
 	}
@@ -2307,7 +2307,7 @@ static void __declspec(naked) exec_script_proc_hack1() {
 		mov  esi, [edi + 0x58];
 		test esi, esi;
 		ja   end;
-		inc  esi; // start handler
+		inc  esi; // start proc
 end:
 		retn;
 	}
@@ -2333,7 +2333,7 @@ static void __declspec(naked) obj_pickup_hook() {
 	__asm {
 		cmp  edi, dword ptr ds:[FO_VAR_obj_dude];
 		je   dude;
-		test ds:[FO_VAR_combat_state], 1; // check combat flag
+		test ds:[FO_VAR_combat_state], 1; // in combat?
 		jz   dude;
 		jmp  fo::funcoffs::item_add_force_;
 dude:
@@ -2478,13 +2478,13 @@ mediumLoc:
 		sub  eax, 10;
 		lea  edx, [edx - 10];
 		// check negative values
-		push  ecx;
-		xor   ecx, ecx;
-		test  eax, eax;
+		push ecx;
+		xor  ecx, ecx;
+		test eax, eax;
 		cmovl eax, ecx;
-		test  edx, edx;
+		test edx, edx;
 		cmovl edx, ecx;
-		pop   ecx;
+		pop  ecx;
 largeLoc:
 		lea  ebx, [esp]; // ppSubTile out
 		push edx;
@@ -2536,9 +2536,9 @@ mediumLoc:
 		sub  eax, 10;
 		lea  edx, [edx - 10];
 		// check negative values
-		test  eax, eax;
+		test eax, eax;
 		cmovl eax, ebx;
-		test  edx, edx;
+		test edx, edx;
 		cmovl edx, ebx;
 largeLoc:
 		jmp  fo::funcoffs::wmPartyInitWalking_;
@@ -2929,7 +2929,7 @@ void BugFixes::init()
 		// // removes this line by making unconditional jump:
 		// if ( who == obj_dude )
 		//     dist -= 2 * perk_level_(obj_dude, PERK_sharpshooter);
-		SafeWrite8(0x424527, 0xEB);  // in detemine_to_hit_func_()
+		SafeWrite8(0x424527, CodeType::JumpShort); // in detemine_to_hit_func_()
 		dlogr(" Done", DL_INIT);
 	//}
 
@@ -2982,7 +2982,7 @@ void BugFixes::init()
 		// Fix for move_obj_inven_to_obj function
 		HookCall(0x45C49A, op_move_obj_inven_to_obj_hook);
 		SafeWrite16(0x45C496, 0x9090);
-		SafeWrite8(0x45C4A3, 0x75); // jmp > jnz
+		SafeWrite8(0x45C4A3, CodeType::JumpNZ); // jmp > jnz
 		// Fix for drop_obj function
 		HookCall(0x49B965, obj_drop_hook);
 		dlogr(" Done", DL_INIT);
@@ -3007,7 +3007,7 @@ void BugFixes::init()
 
 	// Fix for negative values in Skilldex window ("S")
 	dlog("Applying fix for negative values in Skilldex window.", DL_INIT);
-	SafeWrite8(0x4AC377, 0x7F);                // jg
+	SafeWrite8(0x4AC377, 0x7F); // jg
 	dlogr(" Done", DL_INIT);
 
 	// Fix for negative SPECIAL values in character creation
@@ -3029,8 +3029,7 @@ void BugFixes::init()
 	//}
 
 	// Corrects the max text width of the item weight in trading interface to be 64 (was 80), which matches the table width
-	SafeWrite8(0x475541, 64);
-	SafeWrite8(0x475789, 64);
+	SafeWriteBatch<BYTE>(64, {0x475541, 0x475789});
 
 	// Corrects the max text width of the player name in inventory to be 140 (was 80), which matches the width for item name
 	SafeWrite32(0x471E48, 140);
@@ -3093,7 +3092,7 @@ void BugFixes::init()
 
 	//if (GetConfigInt("Misc", "ShivPatch", 1)) {
 		dlog("Applying shiv patch.", DL_INIT);
-		SafeWrite8(0x477B2B, 0xEB);
+		SafeWrite8(0x477B2B, CodeType::JumpShort);
 		dlogr(" Done", DL_INIT);
 	//}
 
@@ -3102,8 +3101,7 @@ void BugFixes::init()
 		// http://teamx.ru/site_arc/smf/index.php-topic=398.0.htm
 		SafeWrite16(0x46B35B, 0x1C60); // Fix problems with the temporary stack
 		SafeWrite32(0x46B35D, 0x90909090);
-		SafeWrite8(0x46DBF1, 0xEB); // Disable warnings
-		SafeWrite8(0x46DDC4, 0xEB); // Disable warnings
+		SafeWriteBatch<BYTE>(CodeType::JumpShort, {0x46DBF1, 0x46DDC4}); // Disable warnings
 		SafeWrite8(0x4415CC, 0x00); // Prevent crashes when re-exporting
 		dlogr(" Done", DL_INIT);
 	//}
@@ -3120,15 +3118,15 @@ void BugFixes::init()
 
 	//if (GetConfigInt("Misc", "MultiHexPathingFix", 1)) {
 		dlog("Applying MultiHex Pathing Fix.", DL_INIT);
-		HookCall(0x416144, make_path_func_hook); // fixes the build of the path to the central hex of the multihex object
+		HookCall(0x416144, make_path_func_hook); // Fix for building the path to the central hex of a multihex object
 		//MakeCalls(MultiHexFix, {0x42901F, 0x429170}); // obsolete fix
 
-		// Fix for multihex critters moving too close and overlapping their targets in combat and move to retarget tile
+		// Fix for multihex critters moving too close and overlapping their targets in combat
 		MakeCall(0x42A14F, MultiHexCombatRunFix, 1);
 		MakeCall(0x42A178, MultiHexCombatMoveFix, 1);
-		// Checking neighboring tiles to prevent overlapping of the critter and other object tiles when move to the retargeting tile
-		SafeWrite16(0x42A3A6, 0xE889); // xor eax, eax > mov eax, ebp (fix retargeting tile for multihex critter)
-		HookCall(0x42A3A8, MultiHexReTargetTileFix); // cai_retargetTileFromFriendlyFire_
+		// Check neighboring tiles to prevent critters from overlapping other object tiles when moving to the retargeted tile
+		SafeWrite16(0x42A3A6, 0xE889); // xor eax, eax > mov eax, ebp (fix retargeting tile for multihex critters)
+		HookCall(0x42A3A8, MultiHexRetargetTileFix); // cai_retargetTileFromFriendlyFire_
 		dlogr(" Done", DL_INIT);
 	//}
 
@@ -3174,7 +3172,7 @@ void BugFixes::init()
 	// Fix for being unable to sell used geiger counters or stealth boys
 	if (GetConfigInt("Misc", "CanSellUsedGeiger", 1)) {
 		dlog("Applying fix for being unable to sell used geiger counters or stealth boys.", DL_INIT);
-		SafeWriteBatch<BYTE>(0xBA, { 0x478115, 0x478138 }); // item_queued_ the function will return the found item
+		SafeWriteBatch<BYTE>(0xBA, { 0x478115, 0x478138 }); // item_queued_ (will return the found item)
 		MakeJump(0x474D22, barter_attempt_transaction_hack, 1);
 		HookCall(0x4798B1, item_m_turn_off_hook);
 		dlogr(" Done", DL_INIT);
@@ -3313,11 +3311,11 @@ void BugFixes::init()
 	MakeCall(0x456B63, op_obj_can_see_obj_hack);
 	SafeWrite16(0x456B76, 0x23EB); // jmp loc_456B9B (skip unused engine code)
 
-	// Fix broken op_obj_can_hear_obj_ function
+	// Fix broken obj_can_hear_obj function
 	if (GetConfigInt("Misc", "ObjCanHearObjFix", 0)) {
 		dlog("Applying obj_can_hear_obj fix.", DL_INIT);
-		SafeWrite8(0x4583D8, 0x3B); // jz loc_458414
-		SafeWrite8(0x4583DE, 0x74); // jz loc_458414
+		SafeWrite8(0x4583D8, 0x3B);            // jz loc_458414
+		SafeWrite8(0x4583DE, CodeType::JumpZ); // jz loc_458414
 		MakeCall(0x4583E0, op_obj_can_hear_obj_hack, 1);
 		dlogr(" Done", DL_INIT);
 	}
@@ -3340,7 +3338,7 @@ void BugFixes::init()
 
 	// Fix for the encounter description being displayed in two lines instead of one
 	SafeWrite32(0x4C1011, 0x9090C789); // mov edi, eax;
-	SafeWrite8(0x4C1015, 0x90);
+	SafeWrite8(0x4C1015, CodeType::Nop);
 	HookCall(0x4C1042, wmSetupRandomEncounter_hook);
 
 	// Fix for being unable to sell/give items in the barter screen when the player/party member is overloaded
@@ -3369,7 +3367,7 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Fix for Heave Ho! perk, don't increase Strength stat above 10 when determining the maximum range of thrown weapons
+	// Fix for Heave Ho! perk increasing Strength stat above 10 when determining the maximum range of thrown weapons
 	dlog("Applying Heave Ho! perk fix.", DL_INIT);
 	HookCall(0x478AD9, item_w_range_hook);
 	dlogr(" Done", DL_INIT);
@@ -3384,7 +3382,7 @@ void BugFixes::init()
 	// Display messages about radiation for the active geiger counter
 	if (GetConfigInt("Misc", "ActiveGeigerMsgs", 1)) {
 		dlog("Applying active geiger counter messages patch.", DL_INIT);
-		SafeWriteBatch<BYTE>(0x74, {0x42D424, 0x42D444}); // jnz > jz
+		SafeWriteBatch<BYTE>(CodeType::JumpZ, {0x42D424, 0x42D444}); // jnz > jz
 		dlogr(" Done", DL_INIT);
 	}
 	// Display a pop-up message box about death from radiation
@@ -3395,8 +3393,8 @@ void BugFixes::init()
 		dlog("Applying AI drug use preference fix.", DL_INIT);
 		MakeCall(0x42869D, ai_check_drugs_hack_break);
 		MakeCall(0x4286AB, ai_check_drugs_hack_check);
-		SafeWrite16(0x4286B0, 0x7490); // jnz > jz
-		SafeWrite8(0x4286C5, 0x75);    // jz  > jnz
+		SafeWrite16(0x4286B0, 0x7490);          // jnz > jz
+		SafeWrite8(0x4286C5, CodeType::JumpNZ); // jz  > jnz
 		MakeCall(0x4286C7, ai_check_drugs_hack_use);
 		dlogr(" Done", DL_INIT);
 	}
@@ -3417,7 +3415,7 @@ void BugFixes::init()
 		SafeWrite8(0x456D61, 0x74); // mov [gcsd.free_move], esi
 		SafeWrite8(0x456D92, 0x5C); // mov [gcsd.amount], ebx
 
-		// Allowed setting result flags arguments for the attacker and the target (now work independently of each other)
+		// Allow setting result flags arguments for the attacker and the target (now work independently of each other)
 		SafeWrite16(0x456D95, 0xC085); // cmp eax, ebp > test eax, eax
 		MakeCall(0x456D9A, op_attack_hook_flags);
 		SafeWrite16(0x456DA7, 0x8489); // mov [gcsd.changeFlags], 1 > mov [gcsd.changeFlags], eax
@@ -3425,13 +3423,13 @@ void BugFixes::init()
 		SafeWrite8(0x456DAE, CodeType::Nop);
 		dlogr(" Done", DL_INIT);
 	} else {
-		// Fix setting flag argument results for the target
+		// Fix setting result flags argument for the target
 		SafeWrite16(0x456D95, 0xED85); // cmp eax, ebp > test ebp, ebp
 	}
 	SafeWrite8(0x456D9F, CodeType::JumpNZ); // jz > jnz
-	// Fix result flags for the attacker and the target when using attack_complex function
+	// Fix result flags for the attacker and the target when calling attack_complex function
 	// also set/unset the DAM_DEAD flag when changing the minimum/maximum damage to the target
-	// and fix still causing minimum damage to the target when the attacker misses
+	// and fix minimum damage still being applied to the target when the attacker misses
 	MakeJump(0x422FE5, combat_attack_hack, 1);
 
 	// Fix for critter_mod_skill taking a negative amount value as a positive
@@ -3536,12 +3534,12 @@ void BugFixes::init()
 	MakeJump(0x4C466F, wmAreaMarkVisitedState_hack);
 	SafeWrite8(0x4C46AB, 0x58); // esi > ebx
 
-	// Fix the position of the destination target marker for small/medium location circles
+	// Fix the position of the destination marker for small/medium location circles
 	MakeCall(0x4C03AA, wmWorldMap_hack, 2);
 
 	// Fix to prevent using number keys to enter unvisited areas on a town map
 	if (GetConfigInt("Debugging", "TownMapHotkeys", 0) == 0) {
-		dlog("Applying town map hotkeys fix patch.", DL_INIT);
+		dlog("Applying town map hotkeys patch.", DL_INIT);
 		MakeCall(0x4C495A, wmTownMapFunc_hack, 1);
 		dlogr(" Done", DL_INIT);
 	}
@@ -3605,7 +3603,7 @@ void BugFixes::init()
 	SafeWrite8(0x4C3727, 0x51);    // push esi > push ecx
 
 	// Fix the code in combat_is_shot_blocked_ to correctly get the next tile from a multihex object instead of the previous object or source tile
-	// Note: this bug does not cause an error in the function work
+	// Note: this bug does not cause any noticeable error in the function
 	uint8_t codeData[] = {
 		0x8B, 0x70, 0x04,       // mov  esi, [eax + 4]
 		0xF6, 0x40, 0x25, 0x08, // test [eax + flags2], MultiHex_
@@ -3616,8 +3614,8 @@ void BugFixes::init()
 	};
 	SafeWriteBytes(0x426D5C, codeData, 14); // combat_is_shot_blocked_
 
-	// Fix looping animation move in combat when trying to move close to a multihex critter
-	// this prevents moving to the multihex critter when the critters are located close together
+	// Fix for NPC stuck in an animation loop in combat when trying to move close to a multihex critter
+	// this prevents moving to the multihex critter when the critters are close together
 	uint8_t codeData1[] = {
 		0x89, 0xF0,                      // mov  eax, esi
 		0x89, 0xFA,                      // mov  edx, edi
@@ -3628,7 +3626,7 @@ void BugFixes::init()
 	SafeWriteBytes(0x42A0F4, codeData1, 18); // ai_move_steps_closer_
 	HookCall(0x42A0F8, (void*)fo::funcoffs::obj_dist_);
 
-	// Fix to prevent critter_p_proc execution and game events when playing movies (same as when the dialog is active)
+	// Fix to prevent the execution of critter_p_proc and game events when playing movies (same as when the dialog is active)
 	HookCall(0x4A3C89, doBkProcesses_hook);
 
 	// Fix to prevent the player from leaving the map when the death animation causes the player to cross an exit grid
@@ -3636,15 +3634,15 @@ void BugFixes::init()
 	MakeCall(0x41094B, show_damage_to_object_hack, 1);
 	MakeCall(0x48A6CB, obj_move_to_tile_hack_ondeath, 1);
 
-	// Fix for limiting the rollback distance for Knockback animation
+	// Fix to limit the maximum distance for the knockback animation
 	MakeCall(0x4104D5, action_knockback_hack);
 
-	// Fix the combat_is_shot_blocked_ function for counting the number of critters located in the line of fire
-	// for calculating penalties when determining the chance of hitting in the determine_to_hit_func_ function
-	SafeWriteBatch<BYTE>(0x41, { 0x426D46, 0x426D4E }); // edi > ecx (replace target to object critter)
+	// Fix for combat_is_shot_blocked_ engine function not taking the flags of critters in the line of fire into account
+	// when calculating the hit chance penalty of ranged attacks in determine_to_hit_func_ engine function
+	SafeWriteBatch<BYTE>(0x41, { 0x426D46, 0x426D4E }); // edi > ecx (replace target with object critter)
 	SafeWrite8(0x426D48, fo::DAM_DEAD | fo::DAM_KNOCKED_DOWN | fo::DAM_KNOCKED_OUT);
 
-	// Fix Print() script function
+	// Fix broken Print() script function
 	HookCall(0x461AD4, (void*)fo::funcoffs::windowOutput_);
 }
 

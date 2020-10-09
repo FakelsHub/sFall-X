@@ -189,7 +189,7 @@ static void __declspec(naked) UseSkillHook() {
 	__asm {
 		popad;
 		cmp cRet, 1;
-		jb  defaultHandler;
+		jl  defaultHandler;
 		cmp rets[0], -1;
 		je  defaultHandler;
 		mov eax, rets[0];
@@ -217,7 +217,7 @@ static void __declspec(naked) StealCheckHook() {
 	__asm {
 		popadc;
 		cmp cRet, 1;
-		jb  defaultHandler;
+		jl  defaultHandler;
 		cmp rets[0], -1;
 		je  defaultHandler;
 		mov eax, rets[0];
@@ -275,7 +275,7 @@ static long __fastcall PerceptionRangeHook_Script(fo::GameObject* watcher, fo::G
 }
 
 // Implementation of is_within_perception_ engine function with the hook
-long __fastcall sf_is_within_perception(fo::GameObject* watcher, fo::GameObject* target) { // TODO: add arg type
+long __fastcall sf_is_within_perception(fo::GameObject* watcher, fo::GameObject* target) { // TODO: add type arg
 	if (HookScripts::HookHasScript(HOOK_WITHINPERCEPTION)) {
 		return PerceptionRangeHook_Script(watcher, target, 0);
 	}

@@ -904,7 +904,7 @@ static void SpeedInterfaceCounterAnimsPatch() {
 static bool IFACE_BAR_MODE = false;
 
 static long gmouse_handle_event_hook() {
-	long countWin = *(DWORD*)FO_VAR_num_windows;
+	long countWin = fo::var::num_windows;
 	long ifaceWin = fo::var::interfaceWindow;
 	fo::Window* win = nullptr;
 
@@ -971,7 +971,7 @@ void Interface::init() {
 	SpeedInterfaceCounterAnimsPatch();
 
 	// Fix for interface windows with 'Transparent', 'Hidden' and 'ScriptWindow' flags
-	// Transparent/Hidden - will not toggle the mouse cursor when the cursor hovers over a hidden window
+	// Transparent/Hidden - will not toggle the mouse cursor when the cursor hovers over a transparent/hidden window
 	// ScriptWindow - prevents the player from moving when clicking on the window if the 'Transparent' flag is not set
 	HookCall(0x44B737, gmouse_bk_process_hook);
 	LoadGameHook::OnBeforeGameInit() += []() {
@@ -979,22 +979,22 @@ void Interface::init() {
 		HookCall(0x44C018, gmouse_handle_event_hook); // replaces hack function from HRP
 	};
 
-	// Set normal Fallout font for death scene subtitles
+	// Set the normal font for death screen subtitles
 	if (GetConfigInt("Misc", "DeathScreenFontPatch", 0)) {
 		HookCall(0x4812DF, main_death_scene_hook);
 	}
 
-	// Corrects the height of the black background for the subtitles on death screens
-	if (hrpIsEnabled == false) SafeWrite32(0x48134D, 38 - (640 * 3));      // main_death_scene_ (y-offset shift up to 2-px)
+	// Corrects the height of the black background for death screen subtitles
+	if (hrpIsEnabled == false) SafeWrite32(0x48134D, 38 - (640 * 3));      // main_death_scene_ (shift y-offset 2px up, w/o HRP)
 	if (hrpIsEnabled == false || hrpVersionValid) SafeWrite8(0x481345, 4); // main_death_scene_
 	if (hrpVersionValid) SafeWrite8(HRPAddress(0x10011738), 10);
 
-	// Cosmetic fix for the background image of rotation animation the player character in interfaces
-	MakeCall(0x47093C, display_body_hook);
+	// Cosmetic fix for the background image of the character portrait on the inventory and character screens
+	HookCall(0x47093C, display_body_hook);
 	BYTE code[11] = {
 		0x8B, 0xD3,             // mov  edx, ebx
 		0x66, 0x8B, 0x58, 0xF4, // mov  bx, [eax - 12] [sizeof(frame)]
-	    0x0F, 0xAF, 0xD3,       // imul edx, ebx (y * frame width)
+		0x0F, 0xAF, 0xD3,       // imul edx, ebx (y * frame width)
 		0x53, 0x90              // push ebx (frame width)
 	};
 	SafeWriteBytes(0x470971, code, 11);

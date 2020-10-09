@@ -240,7 +240,7 @@ void Stats::init() {
 
 	MakeCall(0x4AF09C, CalcApToAcBonus, 3); // stat_level_
 
-	// Allow to change the stats STAT_unused and STAT_better_crit - STAT_dmg_resist_explosion for set_critter_stat function
+	// Allow to change the stats STAT_unused, STAT_better_crit and STAT_dmg_thresh - STAT_dmg_resist_explosion for set_critter_stat function
 	MakeCall(0x4AF54E, stat_set_base_hack_allow);
 	MakeCall(0x455D65, op_set_critter_stat_hack); // STAT_unused for other critters
 
@@ -326,7 +326,7 @@ long Stats::GetStatMax(int stat, int isNPC) {
 
 long Stats::GetStatMin(int stat, int isNPC) {
 	if (stat >= 0 && stat < fo::STAT_max_stat) {
-		return (isNPC) ? statMinimumsNPC[stat]: statMinimumsPC[stat] ;
+		return (isNPC) ? statMinimumsNPC[stat] : statMinimumsPC[stat];
 	}
 	return 0;
 }

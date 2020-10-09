@@ -6,9 +6,9 @@
 namespace sfall
 {
 
-constexpr int maxRets = 8; // Maximum number of return values
-constexpr int maxArgs  = 16;
-constexpr int maxDepth = 8;
+constexpr int maxArgs = 16; // Maximum number of hook arguments
+constexpr int maxRets = 8;  // Maximum number of return values
+constexpr int maxDepth = 8; // Maximum recursion depth for hook calls
 
 struct {
 	DWORD hookID;
@@ -111,7 +111,7 @@ void __stdcall RunHookScript(DWORD hook) {
 		if (callDepth > 1) {
 			if (CheckRecursiveHooks(hook) || callDepth > 8) {
 				fo::func::debug_printf("\n[SFALL] The hook ID: %d cannot be executed.", hook);
-				dlog_f("The hook %d cannot be executed due to exceeded depth limit or recursive calls\n", DL_MAIN, hook);
+				dlog_f("The hook %d cannot be executed due to exceeding depth limit or disallowed recursive calls\n", DL_MAIN, hook);
 				return;
 			}
 		}
@@ -134,7 +134,7 @@ void __stdcall RunHookScript(DWORD hook) {
 }
 
 void __stdcall EndHook() {
-	devlog_f("Ending running hook %d, current depth: %d\n", DL_HOOK, currentRunHook, callDepth);
+	devlog_f("End running hook %d, current depth: %d\n", DL_HOOK, currentRunHook, callDepth);
 
 	callDepth--;
 	if (callDepth) {

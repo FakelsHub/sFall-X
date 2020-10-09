@@ -317,8 +317,8 @@ static __declspec(naked) void MeleeDmgDisplayPrintFix_hook() {
 		sub  ecx, eax;                                 // Subtract from Melee Damage
 		mov  edx, STAT_melee_dmg;
 		mov  eax, ds:[FO_VAR_obj_dude];                // Get pointer to PC
-		call fo::funcoffs::stat_get_base_;             // Get Melee Damage w/o perks bonuses
-		cmp  ecx, eax;                                 // HtH Damage vs Melee Base Damage
+		call fo::funcoffs::stat_get_base_;             // Get Melee Damage w/o bonuses
+		cmp  ecx, eax;                                 // HtH Damage vs Base Melee Damage
 		cmovg eax, ecx;                                // Move back to eax in preparation of push
 		retn;
 	}
@@ -336,8 +336,8 @@ static __declspec(naked) void CommonDmgRngDispFix_hook() {
 		sub  ebx, eax;                                 // Subtract from Melee Damage
 		mov  edx, STAT_melee_dmg;
 		mov  eax, ds:[FO_VAR_stack];
-		call fo::funcoffs::stat_get_base_;             // Get Melee Damage w/o perks bonuses
-		cmp  ebx, eax;                                 // HtH Damage vs Melee Base Damage
+		call fo::funcoffs::stat_get_base_;             // Get Melee Damage w/o bonuses
+		cmp  ebx, eax;                                 // HtH Damage vs Base Melee Damage
 		cmovg eax, ebx;                                // Move back to eax in preparation of push
 		retn;
 	}
@@ -458,9 +458,9 @@ void DamageMod::init() {
 			HookCall(0x472309, DisplayBonusHtHDmg1_hook);     // display_stats_
 			MakeJump(0x472546, DisplayBonusHtHDmg2_hack);     // display_stats_
 			SafeWrite32(0x472558, 0x509EDC);                  // fmt: '%s %d-%d'
-			SafeWrite8(0x472568, 0x10 + 4);
 			SafeWrite8(0x472552, 0x98 + 4);
 			SafeWrite8(0x47255F, 0x0C + 4);
+			SafeWrite8(0x472568, 0x10 + 4);
 		}
 		dlogr(" Done", DL_INIT);
 	}

@@ -74,9 +74,10 @@ void __fastcall displayInWindow(long w_here, long width, long height, void* data
 // draws an image to the buffer of the active script window
 void __fastcall window_trans_cscale(long i_width, long i_height, long s_width, long s_height, long xy_shift, long w_width, void* data);
 
-// buf_to_buf_ function with SSE implementation
+// buf_to_buf_ function with pure SSE implementation
 void __cdecl buf_to_buf(BYTE* src, long width, long height, long src_width, BYTE* dst, long dst_width);
 
+// trans_buf_to_buf_ function implementation
 void __cdecl trans_buf_to_buf(BYTE* src, long width, long height, long src_width, BYTE* dst, long dst_width);
 
 long __fastcall get_game_config_string(const char* outValue, const char* section, const char* param);

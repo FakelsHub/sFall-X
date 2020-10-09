@@ -7,12 +7,11 @@
 namespace sfall
 {
 
-enum CodeType : BYTE
-{
+enum CodeType : BYTE {
 	Ret       = 0xC3,
 	Call      = 0xE8,
 	Jump      = 0xE9,
-	Nop	      = 0x90,
+	Nop       = 0x90,
 	JumpShort = 0xEB, // 0xEB [ jmp short ... ]
 	JumpNZ    = 0x75, // 0x75 [ jnz short ... ]
 	JumpZ     = 0x74, // 0x74 [ jz  short ... ]
@@ -60,8 +59,8 @@ void MakeJump(DWORD addr, void* func);
 void MakeJump(DWORD addr, void* func, int len);
 void BlockCall(DWORD addr);
 
-void MakeJumps(void* func, std::initializer_list<DWORD> addrs);
 void HookCalls(void* func, std::initializer_list<DWORD> addrs);
 void MakeCalls(void* func, std::initializer_list<DWORD> addrs);
+void MakeJumps(void* func, std::initializer_list<DWORD> addrs);
 
 }

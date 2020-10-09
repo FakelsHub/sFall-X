@@ -206,7 +206,7 @@ end:
 	}
 }
 
-static void __declspec(naked)  action_climb_ladder_hook() {
+static void __declspec(naked) action_climb_ladder_hook() {
 	__asm {
 		cmp  word ptr [edi + 0x40], 0xFFFF; // DestTile
 		je   skip;
@@ -361,10 +361,10 @@ void Animations::init() {
 	// Allow the "Magic Hand" animation when used the item on
 	SafeWrite16(0x4120B8, 0x9090); // fix action_use_an_item_on_object_
 
-	// Fix player stuck at "climbing" frame after ladder animation
+	// Fix for the player stuck at "climbing" frame after ladder climbing animation
 	HookCall(0x411E1F, action_climb_ladder_hook);
 
-	// Added ANIM_charred_body/ANIM_charred_body_sf animation to art aliases
+	// Add ANIM_charred_body/ANIM_charred_body_sf animations to art aliases
 	MakeCall(0x419A17, art_alias_fid_hack);
 }
 

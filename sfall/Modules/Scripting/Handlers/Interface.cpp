@@ -420,6 +420,7 @@ void mf_hide_window(OpcodeContext& ctx) {
 void mf_set_window_flag(OpcodeContext& ctx) {
 	long bitFlag = ctx.arg(1).rawValue();
 	switch (bitFlag) {
+		case fo::WinFlags::DontMoveTop:
 		case fo::WinFlags::MoveOnTop:
 		case fo::WinFlags::Hidden:
 		case fo::WinFlags::Exclusive:
@@ -434,7 +435,7 @@ void mf_set_window_flag(OpcodeContext& ctx) {
 		for (size_t i = 0; i < 16; i++)
 		{
 			if (_stricmp(name, fo::var::sWindows[i].name) == 0) {
-				fo::Window* win =fo::func::GNW_find(fo::var::sWindows[i].wID);
+				fo::Window* win = fo::func::GNW_find(fo::var::sWindows[i].wID);
 				if (mode) {
 					fo::var::sWindows[i].flags |= bitFlag;
 					win->flags |= bitFlag;
@@ -538,10 +539,9 @@ static long DrawImage(OpcodeContext& ctx, bool isScaled) {
 	}
 
 exit:
-	__asm {
-		mov  eax, frmPtr;
-		call fo::funcoffs::mem_free_;
-	}
+	__asm mov  eax, frmPtr;
+	__asm call fo::funcoffs::mem_free_;
+
 	return result;
 }
 
@@ -556,9 +556,7 @@ void mf_draw_image_scaled(OpcodeContext& ctx) {
 static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* interfaceWin) {
 	const char* file = nullptr;
 	bool useShift = false;
-	long direction = -1,
-		 w = -1,
-		 h = -1;
+	long direction = -1, w = -1, h = -1;
 
 	if (ctx.arg(1).isInt()) { // art id
 		long fid = ctx.arg(1).rawValue();
@@ -607,10 +605,9 @@ static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* interfaceWin) {
 	if (!(ctx.arg(0).rawValue() & 0x1000000)) {
 		fo::func::GNW_win_refresh(interfaceWin, &interfaceWin->rect, 0);
 	}
-	__asm {
-		mov  eax, frmPtr;
-		call fo::funcoffs::mem_free_;
-	}
+	__asm mov  eax, frmPtr;
+	__asm call fo::funcoffs::mem_free_;
+
 	return 1;
 }
 
@@ -741,7 +738,7 @@ void mf_interface_print(OpcodeContext& ctx) { // same as vanilla PrintRect
 		width = maxWidth;
 	}
 
-	color ^= 0x2000000; // fills background to black color if the flag is set (textnofill)
+	color ^= 0x2000000; // fills background with black color if the flag is set (textnofill)
 	if ((color & 0xFF) == 0) {
 		__asm call fo::funcoffs::windowGetTextColor_; // set from SetTextColor
 		__asm mov  byte ptr color, al;
@@ -750,7 +747,7 @@ void mf_interface_print(OpcodeContext& ctx) { // same as vanilla PrintRect
 		fo::func::windowWrapLineWithSpacing(win->wID, text, width, maxHeight, x, y, 0x201000F, 0, 0);
 		color ^= 0x10000;
 	}
-	ctx.setReturn(fo::func::windowWrapLineWithSpacing(win->wID, text, width, maxHeight, x, y, color, 0, 0)); // returns count print lines
+	ctx.setReturn(fo::func::windowWrapLineWithSpacing(win->wID, text, width, maxHeight, x, y, color, 0, 0)); // returns count of lines printed
 
 	// no redraw (textdirect)
 	if (!(color & 0x1000000)) fo::func::GNW_win_refresh(win, &win->rect, 0);

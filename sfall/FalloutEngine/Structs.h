@@ -28,6 +28,7 @@ namespace fo
 /******************************************************************************/
 /* FALLOUT2.EXE structs should be placed here  */
 /******************************************************************************/
+
 #pragma pack(push, 1)
 
 // TODO: make consistent naming for all FO structs
@@ -170,6 +171,19 @@ struct ComputeAttackResult {
 	long extraKnockbackValue[6];
 };
 
+struct CombatGcsd {
+	GameObject* source;
+	GameObject* target;
+	long freeAP;
+	long bonusToHit;
+	long bonusDamage;
+	long minDamage;
+	long maxDamage;
+	long changeFlags;
+	DWORD flagsSource;
+	DWORD flagsTarget;
+};
+
 // Script instance attached to an object or tile (spatial script).
 struct ScriptInstance {
 	long id;
@@ -299,31 +313,31 @@ public:
 	BYTE data[1]; // begin frame image data
 } FrmFrameData;
 
-struct FrmFile {			// sizeof 2954
-	long id;				//0x00
-	short fps;				//0x04
-	short actionFrame;		//0x06
-	short frames;			//0x08
-	short xshift[6];		//0x0a
-	short yshift[6];		//0x16
-	long oriFrameOffset[6];	//0x22
-	long frameAreaSize;		//0x3a
+struct FrmFile {            // sizeof 2954
+	long id;                // 0x00
+	short fps;              // 0x04
+	short actionFrame;      // 0x06
+	short frames;           // 0x08
+	short xshift[6];        // 0x0A
+	short yshift[6];        // 0x16
+	long oriFrameOffset[6]; // 0x22
+	long frameAreaSize;     // 0x3A
 	union {
 		FrmFrameData* const frameData;
 		struct {
-			short width;	//0x3e
-			short height;	//0x40
+			short width;    // 0x3E
+			short height;   // 0x40
 		};
 	};
-	long frameSize;			//0x42
-	short xoffset;			//0x46
-	short yoffset;			//0x48
-	union {					//0x4a
+	long frameSize;         // 0x42
+	short xoffset;          // 0x46
+	short yoffset;          // 0x48
+	union {                 // 0x4A
 		BYTE *pixelData;
 		BYTE pixels[80 * 36]; // for tiles FRM
 	};
 
-	// Returns a pointer to the data of the frame at the direction
+	// Returns a pointer to the data of the frame in the direction
 	FrmFrameData* GetFrameData(long dir, long frame) {
 		BYTE* offsDirectionFrame = (BYTE*)&frameData;
 		if (dir > 0 && dir < 6) {
@@ -394,6 +408,7 @@ struct UnlistedFrm {
 	}
 };
 
+//for holding a message
 struct MessageNode {
 	long number;
 	long flags;
@@ -441,8 +456,7 @@ struct CritInfo {
 	};
 };
 
-struct SkillInfo
-{
+struct SkillInfo {
 	const char* name;
 	const char* description;
 	long attr;
@@ -809,6 +823,7 @@ struct QueueRadiation {
 	long level;
 	long init; // 1 - for removing effect
 };
+
 struct QueueDrug {
 	DWORD pid;
 	fo::Stat stat0;
@@ -829,19 +844,6 @@ struct DrugInfoList {
 	DWORD itemPid;
 	long  addictGvar;
 	long  numEffects;
-};
-
-struct CombatGcsd {
-	GameObject* source;
-	GameObject* target;
-	long freeAP;
-	long bonusToHit;
-	long bonusDamage;
-	long minDamage;
-	long maxDamage;
-	long changeFlags;
-	DWORD flagsSource;
-	DWORD flagsTarget;
 };
 
 struct FloatText {
@@ -866,4 +868,5 @@ struct SubTitleList {
 };
 
 #pragma pack(pop)
+
 }

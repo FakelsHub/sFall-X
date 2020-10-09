@@ -265,6 +265,7 @@ void __fastcall displayInWindow(long w_here, long width, long height, void* data
 	}
 }
 
+// draws an image to the buffer of the active script window
 void __fastcall window_trans_cscale(long i_width, long i_height, long s_width, long s_height, long xy_shift, long w_width, void* data) {
 	__asm {
 		push w_width;
@@ -280,7 +281,7 @@ void __fastcall window_trans_cscale(long i_width, long i_height, long s_width, l
 	}
 }
 
-// buf_to_buf_ function with SSE implementation
+// buf_to_buf_ function with pure SSE implementation
 void __cdecl buf_to_buf(BYTE* src, long width, long height, long src_width, BYTE* dst, long dst_width) {
 	if (height <= 0 || width <= 0) return;
 
@@ -312,7 +313,7 @@ void __cdecl buf_to_buf(BYTE* src, long width, long height, long src_width, BYTE
 		movups [edi + 48], xmm3;
 		add  esi, 64;
 		lea  edi, [edi + 64];
-		dec  ecx;  // blockCount
+		dec  ecx; // blockCount
 		jnz  copyBlock;
 		// copies the remaining bytes
 		mov  ecx, remainderD;
@@ -346,8 +347,8 @@ void __cdecl trans_buf_to_buf(BYTE* src, long width, long height, long src_width
 	size_t s_pitch = src_width - width;
 	size_t d_pitch = dst_width - width;
 
-	__asm mov  esi, src;
-	__asm mov  edi, dst;
+	__asm mov esi, src;
+	__asm mov edi, dst;
 	do {
 		size_t count = blockCount;
 		while (count--) {

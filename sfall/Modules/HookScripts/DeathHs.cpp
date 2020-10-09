@@ -90,7 +90,7 @@ static void __declspec(naked) CalcDeathAnim2Hook() {
 	__asm {
 		popad;
 		cmp cRet, 1;
-		cmovnb eax, rets[0];
+		cmovge eax, rets[0];
 		HookEnd;
 		retn;
 	}
@@ -162,7 +162,6 @@ void InitDeathHookScripts() {
 	HookScripts::LoadHookScript("hs_deathanim1", HOOK_DEATHANIM1);
 	HookScripts::LoadHookScript("hs_deathanim2", HOOK_DEATHANIM2);
 	HookScripts::LoadHookScript("hs_ondeath", HOOK_ONDEATH);
-
 }
 
 }

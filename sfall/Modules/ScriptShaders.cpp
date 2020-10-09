@@ -92,6 +92,7 @@ int __stdcall LoadShader(const char* file) {
 		if (FAILED(shader.Effect->GetString(buf, &name))) break;
 		sprintf_s(buf, "%s\\art\\stex\\%s", fo::var::master_db_handle->path, name); // fo::var::patches
 		if (FAILED(D3DXCreateTextureFromFileA(d3d9Device, buf, &tex))) continue;
+
 		sprintf(buf, "tex%d", i);
 		shader.Effect->SetTexture(buf, tex);
 		shaderTextures.push_back(tex);
@@ -113,7 +114,7 @@ void ScriptShaders::LoadGlobalShader() {
 			shaders[index].Effect->SetInt("w", Graphics::GetGameWidthRes());
 			shaders[index].Effect->SetInt("h", Graphics::GetGameHeightRes());
 			shaders[index].Active = true;
-			dlog_f("Global shader %s file is loaded.\n", DL_INIT, shader.gShaderFile.c_str());
+			dlog_f("Global shader file %s is loaded.\n", DL_INIT, shader.gShaderFile.c_str());
 		} else {
 			shader.badShader = true;
 		}

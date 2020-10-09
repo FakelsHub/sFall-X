@@ -216,7 +216,7 @@ static void StopMovie() {
 	aviPlayState = AviState::Stop;
 	Graphics::SetMovieTexture(false);
 	movieInterface.pControl->Stop();
-	if (*(DWORD*)FO_VAR_subtitles == 0) fo::RefreshGNW(); // NOTE: It is only necessary when the in game
+	if (*(DWORD*)FO_VAR_subtitles == 0) fo::RefreshGNW(); // Note: it is only necessary when in the game
 }
 
 DWORD FreeMovie(sDSTexture* movie) {
@@ -419,7 +419,7 @@ static DWORD __fastcall PrepareLoadMovie(const DWORD id) {
 	movieInterface.pSeek->GetStopPosition(&endMoviePosition);
 	aviPlayState = AviState::ReadyToPlay;
 
-	return 1; // for play AVI
+	return 1; // for playing AVI
 }
 
 static void __stdcall PlayMovieRestore() {
@@ -592,7 +592,7 @@ void Movies::init() {
 	*/
 	if (Graphics::mode != 0) {
 		int allowDShowMovies = GetConfigInt("Graphics", "AllowDShowMovies", 0);
-		if (allowDShowMovies) {
+		if (allowDShowMovies > 0) {
 			Graphics::AviMovieWidthFit = (allowDShowMovies >= 2);
 			MakeJump(0x44E690, gmovie_play_hack);
 			HookCall(0x44E993, gmovie_play_hook_stop);

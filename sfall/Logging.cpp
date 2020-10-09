@@ -43,7 +43,7 @@ void dlogr(const std::string& a, int type) {
 	}
 }
 
-void dlog_f(const char *fmt, int type, ...) {
+void dlog_f(const char* fmt, int type, ...) {
 	if (isDebug && (type == DL_MAIN || (type & DebugTypes))) {
 		va_list args;
 		va_start(args, type);
@@ -55,7 +55,7 @@ void dlog_f(const char *fmt, int type, ...) {
 	}
 }
 
-void dlogh(const char *fmt, long arg1, long arg2, long arg3) {
+void dlogh(const char* fmt, long arg1, long arg2, long arg3) {
 	if (DL_HOOK & DebugTypes) {
 		char buf[1024];
 		_snprintf_s(buf, sizeof(buf), _TRUNCATE, fmt, arg1, arg2, arg3);
@@ -66,8 +66,8 @@ void dlogh(const char *fmt, long arg1, long arg2, long arg3) {
 
 // Prints debug message to sfall log file for develop build
 #ifndef NDEBUG
-void devlog_f(const char *fmt, int type, ...) {
-	if (type == DL_MAIN || type & DebugTypes) {
+void devlog_f(const char* fmt, int type, ...) {
+	if (type == DL_MAIN || (type & DebugTypes)) {
 		va_list args;
 		va_start(args, type);
 		char buf[1024];

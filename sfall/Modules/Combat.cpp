@@ -1,4 +1,4 @@
-/*
+﻿/*
  *    sfall
  *    Copyright (C) 2008, 2009, 2010, 2011, 2012  The sfall team
  *
@@ -72,7 +72,7 @@ struct KnockbackModifier {
 	double value;
 };
 
-long Combat::determineHitChance; // the value of hit chance w/o any restrictions
+long Combat::determineHitChance; // the value of hit chance w/o any cap
 
 static std::vector<long> noBursts; // object id
 
@@ -665,7 +665,7 @@ void Combat::init() {
 	LoadGameHook::OnBeforeGameStart() += BodypartHitChances; // set on start & load
 
 	// Remove the dependency of Body_Torso from Body_Uncalled
-	SafeWrite8(0x423830, 0xEB); // compute_attack_
+	SafeWrite8(0x423830, CodeType::JumpShort); // compute_attack_
 	BlockCall(0x42303F); // block Body_Torso check (combat_attack_)
 	SafeWrite8(0x42A713, 7); // Body_Uncalled > Body_Groin (ai_called_shot_)
 	SafeWriteBatch<BYTE>(8, bodypartAddr); // replace Body_Torso with Body_Uncalled

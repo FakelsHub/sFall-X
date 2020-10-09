@@ -354,7 +354,7 @@ void __fastcall SetGlobalScriptRepeat(fo::Program* script, int frames) {
 	for (size_t i = 0; i < globalScripts.size(); i++) {
 		if (globalScripts[i].prog.ptr == script) {
 			if (frames == -1) {
-				globalScripts[i].mode = !globalScripts[i].mode;
+				globalScripts[i].mode = !globalScripts[i].mode; // what the fuck!? is this for older versions?
 			} else {
 				globalScripts[i].repeat = frames;
 			}
@@ -665,10 +665,11 @@ static uint32_t HandleTimedEventScripts() {
 	executeTimedEventDepth++;
 
 	fo::func::dev_printf("\n[TimedEventScripts] Time: %d / Depth: %d", currentTime, executeTimedEventDepth);
-	for (auto it = timerEventScripts.cbegin(); it != timerEventScripts.cend(); ++it)
+	for (auto it = timerEventScripts.cbegin(); it != timerEventScripts.cend(); ++it) {
 		fo::func::dev_printf("\n[TimedEventScripts] Event: %d", it->time);
+	}
 
-	bool eventsWasRunning = false;
+	bool eventWasRunning = false;
 	for (auto timerIt = timerEventScripts.cbegin(); timerIt != timerEventScripts.cend(); ++timerIt)
 	{
 		if (timerIt->isActive == false) continue;
@@ -687,23 +688,24 @@ static uint32_t HandleTimedEventScripts() {
 				timedEvent = executeTimedEvents.top(); // restore a pointer to a previously running event
 				executeTimedEvents.pop();
 			}
-			eventsWasRunning = true;
+			eventWasRunning = true;
 		} else {
 			break;
 		}
 	}
 	executeTimedEventDepth--;
 
-	if (eventsWasRunning && executeTimedEventDepth == 0) {
+	if (eventWasRunning && executeTimedEventDepth == 0) {
 		timedEvent = nullptr;
-		// deleting all previously executed events
+		// delete all previously executed events
 		for (auto it = timerEventScripts.cbegin(); it != timerEventScripts.cend();)
 		{
 			if (it->isActive == false) {
 				fo::func::dev_printf("\n[TimedEventScripts] Remove event: %d", it->time);
 				it = timerEventScripts.erase(it);
+			} else {
+				++it;
 			}
-			else ++it;
 		}
 	}
 	return currentTime;

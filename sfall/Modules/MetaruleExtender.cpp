@@ -20,23 +20,22 @@ static signed char HorriganEncounterDefaultDays = 35;
 static signed char HorriganEncounterSetDays = 35;
 static bool HorriganEncounterDisabled = false;
 
-enum class MetaruleFunction : long
-{
-	SET_HORRIGAN_ENCOUNTER  = 200, // sets the number of days for the Fran Horrigan meeting or disable encounter
-	CLEAR_KEYBOARD_BUFFER   = 201, // clears the keyboard input buffer, should be used in the HOOK_KEYPRESS hook, to clear keyboard events in some cases
+enum class MetaruleFunction : long {
+	SET_HORRIGAN_ENCOUNTER = 200, // sets the number of days for the Frank Horrigan encounter or disable encounter
+	CLEAR_KEYBOARD_BUFFER  = 201, // clears the keyboard input buffer, should be used in the HOOK_KEYPRESS hook to clear keyboard events in some cases
 };
 
 /*
 	args - contains a pointer to an array (size of 3) of arguments for the metarule3 function [located on the stack]
 */
-static int32_t __fastcall op_metarule3_ext(int32_t metafunc, int32_t* args) {
-	int32_t result = 0;
+static long __fastcall op_metarule3_ext(long metafunc, long* args) {
+	long result = 0;
 
 	switch (static_cast<MetaruleFunction>(metafunc)) {
 		case MetaruleFunction::SET_HORRIGAN_ENCOUNTER:
 		{
-			int32_t argValue = args[0];     // arg1
-			if (argValue <= 0) {            // set horrigan disable
+			long argValue = args[0];        // arg1
+			if (argValue <= 0) {            // disable Horrigan encounter
 				if (*(BYTE*)HorriganEncounterCheck == CodeType::JumpNZ) {
 					SafeWrite8(HorriganEncounterCheck, CodeType::JumpShort); // skip the Horrigan encounter check
 					HorriganEncounterDisabled = true;
@@ -52,7 +51,7 @@ static int32_t __fastcall op_metarule3_ext(int32_t metafunc, int32_t* args) {
 			__asm call fo::funcoffs::kb_clear_;
 			break;
 		default:
-			fo::func::debug_printf("\nOPCODE ERROR: metarule3(%d, ...) - specified metarule function number does not exist.\n > Script: %s, procedure %s.\n",
+			fo::func::debug_printf("\nOPCODE ERROR: metarule3(%d, ...) - metarule function number does not exist.\n > Script: %s, procedure %s.",
 								   metafunc, fo::var::currentProgram->fileName, fo::func::findCurrentProc(fo::var::currentProgram));
 			break;
 	}
