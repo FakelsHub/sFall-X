@@ -109,6 +109,10 @@ public:
 
 	sArrayVar() : flags(0), key() {}
 
+	sArrayVar(int len, int flag) : flags(flag), key() {
+		if (len > 0) val.reserve(len + 10);
+	}
+
 	bool isAssoc() const {
 		return (flags & ARRAYFLAG_ASSOC);
 	}
@@ -179,8 +183,11 @@ ScriptValue GetArrayKey(DWORD id, int index);
 // get array element by index (list) or key (map)
 ScriptValue GetArray(DWORD id, const ScriptValue& key);
 
-// set array element by index or key
+// set array element by index or key (with checking the existence of the array ID)
 void SetArray(DWORD id, const ScriptValue& key, const ScriptValue& val, bool allowUnset);
+
+// set array element by index or key
+void setArray(DWORD id, const ScriptValue& key, const ScriptValue& val, bool allowUnset);
 
 // number of elements in list or pairs in map
 int LenArray(DWORD id);
