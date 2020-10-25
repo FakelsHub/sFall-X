@@ -792,7 +792,7 @@ void mf_win_fill_color(OpcodeContext& ctx) {
 		return;
 	}
 	if (ctx.numArgs() > 0) {
-		fo::WinFillRect(fo::var::sWindows[iWin].wID, ctx.arg(0).rawValue(), ctx.arg(1).rawValue(), ctx.arg(2).rawValue(), ctx.arg(3).rawValue(), ctx.arg(4).rawValue());
+		fo::WinFillRect(fo::var::sWindows[iWin].wID, ctx.arg(0).rawValue(), ctx.arg(1).rawValue(), ctx.arg(2).rawValue(), ctx.arg(3).rawValue(), (BYTE)ctx.arg(4).rawValue());
 	} else {
 		fo::ClearWindow(fo::var::sWindows[iWin].wID, false); // full clear
 	}
