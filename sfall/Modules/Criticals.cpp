@@ -156,7 +156,29 @@ static int CritTableLoad() {
 	return 0;
 }
 
-#define SetEntry(critter, bodypart, effect, param, value) fo::var::crit_succ_eff[critter][bodypart][effect].values[param] = value;
+enum BodyPart {
+	Head,
+	ArmLeft,
+	ArmRight,
+	Torso,
+	LegRight,
+	LegLeft,
+	Eyes,
+	Groin,
+	Uncalled
+};
+
+enum CritParam {
+	DmgMult,
+	Flags,
+	StatCheck,
+	StatMod,
+	FlagsFail,
+	Message,
+	MsgFail
+};
+
+#define SetEntry(critter, bodypart, effect, param, value) fo::var::crit_succ_eff[critter][bodypart][effect].values[param] = value
 
 static void CriticalTableOverride() {
 	dlog("Initializing critical table override...", DL_INIT);
@@ -165,100 +187,108 @@ static void CriticalTableOverride() {
 	SafeWrite32(0x423FB3, (DWORD)critTable);
 
 	if (mode == 2 || mode == 3) { // bug fixes
-		SetEntry(2, 4, 1, 4, 0);
-		SetEntry(2, 4, 1, 5, 5216);
-		SetEntry(2, 4, 1, 6, 5000);
+		// children
+		SetEntry(2, LegRight, 1, FlagsFail, 0);
+		SetEntry(2, LegRight, 1, Message,   5216);
+		SetEntry(2, LegRight, 1, MsgFail,   5000);
+		// children
+		SetEntry(2, LegRight, 2, FlagsFail, 0);
+		SetEntry(2, LegRight, 2, Message,   5216);
+		SetEntry(2, LegRight, 2, MsgFail,   5000);
+		// children
+		SetEntry(2, LegLeft,  1, FlagsFail, 0);
+		SetEntry(2, LegLeft,  1, Message,   5216);
+		SetEntry(2, LegLeft,  1, MsgFail,   5000);
+		// children
+		SetEntry(2, LegLeft,  2, FlagsFail, 0);
+		SetEntry(2, LegLeft,  2, Message,   5216);
+		SetEntry(2, LegLeft,  2, MsgFail,   5000);
 
-		SetEntry(2, 4, 2, 4, 0);
-		SetEntry(2, 4, 2, 5, 5216);
-		SetEntry(2, 4, 2, 6, 5000);
+		// super mutant
+		SetEntry(3, LegLeft,  1, MsgFail,   5306);
 
-		SetEntry(2, 5, 1, 4, 0);
-		SetEntry(2, 5, 1, 5, 5216);
-		SetEntry(2, 5, 1, 6, 5000);
+		// ghoul
+		SetEntry(4, Head,     4, StatCheck, -1);
 
-		SetEntry(2, 5, 2, 4, 0);
-		SetEntry(2, 5, 2, 5, 5216);
-		SetEntry(2, 5, 2, 6, 5000);
+		// brahmin
+		SetEntry(5, Head,     4, StatCheck, -1);
 
-		SetEntry(3, 5, 1, 6, 5306);
+		// radscorpion
+		SetEntry(6, LegRight, 1, FlagsFail, fo::DAM_KNOCKED_DOWN);
+		// radscorpion
+		SetEntry(6, LegLeft,  1, FlagsFail, fo::DAM_KNOCKED_DOWN);
+		// radscorpion
+		SetEntry(6, LegLeft,  2, MsgFail,   5608);
 
-		SetEntry(4, 0, 4, 2, -1);
+		// centaur
+		SetEntry(9, Torso,    3, FlagsFail, fo::DAM_KNOCKED_DOWN);
 
-		SetEntry(5, 0, 4, 2, -1);
+		// deathclaw
+		SetEntry(13, LegLeft, 1, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
+		SetEntry(13, LegLeft, 2, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
+		SetEntry(13, LegLeft, 3, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
+		SetEntry(13, LegLeft, 4, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
+		SetEntry(13, LegLeft, 5, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
 
-		SetEntry(6, 4, 1, 4, 2);
-
-		SetEntry(6, 5, 1, 4, 2);
-
-		SetEntry(6, 5, 2, 6, 5608);
-
-		SetEntry(9, 3, 3, 4, 2);
-
-		SetEntry(13, 5, 1, 4, 4);
-		SetEntry(13, 5, 2, 4, 4);
-		SetEntry(13, 5, 3, 4, 4);
-		SetEntry(13, 5, 4, 4, 4);
-		SetEntry(13, 5, 5, 4, 4);
-
-		SetEntry(18, 0, 0, 5, 5001);
-		SetEntry(18, 0, 1, 5, 5001);
-		SetEntry(18, 0, 2, 5, 5001);
-		SetEntry(18, 0, 3, 5, 7105);
-		SetEntry(18, 0, 4, 5, 7101);
-		SetEntry(18, 0, 4, 6, 7104);
-		SetEntry(18, 0, 5, 5, 7101);
-
-		SetEntry(18, 1, 0, 5, 5008);
-		SetEntry(18, 1, 1, 5, 5008);
-		SetEntry(18, 1, 2, 5, 5009);
-		SetEntry(18, 1, 3, 5, 5009);
-		SetEntry(18, 1, 4, 5, 7102);
-		SetEntry(18, 1, 5, 5, 7102);
-
-		SetEntry(18, 2, 0, 5, 5008);
-		SetEntry(18, 2, 1, 5, 5008);
-		SetEntry(18, 2, 2, 5, 5009);
-		SetEntry(18, 2, 3, 5, 5009);
-		SetEntry(18, 2, 4, 5, 7102);
-		SetEntry(18, 2, 5, 5, 7102);
-
-		SetEntry(18, 3, 4, 5, 7101);
-		SetEntry(18, 3, 5, 5, 7101);
-
-		SetEntry(18, 4, 0, 5, 5023);
-		SetEntry(18, 4, 1, 5, 7101);
-		SetEntry(18, 4, 1, 6, 7103);
-		SetEntry(18, 4, 2, 5, 7101);
-		SetEntry(18, 4, 2, 6, 7103);
-		SetEntry(18, 4, 3, 5, 7103);
-		SetEntry(18, 4, 4, 5, 7103);
-		SetEntry(18, 4, 5, 5, 7103);
-
-		SetEntry(18, 5, 0, 5, 5023);
-		SetEntry(18, 5, 1, 5, 7101);
-		SetEntry(18, 5, 1, 6, 7103);
-		SetEntry(18, 5, 2, 5, 7101);
-		SetEntry(18, 5, 2, 6, 7103);
-		SetEntry(18, 5, 3, 5, 7103);
-		SetEntry(18, 5, 4, 5, 7103);
-		SetEntry(18, 5, 5, 5, 7103);
-
-		SetEntry(18, 6, 0, 5, 5027);
-		SetEntry(18, 6, 1, 5, 5027);
-		SetEntry(18, 6, 2, 5, 5027);
-		//SetEntry(18,6,2,6,0);
-		SetEntry(18, 6, 3, 5, 5027);
-		SetEntry(18, 6, 4, 5, 7104);
-		SetEntry(18, 6, 5, 5, 7104);
-
-		SetEntry(18, 7, 0, 5, 5033);
-		SetEntry(18, 7, 1, 5, 5027);
-		SetEntry(18, 7, 1, 6, 7101);
-		SetEntry(18, 7, 2, 5, 7101);
-		SetEntry(18, 7, 3, 5, 7101);
-		SetEntry(18, 7, 4, 5, 7101);
-		SetEntry(18, 7, 5, 5, 7101);
+		// big boss
+		SetEntry(18, Head,     0, Message,  5001);
+		SetEntry(18, Head,     1, Message,  5001);
+		SetEntry(18, Head,     2, Message,  5001);
+		SetEntry(18, Head,     3, Message,  7105);
+		SetEntry(18, Head,     4, Message,  7101);
+		SetEntry(18, Head,     4, MsgFail,  7104);
+		SetEntry(18, Head,     5, Message,  7101);
+		// big boss
+		SetEntry(18, ArmLeft,  0, Message,  5008);
+		SetEntry(18, ArmLeft,  1, Message,  5008);
+		SetEntry(18, ArmLeft,  2, Message,  5009);
+		SetEntry(18, ArmLeft,  3, Message,  5009);
+		SetEntry(18, ArmLeft,  4, Message,  7102);
+		SetEntry(18, ArmLeft,  5, Message,  7102);
+		// big boss
+		SetEntry(18, ArmRight, 0, Message,  5008);
+		SetEntry(18, ArmRight, 1, Message,  5008);
+		SetEntry(18, ArmRight, 2, Message,  5009);
+		SetEntry(18, ArmRight, 3, Message,  5009);
+		SetEntry(18, ArmRight, 4, Message,  7102);
+		SetEntry(18, ArmRight, 5, Message,  7102);
+		// big boss
+		SetEntry(18, Torso,    4, Message,  7101);
+		SetEntry(18, Torso,    5, Message,  7101);
+		// big boss
+		SetEntry(18, LegRight, 0, Message,  5023);
+		SetEntry(18, LegRight, 1, Message,  7101);
+		SetEntry(18, LegRight, 1, MsgFail,  7103);
+		SetEntry(18, LegRight, 2, Message,  7101);
+		SetEntry(18, LegRight, 2, MsgFail,  7103);
+		SetEntry(18, LegRight, 3, Message,  7103);
+		SetEntry(18, LegRight, 4, Message,  7103);
+		SetEntry(18, LegRight, 5, Message,  7103);
+		// big boss
+		SetEntry(18, LegLeft,  0, Message,  5023);
+		SetEntry(18, LegLeft,  1, Message,  7101);
+		SetEntry(18, LegLeft,  1, MsgFail,  7103);
+		SetEntry(18, LegLeft,  2, Message,  7101);
+		SetEntry(18, LegLeft,  2, MsgFail,  7103);
+		SetEntry(18, LegLeft,  3, Message,  7103);
+		SetEntry(18, LegLeft,  4, Message,  7103);
+		SetEntry(18, LegLeft,  5, Message,  7103);
+		// big boss
+		SetEntry(18, Eyes,     0, Message,  5027);
+		SetEntry(18, Eyes,     1, Message,  5027);
+		SetEntry(18, Eyes,     2, Message,  5027);
+//		SetEntry(18, Eyes,     2, MsgFail,     0);
+		SetEntry(18, Eyes,     3, Message,  5027);
+		SetEntry(18, Eyes,     4, Message,  7104);
+		SetEntry(18, Eyes,     5, Message,  7104);
+		// big boss
+		SetEntry(18, Groin,    0, Message,  5033);
+		SetEntry(18, Groin,    1, Message,  5027);
+		SetEntry(18, Groin,    1, MsgFail,  7101);
+		SetEntry(18, Groin,    2, Message,  7101);
+		SetEntry(18, Groin,    3, Message,  7101);
+		SetEntry(18, Groin,    4, Message,  7101);
+		SetEntry(18, Groin,    5, Message,  7101);
 	}
 
 	if (CritTableLoad()) {
