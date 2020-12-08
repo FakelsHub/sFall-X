@@ -187,50 +187,50 @@ static void CriticalTableOverride() {
 	SafeWrite32(0x423FB3, (DWORD)critTable);
 
 	if (mode == 2 || mode == 3) { // bug fixes
-		// children
+		// Children
 		SetEntry(2, LegRight, 1, FlagsFail, 0);
 		SetEntry(2, LegRight, 1, Message,   5216);
 		SetEntry(2, LegRight, 1, MsgFail,   5000);
-		// children
+		// Children
 		SetEntry(2, LegRight, 2, FlagsFail, 0);
 		SetEntry(2, LegRight, 2, Message,   5216);
 		SetEntry(2, LegRight, 2, MsgFail,   5000);
-		// children
+		// Children
 		SetEntry(2, LegLeft,  1, FlagsFail, 0);
 		SetEntry(2, LegLeft,  1, Message,   5216);
 		SetEntry(2, LegLeft,  1, MsgFail,   5000);
-		// children
+		// Children
 		SetEntry(2, LegLeft,  2, FlagsFail, 0);
 		SetEntry(2, LegLeft,  2, Message,   5216);
 		SetEntry(2, LegLeft,  2, MsgFail,   5000);
 
-		// super mutant
+		// Super Mutant
 		SetEntry(3, LegLeft,  1, MsgFail,   5306);
 
-		// ghoul
+		// Ghoul
 		SetEntry(4, Head,     4, StatCheck, -1);
 
-		// brahmin
+		// Brahmin
 		SetEntry(5, Head,     4, StatCheck, -1);
 
-		// radscorpion
+		// Radscorpion
 		SetEntry(6, LegRight, 1, FlagsFail, fo::DAM_KNOCKED_DOWN);
-		// radscorpion
+		// Radscorpion
 		SetEntry(6, LegLeft,  1, FlagsFail, fo::DAM_KNOCKED_DOWN);
-		// radscorpion
+		// Radscorpion
 		SetEntry(6, LegLeft,  2, MsgFail,   5608);
 
-		// centaur
+		// Centaur
 		SetEntry(9, Torso,    3, FlagsFail, fo::DAM_KNOCKED_DOWN);
 
-		// deathclaw
+		// Seathclaw
 		SetEntry(13, LegLeft, 1, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
 		SetEntry(13, LegLeft, 2, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
 		SetEntry(13, LegLeft, 3, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
 		SetEntry(13, LegLeft, 4, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
 		SetEntry(13, LegLeft, 5, FlagsFail, fo::DAM_CRIP_LEG_LEFT);
 
-		// big boss
+		// Big Boss
 		SetEntry(18, Head,     0, Message,  5001);
 		SetEntry(18, Head,     1, Message,  5001);
 		SetEntry(18, Head,     2, Message,  5001);
@@ -238,24 +238,24 @@ static void CriticalTableOverride() {
 		SetEntry(18, Head,     4, Message,  7101);
 		SetEntry(18, Head,     4, MsgFail,  7104);
 		SetEntry(18, Head,     5, Message,  7101);
-		// big boss
+		// Big Boss
 		SetEntry(18, ArmLeft,  0, Message,  5008);
 		SetEntry(18, ArmLeft,  1, Message,  5008);
 		SetEntry(18, ArmLeft,  2, Message,  5009);
 		SetEntry(18, ArmLeft,  3, Message,  5009);
 		SetEntry(18, ArmLeft,  4, Message,  7102);
 		SetEntry(18, ArmLeft,  5, Message,  7102);
-		// big boss
+		// Big Boss
 		SetEntry(18, ArmRight, 0, Message,  5008);
 		SetEntry(18, ArmRight, 1, Message,  5008);
 		SetEntry(18, ArmRight, 2, Message,  5009);
 		SetEntry(18, ArmRight, 3, Message,  5009);
 		SetEntry(18, ArmRight, 4, Message,  7102);
 		SetEntry(18, ArmRight, 5, Message,  7102);
-		// big boss
+		// Big Boss
 		SetEntry(18, Torso,    4, Message,  7101);
 		SetEntry(18, Torso,    5, Message,  7101);
-		// big boss
+		// Big Boss
 		SetEntry(18, LegRight, 0, Message,  5023);
 		SetEntry(18, LegRight, 1, Message,  7101);
 		SetEntry(18, LegRight, 1, MsgFail,  7103);
@@ -264,7 +264,7 @@ static void CriticalTableOverride() {
 		SetEntry(18, LegRight, 3, Message,  7103);
 		SetEntry(18, LegRight, 4, Message,  7103);
 		SetEntry(18, LegRight, 5, Message,  7103);
-		// big boss
+		// Big Boss
 		SetEntry(18, LegLeft,  0, Message,  5023);
 		SetEntry(18, LegLeft,  1, Message,  7101);
 		SetEntry(18, LegLeft,  1, MsgFail,  7103);
@@ -273,7 +273,7 @@ static void CriticalTableOverride() {
 		SetEntry(18, LegLeft,  3, Message,  7103);
 		SetEntry(18, LegLeft,  4, Message,  7103);
 		SetEntry(18, LegLeft,  5, Message,  7103);
-		// big boss
+		// Big Boss
 		SetEntry(18, Eyes,     0, Message,  5027);
 		SetEntry(18, Eyes,     1, Message,  5027);
 		SetEntry(18, Eyes,     2, Message,  5027);
@@ -281,7 +281,7 @@ static void CriticalTableOverride() {
 		SetEntry(18, Eyes,     3, Message,  5027);
 		SetEntry(18, Eyes,     4, Message,  7104);
 		SetEntry(18, Eyes,     5, Message,  7104);
-		// big boss
+		// Big Boss
 		SetEntry(18, Groin,    0, Message,  5033);
 		SetEntry(18, Groin,    1, Message,  5027);
 		SetEntry(18, Groin,    1, MsgFail,  7101);
@@ -289,6 +289,40 @@ static void CriticalTableOverride() {
 		SetEntry(18, Groin,    3, Message,  7101);
 		SetEntry(18, Groin,    4, Message,  7101);
 		SetEntry(18, Groin,    5, Message,  7101);
+
+		// Fixes for uncalled tables
+		// Men
+		SetEntry(0, Uncalled, 2, Flags,     fo::DAM_KNOCKED_DOWN | fo::DAM_BYPASS); // was 0
+		SetEntry(0, Uncalled, 2, Message,   5019); // was 5018
+
+		// Children
+		SetEntry(2, Uncalled, 1, DmgMult,   4);    // 3
+		SetEntry(2, Uncalled, 2, Flags,     fo::DAM_KNOCKED_DOWN | fo::DAM_BYPASS); // fo::DAM_BYPASS
+		SetEntry(2, Uncalled, 2, Message,   5212); // 5211
+
+		// Centaurs
+		SetEntry(9, Uncalled, 3, FlagsFail, fo::DAM_KNOCKED_DOWN); // 0
+
+		// Geckos
+		SetEntry(15, Uncalled, 0, Message,  6701); // 6700
+		SetEntry(15, Uncalled, 1, Message,  6701); // 6700
+		SetEntry(15, Uncalled, 2, Flags,    fo::DAM_KNOCKED_DOWN | fo::DAM_BYPASS); // 0
+		SetEntry(15, Uncalled, 2, Message,  6704); // 6700
+		SetEntry(15, Uncalled, 3, Message,  6704); // 6700
+		SetEntry(15, Uncalled, 4, Message,  6704); // 6700
+		SetEntry(15, Uncalled, 5, Message,  6704); // 6700
+
+		// Aliens
+		SetEntry(16, Uncalled, 2, Flags,    fo::DAM_KNOCKED_DOWN | fo::DAM_BYPASS); // 0
+
+		// Giant Ants
+		SetEntry(17, Uncalled, 2, Flags,    fo::DAM_KNOCKED_DOWN | fo::DAM_BYPASS); // 0
+
+		// Big Bad Boss
+		SetEntry(18, Uncalled, 2, DmgMult,  3);    // 4
+		SetEntry(18, Uncalled, 4, DmgMult,  4);    // 5
+		SetEntry(18, Uncalled, 4, Message,  7101); // 7106
+		SetEntry(18, Uncalled, 5, Message,  7101); // 7106
 	}
 
 	if (CritTableLoad()) {
