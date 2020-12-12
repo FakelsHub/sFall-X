@@ -1,4 +1,4 @@
-/*
+﻿/*
  *    sfall
  *    Copyright (C) 2008-2019  The sfall team
  *
@@ -26,6 +26,22 @@
 namespace sfall
 {
 
+/*
+ *	Brief description of how this code works in the module:
+ *		The module is designed to create additional inherited critter prototypes of their base prototype in memory (with the exception of player and party member prototypes).
+ *		The inherited prototype is written a chanded value of stat that is changed by the engine or script script functions.
+ *		Stats changed by the set_critter_base_stat and set_critter_extra_stat functions are not saved and resets when the player leaves the location map.
+ *		Stats that can be changed using the engine, for example, when using drugs items, armor equipment, or set by the set_critter_stat function is saved
+ *		to a file and always affects the critter, except for stats use of drugs, the effects of which are reset when the player leaves the location map (engine behavior).
+ *
+ *	Краткое описание работы данного кода в модуле:
+ *		Модуль предназначен для создания в памяти дополнительных унаследованных прототипов криттеров от их базового прототипа (за исключением прототипов игрока и членов партии).
+ *		В унаследованный прототип записывается изменяемая характеристика, которая меняется посредством движка или скритовыми функциями скрипта.
+ *		Статистика изменяемая функциями set_critter_base_stat и set_critter_extra_stat не сохраняется и сбрасывается, когда игрок покидает карту локации.
+ *		Статистика изменяемая посредством движка, например при применении предметов химии, экипировки брони криттером или установка функцией set_critter_stat сохраняется в файл,
+ *		и действует на криттера всегда, кроме измененной статистики при применения химии, эффекты от которой сбрасываются когда игрок покидает карту локации (движковое поведение).
+ */
+
 static struct {
 	long id;
 	long* proto;
@@ -37,7 +53,9 @@ struct ProtoMem {
 	long  sharedCount; // if the value is 0, then the prototype can be deleted from memory
 
 	//ProtoMem() {}
+
 	ProtoMem(long pid) : proto(nullptr), pid(pid), sharedCount(0) {} // for load
+
 	ProtoMem(long* defProto, long pid) : pid(pid), sharedCount(1) {
 		CreateProtoMem(defProto);
 	}
@@ -66,6 +84,7 @@ struct StatModify {
 	long* s_proto; // shared pointer for quick access to the prototype in memory (should not be saved to file)
 
 	StatModify() : s_proto(nullptr) {} // for load
+
 	StatModify(fo::GameObject* critter, long stat, long amount, long* defaultProto, long defVal) {
 		objID = Objects::SetObjectUniqueID(critter);
 		objPID = critter->protoId;
@@ -110,13 +129,15 @@ struct StatModify {
 
 std::vector<StatModify> bonusStatProto;
 std::vector<StatModify> baseStatProto;
-// for saveable stats
+
+// saveable stats
 std::vector<StatModify> s_bonusStatProto;
 std::vector<StatModify> s_baseStatProto;
 
 static long isNotPartyMemberPid;
 
 //////////////////////////////// CRITTERS STATS ////////////////////////////////
+
 static long GetBaseStatValue(long* proto, long stat) {
 	return proto[OffsetStat::base + stat];
 }
@@ -141,9 +162,9 @@ static void SetStatValue(long* proto, long offset, long amount) {
 	proto[offset] = amount;
 }
 
-// Applies all stats parameters, loaded from save file to individual NPC prototypes
+// Applies all stats parameters, loaded from save file to individual critter prototype
 static void ModifyAllStats(const itProtoMem &mem) {
-	if (!mem->second.proto && !fo::CritterCopyProto(mem->second.pid, mem->second.proto)) return;
+	if (!mem->second.proto && !fo::CritterCopyProto(mem->second.pid, mem->second.proto)) return; // proto error
 
 	for (auto itBonus = s_bonusStatProto.begin(); itBonus != s_bonusStatProto.end(); itBonus++)
 	{
@@ -170,6 +191,8 @@ static std::vector<StatModify>& GetRefVector(bool bonus, bool isSaved) {
 	return (bonus) ? bonusStatProto : baseStatProto;
 }
 
+// Adds or modifies an existing stat value in the inherited critter prototype
+// if the set amount value is equal to defVal, this stat is deleted and an attempt to remove the inherited prototype if the individual critter prototype does not have any more changed stats
 static void AddStat(long stat, fo::GameObject* critter, long amount, long* defaultProto, long offset, bool isSaved) {
 	std::vector<StatModify> &vec = GetRefVector(offset == OffsetStat::bonus, isSaved);
 
@@ -239,6 +262,8 @@ static void SetStatToAllProtos(long offset, long pid, long amount) {
 	};
 }
 
+// changes the bonus value of stat (for example, with the adjust_ac_ or perform_drug_effect_ functions when applying drugs items)
+// to an individual savedable critter prototype
 static void __declspec(naked) stat_set_bonus_hack() {
 	__asm {
 		pushadc;
@@ -255,6 +280,7 @@ static void __declspec(naked) stat_set_bonus_hack() {
 	}
 }
 
+// changes the base stat value with the set_critter_stat script function in the individual saved critter prototype
 static void __declspec(naked) stat_set_base_hack() {
 	__asm {
 		pushadc;
@@ -272,6 +298,7 @@ static void __declspec(naked) stat_set_base_hack() {
 	}
 }
 
+// getting critter stat value using any engine method (for example, the get_critter_stat script function) from the base or individual critter prototype
 static void __declspec(naked) stat_get_proto() {
 	using namespace fo::Fields;
 	__asm {
@@ -312,7 +339,9 @@ skip:
 	}
 }
 
-// Returns the NPC prototype located in memory
+///////////////////////////////////////////////////////////////////////////////
+
+// Returns the individual critter prototype, or null if it is missing
 long* __fastcall CritterStats::GetProto(fo::GameObject* critter) {
 	if (protoMem.empty() || critter->protoId == fo::PID_Player) return nullptr;
 	if (lastGetProtoID.id == critter->id) return lastGetProtoID.proto;
@@ -333,7 +362,7 @@ long* __fastcall CritterStats::GetProto(fo::GameObject* critter) {
 	return nullptr; // no prototype in memory with this ID, regular prototype will be used
 }
 
-// set_proto_data - sets stats to regular prototype and all individual NPC prototypes (the same PID)
+// set_proto_data: sets value parametr to base(regular) object prototype, and to all individual(inherited) critters prototypes with the same PID
 long CritterStats::SetProtoData(long pid, long offset, long amount) {
 	long* proto;
 	long result = fo::func::proto_ptr(pid, (fo::Proto**)&proto);
@@ -346,61 +375,21 @@ long CritterStats::SetProtoData(long pid, long offset, long amount) {
 	return result;
 }
 
-// get_critter_*_stat - gets stats from an individual's prototype or from a regular prototype
+// get_critter_base_stat/get_critter_extra_stat: gets stats value from an individual's prototype (inherited from the base prototype)
+// or from the base prototype, if there were no changes to the stat for this critter
 long CritterStats::GetStat(fo::GameObject* critter, long stat, long offset) {
 	long* proto = CritterStats::GetProto(critter);
-	if (proto == nullptr) fo::func::proto_ptr(critter->protoId, (fo::Proto**)&proto);
+	if (proto == nullptr) fo::func::proto_ptr(critter->protoId, (fo::Proto**)&proto); // regular prototype
 	return (!proto) ? 0 : GetStatValue(proto, stat + offset); // direct get
 }
 
-// set_critter_*_stat - sets stats to an individual's critter prototype
+// set_critter_base_stat/set_critter_extra_stat: changes the value of stat in the individual prototype of the critter inherited from the base prototype
+// the changed value will not be saved when saving the game and will be resets when the player leave the location map
 void CritterStats::SetStat(fo::GameObject* critter, long stat, long amount, long offset) {
 	long* proto;
 	if (fo::func::proto_ptr(critter->protoId, (fo::Proto**)&proto) != -1) {
 		SetStatToProto(stat, critter, amount, proto, offset, false); // non-saveable stat
 	}
-}
-
-void CritterStats::SaveStatData(HANDLE file) {
-	DWORD sizeWrite, count = s_baseStatProto.size();
-	WriteFile(file, &count, 4, &sizeWrite, 0);
-	for (size_t i = 0; i < count; i++) {
-		WriteFile(file, &s_baseStatProto[i], 20, &sizeWrite, 0);
-	}
-	count = s_bonusStatProto.size();
-	WriteFile(file, &count, 4, &sizeWrite, 0);
-	for (size_t i = 0; i < count; i++) {
-		WriteFile(file, &s_bonusStatProto[i], 20, &sizeWrite, 0);
-	}
-}
-
-bool CritterStats::LoadStatData(HANDLE file) {
-	DWORD count, sizeRead;
-	ReadFile(file, &count, 4, &sizeRead, 0);
-	//if (sizeRead != 4) return true;
-	if (count) s_baseStatProto.reserve(count + 10);
-	for (size_t i = 0; i < count; i++) {
-		StatModify data;
-		ReadFile(file, &data, 20, &sizeRead, 0);
-		if (sizeRead != 20) return true;
-		s_baseStatProto.emplace_back(data);
-		//if (protoMem.find(data.objID) == protoMem.end()) {
-			protoMem.emplace(data.objID, data.objPID);
-		//}
-	}
-	ReadFile(file, &count, 4, &sizeRead, 0);
-	//if (sizeRead != 4) return true;
-	if (count) s_bonusStatProto.reserve(count + 10);
-	for (size_t i = 0; i < count; i++) {
-		StatModify data;
-		ReadFile(file, &data, 20, &sizeRead, 0);
-		if (sizeRead != 20) return true;
-		s_bonusStatProto.emplace_back(data);
-		//if (protoMem.find(data.objID) == protoMem.end()) {
-			protoMem.emplace(data.objID, data.objPID);
-		//}
-	}
-	return false;
 }
 
 static void ClearAllStats() {
@@ -424,6 +413,7 @@ static void FlushAllProtos() {
 	ClearAllStats();
 }
 
+// Removes all the inherited prototypes at the leave the map
 static void __declspec(naked) map_save_in_game_hook() {
 	__asm {
 		call FlushAllProtos;
@@ -441,6 +431,58 @@ static void StatsProtoReset() {
 
 void CritterStats::RecalcDerivedHook() {
 	HookCall(0x4AF761, stat_recalc_derived_hook);
+}
+
+void CritterStats::SaveStatData(HANDLE file) {
+	DWORD sizeWrite, count = s_baseStatProto.size();
+	WriteFile(file, &count, 4, &sizeWrite, 0);
+	for (size_t i = 0; i < count; i++) {
+		WriteFile(file, &s_baseStatProto[i], 20, &sizeWrite, 0);
+	}
+
+	count = s_bonusStatProto.size();
+	WriteFile(file, &count, 4, &sizeWrite, 0);
+	for (size_t i = 0; i < count; i++) {
+		WriteFile(file, &s_bonusStatProto[i], 20, &sizeWrite, 0);
+	}
+}
+
+bool CritterStats::LoadStatData(HANDLE file) {
+	DWORD count, sizeRead;
+	ReadFile(file, &count, 4, &sizeRead, 0);
+	//if (sizeRead != 4) return true;
+
+	if (count) s_baseStatProto.reserve(count + 10);
+	for (size_t i = 0; i < count; i++)
+	{
+		StatModify data;
+		ReadFile(file, &data, 20, &sizeRead, 0);
+		if (sizeRead != 20) return true;
+
+		s_baseStatProto.emplace_back(data);
+		//if (protoMem.find(data.objID) == protoMem.end()) {
+			protoMem.emplace(data.objID, data.objPID);
+		//}
+		fo::func::debug_printf("LOADSAVE: Critter PID/ID: %d/%d saved base stat: %d, value: %d, def: %d\n", data.objPID, data.objID, data.stat, data.amount, data.defVal);
+	}
+
+	ReadFile(file, &count, 4, &sizeRead, 0);
+	//if (sizeRead != 4) return true;
+
+	if (count) s_bonusStatProto.reserve(count + 10);
+	for (size_t i = 0; i < count; i++)
+	{
+		StatModify data;
+		ReadFile(file, &data, 20, &sizeRead, 0);
+		if (sizeRead != 20) return true;
+
+		s_bonusStatProto.emplace_back(data);
+		//if (protoMem.find(data.objID) == protoMem.end()) {
+			protoMem.emplace(data.objID, data.objPID);
+		//}
+		fo::func::debug_printf("LOADSAVE: Critter PID/ID: %d/%d saved bonus stat: %d, value: %d, def: %d\n", data.objPID, data.objID, data.stat, data.amount, data.defVal);
+	}
+	return false;
 }
 
 void CritterStats::init() {
