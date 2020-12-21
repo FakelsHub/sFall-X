@@ -722,6 +722,10 @@ optional argument:
 - winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
 - attrType: 0 - checks and returns a value of 1 if the specified interface window is created by the game (same as without the argument)
             1 - X position, 2 - Y position (relative to the top-left corner of the game screen)
+            3 - interface width size
+            4 - interface height size
+           -1 - returns an associative array values left, top, right, bottom that determine the position of the window rectangle
+                (access to values is standard for arrays, example: x. top, x. bottom)
 - returns -1 if the specified attribute cannot be obtained
 
 > void sfall_func2("set_town_title", int areaID, string title)
@@ -781,6 +785,13 @@ optional arguments:
 - fills the rectangle area of the currently selected script window with the specified color, or clears the transparent window (use function without arguments or color index 0)
 - color: the color index in the game palette (from 0 to 255)
 
+> int sfall_func2("interface_overlay", winType, mode)
+> int sfall_func6("interface_overlay", winType, 2, x, y, w, h)
+- creates an additional drawing surface for the specified interface window, which will be located above the graphic layer of the interface window
+- winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
+- mode: 1 - creates a new overlay surface
+        2 - clears the overlay area or the specified rectangle defined by the x, y, w, h arguments
+            
 ------------------------
 ------ MORE INFO -------
 ------------------------

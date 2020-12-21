@@ -13,8 +13,125 @@
 namespace sfall
 {
 
+class OverlaySurface
+{
+private:
+	long size = 0;
+	long surfWidth;
+	long allocSize;
+	BYTE* surface = nullptr;
+
+public:
+	//long winType = -1;
+
+	BYTE* Surface() { return surface; }
+
+	void CreateSurface(fo::Window* win, long winType) {
+		//this->winType = winType;
+		this->surfWidth = win->width;
+		this->size = win->height * win->width;
+
+		if (surface != nullptr) {
+			if (size <= allocSize) {
+				std::memset(surface, 0, size);
+				return;
+			}
+			delete[] surface;
+		}
+
+		this->allocSize = size;
+		surface = new BYTE[size]();
+	}
+
+	void ClearSurface() {
+		if (surface != nullptr) std::memset(surface, 0, size);
+	}
+
+	void ClearSurface(Rectangle &rect) {
+		if (surface != nullptr) {
+			if (rect.width > surfWidth || rect.height > (size / surfWidth)) return; // going beyond the surface size
+			BYTE* surf = surface + (surfWidth * rect.y) + rect.x;
+
+			size_t sizeD = rect.width >> 2;
+			size_t sizeB = rect.width & 3;
+			size_t stride = sizeD << 2;
+
+			long height = rect.height;
+			while (height--)
+			{
+				if (sizeD) {
+					__stosd((DWORD*)surf, 0, sizeD);
+					surf += stride;
+				}
+				if (sizeB) {
+					__stosb(surf, 0, sizeB);
+					surf += sizeB;
+				}
+			};
+		}
+	}
+
+	/*void DestroySurface() {
+		delete[] surface;
+		surface = nullptr;
+	}*/
+
+	~OverlaySurface() {
+		delete[] surface;
+	}
+} overlaySurfaces[5];
+
+long indexPosition = 0;
+
+void GameRender::CreateOverlaySurface(fo::Window* win, long winType) {
+	overlaySurfaces[indexPosition].CreateSurface(win, winType);
+	win->randY = reinterpret_cast<long*>(&overlaySurfaces[indexPosition]);
+	if (++indexPosition == 5) indexPosition = 0;
+};
+
+BYTE* GameRender::GetOverlaySurface(fo::Window* win) {
+	return reinterpret_cast<OverlaySurface*>(win->randY)->Surface();
+};
+
+void GameRender::ClearOverlay(fo::Window* win) {
+	if (win->randY) reinterpret_cast<OverlaySurface*>(win->randY)->ClearSurface();
+};
+
+void GameRender::ClearOverlay(fo::Window* win, Rectangle &rect) {
+	if (win->randY) reinterpret_cast<OverlaySurface*>(win->randY)->ClearSurface(rect);
+};
+
+void GameRender::DestroyOverlaySurface(long winType) {
+	//for (size_t i = 0; i < 5; i++) {
+	//	if (overlaySurfaces[i].winType == winType) {
+	//		overlaySurfaces[i].DestroySurface();
+	//		overlaySurfaces[i].winType = -1;
+	//		//break;
+	//	}
+	//}
+};
+
 static BYTE* GetBuffer() {
 	return (BYTE*)*(DWORD*)FO_VAR_screen_buffer;
+}
+
+static void Draw(fo::Window* win, BYTE* surface, long width, long height, long widthFrom, BYTE* toBuffer, long toWidth, RECT &rect, RECT* updateRect) {
+
+	auto drawFunc = (win->flags & fo::WinFlags::Transparent && win->wID) ? fo::func::trans_buf_to_buf : fo::func::buf_to_buf;
+	if (toBuffer) {
+		drawFunc(surface, width, height, widthFrom, &toBuffer[rect.left - updateRect->left] + ((rect.top - updateRect->top) * toWidth), toWidth);
+	} else {
+		drawFunc(surface, width, height, widthFrom, &GetBuffer()[rect.left] + (rect.top * toWidth), toWidth); // copy to buffer instead of DD surface (buffering)
+	}
+
+	if (!win->randY) return;
+	surface = &GameRender::GetOverlaySurface(win)[rect.left - win->rect.x] + ((rect.top - win->rect.y) * win->width);
+
+	if (toBuffer) {
+		fo::func::trans_buf_to_buf(surface, width, height, widthFrom, &toBuffer[rect.left - updateRect->left] + ((rect.top - updateRect->top) * toWidth), toWidth);
+	} else {
+		fo::func::trans_buf_to_buf(surface, width, height, widthFrom, &GetBuffer()[rect.left] + (rect.top * toWidth), toWidth);
+	}
 }
 
 static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE* toBuffer) {
@@ -27,7 +144,7 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 			mov  edx, ds:[FO_VAR_screen_buffer];
 			call fo::funcoffs::refresh_all_;
 		}
-		int w = updateRect->right - updateRect->left + 1;
+		int w = (updateRect->right - updateRect->left) + 1;
 
 		if (fo::var::mouse_is_hidden || !fo::func::mouse_in(updateRect->left, updateRect->top, updateRect->right, updateRect->bottom)) {
 			/*__asm {
@@ -36,7 +153,9 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 				call fo::funcoffs::GNW_button_refresh_;
 			}*/
 			int h = (updateRect->bottom - updateRect->top) + 1;
+
 			Graphics::UpdateDDSurface(GetBuffer(), w, h, w, updateRect); // update the entire rectangle area
+
 		} else {
 			fo::func::mouse_show(); // for updating background cursor area
 			RECT mouseRect;
@@ -48,19 +167,22 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 				call fo::funcoffs::rect_clip_;
 				mov  rects, eax;
 			}
-			while (rects) { // updates everything except the cursor area
+			while (rects) // updates everything except the cursor area
+			{
 				/*__asm {
 					mov  eax, win;
 					mov  edx, rects;
 					call fo::funcoffs::GNW_button_refresh_;
 				}*/
+
 				int wRect = (rects->wRect.right - rects->wRect.left) + 1;
 				int hRect = (rects->wRect.bottom - rects->wRect.top) + 1;
+
 				Graphics::UpdateDDSurface(&GetBuffer()[rects->wRect.left - updateRect->left] + (rects->wRect.top - updateRect->top) * w, wRect, hRect, w, &rects->wRect);
 
-				fo::RectList* next = rects->nextRect;
-				fo::sf_rect_free(rects);
-				rects = next;
+				fo::RectList* free = rects;
+				rects = rects->nextRect;
+				fo::sf_rect_free(free);
 			}
 		}
 		return;
@@ -73,55 +195,47 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 
 	rects->rect = { updateRect->left, updateRect->top, updateRect->right, updateRect->bottom };
 	rects->nextRect = nullptr;
-	RECT &rect = rects->wRect;
 
 	/*
 		If the border of the updateRect rectangle is located outside the window, then assign to rects->rect the border of the window rectangle
 		Otherwise, rects->rect contains the borders from the update rectangle (updateRect)
 	*/
-	if (win->wRect.left >= rect.left) rect.left = win->wRect.left;
-	if (win->wRect.top >= rect.top) rect.top = win->wRect.top;
-	if (win->wRect.right <= rect.right) rect.right = win->wRect.right;
-	if (win->wRect.bottom <= rect.bottom) rect.bottom = win->wRect.bottom;
+	if (rects->wRect.left   < win->wRect.left)   rects->wRect.left   = win->wRect.left;
+	if (rects->wRect.top    < win->wRect.top)    rects->wRect.top    = win->wRect.top;
+	if (rects->wRect.right  > win->wRect.right)  rects->wRect.right  = win->wRect.right;
+	if (rects->wRect.bottom > win->wRect.bottom) rects->wRect.bottom = win->wRect.bottom;
 
-	if (rect.right < rect.left || rect.bottom < rect.top) {
+	if (rects->wRect.right < rects->wRect.left || rects->wRect.bottom < rects->wRect.top) {
 		fo::sf_rect_free(rects);
 		return;
 	}
 
 	int widthFrom = win->width;
-	int toWidth = (toBuffer) ? updateRect->right - updateRect->left + 1 : Graphics::GetGameWidthRes();
+	int toWidth = (toBuffer) ? (updateRect->right - updateRect->left) + 1 : Graphics::GetGameWidthRes();
 
 	fo::func::win_clip(win, &rects, toBuffer);
 
 	fo::RectList* currRect = rects;
 	while (currRect)
 	{
-		RECT &crect = currRect->wRect;
-		int width = (crect.right - crect.left) + 1;   // for current rectangle
-		int height = (crect.bottom - crect.top) + 1;; // for current rectangle
+		int width = (currRect->wRect.right - currRect->wRect.left) + 1;   // for current rectangle
+		int height = (currRect->wRect.bottom - currRect->wRect.top) + 1;; // for current rectangle
 
 		BYTE* surface;
-		if (win->wID) {
+		if (win->wID > 0) {
 			__asm {
 				mov  eax, win;
 				mov  edx, currRect;
 				call fo::funcoffs::GNW_button_refresh_;
 			}
-			surface = &win->surface[crect.left - win->rect.x] + ((crect.top - win->rect.y) * win->width);
+			surface = &win->surface[currRect->wRect.left - win->rect.x] + ((currRect->wRect.top - win->rect.y) * win->width);
 		} else {
 			surface = new BYTE[height * width](); // black background
 			widthFrom = width; // replace with rectangle
 		}
 
-		auto drawFunc = (win->flags & fo::WinFlags::Transparent && win->wID) ? fo::func::trans_buf_to_buf : fo::func::buf_to_buf;
-		if (toBuffer) {
-			drawFunc(surface, width, height, widthFrom, &toBuffer[crect.left - updateRect->left] + ((crect.top - updateRect->top) * toWidth), toWidth);
-		} else {
-			// copy to buffer instead of DD surface (buffering)
-			drawFunc(surface, width, height, widthFrom, &GetBuffer()[crect.left] + (crect.top * toWidth), toWidth);
-			///if Graphics::UpdateDDSurface(surface, width, height, widthFrom, crect);
-		}
+		Draw(win, surface, width, height, widthFrom, toBuffer, toWidth, currRect->wRect, updateRect);
+
 		if (win->wID == 0) delete[] surface;
 
 		currRect = currRect->nextRect;
@@ -133,6 +247,7 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 			int width = (rects->rect.offx - rects->rect.x) + 1;
 			int height = (rects->rect.offy - rects->rect.y) + 1;
 			int widthFrom = toWidth;
+
 			Graphics::UpdateDDSurface(&GetBuffer()[rects->rect.x] + (rects->rect.y * widthFrom), width, height, widthFrom, &rects->wRect);
 		}
 		fo::RectList* next = rects->nextRect;
@@ -186,16 +301,19 @@ void GameRender::init() {
 
 	// Enable support for transparent interface windows
 	SafeWrite16(0x4D5D46, 0x9090); // win_init_ (create screen_buffer)
+	SafeWrite16(0x4D75E6, 0x9090); // win_clip_ (remove _buffering checking)
 	SafeWrite8(0x42F869, fo::WinFlags::MoveOnTop | fo::WinFlags::OwnerFlag); // addWindow_ (remove Transparent flag)
-	if (Graphics::mode) {
-		// custom implementation of the GNW_win_refresh function
-		MakeJump(0x4D6FD9, GNW_win_refresh_hack, 1);
-		SafeWrite16(0x4D75E6, 0x9090); // win_clip_ (remove _buffering checking)
-		SafeWrite32(0x4C8FD1, FO_VAR_screen_buffer); // replace screendump_buf
-	} else { // for default or HRP graphics mode
-		SafeWrite8(0x4D5DAB, 0x1D); // ecx > ebx (enable _buffering)
-		BlockCall(0x431076); // dialogMessage_
-	}
+
+	// Custom implementation of the GNW_win_refresh function
+	MakeJump(0x4D6FD9, GNW_win_refresh_hack, 1);
+	// replace _screendump_buf to _screen_buffer for create screenshot
+	SafeWrite32(0x4C8FD1, FO_VAR_screen_buffer);
+	SafeWrite32(0x4C900D, FO_VAR_screen_buffer);
+
+	// Disables unused code for the RandX and RandY window structure fields (these fields can now be used for other purposes as well)
+	SafeWrite32(0x4D630C, 0x9090C031); // xor eax,eax
+	SafeWrite8(0x4D6310, 0x90);
+	BlockCall(0x4D6319);
 }
 
 }

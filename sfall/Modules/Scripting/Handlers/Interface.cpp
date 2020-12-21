@@ -29,6 +29,8 @@
 
 #include "..\..\HookScripts\InventoryHs.h"
 
+#include "..\..\SubModules\GameRender.h"
+
 #include "Interface.h"
 
 namespace sfall
@@ -583,7 +585,7 @@ void mf_draw_image_scaled(OpcodeContext& ctx) {
 	ctx.setReturn(DrawImage(ctx, true));
 }
 
-static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* interfaceWin) {
+static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* ifaceWin) {
 	const char* file = nullptr;
 	bool useShift = false;
 	long direction = -1, w = -1, h = -1;
@@ -629,12 +631,14 @@ static long InterfaceDrawImage(OpcodeContext& ctx, fo::Window* interfaceWin) {
 	int width  = (w >= 0) ? w : framePtr->width;
 	int height = (h >= 0) ? h : framePtr->height;
 
+	BYTE* surface = (ifaceWin->randY) ? GameRender::GetOverlaySurface(ifaceWin) : ifaceWin->surface;
+
 	fo::func::trans_cscale(((frmPtr->id == 'PCX') ? frmPtr->pixelData : framePtr->data), framePtr->width, framePtr->height, framePtr->width,
-	                       interfaceWin->surface + (y * interfaceWin->width) + x, width, height, interfaceWin->width
+	                       surface + (y * ifaceWin->width) + x, width, height, ifaceWin->width
 	);
 
 	if (!(ctx.arg(0).rawValue() & 0x1000000)) {
-		fo::func::GNW_win_refresh(interfaceWin, &interfaceWin->rect, 0);
+		fo::func::GNW_win_refresh(ifaceWin, &ifaceWin->rect, 0);
 	}
 
 	FreeArtFile(frmPtr);
@@ -730,14 +734,27 @@ void mf_get_window_attribute(OpcodeContext& ctx) {
 	}
 	long result = 0;
 	switch (ctx.arg(1).rawValue()) {
+	case -1: // rectangle map.left map.top map.right map.bottom
+		result = CreateTempArray(-2, 0);
+		setArray(result, ScriptValue("left"), ScriptValue(win->rect.x), false);
+		setArray(result, ScriptValue("top"), ScriptValue(win->rect.y), false);
+		setArray(result, ScriptValue("right"), ScriptValue(win->rect.offx), false);
+		setArray(result, ScriptValue("bottom"), ScriptValue(win->rect.offy), false);
+		break;
 	case 0: // check if window exists
 		result = 1;
 		break;
-	case 1: // x
+	case 1:
 		result = win->rect.x;
 		break;
-	case 2: // y
+	case 2:
 		result = win->rect.y;
+		break;
+	case 3:
+		result = win->width;
+		break;
+	case 4:
+		result = win->height;
 		break;
 	}
 	ctx.setReturn(result);
@@ -746,7 +763,7 @@ void mf_get_window_attribute(OpcodeContext& ctx) {
 void mf_interface_print(OpcodeContext& ctx) { // same as vanilla PrintRect
 	fo::Window* win = Interface::GetWindow(ctx.arg(1).rawValue());
 	if (win == nullptr || (int)win == -1) {
-		ctx.printOpcodeError("%s() - the game interface window is not created or invalid value for the interface.", ctx.getMetaruleName());
+		ctx.printOpcodeError("%s() - the game interface window is not created or invalid window type number.", ctx.getMetaruleName());
 		ctx.setReturn(-1);
 		return;
 	}
@@ -773,11 +790,20 @@ void mf_interface_print(OpcodeContext& ctx) { // same as vanilla PrintRect
 		__asm call fo::funcoffs::windowGetTextColor_; // set from SetTextColor
 		__asm mov  byte ptr color, al;
 	}
+
+	BYTE* surface;
+	if (win->randY) { // если была создана поверхность то рисование движком будет произведено в нее
+		surface = win->surface;
+		win->surface = GameRender::GetOverlaySurface(win); // заменяем поверхность для функции windowWrapLineWithSpacing_
+	}
+
 	if (color & 0x10000) { // shadow (textshadow)
 		fo::func::windowWrapLineWithSpacing(win->wID, text, width, maxHeight, x, y, 0x201000F, 0, 0);
 		color ^= 0x10000;
 	}
 	ctx.setReturn(fo::func::windowWrapLineWithSpacing(win->wID, text, width, maxHeight, x, y, color, 0, 0)); // returns count of lines printed
+
+	if (win->randY) win->surface = surface;
 
 	// no redraw (textdirect)
 	if (!(color & 0x1000000)) fo::func::GNW_win_refresh(win, &win->rect, 0);
@@ -795,6 +821,40 @@ void mf_win_fill_color(OpcodeContext& ctx) {
 		fo::WinFillRect(fo::var::sWindows[iWin].wID, ctx.arg(0).rawValue(), ctx.arg(1).rawValue(), ctx.arg(2).rawValue(), ctx.arg(3).rawValue(), (BYTE)ctx.arg(4).rawValue());
 	} else {
 		fo::ClearWindow(fo::var::sWindows[iWin].wID, false); // full clear
+	}
+}
+
+void mf_interface_overlay(OpcodeContext& ctx) {
+	fo::Window* win = nullptr;
+	long winType = ctx.arg(0).rawValue();
+
+	if (ctx.arg(1).rawValue()) {
+		win = Interface::GetWindow(winType);
+		if (!win || (int)win == -1) return;
+	}
+
+	switch (ctx.arg(1).rawValue()) {
+	case 1:
+		GameRender::CreateOverlaySurface(win, winType);
+		break;
+	case 2: // clear
+		if (ctx.numArgs() > 2) {
+			long w = ctx.arg(4).rawValue();
+			long h = ctx.arg(5).rawValue();
+			if (w <= 0 || h <= 0) return;
+
+			long x = ctx.arg(2).rawValue();
+			long y = ctx.arg(3).rawValue();
+			if (x < 0 || y < 0) return;
+
+			Rectangle rect = { x, y, w, h };
+			GameRender::ClearOverlay(win, rect);
+		} else {
+			GameRender::ClearOverlay(win);
+		}
+		break;
+	//case 0: // unused (reserved)
+	//	GameRender::DestroyOverlaySurface(winType);
 	}
 }
 
