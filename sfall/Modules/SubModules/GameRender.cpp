@@ -81,7 +81,7 @@ public:
 	}
 } overlaySurfaces[5];
 
-long indexPosition = 0;
+static long indexPosition = 0;
 
 void GameRender::CreateOverlaySurface(fo::Window* win, long winType) {
 	overlaySurfaces[indexPosition].CreateSurface(win, winType);
@@ -300,15 +300,16 @@ void GameRender::init() {
 	MakeJump(0x4D3704, fo::func::trans_buf_to_buf); // trans_buf_to_buf_
 
 	// Enable support for transparent interface windows
-	SafeWrite16(0x4D5D46, 0x9090); // win_init_ (create screen_buffer)
-	SafeWrite16(0x4D75E6, 0x9090); // win_clip_ (remove _buffering checking)
+	SafeWriteBatch<WORD>(0x9090, {
+		0x4D5D46, // win_init_ (create screen_buffer)
+		0x4D75E6  // win_clip_ (remove _buffering checking)
+	});
 	SafeWrite8(0x42F869, fo::WinFlags::MoveOnTop | fo::WinFlags::OwnerFlag); // addWindow_ (remove Transparent flag)
 
 	// Custom implementation of the GNW_win_refresh function
 	MakeJump(0x4D6FD9, GNW_win_refresh_hack, 1);
 	// replace _screendump_buf to _screen_buffer for create screenshot
-	SafeWrite32(0x4C8FD1, FO_VAR_screen_buffer);
-	SafeWrite32(0x4C900D, FO_VAR_screen_buffer);
+	SafeWriteBatch<DWORD>(FO_VAR_screen_buffer, { 0x4C8FD1, 0x4C900D });
 
 	// Disables unused code for the RandX and RandY window structure fields (these fields can now be used for other purposes as well)
 	SafeWrite32(0x4D630C, 0x9090C031); // xor eax,eax
