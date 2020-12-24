@@ -382,7 +382,7 @@ Some utility/math functions are available:
 > any sfall_funcX(string funcName, ...)
 - these opcodes allows to use additional scripting functions, that do not require new opcode
 - first argument is always function name (string)
-- there are 7 versions of this opcode for different number of additional arguments (for convenience)
+- there are versions of this opcode for different number of additional arguments (for convenience)
 - opcodes have return value, but it is not necessary to use it
 
 
@@ -403,9 +403,10 @@ Some utility/math functions are available:
 - works just like vanilla critter_inven_obj, but correctly reports item in player's inactive hand slot
 
 > void sfall_func0("intface_redraw")
-> void sfall_func1("intface_redraw", bool eachWin)
+> void sfall_func1("intface_redraw", int winType)
 - redraws main game interface, useful after direct changes to current player weapons or stats to reflect changes
-- eachWin: pass True to redraw all the window interfaces
+- winType: the type number of the interface window to redraw (see WINTYPE_* constants in sfall.h)
+           or pass -1 to redraw all the window interfaces
 
 > void sfall_func0("intface_hide")
 - hides main interface
@@ -725,7 +726,7 @@ optional argument:
             3 - interface width size
             4 - interface height size
            -1 - returns an associative array values left, top, right, bottom that determine the position of the window rectangle
-                (access to values is standard for arrays, example: x. top, x. bottom)
+                (access to values is standard for arrays, example: map.top, map.bottom)
 - returns -1 if the specified attribute cannot be obtained
 
 > void sfall_func2("set_town_title", int areaID, string title)
@@ -791,7 +792,8 @@ optional arguments:
 - winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
 - mode: 1 - creates a new overlay surface
         2 - clears the overlay area or the specified rectangle defined by the x, y, w, h arguments
-            
+		0 - destroys the created overlay surface (frees up memory allocated under the surface)
+
 ------------------------
 ------ MORE INFO -------
 ------------------------
