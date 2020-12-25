@@ -17,6 +17,7 @@
  */
 
 #include <algorithm>
+#include <dsound.h>
 #include <dshow.h>
 
 #include "..\main.h"
@@ -897,6 +898,43 @@ rawFile:
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+static fo::GameObject* relativeObject;
+static long relativeDistance = 0;
+
+static void __declspec(naked) gsound_compute_relative_volume_hook() {
+	__asm {
+		call fo::funcoffs::obj_dist_;
+		mov  relativeDistance, eax;
+		mov  relativeObject, ecx;
+		retn;
+	}
+}
+
+static void __fastcall SetPanPosition(fo::ACMSoundData* sound) {
+	if (relativeDistance <= 5) return;
+
+	long direction = fo::func::tile_dir(fo::var::obj_dude->tile, relativeObject->tile);
+	bool isRightSide = (direction <= 2);
+
+	long panValue = (relativeDistance / 2) * 1000;
+	if (panValue > 10000) panValue = 10000;
+
+	if (!isRightSide) panValue = -panValue; // left mute 10000 ... -10000 right mute
+	sound->soundBuffer->SetPan(panValue);
+
+	relativeDistance = 0;
+}
+
+static void __declspec(naked) gsound_load_sound_volume_hack() {
+	__asm {
+		call fo::funcoffs::soundVolume_;
+		mov  ecx, ebx; // sound
+		jmp  SetPanPosition;
+	}
+}
+
 constexpr int SampleRate = 44100; // 44.1kHz
 
 void Sound::init() {
@@ -907,6 +945,11 @@ void Sound::init() {
 
 	LoadGameHook::OnGameReset() += WipeSounds;
 	LoadGameHook::OnBeforeGameClose() += WipeSounds;
+
+	// Enables support for panning sound for sfx effects
+	SafeWrite8(0x45237E, (*(BYTE*)0x45237E) | 4); // set mode for DSBCAPS_CTRLPAN
+	HookCall(0x4515AC, gsound_compute_relative_volume_hook);
+	HookCall(0x451483, gsound_load_sound_volume_hack);
 
 	HookCall(0x44E816, gmovie_play_hook_pause);
 	HookCall(0x44EA84, gmovie_play_hook_unpause);
@@ -953,8 +996,8 @@ void Sound::init() {
 		0x4A96CC  // sfxc_decode_
 	});
 
-	int sBuff = GetConfigInt("Sound", "NumSoundBuffers", 0);
-	if (sBuff > 0) {
+	int sBuff = GetConfigInt("Sound", "NumSoundBuffers", 16);
+	if (sBuff > 4) {
 		SafeWrite8(0x451129, (sBuff > 32) ? (BYTE)32 : (BYTE)sBuff);
 	}
 
