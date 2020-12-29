@@ -914,13 +914,10 @@ static void __fastcall SetPanPosition(fo::ACMSoundData* sound) {
 	if (!relativeObject) return;
 
 	long distance = fo::func::obj_dist(fo::var::obj_dude, relativeObject);
-	if (distance > 5) {;
+	if (distance > 5) {
 		long direction = fo::func::tile_dir(fo::var::obj_dude->tile, relativeObject->tile);
 		bool isRightSide = (direction <= 2);
-
-		long panValue = distance * 500;
-		if (panValue > 10000) panValue = 10000;
-
+		long panValue = (distance < 55) ? (distance - 5) * 200 : 10000;
 		sound->soundBuffer->SetPan((isRightSide) ? panValue : -panValue); // left mute 10000 ... -10000 right mute
 	}
 	relativeObject = nullptr; // just in case

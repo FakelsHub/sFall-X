@@ -694,3 +694,18 @@ int     arg2 - 1 when the encounter occurs is a special encounter, 0 otherwise
 
 int     ret0 - overrides the map ID, or pass -1 for event type 0 to cancel the encounter and continue traveling
 int     ret1 - pass 1 to cancel the encounter and load the specified map from the ret1 (only for event type 0)
+
+-------------------------------------------
+
+HOOK_ADJUSTPOISON (hs_adjustpoison.int)
+
+Runs when the critter's poison level is changed or damage is caused by the poison effect.
+
+Obj     arg0 - critter
+int     arg1 - amount of the increase/decrease of the poisoning level
+int     arg2 - damage value at the time of applying poison effect
+               (damage the poison effect is implemented only for the player's character, for other critters this value will always be 0)
+
+int     ret0 - the new value of the amount poisoning level
+int     ret1 - the new damage value, only negative values are allowed (will only be valid at the time of the poison damage)
+
