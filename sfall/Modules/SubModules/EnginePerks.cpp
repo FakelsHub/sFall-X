@@ -80,8 +80,7 @@ public:
 	void setSalesmanBonus(long value) {
 		if (value < 0) return;
 		SalesmanBonus = value;
-		if (SalesmanBonus > 125) SalesmanBonus = 125;
-		SafeWrite8(0x496F60, static_cast<BYTE>(SalesmanBonus));
+		if (SalesmanBonus > 999) SalesmanBonus = 999;
 	}
 
 	void setLivingAnatomyBonus(long value) {
@@ -108,6 +107,7 @@ public:
 	void setDemolitionExpertBonus(long value) {
 		if (value < 0) return;
 		DemolitionExpertBonus = value;
+		if (DemolitionExpertBonus > 999) DemolitionExpertBonus = 999;
 	}
 
 	void setVaultCityInoculationsPoisonBonus(long value) {
@@ -145,7 +145,7 @@ static void __declspec(naked) queue_explode_exit_hack_demolition_expert() {
 }
 
 void EnginePerkBonusInit() {
-	// Allows the current perk level to influence the calculation of its bonus value
+	// Allows the current perk level to affect the calculation of its bonus value
 	MakeCall(0x496F5E, perk_adjust_skill_hack_salesman);
 	MakeCall(0x4A289C, queue_explode_exit_hack_demolition_expert, 1);
 }
