@@ -658,6 +658,14 @@ void Graphics::SetDefaultTechnique() {
 	gpuBltEffect->SetTechnique("T0");
 }
 
+static void SetGPUPalette() {
+	D3DLOCKED_RECT rect;
+	if (gpuPalette && !FAILED(gpuPalette->LockRect(0, &rect, 0, D3DLOCK_DISCARD))) {
+		CopyMemory(rect.pBits, palette, 256 * 4);
+		gpuPalette->UnlockRect(0);
+	}
+}
+
 class FakeDirectDrawSurface : IDirectDrawSurface {
 private:
 	ULONG Refs;
@@ -802,7 +810,9 @@ public:
 		if (d3d9Device->TestCooperativeLevel() == D3DERR_DEVICENOTRESET) {
 			ResetDevice(false);
 			DeviceLost = false;
+			if (Graphics::GPUBlt) SetGPUPalette(); // restote palette
 			fo::RefreshGNW();
+			dlogr("Restore device done!", DL_MAIN);
 		}
 		return !DeviceLost;
 	}
@@ -950,11 +960,7 @@ public:
 		__movsd((DWORD*)&palette[b], (DWORD*)destPal, c);
 
 		if (Graphics::GPUBlt) {
-			D3DLOCKED_RECT rect;
-			if (!FAILED(gpuPalette->LockRect(0, &rect, 0, D3DLOCK_DISCARD))) {
-				CopyMemory(rect.pBits, palette, 256 * 4);
-				gpuPalette->UnlockRect(0);
-			}
+			SetGPUPalette();
 		} else {
 			// X8B8G8R8 format
 			for (size_t i = b; i < b + c; i++) { // swap color B <> R
