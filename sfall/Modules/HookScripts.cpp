@@ -50,6 +50,7 @@ std::string HookScripts::hookScriptPathFmt;
 std::vector<HookFile> HookScripts::hookScriptFilesList;
 
 typedef void(*HookInjectFunc)();
+
 struct HooksInjectInfo {
 	int id;
 	HookInjectFunc inject;
@@ -108,6 +109,8 @@ static HooksInjectInfo injectHooks[] = {
 	{HOOK_TARGETOBJECT,     Inject_TargetObjectHook,     false},
 	{HOOK_ENCOUNTER,        Inject_EncounterHook,        false},
 	{HOOK_ADJUSTPOISON,     Inject_AdjustPoisonHook,     false},
+	{HOOK_ADJUSTRADIATION,  Inject_AdjustPadsHook,       true},  // always embedded for party control fix
+	{HOOK_ROLLCHECK,        Inject_RollCheckHook,        false},
 };
 
 void HookScripts::InjectingHook(int hookId) {
@@ -170,6 +173,7 @@ void HookScripts::RegisterHook(fo::Program* script, int id, int procNum, bool sp
 		case HOOK_MOUSECLICK:
 		case HOOK_ADJUSTFID:
 		case HOOK_GAMEMODECHANGE:
+		case HOOK_ADJUSTRADIATION:
 			break;
 		default:
 			HookScripts::InjectingHook(id); // inject hook to engine code

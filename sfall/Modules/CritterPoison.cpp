@@ -59,8 +59,8 @@ void __declspec(naked) critter_check_poison_hack() {
 void __fastcall critter_check_poison_fix() {
 	if (PartyControl::IsNpcControlled()) {
 		// since another critter is being controlled, we can't apply the poison effect to it
-		// instead, we add the "poison" event to dude again, which is triggered when dude will again be under the player's control
-		fo::func::queue_clear_type(fo::QueueType::poison_event, nullptr); // is it required?
+		// instead, we add the "poison" event to dude again, which will be triggered when dude returns to the player's control
+		fo::func::queue_clear_type(fo::QueueType::poison_event, nullptr); // this is required? probably NOT.
 		fo::GameObject* dude = PartyControl::RealDudeObject();
 		fo::func::queue_add(10, dude, nullptr, fo::QueueType::poison_event);
 	}
@@ -81,7 +81,7 @@ noDude:
 	}
 }
 
-void __declspec(naked) critter_adjust_poison_hack_fix() { // also can called from HOOK_ADJUSTPOISON
+void __declspec(naked) critter_adjust_poison_hack_fix() { // can also called from HOOK_ADJUSTPOISON
 	using namespace fo;
 	using namespace Fields;
 	__asm {
@@ -92,8 +92,19 @@ void __declspec(naked) critter_adjust_poison_hack_fix() { // also can called fro
 	}
 }
 
+static void __declspec(naked) critter_check_rads_hack() {
+	using namespace fo;
+	using namespace Fields;
+	__asm {
+		mov  edx, ds:[FO_VAR_obj_dude];
+		mov  eax, [eax + protoId]; // critter.pid
+		mov  ecx, PID_Player;
+		retn;
+	}
+}
+
 void CritterPoison::init() {
-	// Allow changes poison level for critters
+	// Allow changing the poison level for critters
 	MakeCall(0x42D226, critter_adjust_poison_hack);
 	SafeWrite8(0x42D22C, 0xDA); // jmp 0x42D30A
 
@@ -101,10 +112,13 @@ void CritterPoison::init() {
 	SetDefaultAdjustPoisonHP(*(DWORD*)0x42D332);
 	MakeCall(0x42D331, critter_check_poison_hack);
 
-	// Fix tweak for critter control
+	// Fix tweak for party control
 	MakeCall(0x42D31F, critter_check_poison_hack_fix, 1);
 	MakeCall(0x42D21C, critter_adjust_poison_hack_fix, 1);
 	SafeWrite8(0x42D223, 0xCB); // cmp eax, edx -> cmp ebx, ecx
+	// also rads
+	MakeCall(0x42D4FE, critter_check_rads_hack, 1);
+	SafeWrite8(0x42D505, 0xC8); // cmp eax, edx -> cmp eax, ecx
 }
 
 }

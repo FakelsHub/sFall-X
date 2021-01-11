@@ -709,3 +709,35 @@ int     arg2 - damage value at the time of applying poison effect
 int     ret0 - the new value of the amount poisoning level
 int     ret1 - the new damage value, only negative values are allowed (will only be valid at the time of the poison damage)
 
+-------------------------------------------
+
+HOOK_ADJUSTRADIATION (hs_adjustradiation.int)
+
+Runs when the critter's rads level is changed.
+
+Obj     arg0 - critter (usual dude_obj)
+int     arg1 - amount of the increase/decrease of the rads level
+
+int     ret0 - the new value of the amount rads level
+
+-------------------------------------------
+
+HOOK_ROLLCHECK (hs_rollcheck.int)
+
+Runs when a game event is randomly checking chance for success or failure result.
+
+int     arg0 - event type: 1 - checks the chance of an attack hitting to the target
+                2 - checks the chance of a burst bullet hitting (for burst attacks)
+                3 - checks the chance when using skills (not listed below)
+                4 - check the chance of using SKILL_REPAIR
+                5 - check the chance of using SKILL_DOCTOR
+                6 - check the chance of using SKILL_STEAL for the player
+                7 - the second SKILL_STEAL chance check for the critter, in which the critter's failure is the player's success result
+int     arg1 - the value of roll result (defined by the ROLL_ *), which is calculated as:
+                for ROLL_CRITICAL_SUCCESS: random(1, 100) <= (random_chance / 10) + bonus
+                for ROLL_CRITICAL_FAILURE: random(1, 100) <= -random_chance / 10
+int     arg2 - the chance value
+int     arg3 - bonus value, used when checking critical success
+int     arg4 - random chance (calculated: chance - random(1, 100)), where a negative value is a failure check (ROLL_FAILURE)
+
+int     ret0 - override roll result

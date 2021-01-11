@@ -336,6 +336,39 @@ static void __declspec(naked) critter_adjust_poison_hack() {
 	}
 }
 
+static DWORD __fastcall AdjustRads_Script(DWORD critter, long amount) {
+	if (HookScripts::HookHasScript(HOOK_ADJUSTRADIATION) == false) return amount;
+
+	BeginHook();
+	argCount = 2;
+
+	args[0] = critter; // always dude
+	args[1] = amount;
+
+	RunHookScript(HOOK_ADJUSTRADIATION);
+	if (cRet) amount = rets[0];
+
+	EndHook();
+	return amount;
+}
+
+void __declspec(naked) critter_adjust_rads_hack() {
+	using namespace fo;
+	using namespace Fields;
+	__asm {
+		mov  edi, ds:[FO_VAR_obj_dude];
+		mov  esi, [eax + protoId]; // critter.pid
+		cmp  esi, PID_Player;
+		jne  isNotDude;
+		call AdjustRads_Script; // ecx - critter, edx - amount
+		mov  ebx, eax;          // old/new amount
+		mov  edx, edi;
+		xor  eax, eax;          // for continue func
+isNotDude:
+		retn;
+	}
+}
+
 void Inject_UseObjOnHook() {
 	HookCalls(UseObjOnHook, { 0x49C606, 0x473619 });
 
@@ -377,6 +410,11 @@ void Inject_AdjustPoisonHook() {
 	MakeCall(0x42D21C, critter_adjust_poison_hack, 1);
 }
 
+void Inject_AdjustPadsHook() {
+	MakeCall(0x42D3B0, critter_adjust_rads_hack, 1);
+	SafeWrite16(0x42D3B6, 0xC085); // test eax, eax
+}
+
 void InitObjectHookScripts() {
 
 	HookScripts::LoadHookScript("hs_useobjon", HOOK_USEOBJON);
@@ -387,6 +425,7 @@ void InitObjectHookScripts() {
 	HookScripts::LoadHookScript("hs_stdprocedure", HOOK_STDPROCEDURE); // combo hook
 	HookScripts::LoadHookScript("hs_stdprocedure", HOOK_STDPROCEDURE_END);
 	HookScripts::LoadHookScript("hs_adjustpoison", HOOK_ADJUSTPOISON);
+	HookScripts::LoadHookScript("hs_adjustradiation", HOOK_ADJUSTRADIATION);
 }
 
 }
