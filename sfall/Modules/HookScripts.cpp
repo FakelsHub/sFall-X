@@ -109,7 +109,7 @@ static HooksInjectInfo injectHooks[] = {
 	{HOOK_TARGETOBJECT,     Inject_TargetObjectHook,     false},
 	{HOOK_ENCOUNTER,        Inject_EncounterHook,        false},
 	{HOOK_ADJUSTPOISON,     Inject_AdjustPoisonHook,     false},
-	{HOOK_ADJUSTRADIATION,  Inject_AdjustPadsHook,       true},  // always embedded for party control fix
+	{HOOK_ADJUSTRADS,       Inject_AdjustPadsHook,       true},  // always embedded for party control fix
 	{HOOK_ROLLCHECK,        Inject_RollCheckHook,        false},
 };
 

@@ -337,7 +337,7 @@ static void __declspec(naked) critter_adjust_poison_hack() {
 }
 
 static DWORD __fastcall AdjustRads_Script(DWORD critter, long amount) {
-	if (HookScripts::HookHasScript(HOOK_ADJUSTRADIATION) == false) return amount;
+	if (HookScripts::HookHasScript(HOOK_ADJUSTRADS) == false) return amount;
 
 	BeginHook();
 	argCount = 2;
@@ -345,7 +345,7 @@ static DWORD __fastcall AdjustRads_Script(DWORD critter, long amount) {
 	args[0] = critter; // always dude
 	args[1] = amount;
 
-	RunHookScript(HOOK_ADJUSTRADIATION);
+	RunHookScript(HOOK_ADJUSTRADS);
 	if (cRet) amount = rets[0];
 
 	EndHook();
@@ -425,7 +425,7 @@ void InitObjectHookScripts() {
 	HookScripts::LoadHookScript("hs_stdprocedure", HOOK_STDPROCEDURE); // combo hook
 	HookScripts::LoadHookScript("hs_stdprocedure", HOOK_STDPROCEDURE_END);
 	HookScripts::LoadHookScript("hs_adjustpoison", HOOK_ADJUSTPOISON);
-	HookScripts::LoadHookScript("hs_adjustradiation", HOOK_ADJUSTRADIATION);
+	HookScripts::LoadHookScript("hs_adjustrads", HOOK_ADJUSTRADS);
 }
 
 }
