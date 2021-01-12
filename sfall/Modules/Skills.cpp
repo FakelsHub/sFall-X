@@ -407,11 +407,11 @@ void Skills::init() {
 		if (basedOnPoints) HookCall(0x4AA9EC, (void*)fo::funcoffs::skill_points_); // skill_dec_point_
 
 		int tagFlags = iniGetInt("Skills", "TagSkillMode", 0, file);
-		if (tagFlags & 1) SafeWrite8(0x4AA612, 0xEB);    // PERK_tag can give initial skill bonus (jnz > jmp)
-		if (tagFlags & 2) SafeWrite16(0x4AA60E, 0x9090); // skill_level_ disables x2 skill points bonus for tagged skills
+		if (tagFlags & 1) SafeWrite8(0x4AA612, 0xEB);    // PERK_tag can give initial skill bonus. skill_level_ (jnz > jmp)
+		if (tagFlags & 2) SafeWrite16(0x4AA60E, 0x9090); // disables double skill points bonus for tagged skills. skill_level_ 
 
 		int tagBonus = iniGetInt("Skills", "TagSkillBonus", 20, file);
-		if (tagBonus != 20 && tagBonus >=0 && tagBonus <= 100) SafeWrite8(0x4AA61E, static_cast<BYTE>(tagBonus));
+		if (tagBonus != 20 && tagBonus >=0 && tagBonus <= 100) SafeWrite8(0x4AA61E, static_cast<BYTE>(tagBonus)); // skill_level_
 	}
 }
 

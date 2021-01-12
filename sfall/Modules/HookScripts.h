@@ -100,7 +100,6 @@ public:
 
 	static bool HookHasScript(int hookId);
 
-	static bool injectAllHooks;
 	static void InjectingHook(int hookId);
 	static bool IsInjectHook(int hookId);
 
