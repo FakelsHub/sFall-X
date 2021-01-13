@@ -18,6 +18,7 @@
 
 #define DUDE_INVEN                                    read_int(0x519058)
 #define SFX_SAVEHACK(value)                           write_short(0x443B0D, value)
+#define HP_ANIM(value)                                write_byte(0x479D39, value)
 
 #define time_has_passed(old_time, passed_time)        (below_equal(passed_time + old_time, game_time))
 
@@ -152,7 +153,7 @@ procedure InventoryMoveHandler begin
             cAmmo, ammoPid, ammoObj, inven;
 
    if (event == 4) then begin
-      if (quickAmmoReload) then return;
+      if (quickAmmoReload == false) then return;
       cAmmo := get_weapon_ammo_count(itemWeapon);
       if (cAmmo == 0) then return;
 
@@ -179,7 +180,9 @@ procedure InventoryMoveHandler begin
       if (obj_item_subtype(itemDrop) == item_type_drug) then begin
          set_self(dude_obj);
          set_self(dude_obj);
+         HP_ANIM(0); // disable hp animation
          use_obj_on_obj(itemDrop, dude_obj);
+         HP_ANIM(1);
       end
       else begin
          display_msg(mstr_item(10));
