@@ -1,14 +1,52 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26403.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ddraw", "ddraw.vcxproj", "{FB9023DA-CA5E-4704-B601-407810963EF0}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EA440259-1669-4720-AAC4-5A5F0D1F33AC}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Project files", "Project files", "{EA440259-1669-4720-AAC4-5A5F0D1F33AC}"
 	ProjectSection(SolutionItems) = preProject
 		Rebracer.xml = Rebracer.xml
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripting Headers", "Scripting Headers", "{5F3DA4F2-CE90-4B50-AF46-2FEFF3650DEA}"
+	ProjectSection(SolutionItems) = preProject
+		..\artifacts\scripting\headers\command_lite.h = ..\artifacts\scripting\headers\command_lite.h
+		..\artifacts\scripting\headers\define_extra.h = ..\artifacts\scripting\headers\define_extra.h
+		..\artifacts\scripting\headers\define_lite.h = ..\artifacts\scripting\headers\define_lite.h
+		..\artifacts\scripting\headers\dik.h = ..\artifacts\scripting\headers\dik.h
+		..\artifacts\scripting\headers\lib.arrays.h = ..\artifacts\scripting\headers\lib.arrays.h
+		..\artifacts\scripting\headers\lib.inven.h = ..\artifacts\scripting\headers\lib.inven.h
+		..\artifacts\scripting\headers\lib.math.h = ..\artifacts\scripting\headers\lib.math.h
+		..\artifacts\scripting\headers\lib.misc.h = ..\artifacts\scripting\headers\lib.misc.h
+		..\artifacts\scripting\headers\lib.strings.h = ..\artifacts\scripting\headers\lib.strings.h
+		..\artifacts\scripting\headers\sfall.h = ..\artifacts\scripting\headers\sfall.h
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripting Docs", "Scripting Docs", "{7FDEF226-35ED-4A7C-996B-8EA6E6AACD17}"
+	ProjectSection(SolutionItems) = preProject
+		..\artifacts\scripting\arrays.txt = ..\artifacts\scripting\arrays.txt
+		..\artifacts\scripting\hookscripts.txt = ..\artifacts\scripting\hookscripts.txt
+		..\artifacts\scripting\sfall function notes.txt = ..\artifacts\scripting\sfall function notes.txt
+		..\artifacts\scripting\sfall opcode list.txt = ..\artifacts\scripting\sfall opcode list.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configs", "Configs", "{3A5B984E-9EB4-4A6E-808A-87B62A4A87AE}"
+	ProjectSection(SolutionItems) = preProject
+		..\artifacts\config_files\books.ini = ..\artifacts\config_files\books.ini
+		..\artifacts\config_files\CriticalOverrides.ini = ..\artifacts\config_files\CriticalOverrides.ini
+		..\artifacts\ddraw.ini = ..\artifacts\ddraw.ini
+		..\artifacts\ddraw_ru.ini = ..\artifacts\ddraw_ru.ini
+		..\artifacts\config_files\Drugs.ini = ..\artifacts\config_files\Drugs.ini
+		..\artifacts\config_files\elevators.ini = ..\artifacts\config_files\elevators.ini
+		..\artifacts\config_files\Perks.ini = ..\artifacts\config_files\Perks.ini
+		..\artifacts\config_files\Skills.ini = ..\artifacts\config_files\Skills.ini
+		..\artifacts\config_files\Stats.ini = ..\artifacts\config_files\Stats.ini
+		..\artifacts\config_files\Translations.ini = ..\artifacts\config_files\Translations.ini
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SfallDebugEditor", "..\DebugEditor\SfallDebugEditor.csproj", "{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,8 +67,24 @@ Global
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP (NoSSE)|Win32.Build.0 = ReleaseXP (NoSSE)|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP|Win32.ActiveCfg = ReleaseXP|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP|Win32.Build.0 = ReleaseXP|Win32
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Debug|Win32.Build.0 = Debug|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.DevXP|Win32.ActiveCfg = Debug|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.DevXP|Win32.Build.0 = Debug|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Release|Win32.ActiveCfg = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Release|Win32.Build.0 = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.ReleaseXP (NoSSE)|Win32.ActiveCfg = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.ReleaseXP (NoSSE)|Win32.Build.0 = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.ReleaseXP|Win32.ActiveCfg = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.ReleaseXP|Win32.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5F3DA4F2-CE90-4B50-AF46-2FEFF3650DEA} = {EA440259-1669-4720-AAC4-5A5F0D1F33AC}
+		{7FDEF226-35ED-4A7C-996B-8EA6E6AACD17} = {EA440259-1669-4720-AAC4-5A5F0D1F33AC}
+		{3A5B984E-9EB4-4A6E-808A-87B62A4A87AE} = {EA440259-1669-4720-AAC4-5A5F0D1F33AC}
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3} = {EA440259-1669-4720-AAC4-5A5F0D1F33AC}
 	EndGlobalSection
 EndGlobal
