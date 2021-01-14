@@ -430,7 +430,7 @@ static void DebugModePatch() {
 		SafeWrite8(0x4DC34D, 15);
 
 		// fixes debugging messages
-		SafeWriteBatch<BYTE>(0xA, addrNewLine);
+		SafeWriteBatch<BYTE>(' ', addrNewLine);
 		HookCalls(debugMsg, {
 			0x482240, // map_set_global_var_
 			0x482274, // map_get_global_var_

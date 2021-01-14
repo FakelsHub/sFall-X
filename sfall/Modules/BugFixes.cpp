@@ -2888,6 +2888,30 @@ cap:	// knockback = 12 + knockback / 4
 	}
 }
 
+static void __declspec(naked) check_door_state_hack_close() {
+	__asm {
+		mov  eax, esi;
+		call fo::funcoffs::obj_is_a_portal_;
+		test eax, eax;
+		jz   skip;
+		and  dword ptr [esi + flags], ~(NoBlock | LightThru | ShootThru);
+skip:
+		retn;
+	}
+}
+
+static void __declspec(naked) check_door_state_hack_open() {
+	__asm {
+		mov  eax, esi;
+		call fo::funcoffs::obj_is_a_portal_;
+		test eax, eax;
+		jz   skip;
+		or   ecx, (NoBlock | LightThru | ShootThru);
+skip:
+		retn;
+	}
+}
+
 void BugFixes::init()
 {
 	#ifndef NDEBUG
@@ -3644,6 +3668,10 @@ void BugFixes::init()
 
 	// Fix broken Print() script function
 	HookCall(0x461AD4, (void*)fo::funcoffs::windowOutput_);
+
+	// Fixes set/unset flags to non-door objects when using the obj_close/obj_open functions
+	MakeCall(0x49CBF7, check_door_state_hack_close, 2);
+	MakeCall(0x49CB30, check_door_state_hack_open, 1);
 }
 
 }
