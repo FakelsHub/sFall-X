@@ -14,7 +14,7 @@
 #define SFALL_SC_EVALUATION   (true) // ScriptEditor 4.0: Automatic script compilation with -s option
 
 #include "..\headers\define.h"
-#include "..\headers\command.h"
+//#include "..\headers\command.h"
 #include "main.h"
 
 #define OBJ_DATA_LIGHT_DISTANCE     (0x6C)
@@ -147,9 +147,11 @@ end
 
 procedure start begin
    if game_loaded and (sfall_ver_major >= 4) then begin
+
       variable configSection := "CombatControl";
       controlMode := GetConfig("CombatControl", "Mode", 0);
-      if (controlMode > 2) then begin
+      if (controlMode >= 3) then begin
+         if (controlMode == 3) then metarule3(999, 0, 0, 0); // enables feature: Order to attack a specified target for party members
          controlMode := 0;
       end
       else if (controlMode == 1 and GetIniConfig("Debugging", "Enable", 0, "ddraw.ini") == 0) then begin
