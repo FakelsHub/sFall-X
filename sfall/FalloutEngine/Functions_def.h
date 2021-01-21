@@ -62,6 +62,7 @@ WRAP_WATCOM_FFUNC5(long, register_object_move_to_tile, GameObject*, source, long
 WRAP_WATCOM_FFUNC4(long, register_object_run_to_object, GameObject*, source, GameObject*, target, long, distance, long, delay)
 WRAP_WATCOM_FFUNC3(long, scr_get_local_var, long, sid, long, varId, long*, value)
 WRAP_WATCOM_FFUNC3(long, scr_set_local_var, long, sid, long, varId, long, value)
+WRAP_WATCOM_FFUNC6(long, text_object_create, GameObject*, object, const char*, text, long, font, long, colorText, long, colorOutline, BoundRect*, rect)
 WRAP_WATCOM_FFUNC3(long, tile_num_in_direction, long, tile, long, rotation,long, distance)
 WRAP_WATCOM_FFUNC8(void, trans_cscale, void*, fromBuff, long, width, long, height, long, fromPitch, void*, toBuff, long, toWidth, long, toHeight, long, toPitch)
 WRAP_WATCOM_FFUNC3(void, win_clip, Window*, window, RectList**, rects, void*, buffer)
