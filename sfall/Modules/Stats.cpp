@@ -26,8 +26,8 @@
 namespace sfall
 {
 
-bool engineDerivedStats = true;
-bool derivedHPwBonus = false; // recalculate the health points with bonus value stat
+static bool engineDerivedStats = true;
+static bool derivedHPwBonus = false; // recalculate the health points with bonus stat values
 
 static DWORD statMaximumsPC[fo::STAT_max_stat];
 static DWORD statMinimumsPC[fo::STAT_max_stat];
@@ -205,11 +205,12 @@ void Stats::UpdateHPStat(fo::GameObject* critter) {
 	if (calcStatValue < statFormulas[fo::Stat::STAT_max_hit_points].min) calcStatValue = statFormulas[fo::Stat::STAT_max_hit_points].min;
 
 	if (proto->critter.base.health != calcStatValue) {
-		fo::func::debug_printf("\nWarning: critter PID: %d, ID: %d, has an incorrect base value %d (must be %d) of the health stat.",
+		fo::func::debug_printf("\nWarning: critter PID: %d, ID: %d, has an incorrect base value of the max HP stat: %d must be %d.",
 							   critter->protoId, critter->id, proto->critter.base.health, calcStatValue);
+
+		proto->critter.base.health = calcStatValue;
+		critter->critter.health = calcStatValue + proto->critter.bonus.health;
 	}
-	proto->critter.base.health = calcStatValue;
-	critter->critter.health = calcStatValue + proto->critter.bonus.health;
 }
 
 static void __declspec(naked) stat_set_base_hack_allow() {
@@ -333,7 +334,7 @@ void Stats::init() {
 		const char* statFile = statsFile.insert(0, ".\\").c_str();
 		if (GetFileAttributes(statFile) == INVALID_FILE_ATTRIBUTES) return;
 
-		derivedHPwBonus = (iniGetInt("Main", "DerivedHPBonus", 0, statFile) != 0);
+		derivedHPwBonus = (iniGetInt("Main", "HPDependOnBonusStats", 0, statFile) != 0);
 
 		char key[6], buf2[256], buf3[256];
 
