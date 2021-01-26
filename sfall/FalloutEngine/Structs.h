@@ -190,8 +190,14 @@ struct GameObject {
 	inline bool IsCritter() {
 		return (Type() == fo::ObjType::OBJ_TYPE_CRITTER);
 	}
+	inline bool IsNotCritter() {
+		return (Type() != fo::ObjType::OBJ_TYPE_CRITTER);
+	}
 	inline bool IsItem() {
 		return (Type() == fo::ObjType::OBJ_TYPE_ITEM);
+	}
+	inline bool IsNotItem() {
+		return (Type() != fo::ObjType::OBJ_TYPE_ITEM);
 	}
 };
 
