@@ -25,6 +25,9 @@
     <Filter Include="Modules\SimplePatches">
       <UniqueIdentifier>{c60002cf-5a43-4d05-a47e-3a5b69d9679a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game">
+      <UniqueIdentifier>{7f5e0899-7240-4a24-a99b-aaea1aabf440}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h" />
@@ -319,6 +322,12 @@
     <ClInclude Include="Modules\SubModules\EnginePerks.h">
       <Filter>Modules\SubModules</Filter>
     </ClInclude>
+    <ClInclude Include="Game\skills.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\inventory.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -586,6 +595,13 @@
     <ClCompile Include="Modules\SubModules\EnginePerks.cpp">
       <Filter>Modules\SubModules</Filter>
     </ClCompile>
+    <ClCompile Include="Game\skills.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\inventory.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="ReplacementFuncs.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="version.rc" />

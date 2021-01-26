@@ -574,66 +574,6 @@ skip:
 	}
 }
 
-// reimplementation of adjust_fid engine function
-// Differences from vanilla:
-// - doesn't use art_vault_guy_num as default art, uses current critter FID instead
-// - invokes onAdjustFid delegate that allows to hook into FID calculation
-DWORD __stdcall Inventory::adjust_fid_replacement() {
-	DWORD fid;
-	if (fo::var::inven_dude->TypeFid() == fo::OBJ_TYPE_CRITTER) {
-		DWORD indexNum;
-		DWORD weaponAnimCode = 0;
-		if (PartyControl::IsNpcControlled()) {
-			// if NPC is under control, use current FID of critter
-			indexNum = fo::var::inven_dude->artFid & 0xFFF;
-		} else {
-			// vanilla logic:
-			indexNum = fo::var::art_vault_guy_num;
-			auto critterPro = fo::GetProto(fo::var::inven_pid);
-			if (critterPro != nullptr) {
-				indexNum = critterPro->fid & 0xFFF;
-			}
-			if (fo::var::i_worn != nullptr) {
-				auto armorPro = fo::GetProto(fo::var::i_worn->protoId);
-				DWORD armorFid = fo::func::stat_level(fo::var::inven_dude, fo::STAT_gender) == fo::GENDER_FEMALE
-					? armorPro->item.armor.femaleFID
-					: armorPro->item.armor.maleFID;
-
-				if (armorFid != -1) {
-					indexNum = armorFid;
-				}
-			}
-		}
-		auto itemInHand = fo::func::intface_is_item_right_hand()
-			? fo::var::i_rhand
-			: fo::var::i_lhand;
-
-		if (itemInHand != nullptr) {
-			auto itemPro = fo::GetProto(itemInHand->protoId);
-			if (itemPro->item.type == fo::item_type_weapon) {
-				weaponAnimCode = itemPro->item.weapon.animationCode;
-			}
-		}
-		fid = fo::func::art_id(fo::OBJ_TYPE_CRITTER, indexNum, 0, weaponAnimCode, 0);
-	} else {
-		fid = fo::var::inven_dude->artFid;
-	}
-	fo::var::i_fid = fid;
-	onAdjustFid.invoke(fid);
-	return fo::var::i_fid;
-}
-
-static void __declspec(naked) adjust_fid_hack_replacement() {
-	__asm {
-		push ecx;
-		push edx;
-		call Inventory::adjust_fid_replacement; // return fid
-		pop  edx;
-		pop  ecx;
-		retn;
-	}
-}
-
 static void __declspec(naked) do_move_timer_hook() {
 	static const DWORD DoMoveTimer_Ret = 0x476920;
 	__asm {
@@ -707,8 +647,6 @@ void InventoryReset() {
 void Inventory::init() {
 	OnKeyPressed() += InventoryKeyPressedHook;
 	LoadGameHook::OnGameReset() += InventoryReset;
-
-	MakeJump(fo::funcoffs::adjust_fid_, adjust_fid_hack_replacement);
 
 	long widthWeight = 135;
 
@@ -818,6 +756,10 @@ void Inventory::init() {
 	// Note: the flag is not checked for the metarule(METARULE_INVEN_UNWIELD_WHO, x) function
 	HookCall(0x45B0CE, op_inven_unwield_hook); // with fix to update interface slot after unwielding
 	HookCall(0x45693C, op_wield_obj_critter_hook);
+}
+
+void Inventory::InvokeAdjustFid(long fid) {
+	onAdjustFid.invoke(fid);
 }
 
 Delegate<DWORD>& Inventory::OnAdjustFid() {

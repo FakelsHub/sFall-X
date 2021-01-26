@@ -31,8 +31,7 @@ public:
 
 	// Called after game calculated dude FID for displaying on inventory screen
 	static Delegate<DWORD>& OnAdjustFid();
-
-	static DWORD __stdcall adjust_fid_replacement();
+	static void InvokeAdjustFid(long fid);
 
 	static long GetInvenApCost();
 	static void __fastcall SetInvenApCost(int cost);
