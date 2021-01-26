@@ -24,6 +24,8 @@
 #include "PartyControl.h"
 #include "LoadGameHook.h"
 
+#include "..\Game\inventory.h"
+
 #include "Inventory.h"
 
 namespace sfall
@@ -66,28 +68,6 @@ void InventoryKeyPressedHook(DWORD dxKey, bool pressed) {
 
 /////////////////////////////////////////////////////////////////
 
-DWORD __stdcall sf_item_total_size(fo::GameObject* critter) {
-	int totalSize = fo::func::item_c_curr_size(critter);
-
-	if (critter->TypeFid() == fo::OBJ_TYPE_CRITTER) {
-		fo::GameObject* item = fo::func::inven_right_hand(critter);
-		if (item && !(item->flags & fo::ObjectFlag::Right_Hand)) {
-			totalSize += fo::func::item_size(item);
-		}
-
-		fo::GameObject* itemL = fo::func::inven_left_hand(critter);
-		if (itemL && item != itemL && !(itemL->flags & fo::ObjectFlag::Left_Hand)) {
-			totalSize += fo::func::item_size(itemL);
-		}
-
-		item = fo::func::inven_worn(critter);
-		if (item && !(item->flags & fo::ObjectFlag::Worn)) {
-			totalSize += fo::func::item_size(item);
-		}
-	}
-	return totalSize;
-}
-
 static int __stdcall CritterGetMaxSize(fo::GameObject* critter) {
 	if (critter == fo::var::obj_dude) return invSizeMaxLimit;
 
@@ -114,7 +94,7 @@ static __declspec(naked) void critterIsOverloaded_hack() {
 		jz   skip;
 		push ebx;
 		mov  ebx, eax;           // ebx = MaxSize
-		call sf_item_total_size;
+		call game::Inventory::item_total_size;
 		cmp  eax, ebx;
 		setg al;                 // if CurrSize > MaxSize
 		and  eax, 0xFF;
@@ -128,8 +108,8 @@ end:
 static int __fastcall CanAddedItems(fo::GameObject* critter, fo::GameObject* item, int count) {
 	int sizeMax = CritterGetMaxSize(critter);
 	if (sizeMax > 0) {
-		int itemsSize = fo::func::item_size(item) * count;
-		if (itemsSize + (int)sf_item_total_size(critter) > sizeMax) return -6; // TODO: Switch this to a lower number, and add custom error messages.
+		int totalSize = game::Inventory::item_total_size(critter) + (fo::func::item_size(item) * count);
+		if (totalSize > sizeMax) return -6; // TODO: Switch this to a lower number, and add custom error messages.
 	}
 	return 0;
 }
@@ -174,10 +154,10 @@ static int __fastcall BarterAttemptTransaction(fo::GameObject* critter, fo::Game
 	int size = CritterGetMaxSize(critter);
 	if (size == 0) return 1;
 
-	int sizeTable = sf_item_total_size(table);
+	int sizeTable = game::Inventory::item_total_size(table);
 	if (sizeTable == 0) return 1;
 
-	size -= sf_item_total_size(critter);
+	size -= game::Inventory::item_total_size(critter);
 	return (sizeTable <= size) ? 1 : 0;
 }
 
@@ -252,7 +232,7 @@ static void __cdecl DisplaySizeStats(fo::GameObject* critter, const char* &messa
 	}
 
 	sizeMax = limitMax;
-	size = sf_item_total_size(critter);
+	size = game::Inventory::item_total_size(critter);
 
 	const char* msg = fo::MessageSearch(&fo::var::inventry_message_file, 35);
 	message = (msg != nullptr) ? msg : "";
@@ -320,7 +300,7 @@ static void __declspec(naked) gdControlUpdateInfo_hack() {
 		call CritterGetMaxSize;
 		push eax;               // sizeMax
 		push ebx;
-		call sf_item_total_size;
+		call game::Inventory::item_total_size;
 		push eax;               // size
 		mov  eax, ebx;
 		mov  edx, STAT_carry_amt;

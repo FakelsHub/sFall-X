@@ -15,9 +15,31 @@
 namespace game
 {
 
-#define sf sfall
+namespace sf = sfall;
 
-// reimplementation of adjust_fid engine function
+DWORD __stdcall Inventory::item_total_size(fo::GameObject* critter) {
+	int totalSize = fo::func::item_c_curr_size(critter);
+
+	if (critter->TypeFid() == fo::OBJ_TYPE_CRITTER) {
+		fo::GameObject* item = fo::func::inven_right_hand(critter);
+		if (item && !(item->flags & fo::ObjectFlag::Right_Hand)) {
+			totalSize += fo::func::item_size(item);
+		}
+
+		fo::GameObject* itemL = fo::func::inven_left_hand(critter);
+		if (itemL && item != itemL && !(itemL->flags & fo::ObjectFlag::Left_Hand)) {
+			totalSize += fo::func::item_size(itemL);
+		}
+
+		item = fo::func::inven_worn(critter);
+		if (item && !(item->flags & fo::ObjectFlag::Worn)) {
+			totalSize += fo::func::item_size(item);
+		}
+	}
+	return totalSize;
+}
+
+// Reimplementation of adjust_fid engine function
 // Differences from vanilla:
 // - doesn't use art_vault_guy_num as default art, uses current critter FID instead
 // - invokes onAdjustFid delegate that allows to hook into FID calculation
@@ -62,7 +84,7 @@ DWORD __stdcall Inventory::adjust_fid() {
 		fid = fo::var::inven_dude->artFid;
 	}
 	fo::var::i_fid = fid;
-	sf::Inventory::InvokeAdjustFid(fid); //onAdjustFid.invoke(fid);
+	sf::Inventory::InvokeAdjustFid(fid);
 	return fo::var::i_fid;
 }
 
@@ -79,7 +101,6 @@ static void __declspec(naked) adjust_fid_hack_replacement() {
 
 void Inventory::init() {
 	sf::MakeJump(fo::funcoffs::adjust_fid_, adjust_fid_hack_replacement);
-
 }
 
 }
