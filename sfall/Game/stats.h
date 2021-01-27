@@ -9,13 +9,12 @@
 namespace game
 {
 
-class Skills
+class Stats 
 {
 public:
 	static void init();
 
-	static int __stdcall trait_adjust_skill(DWORD skillID);
-
+	static int __stdcall trait_adjust_stat(DWORD statID);
 };
 
 }

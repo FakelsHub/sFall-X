@@ -28,6 +28,10 @@ public:
 	const char* name() { return "Perks"; }
 	void init();
 
+	static bool TraitIsDisabled(int traitID);
+	static DWORD GetTraitStatBonus(int statID, int traitIndex);
+	static DWORD GetTraitSkillBonus(int skillID, int traitIndex);
+
 	static void save(HANDLE file);
 	static bool load(HANDLE file);
 

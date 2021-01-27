@@ -547,7 +547,7 @@ struct SkillInfo {
 };
 
 struct StatInfo {
-	const char* dame;
+	const char* name;
 	const char* description;
 	long image;
 	long minValue;

@@ -328,6 +328,9 @@
     <ClInclude Include="Game\inventory.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="Game\stats.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -602,6 +605,9 @@
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="ReplacementFuncs.h" />
+    <ClCompile Include="Game\stats.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="version.rc" />
