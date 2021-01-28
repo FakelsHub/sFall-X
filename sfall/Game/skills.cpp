@@ -24,15 +24,14 @@ static bool CheckTrait(DWORD traitID) {
 
 int __stdcall Skills::trait_adjust_skill(DWORD skillID) {
 	int result = 0;
-	if (fo::var::pc_trait[0] != -1) {
-		result += sf::Perks::GetTraitSkillBonus(skillID, 0);
+
+	if (sf::Perks::TraitsModEnable()) {
+		if (fo::var::pc_trait[0] != -1) result += sf::Perks::GetTraitSkillBonus(skillID, 0);
+		if (fo::var::pc_trait[1] != -1) result += sf::Perks::GetTraitSkillBonus(skillID, 1);
 	}
-	if (fo::var::pc_trait[1] != -1) {
-		result += sf::Perks::GetTraitSkillBonus(skillID, 1);
-	}
-	if (CheckTrait(fo::TRAIT_gifted)) {
-		result -= 10;
-	}
+
+	if (CheckTrait(fo::TRAIT_gifted)) result -= 10;
+
 	if (CheckTrait(fo::TRAIT_good_natured)) {
 		if (skillID <= fo::SKILL_THROWING) {
 			result -= 10;

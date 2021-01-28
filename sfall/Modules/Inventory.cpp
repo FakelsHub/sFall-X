@@ -21,7 +21,6 @@
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\InputFuncs.h"
-#include "PartyControl.h"
 #include "LoadGameHook.h"
 
 #include "..\Game\inventory.h"

@@ -981,6 +981,10 @@ static void PerkSetup() {
 
 /////////////////////////// TRAIT FUNCTIONS ///////////////////////////////////
 
+int Perks::TraitsModEnable() {
+	return traitsEnable;
+}
+
 bool Perks::TraitIsDisabled(int traitID) {
 	return disableTraits[traitID];
 }
