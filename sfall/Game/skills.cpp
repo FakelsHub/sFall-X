@@ -18,8 +18,8 @@ namespace sf = sfall;
 
 // TODO: skill_level_, perk_adjust_skill_
 
-static bool CheckTrait(DWORD traitID) {
-	return (sf::Perks::TraitIsDisabled(traitID) == false && fo::var::pc_trait[0] == traitID || fo::var::pc_trait[1] == traitID);
+static __forceinline bool CheckTrait(DWORD traitID) {
+	return (sf::Perks::TraitIsDisabled(traitID) == false && (fo::var::pc_trait[0] == traitID || fo::var::pc_trait[1] == traitID));
 }
 
 int __stdcall Skills::trait_adjust_skill(DWORD skillID) {
