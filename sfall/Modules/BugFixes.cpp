@@ -2912,6 +2912,37 @@ skip:
 	}
 }
 
+static BYTE fixRegion = 0;
+
+static void __declspec(naked) checkAllRegions_hack() {
+	static const DWORD checkAllRegions_BackRet = 0x4B6C40;
+	static const DWORD checkAllRegions_FixRet = 0x4B6AAB;
+	__asm {
+		test eax, eax;
+		jnz  skip;
+		cmp  dword ptr ds:[FO_VAR_lastWin], -1;
+		je   skip;
+		mov  fixRegion, 1;
+		jmp  checkAllRegions_FixRet; // triggers leave event for _lastWin
+skip:
+		add  esp, 0x10;
+		pop  ebp;
+		pop  edi;
+		jmp  checkAllRegions_BackRet;
+	}
+}
+
+static void __declspec(naked) checkAllRegions_hook() {
+	__asm {
+		test byte ptr fixRegion, 1;
+		jnz  skip;
+		jmp  fo::funcoffs::windowCheckRegion_;
+skip:
+		mov  fixRegion, 0;
+		retn;
+	}
+}
+
 void BugFixes::init()
 {
 	#ifndef NDEBUG
@@ -3672,6 +3703,10 @@ void BugFixes::init()
 	// Fix the setting/unsetting of flags to non-door objects when using the obj_close/obj_open script functions
 	MakeCall(0x49CBF7, check_door_state_hack_close, 2);
 	MakeCall(0x49CB30, check_door_state_hack_open, 1);
+
+	// Fix triggering the 'Leave' event procedure of the window region when the mouse cursor moved to a non-scripted window
+	MakeJump(0x4B6C3B, checkAllRegions_hack);
+	HookCall(0x4B6C13, checkAllRegions_hook);
 }
 
 }
