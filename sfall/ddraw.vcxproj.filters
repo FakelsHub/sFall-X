@@ -313,9 +313,6 @@
     <ClInclude Include="Modules\MetaruleExtender.h">
       <Filter>Modules</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\SubModules\GameRender.h">
-      <Filter>Modules\SubModules</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\CritterPoison.h">
       <Filter>Modules\SimplePatches</Filter>
     </ClInclude>
@@ -330,6 +327,12 @@
     </ClInclude>
     <ClInclude Include="Game\stats.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\render.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SubModules\WindowRender.h">
+      <Filter>Modules\SubModules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -589,9 +592,6 @@
     <ClCompile Include="Modules\MetaruleExtender.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\SubModules\GameRender.cpp">
-      <Filter>Modules\SubModules</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\CritterPoison.cpp">
       <Filter>Modules\SimplePatches</Filter>
     </ClCompile>
@@ -607,6 +607,12 @@
     <ClCompile Include="ReplacementFuncs.h" />
     <ClCompile Include="Game\stats.cpp">
       <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\render.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\WindowRender.cpp">
+      <Filter>Modules\SubModules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

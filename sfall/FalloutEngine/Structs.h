@@ -792,6 +792,36 @@ struct ScriptListInfoItem {
 	long numLocalVars;
 };
 
+struct WinRegion { // sizeof = 0x88 (must be 0x8C)
+	char  name[32];
+	long  field_20;
+	long  field_24;
+	long  field_28;
+	long  field_2C;
+	long  field_30;
+	long  field_34;
+	long  field_38;
+	long  field_3C;
+	long  field_40;
+	Program* procScript;
+	long  proc_48;
+	long  proc_4C;
+	long  procEnter;
+	long  procLeave;
+	long  field_58;
+	long  field_5C;
+	long  field_60;
+	long  field_64;
+	long  flags_68;
+	long  field_6C;
+	long  field_70;
+	long  field_74;
+	void* func_78;
+	void* func_7C;
+	long  field_80;
+	long  field_84;
+};
+
 //for holding window info
 struct Window {
 	long wID; // window position in the _window_index array
@@ -830,36 +860,6 @@ struct sWindow {
 	long  flags;
 	float randX;
 	float randY;
-};
-
-struct WinRegion { // sizeof = 0x88 (must be 0x8C)
-	char  name[32];
-	long  field_20;
-	long  field_24;
-	long  field_28;
-	long  field_2C;
-	long  field_30;
-	long  field_34;
-	long  field_38;
-	long  field_3C;
-	long  field_40;
-	long  procScript;
-	long  proc_48;
-	long  proc_4C;
-	long  procEnter;
-	long  procLeave;
-	long  field_58;
-	long  field_5C;
-	long  field_60;
-	long  field_64;
-	long  flags_68;
-	long  field_6C;
-	long  field_70;
-	long  field_74;
-	void* func_78;
-	void* func_7C;
-	long  field_80;
-	long  field_84;
 };
 
 struct LSData {

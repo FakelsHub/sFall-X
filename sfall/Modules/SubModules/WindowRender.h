@@ -9,7 +9,7 @@
 namespace sfall
 {
 
-class GameRender {
+class WindowRender {
 public:
 	static void init();
 

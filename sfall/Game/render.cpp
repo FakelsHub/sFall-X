@@ -1,132 +1,21 @@
 /*
  *    sfall
- *    Copyright (C) 2008 - 2020  The sfall team
+ *    Copyright (C) 2008 - 2021  Timeslip and sfall team
  *
  */
 
-#include "..\..\FalloutEngine\Fallout2.h"
-#include "..\..\main.h"
-#include "..\Graphics.h"
+#include "..\FalloutEngine\Fallout2.h"
 
-#include "GameRender.h"
+#include "..\main.h"
+#include "..\Modules\Graphics.h"
+#include "..\Modules\SubModules\WindowRender.h"
 
-namespace sfall
+#include "render.h"
+
+namespace game
 {
 
-void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE* toBuffer);
-
-class OverlaySurface
-{
-private:
-	long size = 0;
-	long surfWidth;
-	long allocSize;
-	BYTE* surface = nullptr;
-
-public:
-	long winType = -1;
-
-	BYTE* Surface() { return surface; }
-
-	void CreateSurface(fo::Window* win, long winType) {
-		this->winType = winType;
-		this->surfWidth = win->width;
-		this->size = win->height * win->width;
-
-		if (surface != nullptr) {
-			if (size <= allocSize) {
-				std::memset(surface, 0, size);
-				return;
-			}
-			delete[] surface;
-		}
-
-		this->allocSize = size;
-		surface = new BYTE[size]();
-	}
-
-	void ClearSurface() {
-		if (surface != nullptr) std::memset(surface, 0, size);
-	}
-
-	void ClearSurface(Rectangle &rect) {
-		if (surface != nullptr) {
-			if (rect.width > surfWidth || rect.height > (size / surfWidth)) return; // going beyond the surface size
-			BYTE* surf = surface + (surfWidth * rect.y) + rect.x;
-
-			size_t sizeD = rect.width >> 2;
-			size_t sizeB = rect.width & 3;
-			size_t strideD = sizeD << 2;
-			size_t stride = surfWidth - rect.width;
-
-			long height = rect.height;
-			while (height--)
-			{
-				if (sizeD) {
-					__stosd((DWORD*)surf, 0, sizeD);
-					surf += strideD;
-				}
-				if (sizeB) {
-					__stosb(surf, 0, sizeB);
-					surf += sizeB;
-				}
-				surf += stride;
-			};
-		}
-	}
-
-	void DestroySurface() {
-		delete[] surface;
-		surface = nullptr;
-	}
-
-	~OverlaySurface() {
-		delete[] surface;
-	}
-} overlaySurfaces[5];
-
-static long indexPosition = 0;
-
-void GameRender::CreateOverlaySurface(fo::Window* win, long winType) {
-	if (win->randY) return;
-	if (overlaySurfaces[indexPosition].winType == winType) {
-		overlaySurfaces[indexPosition].ClearSurface();
-	} else {
-		if (++indexPosition == 5) indexPosition = 0;
-		overlaySurfaces[indexPosition].CreateSurface(win, winType);
-	}
-	win->randY = reinterpret_cast<long*>(&overlaySurfaces[indexPosition]);
-};
-
-BYTE* GameRender::GetOverlaySurface(fo::Window* win) {
-	return reinterpret_cast<OverlaySurface*>(win->randY)->Surface();
-};
-
-void GameRender::ClearOverlay(fo::Window* win) {
-	if (win->randY) reinterpret_cast<OverlaySurface*>(win->randY)->ClearSurface();
-};
-
-void GameRender::ClearOverlay(fo::Window* win, Rectangle &rect) {
-	if (win->randY) {
-		reinterpret_cast<OverlaySurface*>(win->randY)->ClearSurface(rect);
-		fo::BoundRect updateRect = rect;
-		updateRect.x += win->rect.x;
-		updateRect.y += win->rect.y;
-		updateRect.offx += win->rect.x;
-		updateRect.offy += win->rect.y;
-		sf_GNW_win_refresh(win, reinterpret_cast<RECT*>(&updateRect), 0);
-	}
-};
-
-void GameRender::DestroyOverlaySurface(fo::Window* win) {
-	if (win->randY) {
-		auto overlay = reinterpret_cast<OverlaySurface*>(win->randY);
-		win->randY = nullptr;
-		overlay->winType = -1;
-		overlay->DestroySurface();
-		sf_GNW_win_refresh(win, &win->wRect, 0);
-	}
-};
+namespace sf = sfall;
 
 static BYTE* GetBuffer() {
 	return (BYTE*)*(DWORD*)FO_VAR_screen_buffer;
@@ -142,7 +31,7 @@ static void Draw(fo::Window* win, BYTE* surface, long width, long height, long w
 	}
 
 	if (!win->randY) return;
-	surface = &GameRender::GetOverlaySurface(win)[rect.left - win->rect.x] + ((rect.top - win->rect.y) * win->width);
+	surface = &sf::WindowRender::GetOverlaySurface(win)[rect.left - win->rect.x] + ((rect.top - win->rect.y) * win->width);
 
 	if (toBuffer) {
 		fo::func::trans_buf_to_buf(surface, width, height, widthFrom, &toBuffer[rect.left - updateRect->left] + ((rect.top - updateRect->top) * toWidth), toWidth);
@@ -151,7 +40,7 @@ static void Draw(fo::Window* win, BYTE* surface, long width, long height, long w
 	}
 }
 
-static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE* toBuffer) {
+void __fastcall Render::GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE* toBuffer) {
 	if (win->flags & fo::WinFlags::Hidden) return;
 	fo::RectList* rects;
 
@@ -171,7 +60,7 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 			}*/
 			int h = (updateRect->bottom - updateRect->top) + 1;
 
-			Graphics::UpdateDDSurface(GetBuffer(), w, h, w, updateRect); // update the entire rectangle area
+			sf::Graphics::UpdateDDSurface(GetBuffer(), w, h, w, updateRect); // update the entire rectangle area
 
 		} else {
 			fo::func::mouse_show(); // for updating background cursor area
@@ -195,7 +84,7 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 				int wRect = (rects->wRect.right - rects->wRect.left) + 1;
 				int hRect = (rects->wRect.bottom - rects->wRect.top) + 1;
 
-				Graphics::UpdateDDSurface(&GetBuffer()[rects->wRect.left - updateRect->left] + (rects->wRect.top - updateRect->top) * w, wRect, hRect, w, &rects->wRect);
+				sf::Graphics::UpdateDDSurface(&GetBuffer()[rects->wRect.left - updateRect->left] + (rects->wRect.top - updateRect->top) * w, wRect, hRect, w, &rects->wRect);
 
 				fo::RectList* free = rects;
 				rects = rects->nextRect;
@@ -228,7 +117,7 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 	}
 
 	int widthFrom = win->width;
-	int toWidth = (toBuffer) ? (updateRect->right - updateRect->left) + 1 : Graphics::GetGameWidthRes();
+	int toWidth = (toBuffer) ? (updateRect->right - updateRect->left) + 1 : sf::Graphics::GetGameWidthRes();
 
 	fo::func::win_clip(win, &rects, toBuffer);
 
@@ -265,7 +154,7 @@ static void __fastcall sf_GNW_win_refresh(fo::Window* win, RECT* updateRect, BYT
 			int height = (rects->rect.offy - rects->rect.y) + 1;
 			int widthFrom = toWidth;
 
-			Graphics::UpdateDDSurface(&GetBuffer()[rects->rect.x] + (rects->rect.y * widthFrom), width, height, widthFrom, &rects->wRect);
+			sf::Graphics::UpdateDDSurface(&GetBuffer()[rects->rect.x] + (rects->rect.y * widthFrom), width, height, widthFrom, &rects->wRect);
 		}
 		fo::RectList* next = rects->nextRect;
 		fo::sf_rect_free(rects);
@@ -281,52 +170,22 @@ static __declspec(naked) void GNW_win_refresh_hack() {
 	__asm {
 		push ebx; // toBuffer
 		mov  ecx, eax;
-		call sf_GNW_win_refresh;
+		call Render::GNW_win_refresh;
 		pop  ecx;
 		retn;
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-static double fadeMulti;
-
-static __declspec(naked) void palette_fade_to_hook() {
-	__asm {
-		push ebx; // _fade_steps
-		fild [esp];
-		fmul fadeMulti;
-		fistp [esp];
-		pop  ebx;
-		jmp  fo::funcoffs::fadeSystemPalette_;
-	}
-}
-
-void GameRender::init() {
-
-	fadeMulti = GetConfigInt("Graphics", "FadeMultiplier", 100);
-	if (fadeMulti != 100) {
-		dlog("Applying fade patch.", DL_INIT);
-		HookCall(0x493B16, palette_fade_to_hook);
-		fadeMulti = ((double)fadeMulti) / 100.0;
-		dlogr(" Done", DL_INIT);
-	}
-
+void Render::init() {
 	// Replace the srcCopy_ function with a pure SSE implementation
-	MakeJump(0x4D36D4, fo::func::buf_to_buf); // buf_to_buf_
+	sf::MakeJump(0x4D36D4, fo::func::buf_to_buf); // buf_to_buf_
 	// Replace the transSrcCopy_ function
-	MakeJump(0x4D3704, fo::func::trans_buf_to_buf); // trans_buf_to_buf_
-
-	// Enable support for transparent interface windows
-	SafeWriteBatch<WORD>(0x9090, {
-		0x4D5D46, // win_init_ (create screen_buffer)
-		0x4D75E6  // win_clip_ (remove _buffering checking)
-	});
+	sf::MakeJump(0x4D3704, fo::func::trans_buf_to_buf); // trans_buf_to_buf_
 
 	// Custom implementation of the GNW_win_refresh function
-	MakeJump(0x4D6FD9, GNW_win_refresh_hack, 1);
+	sf::MakeJump(fo::funcoffs::GNW_win_refresh_, GNW_win_refresh_hack, 1); // 0x4D6FD9
 	// replace _screendump_buf to _screen_buffer for create screenshot
-	SafeWriteBatch<DWORD>(FO_VAR_screen_buffer, { 0x4C8FD1, 0x4C900D });
+	sf::SafeWriteBatch<DWORD>(FO_VAR_screen_buffer, { 0x4C8FD1, 0x4C900D });
 }
 
 }
