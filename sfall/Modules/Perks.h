@@ -28,7 +28,7 @@ public:
 	const char* name() { return "Perks"; }
 	void init();
 
-	// Used a modification of the stat/skills by using .ini config file
+	// Enable the modification of the stat/skills for traits by using the perks ini file
 	static int  TraitsModEnable();
 	static bool TraitIsDisabled(int traitID);
 	static DWORD GetTraitStatBonus(int statID, int traitIndex);

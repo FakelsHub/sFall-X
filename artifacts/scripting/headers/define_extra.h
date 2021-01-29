@@ -107,7 +107,7 @@
 /* Window flags */
 #define WIN_FLAG_DONTMOVE           (0x2) // does not move the window to the foreground when clicking on the window
 #define WIN_FLAG_MOVEONTOP          (0x4) // places a window on top of other windows
-#define WIN_FLAG_HIDDEN             (0x8) // hidden window 
+#define WIN_FLAG_HIDDEN             (0x8) // hidden window
 #define WIN_FLAG_EXCLUSIVE         (0x10)
 #define WIN_FLAG_TRANSPARENT       (0x20) // transparent window flag, the window color with index 0 will be transparent
 
@@ -289,6 +289,7 @@
 #define CALIBER_7_62MM              (18)
 
 // hidden perks
+#ifndef DEFINE_LITE_H
 #define PERK_add_nuka               (53)
 #define PERK_add_buffout            (54)
 #define PERK_add_mentats            (55)
@@ -309,6 +310,7 @@
 #define PERK_add_jet                (70)
 #define PERK_add_tragic             (71)
 #define PERK_armor_charisma         (72)
+#endif
 
 #define WPN_ANIM_NONE               (0x00) // (A)
 #define WPN_ANIM_KNIFE              (0x01) // (D)

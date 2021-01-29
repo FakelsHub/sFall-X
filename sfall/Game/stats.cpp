@@ -117,7 +117,7 @@ void Stats::init() {
 	// Replace functions
 	sf::MakeJump(fo::funcoffs::trait_adjust_stat_, trait_adjust_stat_hack); // 0x4B3C7C
 
-	// Fix the calculation of the maximum carry weight of the Small Frame trait for bonus strength points
+	// Fix the carry weight penalty of the Small Frame trait not being applied to bonus Strength points
 	smallFrameTraitFix = (sf::GetConfigInt("Misc", "SmallFrameFix", 0) > 0);
 }
 
