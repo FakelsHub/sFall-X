@@ -630,7 +630,7 @@ static void ResetOnGameLoad() {
 
 void Combat::init() {
 
-	CombatBlockedInit();
+	CombatBlock::init();
 	CombatProcFix();
 
 	MakeCall(0x424B76, compute_damage_hack, 2);     // KnockbackMod
