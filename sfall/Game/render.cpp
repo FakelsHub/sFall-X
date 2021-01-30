@@ -178,12 +178,12 @@ static __declspec(naked) void GNW_win_refresh_hack() {
 
 void Render::init() {
 	// Replace the srcCopy_ function with a pure SSE implementation
-	sf::MakeJump(0x4D36D4, fo::func::buf_to_buf); // buf_to_buf_
+	sf::MakeJump(fo::funcoffs::buf_to_buf_, fo::func::buf_to_buf); // 0x4D36D4 
 	// Replace the transSrcCopy_ function
-	sf::MakeJump(0x4D3704, fo::func::trans_buf_to_buf); // trans_buf_to_buf_
+	sf::MakeJump(fo::funcoffs::trans_buf_to_buf_, fo::func::trans_buf_to_buf); // 0x4D3704 
 
 	// Custom implementation of the GNW_win_refresh function
-	sf::MakeJump(fo::funcoffs::GNW_win_refresh_, GNW_win_refresh_hack, 1); // 0x4D6FD9
+	sf::MakeJump(0x4D6FD9, GNW_win_refresh_hack, 1);
 	// replace _screendump_buf to _screen_buffer for create screenshot
 	sf::SafeWriteBatch<DWORD>(FO_VAR_screen_buffer, { 0x4C8FD1, 0x4C900D });
 }
