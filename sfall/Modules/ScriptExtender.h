@@ -109,7 +109,6 @@ void RunScriptProc(ScriptProgram* prog, long procId);
 int RunScriptStartProc(ScriptProgram* prog);
 
 // variables
-extern uint32_t isGlobalScriptLoading;
 extern uint32_t availableGlobalScriptTypes;
 extern bool alwaysFindScripts;
 

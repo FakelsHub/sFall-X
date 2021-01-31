@@ -125,8 +125,8 @@ typedef std::unordered_map<__int64, int>::iterator glob_itr;
 typedef std::unordered_map<__int64, int>::const_iterator glob_citr;
 
 uint32_t availableGlobalScriptTypes = 0;
-uint32_t isGlobalScriptLoading = 0;
-bool isGameLoading;
+static uint32_t isGlobalScriptLoading = 0;
+static bool gameIsResets;
 bool alwaysFindScripts;
 
 fo::ScriptInstance overrideScript = {0};
@@ -304,7 +304,7 @@ proceedNormal:
 
 // this hook prevents sfall scripts from being removed after switching to another map, since normal script engine re-loads completely
 static void __stdcall FreeProgram(fo::Program* progPtr) {
-	if (isGameLoading || (sfallProgsMap.find(progPtr) == sfallProgsMap.end())) { // only delete non-sfall scripts or when actually loading the game
+	if (gameIsResets || (sfallProgsMap.find(progPtr) == sfallProgsMap.cend())) { // only delete non-sfall scripts or when actually loading the game
 		__asm {
 			mov  eax, progPtr;
 			call fo::funcoffs::interpretFreeProgram_;
@@ -483,25 +483,35 @@ bool IsGameScript(const char* filename) {
 }
 
 static void LoadGlobalScriptsList() {
+	dlog("Running global scripts...\n", DL_SCRIPT);
+
 	ScriptProgram prog;
 	for (auto& item : globalScriptFilesList) {
 		auto &scriptFile = item.second;
-		dlog("> " + scriptFile, DL_SCRIPT);
-		isGlobalScriptLoading = 1;
+		dlog("Init: " + scriptFile, DL_SCRIPT);
 		LoadScriptProgram(prog, scriptFile.c_str(), true);
 		if (prog.ptr) {
-			dlogr(" Done", DL_SCRIPT);
 			GlobalScript gscript = GlobalScript(prog);
 			gscript.startProc = prog.procLookup[fo::Scripts::ScriptProc::start]; // get 'start' procedure position
 			globalScripts.push_back(gscript);
 			ScriptExtender::AddProgramToMap(prog);
+			dlogr(" Done", DL_SCRIPT);
 			// initialize script (start proc will be executed for the first time) -- this needs to be after script is added to "globalScripts" array
 			InitScriptProgram(prog);
 		} else {
 			dlogr(" Error!", DL_SCRIPT);
 		}
-		isGlobalScriptLoading = 0;
 	}
+}
+
+static void InitGlobalScripts() {
+	gameIsResets = false;
+	isGlobalScriptLoading = 1; // this should allow to register global exported variables
+
+	HookScripts::InitHookScripts();
+	LoadGlobalScriptsList();
+
+	isGlobalScriptLoading = 0;
 }
 
 static void PrepareGlobalScriptsListByMask() {
@@ -537,10 +547,9 @@ static void PrepareGlobalScriptsListByMask() {
 	}
 }
 
-// this runs after the game was loaded/started
+// this runs before the game was loaded/started
 static void LoadGlobalScripts() {
 	static bool listIsPrepared = false;
-	isGameLoading = false;
 
 	HookScripts::LoadHookScripts();
 
@@ -550,7 +559,6 @@ static void LoadGlobalScripts() {
 		listIsPrepared = !alwaysFindScripts;
 		if (listIsPrepared) globalScriptPathList.clear(); // clear path list, it is no longer needed
 	}
-	LoadGlobalScriptsList();
 	dlogr("Finished loading global scripts.", DL_SCRIPT|DL_INIT);
 }
 
@@ -570,7 +578,6 @@ int __stdcall ScriptExtender::ScriptHasLoaded(fo::Program* script) {
 
 			lastProgram.script = script;
 			lastProgram.index = i;
-
 			return loaded;
 		}
 	}
@@ -580,7 +587,8 @@ int __stdcall ScriptExtender::ScriptHasLoaded(fo::Program* script) {
 
 // this runs before actually loading/starting the game
 static void ClearGlobalScripts() {
-	isGameLoading = true;
+	devlog_f("\nReset global scripts.", DL_MAIN);
+	gameIsResets = true;
 	lastProgram.script = nullptr;
 	sfallProgsMap.clear();
 	globalScripts.clear();
@@ -893,7 +901,8 @@ static void BuildSortedIndexList() {
 
 void ScriptExtender::init() {
 	LoadGameHook::OnAfterGameInit() += BuildSortedIndexList;
-	LoadGameHook::OnAfterGameStarted() += LoadGlobalScripts;
+	LoadGameHook::OnBeforeGameStart() += LoadGlobalScripts;  // loading sfall scripts
+	LoadGameHook::OnAfterGameStarted() += InitGlobalScripts; // running sfall scripts
 	LoadGameHook::OnGameReset() += [] () {
 		ClearGlobalScripts();
 		ClearGlobals();
