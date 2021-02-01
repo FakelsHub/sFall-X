@@ -3704,7 +3704,7 @@ void BugFixes::init()
 	MakeCall(0x49CBF7, check_door_state_hack_close, 2);
 	MakeCall(0x49CB30, check_door_state_hack_open, 1);
 
-	// Fix calling the "Leave" event procedure of the window region not being triggered when the mouse cursor moved to a non-scripted window
+	// Fix for the "Leave" event procedure of the window region not being triggered when the mouse cursor moved to a non-scripted window
 	MakeJump(0x4B6C3B, checkAllRegions_hack);
 	HookCall(0x4B6C13, checkAllRegions_hook);
 }

@@ -41,8 +41,8 @@ namespace sfall
 // Number of types of hooks
 static constexpr int numHooks = HOOK_COUNT;
 
-bool newHookRegister = true;
-bool injectAllHooks;
+static bool newHookRegister = true;
+static bool injectAllHooks;
 
 DWORD HookScripts::initingHookScripts;
 
@@ -201,13 +201,15 @@ void HookScripts::LoadHookScript(const char* name, int id) {
 
 		HookFile hookFile = { id, filePath, name };
 		HookScripts::hookScriptFilesList.push_back(hookFile);
+
+		dlog_f("Found hook script: %s\n", DL_HOOK, filePath);
 	}
 }
 
-bool HookScripts::LoadHookScriptFile(std::string &filePath, const char* name, int id, bool fullPath) {
+void HookScripts::InitHookScriptFile(std::string &filePath, const char* name, int id, bool fullPath) {
 	ScriptProgram prog;
 	dlog("Init: " + filePath, DL_HOOK);
-	LoadScriptProgram(prog, name, fullPath);
+	InitScriptProgram(prog, name, fullPath);
 	if (prog.ptr) {
 		HookScript hook;
 		hook.prog = prog;
@@ -219,7 +221,7 @@ bool HookScripts::LoadHookScriptFile(std::string &filePath, const char* name, in
 	} else {
 		dlogr(" Error!", DL_HOOK);
 	}
-	return (prog.ptr != nullptr);
+	//return (prog.ptr != nullptr);
 }
 
 void HookScripts::LoadHookScripts() {
@@ -251,14 +253,14 @@ void HookScripts::InitHookScripts() {
 
 	bool customPath = !HookScripts::hookScriptPathFmt.empty();
 	for (auto& hook : HookScripts::hookScriptFilesList) {
-		HookScripts::LoadHookScriptFile(hook.filePath, hook.name.c_str(), hook.id, customPath);
+		HookScripts::InitHookScriptFile(hook.filePath, hook.name.c_str(), hook.id, customPath);
 	}
 
 	initingHookScripts = 1;
 	for (int i = 0; i < numHooks; i++) {
 		if (!hooks[i].empty()) {
 			hooksInfo[i].hasHsScript = true;
-			InitScriptProgram(hooks[i][0].prog); // zero hook is always hs_*.int script because Hook scripts are loaded BEFORE global scripts
+			RunScriptProgram(hooks[i][0].prog); // zero hook is always hs_*.int script because Hook scripts are loaded BEFORE global scripts
 		}
 	}
 	initingHookScripts = 0;

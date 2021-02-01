@@ -244,9 +244,9 @@ static void __declspec(naked) ExecMapScriptsHack() {
 }
 
 static ExportedVar* __fastcall GetGlobalExportedVarPtr(const char* name) {
+	devlog_f("Trying to find exported var %s\n", DL_MAIN, name);
 	std::string str(name);
 	ExportedVarsMap::iterator it = globalExportedVars.find(str);
-	//dlog_f("\n Trying to find exported var %s... ", DL_MAIN, name);
 	if (it != globalExportedVars.end()) {
 		ExportedVar *ptr = &it->second;
 		return ptr;
@@ -254,8 +254,8 @@ static ExportedVar* __fastcall GetGlobalExportedVarPtr(const char* name) {
 	return nullptr;
 }
 
-static void __stdcall CreateGlobalExportedVar(DWORD scr, const char* name) {
-	//dlog_f("\nTrying to export variable %s (%d)\n", DL_MAIN, name, isGlobalScriptLoading);
+static void __fastcall CreateGlobalExportedVar(fo::Program* script, const char* name) {
+	devlog_f("Trying to export variable %s (%d)\n", DL_MAIN, name, isGlobalScriptLoading);
 	std::string str(name);
 	globalExportedVars[str] = ExportedVar(); // add new
 }
@@ -265,14 +265,13 @@ static void __stdcall CreateGlobalExportedVar(DWORD scr, const char* name) {
 
 	reason for this: game frees all scripts and exported variables from memory when you exit map
 	so if you create exported variable in sfall global script, it will work until you exit map, after that you will get crashes
-
 	with this you can still use variables exported from global scripts even between map changes (per global scripts logic)
 */
 static void __declspec(naked) Export_FetchOrStore_FindVar_Hook() {
 	__asm {
 		push ecx;
 		push edx;
-		mov  ecx, edx;                 // varName
+		mov  ecx, edx; // varName
 		call GetGlobalExportedVarPtr;
 		pop  edx;
 		pop  ecx;
@@ -286,19 +285,18 @@ proceedNormal:
 	}
 }
 
-static void __declspec(naked) Export_Export_FindVar_Hook() {
-	static const DWORD Export_Export_FindVar_back = 0x4414AE;
+static void __declspec(naked) exportExportVariable_hook() {
+	static const DWORD exportExportVariable_BackRet = 0x4414AE;
 	__asm {
 		cmp  isGlobalScriptLoading, 0;
 		jz   proceedNormal;
-		push edx; // var name
-		push ebp; // script ptr
-		call CreateGlobalExportedVar;
+		mov  ecx, ebp;                     // script ptr
+		call CreateGlobalExportedVar;      // edx - var name
 		xor  eax, eax;
-		add  esp, 4;                      // destroy return
-		jmp  Export_Export_FindVar_back;  // if sfall exported var, jump to the end of function
+		add  esp, 4;                       // destroy return
+		jmp  exportExportVariable_BackRet; // if sfall exported var, jump to the end of function
 proceedNormal:
-		jmp  fo::funcoffs::findVar_;      // else - proceed normal
+		jmp  fo::funcoffs::findVar_;       // else - proceed normal
 	}
 }
 
@@ -428,7 +426,7 @@ void __fastcall SetSelfObject(fo::Program* script, fo::GameObject* obj) {
 }
 
 // loads script from .int file into a sScriptProgram struct, filling script pointer and proc lookup table
-void LoadScriptProgram(ScriptProgram &prog, const char* fileName, bool fullPath) {
+void InitScriptProgram(ScriptProgram &prog, const char* fileName, bool fullPath) {
 	fo::Program* scriptPtr = fullPath
 		? fo::func::allocateProgram(fileName)
 		: fo::func::loadProgram(fileName);
@@ -440,17 +438,17 @@ void LoadScriptProgram(ScriptProgram &prog, const char* fileName, bool fullPath)
 		for (int i = 0; i < fo::Scripts::ScriptProc::count; ++i) {
 			prog.procLookup[i] = fo::func::interpretFindProcedure(prog.ptr, procTable[i]);
 		}
-		prog.initialized = 0;
+		prog.initialized = false;
 	} else {
 		prog.ptr = nullptr;
 	}
 }
 
-void InitScriptProgram(ScriptProgram &prog) {
-	if (prog.initialized == 0) {
+void RunScriptProgram(ScriptProgram &prog) {
+	if (!prog.initialized) {
 		fo::func::runProgram(prog.ptr);
 		fo::func::interpret(prog.ptr, -1);
-		prog.initialized = 1;
+		prog.initialized = true;
 	}
 }
 
@@ -489,7 +487,7 @@ static void LoadGlobalScriptsList() {
 	for (auto& item : globalScriptFilesList) {
 		auto &scriptFile = item.second;
 		dlog("Init: " + scriptFile, DL_SCRIPT);
-		LoadScriptProgram(prog, scriptFile.c_str(), true);
+		InitScriptProgram(prog, scriptFile.c_str(), true);
 		if (prog.ptr) {
 			GlobalScript gscript = GlobalScript(prog);
 			gscript.startProc = prog.procLookup[fo::Scripts::ScriptProc::start]; // get 'start' procedure position
@@ -497,7 +495,7 @@ static void LoadGlobalScriptsList() {
 			ScriptExtender::AddProgramToMap(prog);
 			dlogr(" Done", DL_SCRIPT);
 			// initialize script (start proc will be executed for the first time) -- this needs to be after script is added to "globalScripts" array
-			InitScriptProgram(prog);
+			RunScriptProgram(prog);
 		} else {
 			dlogr(" Error!", DL_SCRIPT);
 		}
@@ -528,7 +526,7 @@ static void PrepareGlobalScriptsListByMask() {
 			std::string baseName(name);
 			int lastDot = baseName.find_last_of('.');
 			if ((baseName.length() - lastDot) > 4) continue; // skip files with invalid extension (bug in db_get_file_list fuction)
-			dlog_f("Found global script: %s\n", DL_INIT, name);
+			dlog_f("Found global script: %s\n", DL_SCRIPT, name);
 
 			baseName = baseName.substr(0, lastDot); // script name without extension
 			if (basePath != fo::var::script_path_base || !IsGameScript(baseName.c_str())) {
@@ -562,7 +560,7 @@ static void LoadGlobalScripts() {
 	dlogr("Finished loading global scripts.", DL_SCRIPT|DL_INIT);
 }
 
-struct {
+static struct {
 	fo::Program* script = nullptr;
 	long index;
 } lastProgram;
@@ -942,7 +940,7 @@ void ScriptExtender::init() {
 		bool pathSeparator = (c == '\\' || c == '/');
 		if (len > 62 || (len == 62 && !pathSeparator)) {
 			iniConfigFolder.clear();
-			dlogr("Error: IniConfigFolder path is too long.", DL_INIT|DL_SCRIPT);
+			dlogr("Error: IniConfigFolder path is too long.", DL_MAIN);
 		} else if (!pathSeparator) {
 			iniConfigFolder += '\\';
 		}
@@ -964,10 +962,10 @@ void ScriptExtender::init() {
 	HookCall(0x4A3E08, script_chk_timed_events_hook);
 
 	// this patch makes it possible to export variables from sfall global scripts
-	HookCall(0x4414C8, Export_Export_FindVar_Hook);
+	HookCall(0x4414C8, exportExportVariable_hook);
 	HookCalls(Export_FetchOrStore_FindVar_Hook, {
-		0x441285, // store
-		0x4413D9  // fetch
+		0x441285, // exportStoreVariable_
+		0x4413D9  // exportFetchVariable_
 	});
 
 	HookCall(0x46E141, FreeProgramHook);

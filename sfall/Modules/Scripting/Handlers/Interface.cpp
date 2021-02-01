@@ -802,7 +802,7 @@ void mf_interface_print(OpcodeContext& ctx) { // same as vanilla PrintRect
 	BYTE* surface;
 	if (win->randY) { // если была создана поверхность то рисование движком будет произведено в нее
 		surface = win->surface;
-		win->surface = WindowRender::GetOverlaySurface(win); // заменяем поверхность для функции windowWrapLineWithSpacing_
+		win->surface = WindowRender::GetOverlaySurface(win); // replace the surface for the windowWrapLineWithSpacing_ function
 	}
 
 	if (color & 0x10000) { // shadow (textshadow)
