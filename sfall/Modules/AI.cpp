@@ -20,6 +20,7 @@
 
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
+#include "LoadGameHook.h"
 
 #include "HookScripts\CombatHS.h"
 
@@ -490,12 +491,19 @@ static void __declspec(naked) combat_attack_hook() {
 	}
 }
 
+static void AICombatClear() {
+	targets.clear();
+	sources.clear();
+}
+
 void AI::init() {
 
 	HookCalls(combat_attack_hook, {
 		0x426A95, // combat_attack_this_
 		0x42A796  // ai_attack_
 	});
+	LoadGameHook::OnCombatStart() += AICombatClear;
+	LoadGameHook::OnCombatEnd() += AICombatClear;
 
 	RetryCombatMinAP = GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
 	if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility older versions
@@ -587,16 +595,6 @@ fo::GameObject* __stdcall AI::AIGetLastAttacker(fo::GameObject* target) {
 fo::GameObject* __stdcall AI::AIGetLastTarget(fo::GameObject* source) {
 	const auto itr = targets.find(source);
 	return (itr != targets.end()) ? itr->second : 0;
-}
-
-void __stdcall AI::AICombatStart() {
-	targets.clear();
-	sources.clear();
-}
-
-void __stdcall AI::AICombatEnd() {
-	targets.clear();
-	sources.clear();
 }
 
 }
