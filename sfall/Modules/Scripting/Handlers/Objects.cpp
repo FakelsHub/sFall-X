@@ -172,8 +172,8 @@ void op_make_straight_path(OpcodeContext& ctx) {
 		  type = ctx.arg(2).rawValue();
 
 	long flag = (type == BLOCKING_TYPE_SHOOT) ? 32 : 0; // TODO: Maybe need to use a different 4/16 value instead of zero
-	DWORD resultObj = 0;
-	fo::func::make_straight_path_func(objFrom, objFrom->tile, tileTo, 0, &resultObj, flag, (void*)getBlockingFunc(type));
+	fo::GameObject* resultObj = nullptr;
+	fo::func::make_straight_path_func(objFrom, objFrom->tile, tileTo, 0, (DWORD*)&resultObj, flag, (void*)getBlockingFunc(type));
 	ctx.setReturn(resultObj);
 }
 

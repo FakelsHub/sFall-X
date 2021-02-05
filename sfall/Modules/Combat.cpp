@@ -25,9 +25,11 @@
 #include "LoadGameHook.h"
 #include "Objects.h"
 
-#include "SubModules\CombatBlock.h"
-
 #include "HookScripts\CombatHS.h"
+
+#include "..\Game\items.h"
+
+#include "SubModules\CombatBlock.h"
 
 #include "Combat.h"
 
@@ -532,7 +534,7 @@ static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCall
 	// unarmed and melee weapon, check the distance and cost AP
 	long dudeAP = fo::var::obj_dude->critter.movePoints + fo::var::combat_free_move;
 	if (distance > dudeAP) return -1;
-	long cost = sf_item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
+	long cost = game::Items::item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
 	distance -= fo::func::item_w_range(fo::var::obj_dude, hitMode);
 
 	bool result = ((distance + cost) > dudeAP);

@@ -22,9 +22,11 @@
 #include "..\FalloutEngine\Fallout2.h"
 #include "LoadGameHook.h"
 
-#include "HookScripts\CombatHS.h"
+//#include "HookScripts\CombatHS.h"
+#include "..\Game\items.h"
 
 #include "SubModules\AI.Behavior.h"
+#include "SubModules\AI.FuncHelpers.h"
 
 #include "AI.h"
 
@@ -61,8 +63,10 @@ fo::GameObject* AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* at
 	fo::GameObject* object = nullptr;
 	fo::func::make_straight_path_func(attacker, attacker->tile, target->tile, 0, (DWORD*)&object, 32, (void*)fo::funcoffs::obj_shoot_blocking_at_);
 	object = CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum);
-	return (!object || object->TypeFid() == fo::ObjType::OBJ_TYPE_CRITTER) ? object : nullptr; // 0 if there are no friendly critters
+	return (object && object->IsCritter()) ? object : nullptr; // 0 if there are no friendly critters
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 static void __declspec(naked) ai_try_attack_hook_FleeFix() {
 	__asm {
@@ -223,33 +227,33 @@ static void __declspec(naked) ai_danger_source_hack() {
 	}
 }
 
-static int32_t RetryCombatMinAP;
-
-static void __declspec(naked) RetryCombatHook() {
-	static DWORD RetryCombatLastAP = 0;
-	__asm {
-		mov  RetryCombatLastAP, 0;
-retry:
-		call fo::funcoffs::combat_ai_;
-process:
-		cmp  dword ptr ds:[FO_VAR_combat_turn_running], 0;
-		jle  next;
-		call fo::funcoffs::process_bk_;
-		jmp  process;
-next:
-		mov  eax, [esi + movePoints];
-		cmp  eax, RetryCombatMinAP;
-		jl   end;
-		cmp  eax, RetryCombatLastAP;
-		je   end;
-		mov  RetryCombatLastAP, eax;
-		mov  eax, esi;
-		xor  edx, edx;
-		jmp  retry;
-end:
-		retn;
-	}
-}
+//static int32_t RetryCombatMinAP;
+//
+//static void __declspec(naked) RetryCombatHook() {
+//	static DWORD RetryCombatLastAP = 0;
+//	__asm {
+//		mov  RetryCombatLastAP, 0;
+//retry:
+//		call fo::funcoffs::combat_ai_;
+//process:
+//		cmp  dword ptr ds:[FO_VAR_combat_turn_running], 0;
+//		jle  next;
+//		call fo::funcoffs::process_bk_;
+//		jmp  process;
+//next:
+//		mov  eax, [esi + movePoints];
+//		cmp  eax, RetryCombatMinAP;
+//		jl   end;
+//		cmp  eax, RetryCombatLastAP;
+//		je   end;
+//		mov  RetryCombatLastAP, eax;
+//		mov  eax, esi;
+//		xor  edx, edx;
+//		jmp  retry;
+//end:
+//		retn;
+//	}
+//}
 
 static long __fastcall sf_ai_weapon_reload(fo::GameObject* weapon, fo::GameObject* ammo, fo::GameObject* critter) {
 	fo::Proto* proto = nullptr;
@@ -309,7 +313,7 @@ static long __fastcall CheckWeaponRangeAndApCost(fo::GameObject* source, fo::Gam
 	long targetDist  = fo::func::obj_dist(source, target);
 	if (targetDist > weaponRange) return 0; // don't use secondary mode
 
-	return (source->critter.movePoints >= sf_item_w_mp_cost(source, fo::ATKTYPE_RWEAPON_SECONDARY, 0)); // 1 - allow secondary mode
+	return (source->critter.movePoints >= game::Items::item_w_mp_cost(source, fo::ATKTYPE_RWEAPON_SECONDARY, 0)); // 1 - allow secondary mode
 }
 
 static void __declspec(naked) ai_pick_hit_mode_hook() {
@@ -331,7 +335,7 @@ static void __declspec(naked) cai_perform_distance_prefs_hack() {
 		mov  ecx, esi;
 		push 0;        // no called shot
 		mov  edx, ATKTYPE_RWEAPON_PRIMARY;
-		call sf_item_w_mp_cost;
+		call game::Items::item_w_mp_cost;
 		mov  edx, [esi + movePoints];
 		sub  edx, eax; // ap - cost = free AP's
 		jle  moveAway; // <= 0
@@ -498,6 +502,8 @@ static void AICombatClear() {
 
 void AI::init() {
 
+	AIBehavior::init();
+
 	HookCalls(combat_attack_hook, {
 		0x426A95, // combat_attack_this_
 		0x42A796  // ai_attack_
@@ -505,13 +511,13 @@ void AI::init() {
 	LoadGameHook::OnCombatStart() += AICombatClear;
 	LoadGameHook::OnCombatEnd() += AICombatClear;
 
-	RetryCombatMinAP = GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
-	if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility older versions
-	if (RetryCombatMinAP > 0) {
-		dlog("Applying retry combat patch.", DL_INIT);
-		HookCall(0x422B94, RetryCombatHook); // combat_turn_
-		dlogr(" Done", DL_INIT);
-	}
+	//RetryCombatMinAP = GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
+	//if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility older versions
+	//if (RetryCombatMinAP > 0) {
+	//	dlog("Applying retry combat patch.", DL_INIT);
+	//	HookCall(0x422B94, RetryCombatHook); // combat_turn_
+	//	dlogr(" Done", DL_INIT);
+	//}
 
 	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
 	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
@@ -536,8 +542,6 @@ void AI::init() {
 	HookCall(0x429F6D, ai_pick_hit_mode_hook);
 
 	/////////////////////// Combat AI behavior fixes ///////////////////////
-
-	CombatAIBehaviorInit();
 
 	// Fix to reduce friendly fire in burst attacks
 	// Modification function of safe use of weapon when the AI uses burst shooting mode

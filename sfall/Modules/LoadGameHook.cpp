@@ -452,7 +452,7 @@ static void __declspec(naked) WorldMapHook_End() {
 	}
 }
 
-static void __fastcall CombatFunc(DWORD* gcsd) { // TODO: make gcsd structure
+static void __fastcall CombatInternal(fo::CombatGcsd* gcsd) {
 	onCombatStart.invoke();
 	SetInLoop(1, COMBAT);
 
@@ -468,7 +468,7 @@ static void __declspec(naked) CombatHook() {
 		push ecx;
 		push edx;
 		mov  ecx, eax;
-		call CombatFunc;
+		call CombatInternal;
 		pop  edx;
 		pop  ecx;
 		retn;

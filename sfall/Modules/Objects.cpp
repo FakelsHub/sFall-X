@@ -288,17 +288,17 @@ void __fastcall Objects::sf_obj_process_seen(long tileIndex) {
 			do {
 				long tile = tileTable + dist;
 				if (tile >= 40000) return;
-				DWORD* objptr = fo::var::objectTable[tile];
+				fo::ObjectTable* objptr = fo::var::objectTable[tile];
 				while (objptr)
 				{
-					fo::GameObject* obj = (fo::GameObject*)*objptr;
+					fo::GameObject* obj = objptr->object;
 					if (obj->elevation == fo::var::obj_dude->elevation) {
 						fo::GameObject* object = nullptr;
 						// check the line of sight from obj_dude to tile object, only critters and items
 						if (obj->Type() <= fo::ObjType::OBJ_TYPE_CRITTER) object = fo::LineOfSight(obj);
 						if (object == nullptr) obj->flags |= fo::ObjectFlag::Seen;
 					}
-					objptr = (DWORD*)*++objptr;
+					objptr = objptr->nextObject;
 				}
 			} while (++dist < 8);
 		}
@@ -365,7 +365,7 @@ void Objects::init() {
 
 	// Fixed checking the range of the ID value for item objects in the negative range
 	// Special ID values are assigned in the negative range
-	SafeWrite8(0x495273, 0x73); // jge > jae
+	SafeWrite8(0x495273, 0x73); // jge > jae (partyMemberItemSave_)
 
 	MakeCall(0x477A0E, item_identical_hack); // don't put item with unique ID to items stack
 

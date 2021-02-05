@@ -334,6 +334,12 @@
     <ClInclude Include="Modules\SubModules\WindowRender.h">
       <Filter>Modules\SubModules</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\SubModules\AI.FuncHelpers.h">
+      <Filter>Modules\SubModules</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\items.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -613,6 +619,12 @@
     </ClCompile>
     <ClCompile Include="Modules\SubModules\WindowRender.cpp">
       <Filter>Modules\SubModules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\AI.FuncHelpers.cpp">
+      <Filter>Modules\SubModules</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\items.cpp">
+      <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
