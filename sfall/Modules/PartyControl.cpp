@@ -19,12 +19,13 @@
 #include "..\main.h"
 #include "..\Utils.h"
 #include "..\FalloutEngine\Fallout2.h"
-#include "HookScripts\InventoryHs.h"
 #include "Drugs.h"
 #include "HookScripts.h"
 #include "LoadGameHook.h"
 #include "ScriptExtender.h"
 //#include "Objects.h"
+
+#include "..\Game\inventory.h"
 
 #include "PartyControl.h"
 
@@ -623,7 +624,7 @@ static fo::GameObject* __fastcall PartyMemberBestArmor() {
 	fo::GameObject* bestItem = fo::func::ai_search_inven_armor(partyMember);
 
 	if ((wornItem && bestItem == nullptr) || (bestItem && wornItem && bestItem->protoId == wornItem->protoId)) {
-		if (CorrectFidForRemovedItem_wHook(partyMember, wornItem, fo::ObjectFlag::Worn)) {
+		if (game::Inventory::correctFidForRemovedItem(partyMember, wornItem, fo::ObjectFlag::Worn)) {
 			return nullptr; // unwield behavior
 		}
 	}
