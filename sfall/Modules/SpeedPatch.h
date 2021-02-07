@@ -28,8 +28,11 @@ public:
 	const char* name() { return "SpeedPatch"; }
 	void init();
 	void exit() override;
-};
 
-extern DWORD sf_GetTickCount;
+	static DWORD getTickCountOffs;
+
+	// sfall implementation of the GetTickCount() function
+	static DWORD getTickCount();
+};
 
 }

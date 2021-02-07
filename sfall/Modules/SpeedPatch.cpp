@@ -39,8 +39,12 @@ static const DWORD offsets[] = {
 	0x4F4E53, 0x4F5542, 0x4F56CC, 0x4F59C6, // for mve
 };
 
-DWORD sf_GetTickCount = (DWORD)&GetTickCount;
-DWORD sf_GetLocalTime;
+static DWORD getLocalTimeOffs;
+DWORD SpeedPatch::getTickCountOffs = (DWORD)&GetTickCount;
+
+DWORD SpeedPatch::getTickCount() {
+	return ((DWORD (__stdcall*)())getTickCountOffs)();
+}
 
 static bool enabled = true;
 static bool toggled = false;
@@ -164,16 +168,16 @@ void SpeedPatch::init() {
 		multi = (double)init / 100.0;
 		toggleKey = GetConfigInt("Input", "SpeedToggleKey", 0);
 
-		sf_GetTickCount = (DWORD)&FakeGetTickCount;
-		sf_GetLocalTime = (DWORD)&FakeGetLocalTime;
+		getTickCountOffs = (DWORD)&FakeGetTickCount;
+		getLocalTimeOffs = (DWORD)&FakeGetLocalTime;
 
 		int size = sizeof(offsets) / 4;
 		if (GetConfigInt("Speed", "AffectPlayback", 0) == 0) size -= 4;
 
 		for (int i = 0; i < size; i++) {
-			SafeWrite32(offsets[i], (DWORD)&sf_GetTickCount);
+			SafeWrite32(offsets[i], (DWORD)&getTickCountOffs);
 		}
-		SafeWrite32(0x4FDF58, (DWORD)&sf_GetLocalTime);
+		SafeWrite32(0x4FDF58, (DWORD)&getLocalTimeOffs);
 		HookCall(0x4A433E, scripts_check_state_hook);
 
 		TimerInit();
