@@ -181,7 +181,7 @@ static void __declspec(naked) wmWorldMap_hook() {
 		cmp  eax, 10;            // delay 10 ms (GetTickCount returns difference of 14-16 ms)
 		jb   skipHook;
 		mov  worldMapTicks, edx;
-		call WorldmapLoopHook;
+		call WorldmapLoopHook;   // hook is called every ~15ms (not more often than 10ms)
 skipHook:
 		jmp  fo::funcoffs::get_input_;
 	}
@@ -409,7 +409,7 @@ static void WorldmapFpsPatch() {
 	if (fpsPatchOK) {
 		void* func;
 		if (worldMapDelay == 0) {
-			func = wmWorldMap_hook;
+			func = wmWorldMap_hook; // only WorldmapLoop hook
 		} else if (worldMapDelay > 25) {
 			worldMapLongDelay = true;
 			func = wmWorldMap_hook_patch1;
