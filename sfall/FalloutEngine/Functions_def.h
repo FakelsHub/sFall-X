@@ -24,14 +24,19 @@ WRAP_WATCOM_FFUNC4(long, _word_wrap, const char*, text, int, maxWidth, DWORD*, b
 WRAP_WATCOM_FFUNC4(long, queue_add, long, time, GameObject*, object, void*, data, long, qType)
 WRAP_WATCOM_FFUNC4(GameObject*, ai_best_weapon, GameObject*, source, GameObject*, prevItem, GameObject*, checkItem, GameObject*, target)
 WRAP_WATCOM_FFUNC3(bool, ai_can_use_weapon, GameObject*, critter, GameObject*, item, DWORD, hitMode)
+WRAP_WATCOM_FFUNC3(long, ai_find_friend, GameObject*, critter, long, maxDistance, long, inRange)
+WRAP_WATCOM_FFUNC3(GameObject*, ai_find_nearest_team, GameObject*, source, GameObject*, target, long, teamFlag)
+WRAP_WATCOM_FFUNC3(GameObject*, ai_find_nearest_team_in_combat, GameObject*, source, GameObject*, targetTeam, long, teamFlag)
 WRAP_WATCOM_FFUNC3(long, ai_have_ammo, GameObject*, critter, GameObject*, item, DWORD*, buf)
 WRAP_WATCOM_FFUNC3(long, ai_pick_hit_mode, GameObject*, source, GameObject*, item, GameObject*, target)
 WRAP_WATCOM_FFUNC3(long, ai_move_away, GameObject*, source, GameObject*, target, long, distance)
+WRAP_WATCOM_FFUNC4(long, ai_move_steps_closer, GameObject*, source, GameObject*, target, long, distance, long, say)
 WRAP_WATCOM_FFUNC3(GameObject*, ai_search_inven_weap, GameObject*, source, long, apCheck, GameObject*, target)
+WRAP_WATCOM_FFUNC3(long, cai_retargetTileFromFriendlyFire, GameObject*, source, GameObject*, target, long*, outTile) 
 WRAP_WATCOM_FFUNC3(void, check_for_death, GameObject*, critter, long, amountDamage, long*, flags)
 WRAP_WATCOM_FFUNC4(long, combat_check_bad_shot, GameObject*, source, GameObject*, target, long, hitMode, long, isSecondary)
 WRAP_WATCOM_FFUNC5(bool, combat_is_shot_blocked, GameObject*, source, DWORD, tileSource, DWORD, tileTarget, GameObject*, target, long*, accumulator)
-WRAP_WATCOM_FFUNC6(long, combat_safety_invalidate_weapon_func, GameObject*, source, GameObject*, weapon, DWORD, hitMode, GameObject*, targetA, DWORD*, safetyRange, GameObject*, targetB)
+WRAP_WATCOM_FFUNC6(long, combat_safety_invalidate_weapon_func, GameObject*, source, GameObject*, weapon, long, hitMode, GameObject*, targetA, DWORD*, outSafeRange, GameObject*, targetB)
 WRAP_WATCOM_FFUNC3(void, correctFidForRemovedItem, GameObject*, critter, GameObject*, item, long, slotFlag)
 WRAP_WATCOM_FFUNC7(long, createWindow, const char*, winName, DWORD, x, DWORD, y, DWORD, width, DWORD, height, long, color, long, flags)
 WRAP_WATCOM_FFUNC4(long, determine_to_hit, GameObject*, source, GameObject*, target, long, bodyPart, long, hitMode)
@@ -60,6 +65,7 @@ WRAP_WATCOM_FFUNC4(void, register_object_call, long*, target, long*, source, voi
 WRAP_WATCOM_FFUNC4(long, register_object_move_to_object, GameObject*, source, GameObject*, target, long, distance, long, delay)
 WRAP_WATCOM_FFUNC5(long, register_object_move_to_tile, GameObject*, source, long, tile, long, elev, long, distance, long, delay)
 WRAP_WATCOM_FFUNC4(long, register_object_run_to_object, GameObject*, source, GameObject*, target, long, distance, long, delay)
+WRAP_WATCOM_FFUNC5(long, register_object_run_to_tile, GameObject*, source, long, tile, long, elev, long, distance, long, delay)
 WRAP_WATCOM_FFUNC3(long, scr_get_local_var, long, sid, long, varId, long*, value)
 WRAP_WATCOM_FFUNC3(long, scr_set_local_var, long, sid, long, varId, long, value)
 WRAP_WATCOM_FFUNC6(long, text_object_create, GameObject*, object, const char*, text, long, font, long, colorText, long, colorOutline, BoundRect*, rect)
@@ -73,10 +79,14 @@ WRAP_WATCOM_FFUNC3(const char*, interpretGetString, Program*, scriptPtr, DWORD, 
 
 /* stdcall */
 WRAP_WATCOM_FUNC1(AIcap*, ai_cap, GameObject*, critter)
+WRAP_WATCOM_FUNC1(void, ai_check_drugs, GameObject*, critter)
+WRAP_WATCOM_FUNC1(GameObject*, ai_danger_source, GameObject*, critter)
 WRAP_WATCOM_FUNC2(void, ai_print_msg, GameObject*, object, long, mode)
 WRAP_WATCOM_FUNC2(GameObject*, ai_retrieve_object, GameObject*, critter, GameObject*, item)
+WRAP_WATCOM_FUNC2(long, ai_run_away, GameObject*, source, GameObject*, target)
 WRAP_WATCOM_FUNC2(GameObject*, ai_search_environ, GameObject*, critter, long, itemType)
 WRAP_WATCOM_FUNC1(GameObject*, ai_search_inven_armor, GameObject*, critter)
+WRAP_WATCOM_FUNC2(long, ai_try_attack, GameObject*, source, GameObject*, target)
 WRAP_WATCOM_FUNC1(Program*, allocateProgram, const char*, filePath)
 WRAP_WATCOM_FUNC1(bool, art_exists, long, artFid)
 WRAP_WATCOM_FUNC0(void, art_flush)
@@ -89,8 +99,14 @@ WRAP_WATCOM_FUNC2(FrmHeaderData*, art_ptr_lock, long, frmId, DWORD*, lockPtr)
 WRAP_WATCOM_FUNC4(BYTE*, art_ptr_lock_data, long, frmId, long, frameNum, long, rotation, DWORD*, lockPtr)
 WRAP_WATCOM_FUNC4(BYTE*, art_lock, long, frmId, DWORD*, lockPtr, long*, widthOut, long*, heightOut)
 WRAP_WATCOM_FUNC1(long, art_ptr_unlock, DWORD, lockId)
+WRAP_WATCOM_FUNC1(bool, artCritterFidShouldRun, long, artFID)
 WRAP_WATCOM_FUNC2(long, barter_compute_value, GameObject*, source, GameObject*, target)
 WRAP_WATCOM_FUNC1(long, block_for_tocks, long, ticks)
+WRAP_WATCOM_FUNC1(long, cai_get_min_hp, AIcap*, cap)
+WRAP_WATCOM_FUNC2(long, cai_perform_distance_prefs, GameObject*, source, GameObject*, target)
+WRAP_WATCOM_FUNC1(GameObject*, combatAIInfoGetFriendlyDead, GameObject*, critter)
+WRAP_WATCOM_FUNC2(long, combatAIInfoSetFriendlyDead, GameObject*, critter, GameObject*, deadCritter)
+WRAP_WATCOM_FUNC1(long, combatai_rating, GameObject*, critter)
 WRAP_WATCOM_FUNC1(const char*, critter_name, GameObject*, critter) // Returns the name of the critter
 WRAP_WATCOM_FUNC1(void, critter_pc_set_name, const char*, newName) // Change the name of playable character
 /* Database functions */
@@ -252,12 +268,10 @@ WRAP_WATCOM_FUNC1(long, register_object_inc_rotation, GameObject*, object)
 WRAP_WATCOM_FUNC3(long, register_object_light, GameObject*, object, long, lightRadius, long, delay)
 // WRAP_WATCOM_FUNC3(long, register_object_move_on_stairs_, GameObject*, object;
 // WRAP_WATCOM_FUNC3(long, register_object_move_straight_to_tile_, GameObject*, object;
-// WRAP_WATCOM_FUNC3(long, register_object_move_to_tile_, GameObject*, object;
 // WRAP_WATCOM_FUNC3(long, register_object_must_call_, GameObject*, object;
 WRAP_WATCOM_FUNC1(long, register_object_must_erase, GameObject*, object)
 // WRAP_WATCOM_FUNC3(long, register_object_outline_, GameObject*, object;
 // WRAP_WATCOM_FUNC3(long, register_object_play_sfx_, GameObject*, object;
-// WRAP_WATCOM_FUNC3(long, register_object_run_to_tile_, GameObject*, object;
 WRAP_WATCOM_FUNC3(long, register_object_take_out, GameObject*, object, long, holdFrameId, long, nothing)
 WRAP_WATCOM_FUNC3(long, register_object_turn_towards, GameObject*, object, long, tileNum, long, nothing)
 WRAP_WATCOM_FUNC2(long, roll_random, long, minValue, long, maxValue)

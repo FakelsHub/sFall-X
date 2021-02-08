@@ -20,6 +20,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "Functions.h"
 #include "Variables.h"
@@ -41,6 +42,7 @@ __forceinline void sf_rect_free(fo::RectList* rect) {
 	fo::var::rectList = rect;
 	rect->nextRect = front;
 }
+
 // returns message string from given file or "Error" when not found
 const char* GetMessageStr(const MessageList* fileAddr, long messageId);
 
@@ -52,8 +54,15 @@ Queue* QueueFind(GameObject* object, long type);
 // returns weapon animation code
 long AnimCodeByWeapon(GameObject* weapon);
 
-// returns pointer to prototype by PID, or nullptr on failure
-Proto* GetProto(long pid);
+// returns False if the prototype does not exist, or pointer to prototype by PID in the outProto argument
+bool GetProto(long pid, Proto* outProto);
+
+// returns pointer to prototype by PID, or nullptr on get failure
+// DON'T USE IT - Not effective construction
+__forceinline Proto* GetProto(long pid) {
+	Proto* proto = nullptr;;
+	return GetProto(pid, proto) ? proto : nullptr;
+}
 
 bool CritterCopyProto(long pid, long* &proto_dst);
 
@@ -104,6 +113,10 @@ fo::Window* __fastcall GetTopWindowAtPos(long xPos, long yPos, bool bypassTrans 
 
 // Returns an array of objects within the specified radius from the source tile
 void GetObjectsTileRadius(std::vector<fo::GameObject*> &objs, long sourceTile, long radius, long elev, long type = -1);
+
+// Returns an associative array of objects within the specified radius from the source tile
+// the key value is the distance of the object from the source tile
+void GetObjectsTileRadius(std::multimap<long, fo::GameObject*> &objs, long sourceTile, long radius, long elev, unsigned long typeMask = -1);
 
 // Checks the blocking tiles and returns the first blocking object
 fo::GameObject* CheckAroundBlockingTiles(fo::GameObject* source, long dstTile);

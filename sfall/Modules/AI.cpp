@@ -22,7 +22,6 @@
 #include "..\FalloutEngine\Fallout2.h"
 #include "LoadGameHook.h"
 
-//#include "HookScripts\CombatHS.h"
 #include "..\Game\items.h"
 
 #include "SubModules\AI.Behavior.h"
