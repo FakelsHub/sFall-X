@@ -55,13 +55,13 @@ Queue* QueueFind(GameObject* object, long type);
 long AnimCodeByWeapon(GameObject* weapon);
 
 // returns False if the prototype does not exist, or pointer to prototype by PID in the outProto argument
-bool GetProto(long pid, Proto* outProto);
+bool GetProto(long pid, Proto** outProto);
 
 // returns pointer to prototype by PID, or nullptr on get failure
 // DON'T USE IT - Not effective construction
 __forceinline Proto* GetProto(long pid) {
-	Proto* proto = nullptr;;
-	return GetProto(pid, proto) ? proto : nullptr;
+	Proto* proto;
+	return (fo::func::proto_ptr(pid, &proto) != -1) ? proto : nullptr;
 }
 
 bool CritterCopyProto(long pid, long* &proto_dst);
