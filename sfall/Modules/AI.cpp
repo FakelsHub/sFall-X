@@ -217,42 +217,33 @@ isNotDead:
 	}
 }
 
-static void __declspec(naked) ai_danger_source_hack() {
+static long RetryCombatMinAP;
+
+static void __declspec(naked) RetryCombatHook() {
+	static DWORD RetryCombatLastAP = 0;
 	__asm {
+		mov  RetryCombatLastAP, 0;
+retry:
+		call fo::funcoffs::combat_ai_;
+process:
+		cmp  dword ptr ds:[FO_VAR_combat_turn_running], 0;
+		jle  next;
+		call fo::funcoffs::process_bk_;
+		jmp  process;
+next:
+		mov  eax, [esi + movePoints];
+		cmp  eax, RetryCombatMinAP;
+		jl   end;
+		cmp  eax, RetryCombatLastAP;
+		je   end;
+		mov  RetryCombatLastAP, eax;
 		mov  eax, esi;
-		call fo::funcoffs::ai_get_attack_who_value_;
-		mov  dword ptr [esp + 0x34 - 0x1C + 4], eax; // attack_who
+		xor  edx, edx;
+		jmp  retry;
+end:
 		retn;
 	}
 }
-
-//static int32_t RetryCombatMinAP;
-//
-//static void __declspec(naked) RetryCombatHook() {
-//	static DWORD RetryCombatLastAP = 0;
-//	__asm {
-//		mov  RetryCombatLastAP, 0;
-//retry:
-//		call fo::funcoffs::combat_ai_;
-//process:
-//		cmp  dword ptr ds:[FO_VAR_combat_turn_running], 0;
-//		jle  next;
-//		call fo::funcoffs::process_bk_;
-//		jmp  process;
-//next:
-//		mov  eax, [esi + movePoints];
-//		cmp  eax, RetryCombatMinAP;
-//		jl   end;
-//		cmp  eax, RetryCombatLastAP;
-//		je   end;
-//		mov  RetryCombatLastAP, eax;
-//		mov  eax, esi;
-//		xor  edx, edx;
-//		jmp  retry;
-//end:
-//		retn;
-//	}
-//}
 
 static long __fastcall sf_ai_weapon_reload(fo::GameObject* weapon, fo::GameObject* ammo, fo::GameObject* critter) {
 	fo::Proto* proto = nullptr;
@@ -510,22 +501,20 @@ void AI::init() {
 	LoadGameHook::OnCombatStart() += AICombatClear;
 	LoadGameHook::OnCombatEnd() += AICombatClear;
 
-	//RetryCombatMinAP = GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
-	//if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility older versions
-	//if (RetryCombatMinAP > 0) {
-	//	dlog("Applying retry combat patch.", DL_INIT);
-	//	HookCall(0x422B94, RetryCombatHook); // combat_turn_
-	//	dlogr(" Done", DL_INIT);
-	//}
+	if (GetConfigInt("CombatAI", "SmartBehavior", 0) == 0) {
+		RetryCombatMinAP = GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
+		if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility orig version
+		if (RetryCombatMinAP > 0) {
+			dlog("Applying retry combat patch.", DL_INIT);
+			HookCall(0x422B94, RetryCombatHook); // combat_turn_
+			dlogr(" Done", DL_INIT);
+		}
 
-	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
-	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
-		MakeCall(0x428F70, ai_danger_source_hack, 3);
+		// TODO move hack to AIBehavior
+		// Enables the use of the RunAwayMode value from the AI-packet for the NPC
+		// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
+		//npcPercentMinHP = (GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
 	}
-
-	// Enables the use of the RunAwayMode value from the AI-packet for the NPC
-	// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
-	npcPercentMinHP = (GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
 
 	#ifndef NDEBUG
 	if (GetConfigInt("Debugging", "AIBugFixes", 1) == 0) return;

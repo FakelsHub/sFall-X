@@ -394,6 +394,7 @@
     <ClInclude Include="Modules\SpeedPatch.h" />
     <ClInclude Include="Modules\SubModules\AI.Behavior.h" />
     <ClInclude Include="Modules\SubModules\AI.FuncHelpers.h" />
+    <ClInclude Include="Modules\SubModules\AI.SearchTarget.h" />
     <ClInclude Include="Modules\SubModules\CombatBlock.h" />
     <ClInclude Include="Modules\SubModules\EnginePerks.h" />
     <ClInclude Include="Modules\SubModules\WindowRender.h" />
@@ -500,6 +501,7 @@
     <ClCompile Include="Modules\SpeedPatch.cpp" />
     <ClCompile Include="Modules\SubModules\AI.Behavior.cpp" />
     <ClCompile Include="Modules\SubModules\AI.FuncHelpers.cpp" />
+    <ClCompile Include="Modules\SubModules\AI.SearchTarget.cpp" />
     <ClCompile Include="Modules\SubModules\CombatBlock.cpp" />
     <ClCompile Include="Modules\SubModules\EnginePerks.cpp" />
     <ClCompile Include="Modules\SubModules\WindowRender.cpp" />

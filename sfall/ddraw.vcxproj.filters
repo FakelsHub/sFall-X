@@ -343,6 +343,9 @@
     <ClInclude Include="Game\objects.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\SubModules\AI.SearchTarget.h">
+      <Filter>Modules\SubModules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -631,6 +634,9 @@
     </ClCompile>
     <ClCompile Include="Game\objects.cpp">
       <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\AI.SearchTarget.cpp">
+      <Filter>Modules\SubModules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

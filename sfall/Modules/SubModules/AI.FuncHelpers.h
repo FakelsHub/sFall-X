@@ -38,6 +38,7 @@ public:
 	// Принудительно заставит NPC подойти к цели на указанную дистанцию
 	static long ForceMoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist);
 
+	// Принудительно заставит NPC подойти к цели на указанную дистанцию (stay_close не игнорируется)
 	static long MoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist);
 
 	// Оценивает и возвращает одно из оружие чей навык использования для AI лучше, если навыки равны то возвращается sWeapon оружие
@@ -52,6 +53,11 @@ public:
 
 	static bool CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon);
 
+	static long GetFreeTile(fo::GameObject* source, long tile, long distMax);
+
+	static long GetRandomTile(fo::GameObject* source, long min, long max);
+
+	static long GetRandomDistTile(fo::GameObject* source, long tile, long distMax);
 };
 
 }

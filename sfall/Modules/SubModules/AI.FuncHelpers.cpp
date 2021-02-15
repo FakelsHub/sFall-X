@@ -5,6 +5,7 @@
  */
 
 #include "..\..\FalloutEngine\Fallout2.h"
+#include "..\..\Utils.h"
 #include "..\AI.h"
 
 #include "..\..\Game\items.h"
@@ -73,12 +74,12 @@ long AIHelpers::CombatRunToTile(fo::GameObject* source, long tile, long dist) {
 }
 
 long AIHelpers::ForceMoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
-	dist |= 0x02000000; // sfall force flag
+	dist |= 0x02000000; // sfall force flag (stay and stay_close)
 	return fo::func::ai_move_steps_closer(source, target, ~dist, 0); // 0 - ok, -1 - don't move
 }
 
 long AIHelpers::MoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
-	dist |= 0x01000000; // sfall force flag
+	dist |= 0x01000000; // sfall force flag (stay)
 	return fo::func::ai_move_steps_closer(source, target, ~dist, 0); // 0 - ok, -1 - don't move
 }
 
@@ -115,7 +116,8 @@ long AIHelpers::GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* tar
 }
 
 fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, bool isSecond) {
-	fo::Proto* proto = fo::GetProto(item->protoId);
+	fo::Proto* proto;
+	fo::GetProto(item->protoId, &proto);
 	long type = (isSecond) ? proto->item.flagsExt >> 4 : proto->item.flagsExt;
 	return fo::GetWeaponType(type);
 }
@@ -142,7 +144,8 @@ bool AIHelpers::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
 
 // Проверяет относится ли предмет к типу стрелкового или метательному оружию
 bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item) {
-	fo::Proto* proto = fo::GetProto(item->protoId);
+	fo::Proto* proto;
+	fo::GetProto(item->protoId, &proto);
 
 	long typePrimary = fo::GetWeaponType(proto->item.flagsExt);
 	if (typePrimary >= fo::AttackSubType::THROWING) {
@@ -164,6 +167,40 @@ bool AIHelpers::CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon)
 		if (fo::func::item_w_can_reload(weapon, ammo)) return true; // можно перезарядить?
 	}
 	return false;
+}
+
+long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax) {
+	long dist = 1;
+	do {
+		for (size_t r = 0; r < 6; r++)
+		{
+			long _tile = fo::func::tile_num_in_direction(tile, r, dist);
+			if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
+				return _tile;
+			}
+		}
+	} while (++dist <= distMax);
+	return -1;
+}
+
+long AIHelpers::GetRandomTile(fo::GameObject* source, long min, long max) {
+	long dist = GetRandom(min, max);
+	if (dist > 0) {
+		long tile = fo::func::tile_num_in_direction(source->tile, GetRandom(0, 5), dist);
+		fo::GameObject* object;
+		fo::func::make_straight_path_func(source, source->tile, tile, 0, (DWORD*)&object, 0, (void*)fo::funcoffs::obj_blocking_at_);
+		return (object) ? GetRandomTile(source, min, max) : tile;
+	}
+	return -1;
+}
+
+long AIHelpers::GetRandomDistTile(fo::GameObject* source, long tile, long distMax) {
+	if (distMax <= 0) return -1;
+	long dist = GetRandom(1, distMax);
+	long _tile = fo::func::tile_num_in_direction(tile, GetRandom(0, 5), dist);
+	fo::GameObject* object;
+	fo::func::make_straight_path_func(source, source->tile, _tile, 0, (DWORD*)&object, 0, (void*)fo::funcoffs::obj_blocking_at_);
+	return (object) ? GetRandomDistTile(source, tile, --distMax) : _tile;
 }
 
 // Проверяет простреливается ли линия от sourceTile до targetTile

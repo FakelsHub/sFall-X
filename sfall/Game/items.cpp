@@ -15,6 +15,7 @@ namespace game
 
 namespace sf = sfall;
 
+// TODO: Delete this, and replace in engine all item_w_primary_mp_cost/item_w_secondary_mp_cost to item_w_mp_cost function
 // Implementing the item_w_primary_mp_cost and item_w_secondary_mp_cost engine functions in single function with the HOOK_CALCAPCOST hook
 // returns -1 in case of an error
 long Items::item_weapon_mp_cost(fo::GameObject* source, fo::GameObject* weapon, long hitMode, long isCalled) {
@@ -36,13 +37,13 @@ long Items::item_weapon_mp_cost(fo::GameObject* source, fo::GameObject* weapon, 
 		if (weapon) cost = 2; // default reload AP cost
 	}
 
-	return (cost != -1) ? sf::CalcAPCostHook_CheckScript(source, hitMode, isCalled, cost, weapon) : cost;
+	return (cost != -1) ? sf::CalcAPCostHook_Invoke(source, hitMode, isCalled, cost, weapon) : cost;
 }
 
 // Implementation of item_w_mp_cost_ engine function with the HOOK_CALCAPCOST hook
 long __fastcall Items::item_w_mp_cost(fo::GameObject* source, long hitMode, long isCalled) {
 	long cost = fo::func::item_w_mp_cost(source, hitMode, isCalled);
-	return sf::CalcAPCostHook_CheckScript(source, hitMode, isCalled, cost, nullptr);
+	return sf::CalcAPCostHook_Invoke(source, hitMode, isCalled, cost, nullptr);
 }
 
 void Items::init() {
