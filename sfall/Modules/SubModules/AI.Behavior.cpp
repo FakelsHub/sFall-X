@@ -1273,7 +1273,7 @@ TrySpendExtraAP:
 ReFindNewTarget:
 		DEV_PRINTF("\n[AI] Find targets...");
 
-		target = fo::func::ai_danger_source(source);
+		target = AISearchTarget::AIDangerSource_Extended(source, 1); // fo::func::ai_danger_source(source);
 
 		if (!target) DEV_PRINTF("\n[AI] No find target!"); else DEV_PRINTF1("\n[AI] Pick target: %s", fo::func::critter_name(target));
 
@@ -1281,22 +1281,7 @@ ReFindNewTarget:
 			DEV_PRINTF("\n[AI] No find new target!");
 			return;
 		}
-
-		if (AISearchTarget::rememberTarget) { // rememberTarget: первая цель до которой превышен радиус действия атаки
-			DEV_PRINTF1("\n[AI] I have remember target: %s", fo::func::critter_name(AISearchTarget::rememberTarget));
-			if (target) {
-				// выбрать ближайшую цель
-				long dist1 = fo::func::obj_dist(source, target);
-				long dist2 = fo::func::obj_dist(source, AISearchTarget::rememberTarget);
-				if (dist1 > dist2) target = AISearchTarget::rememberTarget;
-			} else {
-				target = AISearchTarget::rememberTarget;
-			}
-			AISearchTarget::rememberTarget = nullptr;
-		} else if (!target && source->critter.getHitTarget() && source->critter.getHitTarget()->critter.IsNotDead()) {
-			target = source->critter.getHitTarget(); // в случае если новая цель не была найдена
-			DEV_PRINTF1("\n[AI] Get my hit target: %s", fo::func::critter_name(target));
-		}
+		target = AISearchTarget::RevertTarget(source, target);
 	}
 
 	/**************************************************************************
@@ -1674,10 +1659,12 @@ static void __declspec(naked) combat_attack_hook() {
 
 void AIBehavior::init() {
 
-	AISearchTarget::init();
-
 	// Fix distance in ai_find_friend_ function (only for sfall extended)
 	SafeWrite8(0x428AF5, 0xC8); // cmp ecx, eax > cmp eax, ecx
+
+	bool smartBehaviorEnabled = (GetConfigInt("CombatAI", "SmartBehavior", 0) > 0);
+
+	AISearchTarget::init(smartBehaviorEnabled);
 
 	// Enables the use of the RunAwayMode value from the AI-packet for the NPC
 	// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
@@ -1685,7 +1672,7 @@ void AIBehavior::init() {
 
 	//////////////////// Combat AI improved behavior //////////////////////////
 
-	if (GetConfigInt("CombatAI", "SmartBehavior", 0) > 0) {
+	if (smartBehaviorEnabled) {
 		//HookCall(0X4230E8, combat_attack_hook);
 		//LoadGameHook::OnCombatStart() += []() { lastAttackerTile.clear(); };
 

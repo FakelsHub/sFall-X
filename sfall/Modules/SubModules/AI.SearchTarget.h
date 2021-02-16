@@ -1,6 +1,6 @@
 ﻿/*
  *    sfall
- *    Copyright (C) 2020  The sfall team
+ *    Copyright (C) 2021  The sfall team
  *
  */
 
@@ -11,10 +11,11 @@ namespace sfall
 
 class AISearchTarget {
 public:
-	static void init();
+	static void init(bool);
 
-	static fo::GameObject* rememberTarget;
+	static fo::GameObject* __fastcall AIDangerSource_Extended(fo::GameObject* source, long type);
 
+	static fo::GameObject* __fastcall RevertTarget(fo::GameObject* source, fo::GameObject* target);
 };
 
 }

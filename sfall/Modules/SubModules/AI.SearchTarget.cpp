@@ -23,22 +23,57 @@ namespace sfall
 static bool npcAttackWhoFix = false;
 static bool reFindNewTargets = false;
 
-fo::GameObject* AISearchTarget::rememberTarget = nullptr;
+fo::GameObject* rememberTarget = nullptr;
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static void __declspec(naked) ai_danger_source_hack() {
+//static void __declspec(naked) ai_danger_source_hack() {
+//	__asm {
+//		mov  eax, esi;
+//		call fo::funcoffs::ai_get_attack_who_value_;
+//		mov  dword ptr [esp + 0x34 - 0x1C + 4], eax; // attack_who
+//		retn;
+//	}
+//}
+
+// Sets a target for the AI from whoHitMe if an alternative target was not found
+// or chooses a near target between the currently find target and rememberTarget
+fo::GameObject* __fastcall AISearchTarget::RevertTarget(fo::GameObject* source, fo::GameObject* target) {
+	if (rememberTarget) { // rememberTarget: первая цель до которой превышен радиус действия атаки
+		DEV_PRINTF1("\n[AI] I have remember target: %s", fo::func::critter_name(rememberTarget));
+		if (target) {
+			// выбрать ближайшую цель
+			long dist1 = fo::func::obj_dist(source, target);
+			long dist2 = fo::func::obj_dist(source, rememberTarget);
+			if (dist1 > dist2) target = rememberTarget;
+		} else {
+			target = rememberTarget;
+		}
+		rememberTarget = nullptr;
+	}
+	else if (!target && source->critter.getHitTarget() /*&& source->critter.getHitTarget()->critter.IsNotDead()*/) {
+		target = source->critter.getHitTarget(); // в случае если новая цель не была найдена
+		DEV_PRINTF1("\n[AI] Get my hit target: %s", fo::func::critter_name(target));
+	}
+	return target;
+}
+
+static void __declspec(naked) combat_ai_hook_revert_target() {
 	__asm {
-		mov  eax, esi;
-		call fo::funcoffs::ai_get_attack_who_value_;
-		mov  dword ptr [esp + 0x34 - 0x1C + 4], eax; // attack_who
-		retn;
+		push ecx
+		mov  ecx, esi; // source
+		call AISearchTarget::RevertTarget; // edx - target from ai_danger_source_
+		mov  edi, eax;
+		pop  ecx;
+		mov  edx, edi; // restore target
+		mov  eax, esi; // restore source
+		jmp  fo::funcoffs::cai_perform_distance_prefs_;
 	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static long __fastcall AICombatCheckBadShotLite(fo::GameObject* source, fo::GameObject* target) {
+static long __fastcall CombatCheckBadShotLite(fo::GameObject* source, fo::GameObject* target) {
 	long distance = 1, tile = -1;
 	long hitMode = fo::ATKTYPE_RWEAPON_PRIMARY;
 
@@ -68,41 +103,6 @@ static long __fastcall AICombatCheckBadShotLite(fo::GameObject* source, fo::Game
 	return (attackRange < distance); // 1 - target is out of range of the attack
 }
 
-// Sets a target for the AI from whoHitMe if an alternative target was not found
-// or chooses a near target between the currently find target and rememberTarget
-//static void __declspec(naked) combat_ai_hook_revert_target() {
-//	__asm {
-//		cmp   rememberTarget, 0;
-//		jnz   pickNearTarget;
-//		test  edi, edi; // find target?
-//		cmovz edi, [esi + whoHitMe];
-//		mov   edx, edi;
-//		jmp   fo::funcoffs::cai_perform_distance_prefs_;
-//
-//pickNearTarget:
-//		test  edi, edi; // find target?
-//		jz    pickRemember;
-//		call  fo::funcoffs::obj_dist_; // dist1: source & target
-//		push  eax;
-//		mov   eax, esi;
-//		mov   edx, rememberTarget
-//		call  fo::funcoffs::obj_dist_; // dist2: source & rememberTarget
-//		pop   edx;
-//		cmp   eax, edx;             // compare distance
-//		cmovbe edi, rememberTarget; // dist2 <= dist1
-//		mov   edx, edi;
-//		mov   eax, esi; // restore source
-//		mov   rememberTarget, 0;
-//		jmp   fo::funcoffs::cai_perform_distance_prefs_;
-//
-//pickRemember:
-//		mov   edi, rememberTarget;
-//		mov   edx, edi;
-//		mov   rememberTarget, 0;
-//		jmp   fo::funcoffs::cai_perform_distance_prefs_;
-//	}
-//}
-
 //static void __declspec(naked) ai_danger_source_hook() {
 //	__asm {
 //		cmp  dword ptr [esp + 56], 0x42B235 + 5; // called fr. combat_ai_
@@ -123,25 +123,25 @@ static long __fastcall AICombatCheckBadShotLite(fo::GameObject* source, fo::Game
 //	}
 //}
 
-static void __declspec(naked) ai_danger_source_hook_party_member() {
-	__asm {
-		cmp  dword ptr [esp + 56], 0x42B235 + 5; // called fr. combat_ai_
-		je   fix;
-		jmp  fo::funcoffs::combat_check_bad_shot_;
-fix:
-		mov  ecx, eax; // source
-		call AICombatCheckBadShotLite;
-		cmp  eax, 1;   // check result
-		setg al;       // set 0 for result OK
-		retn;
-	}
-}
+//static void __declspec(naked) ai_danger_source_hook_party_member() {
+//	__asm {
+//		cmp  dword ptr [esp + 56], 0x42B235 + 5; // called fr. combat_ai_
+//		je   fix;
+//		jmp  fo::funcoffs::combat_check_bad_shot_;
+//fix:
+//		mov  ecx, eax; // source
+//		call AICombatCheckBadShotLite;
+//		cmp  eax, 1;   // check result
+//		setg al;       // set 0 for result OK
+//		retn;
+//	}
+//}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // Анализирует ситуацию для текущей выбранной цели атакующего, и если ситуация неблагоприятная для атакующего
 // то будет совершена попытка сменить текущую цель на альтернативную. Поиск цели осуществляется другой функцей движка.
-static bool FindAlternativeTarget(fo::GameObject* source, fo::GameObject* target) {
+static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) {
 	DEV_PRINTF1("\n[AI] Analyzing target: %s ", fo::func::critter_name(target));
 
 	int distance = fo::func::obj_dist(source, target); // возвращает дистанцию 1 если объекты расположены вплотную
@@ -237,44 +237,44 @@ static bool FindAlternativeTarget(fo::GameObject* source, fo::GameObject* target
 }
 
 static const char* reTargetMsg = "\n[AI] I can't get at my target. Try picking alternate.";
-#ifndef NDEBUG
-static const char* targetGood  = "-> is possible attack!\n";
-#endif
+//#ifndef NDEBUG
+//static const char* targetGood  = "-> is possible attack!\n";
+//#endif
 
-static void __declspec(naked) ai_danger_source_hack_find() {
-	static const uint32_t ai_danger_source_hack_find_PickRet = 0x42908C;
-	static const uint32_t ai_danger_source_hack_find_Ret  = 0x4290BB;
-	__asm {
-		push eax;
-		push edx;
-		mov  edx, eax; // source.who_hit_me target
-		mov  ecx, esi; // source
-		call FindAlternativeTarget;
-		pop  edx;
-		test al, al;
-		pop  eax;
-		jnz  reTarget;
-		add  esp, 0x1C;
-		pop  ebp;
-		pop  edi;
-#ifndef NDEBUG
-		push eax;
-		push targetGood;
-		call fo::funcoffs::debug_printf_;
-		add  esp, 4;
-		pop  eax;
-#endif
-		jmp  ai_danger_source_hack_find_Ret;
-reTarget:
-		push reTargetMsg;
-		call fo::funcoffs::debug_printf_;
-		add  esp, 4;
-		jmp  ai_danger_source_hack_find_PickRet;
-	}
-}
+//static void __declspec(naked) ai_danger_source_hack_find() {
+//	static const uint32_t ai_danger_source_hack_find_PickRet = 0x42908C;
+//	static const uint32_t ai_danger_source_hack_find_Ret  = 0x4290BB;
+//	__asm {
+//		push eax;
+//		push edx;
+//		mov  edx, eax; // source.who_hit_me target
+//		mov  ecx, esi; // source
+//		call FindAlternativeTarget;
+//		pop  edx;
+//		test al, al;
+//		pop  eax;
+//		jnz  reTarget;
+//		add  esp, 0x1C;
+//		pop  ebp;
+//		pop  edi;
+//#ifndef NDEBUG
+//		push eax;
+//		push targetGood;
+//		call fo::funcoffs::debug_printf_;
+//		add  esp, 4;
+//		pop  eax;
+//#endif
+//		jmp  ai_danger_source_hack_find_Ret;
+//reTarget:
+//		push reTargetMsg;
+//		call fo::funcoffs::debug_printf_;
+//		add  esp, 4;
+//		jmp  ai_danger_source_hack_find_PickRet;
+//	}
+//}
 
-static bool AIFindAlternativeTarget(fo::GameObject* source, fo::GameObject* target) {
-	bool result = FindAlternativeTarget(source, target);
+static bool AICheckCurrentAttackerTarget(fo::GameObject* source, fo::GameObject* target) {
+	bool result = CheckAttackerTarget(source, target);
 
 	#ifdef NDEBUG
 		if (result) fo::func::debug_printf(reTargetMsg);
@@ -289,16 +289,16 @@ static bool AIFindAlternativeTarget(fo::GameObject* source, fo::GameObject* targ
 
 // Changes the behavior of the AI so that the AI moves to its target to perform an attack/shot when the range of its weapon is less than
 // the distance to the target or the AI will choose the nearest target if any other targets are available
-static long __fastcall AICombatCheckBadShot(fo::GameObject* source, fo::GameObject* target, long type) {
+static long AICombatCheckBadShot(fo::GameObject* source, fo::GameObject* target, long type) {
 	if (type) {
-		long result = AICombatCheckBadShotLite(source, target);
-		if (result == 1 && !AISearchTarget::rememberTarget && type == 2) AISearchTarget::rememberTarget = target;
+		long result = CombatCheckBadShotLite(source, target);
+		if (result == 1 && !rememberTarget && type == 2) rememberTarget = target;
 		return result;
 	}
 	return fo::func::combat_check_bad_shot(source, target, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
 }
 
-fo::GameObject* ai_danger_source_Extended(fo::GameObject* source, long type) {
+fo::GameObject* __fastcall AISearchTarget::AIDangerSource_Extended(fo::GameObject* source, long type) {
 	if (!source) return nullptr;
 
 	fo::GameObject* targets[4];
@@ -336,9 +336,9 @@ fo::GameObject* ai_danger_source_Extended(fo::GameObject* source, long type) {
 
 				if (!lastTarget || (lastTarget->critter.teamNum == source->critter.teamNum) ||
 					(isIgnoreFlee && lastTarget->critter.combatState & fo::CombatStateFlag::IsFlee) ||
-					/* [FIX] Fixed the bug of taking tile from obj_dude->who_hit_me instead of lastTarget */
+					/* [FIX] Fixed the bug of taking tile from obj_dude->who_hit_me instead of lastTarget */ // TODO add hack fix to AI.cpp for phobos
 					(fo::func::make_path_func(source, source->tile, lastTarget->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) ||
-					(AICombatCheckBadShot(source, lastTarget, type))) // [add ext] TryToFindTargets option
+					(AICombatCheckBadShot(source, lastTarget, type))) // [add ext]
 				{
 					// debug msg "\nai_danger_source: %s couldn't attack at target!  Picking alternate!"
 					fo::func::debug_printf((const char*)0x5010BC, fo::func::critter_name(source));
@@ -349,11 +349,13 @@ fo::GameObject* ai_danger_source_Extended(fo::GameObject* source, long type) {
 			case fo::AIpref::attack_who::strongest:
 			case fo::AIpref::attack_who::weakest:
 			case fo::AIpref::attack_who::closest:
-				source->critter.whoHitMe = nullptr; // unset the target to find new ones
 				// [tweak FIX] Tweak for finding new targets for party members
 				// Save the current target in the "target1" variable and find other potential targets
-				targets[0] = source->critter.whoHitMe;
-				break;
+				fo::GameObject* hitTarget = source->critter.getHitTarget();
+				if (hitTarget && hitTarget->critter.IsNotDead()) targets[0] = hitTarget;
+
+				source->critter.whoHitMe = nullptr; // unset the target to find new ones
+				goto FindNewTargets; // break;
 			//default:
 		}
 	}
@@ -362,6 +364,7 @@ SearchTargets:
 
 	if (sourceTarget && sourceTarget != source) {
 		if (sourceTarget->critter.IsDead()) {
+ReFindNewTargets:
 			if (sourceTarget->critter.teamNum != source->critter.teamNum) {           // the abuser is dead and not from the source team
 				targets[0] = fo::func::ai_find_nearest_team(source, sourceTarget, 1); // search for the team's first nearby enemy
 			}
@@ -369,8 +372,8 @@ SearchTargets:
 			if (attack_who == fo::AIpref::attack_who::whomever || attack_who == fo::AIpref::attack_who::no_attack_mode) {
 				// NPCs (or PM with whomever) always attack the target that is set to who_hit_me
 				// [add ext] Additional function allows to analyze the current target (TryToFindTargets option)
-				if (reFindNewTargets && AIFindAlternativeTarget(source, sourceTarget)) {
-					goto FindNewTargets;
+				if (reFindNewTargets && AICheckCurrentAttackerTarget(source, sourceTarget)) {
+					goto ReFindNewTargets;
 				}
 				return sourceTarget;
 			}
@@ -397,7 +400,7 @@ FindNewTargets:
 
 	FindTargetHook_Invoke(targets, source); // [HOOK_FINDTARGET]
 
-	if (type) type++;
+	if (type) type++; // set type 2
 
 	// select the first available target
 	for (size_t i = 0; i < 4; i++)
@@ -405,9 +408,9 @@ FindNewTargets:
 		if (targets[i]) {
 			if ((game::Objects::is_within_perception(source, targets[i], 3) == 0) || // [HOOK_WITHINPERCEPTION]
 				(fo::func::make_path_func(source, source->tile, targets[i]->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) ||
-				(AICombatCheckBadShot(source, targets[i], type))) // [add ext] TryToFindTargets option
+				(AICombatCheckBadShot(source, targets[i], type))) // [add ext]
 			{
-				fo::func::debug_printf((const char*)0x50110); // "\nai_danger_source: I couldn't get at my target!  Picking alternate!"
+				fo::func::debug_printf((const char*)0x501104); // "\nai_danger_source: I couldn't get at my target!  Picking alternate!"
 				continue;
 			}
 			return targets[i];
@@ -416,9 +419,28 @@ FindNewTargets:
 	return nullptr;
 }
 
-void AISearchTarget::init() {
+static void __declspec(naked) ai_danger_source_replacement() {
+	__asm {
+		//push edx;
+		push ecx;
+		xor  edx, edx; // type
+		cmp  dword ptr [esp + 8], 0x42B235 + 5; // called combat_ai_
+		sete dl;       // set type 1 if called from combat_ai_
+		mov  ecx, eax; // source
+		call AISearchTarget::AIDangerSource_Extended;
+		pop  ecx;
+		pop  edx;
+		retn;
+	}
+}
+
+void AISearchTarget::init(bool state) {
 
 	reFindNewTargets = (GetConfigInt("CombatAI", "TryToFindTargets", 0) > 0);
+
+	//if (state || reFindNewTargets)
+		MakeJump(fo::funcoffs::ai_danger_source_ + 1, ai_danger_source_replacement); // 0x428F4C
+		SafeWrite8(0x428F4C, 0x52); // push edx
 
 	//switch (GetConfigInt("CombatAI", "TryToFindTargets", 0)) {
 	//case 1:
@@ -431,14 +453,14 @@ void AISearchTarget::init() {
 
 	// Changes the behavior of the AI so that the AI moves to its target to perform an attack/shot when the range of its weapon is less than
 	// the distance to the target or the AI will choose the nearest target if any other targets are available
+	// если опция SmartBehavior не будет выключена
+	if (!state) HookCall(0x42B240, combat_ai_hook_revert_target); // also need for TryToFindTargets option
 	//HookCall(0x42918A, ai_danger_source_hook);
 	//HookCall(0x42903A, ai_danger_source_hook_party_member);
-	//HookCall(0x42B240, combat_ai_hook_revert_target); // also need for TryToFindTargets option
-
 
 	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
 	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
-		MakeCall(0x428F70, ai_danger_source_hack, 3);
+		//MakeCall(0x428F70, ai_danger_source_hack, 3);
 		npcAttackWhoFix = true;
 	}
 }
