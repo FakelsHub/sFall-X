@@ -47,6 +47,113 @@ fo::GameObject* AIHelpers::CheckFriendlyFire(fo::GameObject* target, fo::GameObj
 	return (object) ? AI::CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum) : nullptr; // 0 if there are no object
 }
 
+bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, long distance) {
+	if (game::Items::item_weapon_range(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) >= distance) return true;
+	return (game::Items::item_weapon_range(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) >= distance);
+}
+
+static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefScore) {
+	long score;
+	fo::AttackSubType weapType = fo::AttackSubType::NONE;
+	if (weapon) {
+		fo::Proto* proto;
+		if (!fo::GetProto(weapon->protoId, &proto)) return 0;
+		if (proto->item.flagsExt & fo::ObjectFlag::HiddenItem) return -1;
+
+		weapType = fo::GetWeaponType(proto->item.flagsExt); // ATKTYPE_RWEAPON_PRIMARY
+
+		long maxDmg = proto->item.weapon.maxDamage;
+		long minDmg = proto->item.weapon.minDamage;
+		score = (maxDmg - minDmg) / 2;
+
+		// пассивные очки за радиус
+		long radius = fo::func::item_w_area_damage_radius(weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
+		if (radius > 1) score += (2 * radius);
+
+		if (proto->item.weapon.perk) score *= 5; // TODO: add AIBestWeaponFix
+	} else {
+		weapType = fo::AttackSubType::UNARMED;
+	}
+
+	int order = 0;
+	outPrefScore = 0;
+	while (weapType != fo::var::weapPrefOrderings[cap->best_weapon + 1][order]) //*(&weapPrefOrderings[5 * (cap->best_weapon + 1)] + order * 4)
+	{
+		outPrefScore++;
+		if (++order > 4) break;
+	}
+}
+
+// Облегченная реализация функции ai_best_weapon_ без проверки на target
+static fo::GameObject* BestWeaponLite(fo::GameObject* source, fo::GameObject* weaponPrimary, fo::GameObject* weaponSecondary) {
+	auto cap = fo::func::ai_cap(source);
+	if ((fo::AIpref::weapon_pref)cap->best_weapon == fo::AIpref::weapon_pref::random) {
+		return (fo::func::roll_random(1, 100) <= 50) ? weaponPrimary : weaponSecondary;
+	}
+
+	long primaryPrefScore = 999;
+	long primaryScore = WeaponScore(weaponPrimary, cap, primaryPrefScore);
+	if (primaryScore == -1) return weaponPrimary;
+
+	long secondaryPrefScore = 999;
+	long secondaryScore = WeaponScore(weaponSecondary, cap, secondaryPrefScore);
+	if (secondaryScore == -1) return weaponSecondary;
+
+	if (primaryPrefScore == secondaryPrefScore)	{
+		if (primaryPrefScore == 999) return nullptr; // ???
+
+		if (std::abs(secondaryScore - primaryScore) <= 5) {
+			return (fo::func::item_cost(weaponSecondary) > fo::func::item_cost(weaponPrimary)) ? weaponSecondary : weaponPrimary;
+		}
+		if (secondaryScore > primaryScore) return weaponSecondary;
+	} else {
+		// у оружия разное предпочтение
+		// у кого очки предпочтения меньше то лучше
+
+		if (weaponPrimary && weaponPrimary->protoId == fo::PID_FLARE && weaponSecondary) {
+			return weaponSecondary;
+		}
+		if (weaponSecondary && weaponSecondary->protoId == fo::PID_FLARE && weaponPrimary) {
+			return weaponPrimary;
+		}
+
+		fo::AIpref::weapon_pref pref = (fo::AIpref::weapon_pref)cap->best_weapon;
+		if ((pref < fo::AIpref::weapon_pref::no_pref || pref > fo::AIpref::weapon_pref::unarmed) && std::abs(secondaryScore - primaryScore) > 5) {
+			return (primaryScore < secondaryScore) ? weaponSecondary : weaponPrimary;
+		}
+		if (primaryPrefScore > secondaryPrefScore) {
+			return weaponSecondary;
+		}
+	}
+	return weaponPrimary;
+}
+
+// Альтернативная реализация функции ai_search_inven_weap_
+fo::GameObject* AIHelpers::GetInventoryWeapon(fo::GameObject* source, bool checkAP, bool useHand) {
+	int bodyType = fo::func::critter_body_type(source);
+	if (bodyType && bodyType != fo::BodyType::Robotic && source->protoId != fo::PID_GORIS) {
+		return 0;
+	}
+	fo::GameObject* bestWeapon = (useHand) ? fo::func::inven_right_hand(source) : nullptr;
+
+	DWORD slot = -1;
+	while (true)
+	{
+		fo::GameObject* item = fo::func::inven_find_type(source, fo::ItemType::item_type_weapon, &slot);
+		if (!item) break;
+
+		if ((!bestWeapon || item->protoId != bestWeapon->protoId) &&
+			(!checkAP || fo::func::item_w_primary_mp_cost(item) <= source->critter.getAP()) &&
+			(fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) &&
+			((fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) != fo::AttackSubType::GUNS) ||
+			 fo::func::item_w_curr_ammo(item) || fo::func::ai_have_ammo(source, item, 0)))
+		{
+			bestWeapon = BestWeaponLite(source, bestWeapon, item);
+		}
+	}
+	return bestWeapon;
+}
+
 long AIHelpers::CombatMoveToTile(fo::GameObject* source, long tile, long dist) {
 	fo::func::register_begin(fo::RB_RESERVED);
 	fo::func::register_object_move_to_tile(source, tile, source->elevation, dist, -1);
@@ -143,17 +250,23 @@ bool AIHelpers::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
 //}
 
 // Проверяет относится ли предмет к типу стрелкового или метательному оружию
-bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item) {
+bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 	fo::Proto* proto;
 	fo::GetProto(item->protoId, &proto);
 
-	long typePrimary = fo::GetWeaponType(proto->item.flagsExt);
-	if (typePrimary >= fo::AttackSubType::THROWING) {
-		return true;
+	if (type > fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) type--;
+
+	if (type == -1 || type == fo::AttackType::ATKTYPE_LWEAPON_PRIMARY) {
+		long typePrimary = fo::GetWeaponType(proto->item.flagsExt);
+		if (typePrimary >= fo::AttackSubType::THROWING) {
+			return true;
+		}
 	}
-	long typeSecondary = fo::GetWeaponType(proto->item.flagsExt >> 4);
-	if (typeSecondary >= fo::AttackSubType::THROWING) {
-		return true;
+	if (type == -1 || type == fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) {
+		long typeSecondary = fo::GetWeaponType(proto->item.flagsExt >> 4);
+		if (typeSecondary >= fo::AttackSubType::THROWING) {
+			return true;
+		}
 	}
 	return false;
 }
@@ -194,7 +307,7 @@ long AIHelpers::GetRandomTile(fo::GameObject* source, long min, long max) {
 	return -1;
 }
 
-long AIHelpers::GetRandomDistTile(fo::GameObject* source, long tile, long distMax) {
+long AIHelpers::GetRandomDistTile(fo::GameObject* source, long tile, long distMax) { // переделать рекурсию с дистанцией
 	if (distMax <= 0) return -1;
 	long dist = GetRandom(1, distMax);
 	long _tile = fo::func::tile_num_in_direction(tile, GetRandom(0, 5), dist);

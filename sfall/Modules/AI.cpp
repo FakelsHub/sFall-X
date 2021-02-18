@@ -69,7 +69,7 @@ fo::GameObject* AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* at
 
 static void __declspec(naked) ai_try_attack_hook_FleeFix() {
 	__asm {
-		or   byte ptr [esi + combatState], 8; // set new 'ReTarget' flag
+		or   byte ptr [esi + combatState], ReTarget; // set CombatStateFlag flag
 		jmp  fo::funcoffs::ai_run_away_;
 	}
 }
@@ -77,15 +77,24 @@ static void __declspec(naked) ai_try_attack_hook_FleeFix() {
 static void __declspec(naked) combat_ai_hook_FleeFix() {
 	static const DWORD combat_ai_hook_flee_Ret = 0x42B206;
 	__asm {
-		test byte ptr [ebp], 8; // 'ReTarget' flag (critter.combat_state)
+		test byte ptr [ebp], ReTarget; // CombatStateFlag flag (critter.combat_state)
 		jnz  reTarget;
 		jmp  fo::funcoffs::critter_name_;
 reTarget:
-		and  byte ptr [ebp], ~(4 | 8); // unset Flee/ReTarget flags
+		and  byte ptr [ebp], ~(InFlee | ReTarget); // unset CombatStateFlag flags
 		xor  edi, edi;
 		mov  dword ptr [esi + whoHitMe], edi;
 		add  esp, 4;
 		jmp  combat_ai_hook_flee_Ret;
+	}
+}
+
+static void __declspec(naked) ai_try_attack_hook_runFix() {
+	__asm {
+		mov  ecx, [esi + combatState]; // save combat flags before ai_run_away
+		call fo::funcoffs::ai_run_away_;
+		mov  [esi + combatState], ecx; // restore state flags
+		retn;
 	}
 }
 
@@ -131,6 +140,8 @@ static void __declspec(naked) ai_check_drugs_hook() {
 		retn;
 	}
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 static bool __fastcall TargetExistInList(fo::GameObject* target, fo::GameObject** targetList) {
 	char i = 4;
@@ -201,7 +212,9 @@ skip:
 	}
 }
 
-static void __declspec(naked) ai_danger_source_hack_pm_newfind() {
+/////////////////////////////////////////////////////////////////////////////////////////
+
+static void __declspec(naked) ai_danger_source_hack_pm_newFind() {
 	__asm {
 		mov  ecx, [ebp + 0x18]; // source combat_data.who_hit_me
 		test ecx, ecx;
@@ -245,7 +258,7 @@ end:
 	}
 }
 
-static long __fastcall sf_ai_weapon_reload(fo::GameObject* weapon, fo::GameObject* ammo, fo::GameObject* critter) {
+static long __fastcall ai_weapon_reload_fix(fo::GameObject* weapon, fo::GameObject* ammo, fo::GameObject* critter) {
 	fo::Proto* proto = nullptr;
 	long result = -1;
 	long maxAmmo;
@@ -290,7 +303,7 @@ static void __declspec(naked) item_w_reload_hook() {
 		push ecx;
 		push esi;      // source
 		mov  ecx, eax; // weapon
-		call sf_ai_weapon_reload; // edx - ammo
+		call ai_weapon_reload_fix; // edx - ammo
 		pop  ecx;
 		retn;
 skip:
@@ -367,10 +380,10 @@ fix:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static int32_t hitChance, loopCounter = 0;
-static int32_t checkBurstFriendlyFireMode;
+static long hitChance, loopCounter = 0;
+static long checkBurstFriendlyFireMode;
 
-static int32_t __fastcall RollFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
+static long __fastcall RollFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
 	if (AI::CheckFriendlyFire(target, attacker)) {
 		if (checkBurstFriendlyFireMode > 0) return 1;
 		long dice = fo::func::roll_random(1, 10);
@@ -503,7 +516,7 @@ void AI::init() {
 
 	if (GetConfigInt("CombatAI", "SmartBehavior", 0) == 0) {
 		RetryCombatMinAP = GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
-		if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility orig version
+		if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility
 		if (RetryCombatMinAP > 0) {
 			dlog("Applying retry combat patch.", DL_INIT);
 			HookCall(0x422B94, RetryCombatHook); // combat_turn_
@@ -553,7 +566,7 @@ void AI::init() {
 
 	// Tweak for finding new targets for party members
 	// Save the current target in the "target1" variable and find other potential targets
-	MakeCall(0x429074, ai_danger_source_hack_pm_newfind);
+	MakeCall(0x429074, ai_danger_source_hack_pm_newFind); // (implemented in AIDangerSource_Extended)
 	SafeWrite16(0x429074 + 5, 0x47EB); // jmp 0x4290C2
 
 	// Fix to allow fleeing NPC to use drugs
@@ -564,8 +577,9 @@ void AI::init() {
 	// Fix for NPC stuck in fleeing mode when the hit chance of a target was too low
 	HookCall(0x42B1E3, combat_ai_hook_FleeFix);
 	HookCalls(ai_try_attack_hook_FleeFix, { 0x42ABA8, 0x42ACE5 });
-	// Disable fleeing when NPC cannot move closer to target
-	BlockCall(0x42ADF6); // ai_try_attack_ (TODO: Add custom behavior)
+
+	// Restore combat flags after fleeing when NPC cannot move closer to target
+	HookCall(0x42ADF6, ai_try_attack_hook_runFix);
 
 	// Fix AI behavior for "Snipe" distance preference
 	// The attacker will try to shoot the target instead of always running away from it at the beginning of the turn

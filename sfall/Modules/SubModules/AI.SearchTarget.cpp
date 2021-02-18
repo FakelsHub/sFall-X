@@ -15,6 +15,7 @@
 #include "..\..\Game\objects.h"
 
 #include "AI.Behavior.h"
+#include "AI.FuncHelpers.h"
 #include "AI.SearchTarget.h"
 
 namespace sfall
@@ -41,7 +42,7 @@ fo::GameObject* rememberTarget = nullptr;
 fo::GameObject* __fastcall AISearchTarget::RevertTarget(fo::GameObject* source, fo::GameObject* target) {
 	if (rememberTarget) { // rememberTarget: первая цель до которой превышен радиус действия атаки
 		DEV_PRINTF1("\n[AI] I have remember target: %s", fo::func::critter_name(rememberTarget));
-		if (target) {
+		if (target && target != rememberTarget) {
 			// выбрать ближайшую цель
 			long dist1 = fo::func::obj_dist(source, target);
 			long dist2 = fo::func::obj_dist(source, rememberTarget);
@@ -73,14 +74,30 @@ static void __declspec(naked) combat_ai_hook_revert_target() {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static long __fastcall CombatCheckBadShotLite(fo::GameObject* source, fo::GameObject* target) {
+enum class CheckBadShootResult : long {
+	Ok            = 0,
+	OutOfRange    = 2,
+	TargetDead    = 4,
+	ShootBlock    = 5,
+	CrippledHands = 7
+};
+
+static CheckBadShootResult __fastcall CombatCheckBadShotLite(fo::GameObject* source, fo::GameObject* target) {
 	long distance = 1, tile = -1;
 	long hitMode = fo::ATKTYPE_RWEAPON_PRIMARY;
 
-	if (target && target->critter.damageFlags & fo::DAM_DEAD) return 4; // target is dead
+	if (target && target->critter.damageFlags & fo::DAM_DEAD) return CheckBadShootResult::TargetDead; // target is dead
 
 	fo::GameObject* item = fo::func::inven_right_hand(source);
-	if (!item) return 0; // unarmed
+	if (!item) return CheckBadShootResult::Ok; // for unarmed
+
+	long flags = source->critter.damageFlags;
+	if (flags & fo::DAM_CRIP_ARM_LEFT && flags & fo::DAM_CRIP_ARM_RIGHT) {
+		return CheckBadShootResult::CrippledHands; // crippled both hands
+	}
+	///if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && fo::func::item_w_is_2handed(item)) {
+	///	return 6; // one of the hands is crippled, can't use a two-handed weapon
+	///}
 
 	if (target) {
 		tile = target->tile;
@@ -88,63 +105,26 @@ static long __fastcall CombatCheckBadShotLite(fo::GameObject* source, fo::GameOb
 		hitMode = fo::func::ai_pick_hit_mode(source, item, target);
 	}
 
-	long flags = source->critter.damageFlags;
-	if (flags & fo::DAM_CRIP_ARM_LEFT && flags & fo::DAM_CRIP_ARM_RIGHT) {
-		return 3; // crippled both hands
-	}
-	///if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && fo::func::item_w_is_2handed(item)) {
-	///	return 3; // one of the hands is crippled, can't use a two-handed weapon
-	///}
-
 	long attackRange = fo::func::item_w_range(source, hitMode);
-	if (attackRange > 1 && fo::func::combat_is_shot_blocked(source, source->tile, tile, target, 0)) {
-		return 2; // shot to target is blocked
+	if (attackRange > 1) {
+		if (AIHelpers::IsGunOrThrowingWeapon(item, hitMode) == false) {
+			return CheckBadShootResult::Ok; // for melee weapon
+		}
+		if (fo::func::combat_is_shot_blocked(source, source->tile, tile, target, 0)) {
+			return CheckBadShootResult::ShootBlock; // shot to target is blocked
+		}
 	}
-	return (attackRange < distance); // 1 - target is out of range of the attack
+	return (attackRange >= distance) ? CheckBadShootResult::Ok : CheckBadShootResult::OutOfRange; // 2 - target is out of range of the attack
 }
-
-//static void __declspec(naked) ai_danger_source_hook() {
-//	__asm {
-//		cmp  dword ptr [esp + 56], 0x42B235 + 5; // called fr. combat_ai_
-//		je   fix;
-//		jmp  fo::funcoffs::combat_check_bad_shot_;
-//fix:
-//		mov  ecx, eax; // source
-//		call AICombatCheckBadShotLite;
-//		cmp  eax, 1;   // check result
-//		jne  skip;
-//		// weapon out of range
-//		cmp  rememberTarget, 0;
-//		jnz  skip;
-//		mov  edx, [esp + edi + 4]; // offset from target1
-//		mov  rememberTarget, edx;  // remember the target to return to it later
-//skip:
-//		retn;
-//	}
-//}
-
-//static void __declspec(naked) ai_danger_source_hook_party_member() {
-//	__asm {
-//		cmp  dword ptr [esp + 56], 0x42B235 + 5; // called fr. combat_ai_
-//		je   fix;
-//		jmp  fo::funcoffs::combat_check_bad_shot_;
-//fix:
-//		mov  ecx, eax; // source
-//		call AICombatCheckBadShotLite;
-//		cmp  eax, 1;   // check result
-//		setg al;       // set 0 for result OK
-//		retn;
-//	}
-//}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-// Анализирует ситуацию для текущей выбранной цели атакующего, и если ситуация неблагоприятная для атакующего
-// то будет совершена попытка сменить текущую цель на альтернативную. Поиск цели осуществляется другой функцей движка.
+// Анализирует ситуацию для текущей цели атакующего, и если ситуация неблагоприятная для атакующего
+// то будет совершена попытка сменить текущую цель на альтернативную. Поиск целей осуществляется функцей движка.
 static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) {
 	DEV_PRINTF1("\n[AI] Analyzing target: %s ", fo::func::critter_name(target));
 
-	int distance = fo::func::obj_dist(source, target); // возвращает дистанцию 1 если объекты расположены вплотную
+	int distance = fo::func::obj_dist(source, target); // возвращает дистанцию 1 если цель расположена вплотную
 	if (distance <= 1) return false;
 
 	bool shotIsBlock = fo::func::combat_is_shot_blocked(source, source->tile, target->tile, target, 0);
@@ -171,6 +151,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 			dist_disposition -= 5;
 			break;
 		}
+
 		// поиск цели, возможно рядом есть альтернативная цель
 		fo::GameObject* enemy = fo::func::ai_find_nearest_team(source, target, 1);
 		if (enemy && enemy != target) {
@@ -184,23 +165,24 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 				return true; // поблизости имеется альтернативный враг -> picking alternate target
 			}
 		}
+
 		// dist=10 ap=8 cost=5 move=3
 		// pathToTarget=6 8*2=16
 		// 10 >= 8 && 6 >= 16
-		// если дистанция до цели превышает 9 гексов а реальный путь до нее больше чем имеющихся очков действий в два раза тогда берем новую цель
+		// если дистанция до цели превышает 9 гексов, а реальный путь до нее больше чем имеющихся очков действий в два раза, тогда берем новую цель
 		if (dist_disposition >= 10 && pathToTarget >= (source->critter.getAP() * 2)) {
 			DEV_PRINTF("-> is far located!");
 			return true; // target is far -> picking alternate target
 		}
 		DEV_PRINTF("-> shot is blocked. I can move to target.");
 	}
-	else if (shotIsBlock == false) { // can shot and move to target
+	else if (shotIsBlock == false){ // can shot and move to target
 		fo::GameObject* itemHand = fo::func::inven_right_hand(source); // current item
 		if (!itemHand && pathToTarget == 0) {
-			DEV_PRINTF("-> I unarmed and block move path to target!");
+			DEV_PRINTF("->. I unarmed and block move path to target!");
 			return true; // no item and move block to target -> picking alternate target
 		}
-		if (!itemHand) return false; // безоружны
+		if (!itemHand) return false; // безоружный
 
 		fo::Proto* proto;
 		if (GetProto(itemHand->protoId, &proto) && proto->item.type == fo::ItemType::item_type_weapon) {
@@ -213,7 +195,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 				return true;
 			}
 
-			int diff = distance - maxRange; // 3 - 1 = 2
+			int diff = distance - maxRange;
 			if (diff > 0) { // shot out of range (положительное число не хватает дистанции для оружия)
 				/*if (!pathToTarget) return true; // move block to target and shot out of range -> picking alternate target (это больше не нужно т.к. есть твик к подходу)*/
 
@@ -230,8 +212,8 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 			}
 		}    // can shot (or move), and hand item is not weapon
 	} else { // block shot and can move
-		DEV_PRINTF("-> shot is blocked. I can move to target [#2]");
 		// Note: pathToTarget здесь будет всегда иметь значение 1-4
+		DEV_PRINTF1("-> shot is blocked. I can move to target. [pathToTarget: %d]", pathToTarget);
 	}
 	return false; // can shot and move / can shot and block move
 }
@@ -291,9 +273,17 @@ static bool AICheckCurrentAttackerTarget(fo::GameObject* source, fo::GameObject*
 // the distance to the target or the AI will choose the nearest target if any other targets are available
 static long AICombatCheckBadShot(fo::GameObject* source, fo::GameObject* target, long type) {
 	if (type) {
-		long result = CombatCheckBadShotLite(source, target);
-		if (result == 1 && !rememberTarget && type == 2) rememberTarget = target;
-		return result;
+		CheckBadShootResult result = CombatCheckBadShotLite(source, target);
+		DEV_PRINTF1("\n[AI] CombatCheckBadShotLite result: %d", result);
+		if (type == 1) { // for player's PM
+			if (result == CheckBadShootResult::OutOfRange) return 0;
+		} else {
+			// for type = 2
+			if (!rememberTarget && (result == CheckBadShootResult::OutOfRange || result == CheckBadShootResult::ShootBlock)) {
+				rememberTarget = target;
+			}
+		}
+		return (long)result;
 	}
 	return fo::func::combat_check_bad_shot(source, target, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
 }
@@ -335,7 +325,7 @@ fo::GameObject* __fastcall AISearchTarget::AIDangerSource_Extended(fo::GameObjec
 				if (!lastTarget) lastTarget = fo::var::obj_dude->critter.getHitTarget(); // [add ext] Possible fix if suddenly last target is not be set
 
 				if (!lastTarget || (lastTarget->critter.teamNum == source->critter.teamNum) ||
-					(isIgnoreFlee && lastTarget->critter.combatState & fo::CombatStateFlag::IsFlee) ||
+					(isIgnoreFlee && lastTarget->critter.IsFlee()) ||
 					/* [FIX] Fixed the bug of taking tile from obj_dude->who_hit_me instead of lastTarget */ // TODO add hack fix to AI.cpp for phobos
 					(fo::func::make_path_func(source, source->tile, lastTarget->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) ||
 					(AICombatCheckBadShot(source, lastTarget, type))) // [add ext]
@@ -385,7 +375,7 @@ FindNewTargets:
 
 	if (isIgnoreFlee) { // remove from the list of targets if the Flee flag is set for the target
 		for (size_t i = 0; i < 4; i++) {
-			if (targets[i] && targets[i]->critter.combatState & fo::CombatStateFlag::IsFlee) targets[i] = nullptr;
+			if (targets[i] && targets[i]->critter.IsFlee()) targets[i] = nullptr;
 		}
 	}
 
@@ -410,7 +400,8 @@ FindNewTargets:
 				(fo::func::make_path_func(source, source->tile, targets[i]->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) ||
 				(AICombatCheckBadShot(source, targets[i], type))) // [add ext]
 			{
-				fo::func::debug_printf((const char*)0x501104); // "\nai_danger_source: I couldn't get at my target!  Picking alternate!"
+				fo::func::debug_printf("\n[AI] ai_danger_source: I couldn't get at my (%s) target! Picking alternate!", fo::func::critter_name(targets[i]));
+				// (const char*)0x501104 "\nai_danger_source: I couldn't get at my target!  Picking alternate!"
 				continue;
 			}
 			return targets[i];
@@ -455,8 +446,6 @@ void AISearchTarget::init(bool state) {
 	// the distance to the target or the AI will choose the nearest target if any other targets are available
 	// если опция SmartBehavior не будет выключена
 	if (!state) HookCall(0x42B240, combat_ai_hook_revert_target); // also need for TryToFindTargets option
-	//HookCall(0x42918A, ai_danger_source_hook);
-	//HookCall(0x42903A, ai_danger_source_hook_party_member);
 
 	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
 	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {

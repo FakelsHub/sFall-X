@@ -19,7 +19,12 @@ public:
 
 	// The return of the friendly critter that are located on the line of fire or any other non-shooting object
 	// destTile - тайл с которого будет проверяться линия
-	static fo::GameObject* AIHelpers::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker, long destTile);
+	static fo::GameObject* CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker, long destTile);
+
+	static bool AttackInRange(fo::GameObject* source, fo::GameObject* weapon, long distance);
+
+	// Альтернативная реализация функции ai_search_inven_weap_
+	static fo::GameObject* GetInventoryWeapon(fo::GameObject* source, bool checkAP, bool useHand);
 
 	// Получает стоимость очков действия для текущего оружия в правом слоте и указанного режима
 	// в случае ошибки возвращается -1
@@ -49,7 +54,7 @@ public:
 	static bool CanSeeObject(fo::GameObject* source, fo::GameObject* target);
 
 	// Проверяет относится ли предмет к типу стрелковому или метательному оружию
-	static bool IsGunOrThrowingWeapon(fo::GameObject* item);
+	static bool IsGunOrThrowingWeapon(fo::GameObject* item, long type = -1);
 
 	static bool CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon);
 

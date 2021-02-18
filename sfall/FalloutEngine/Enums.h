@@ -308,6 +308,7 @@ enum ProtoID : unsigned long
 
 	// critter
 	PID_Player						= 0x01000000,
+	PID_GORIS						= 0x01000098,
 
 	// scenery
 	PID_DRIVABLE_CAR				= 0x020003F1, // index 1009
@@ -750,7 +751,7 @@ enum CombatStateFlag : long
 {
 	InCombat        = 1,
 	EnemyOutOfRange = 2,
-	IsFlee          = 4,
+	InFlee          = 4,
 	ReTarget        = 8 // sfall flag (set in ai_try_attack_ before run away)
 };
 
@@ -771,7 +772,7 @@ namespace Fields {
 		inventory         = 0x2C,
 
 		protoId           = 0x64,
-		cid               = 0x68, // combatID don't change while combat
+		cid               = 0x68, // combatID don't change while in combat
 		lightDistance     = 0x6C,
 		lightIntensity    = 0x70,
 		outline           = 0x74,

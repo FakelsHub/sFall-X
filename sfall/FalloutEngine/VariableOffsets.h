@@ -280,6 +280,7 @@
 #define FO_VAR_title_font                 0x56D748
 #define FO_VAR_trait_data                 0x51DB84
 #define FO_VAR_view_page                  0x664520
+#define FO_VAR_weapPrefOrderings          0x518158
 #define FO_VAR_wd_obj                     0x59E98C
 #define FO_VAR_window                     0x6ADE58
 #define FO_VAR_window_index               0x6ADD90

@@ -24,13 +24,15 @@ namespace sfall
 {
 
 class Perks : public Module {
+private:
+	static bool TraitIsDisabled(int traitID);
+
 public:
 	const char* name() { return "Perks"; }
 	void init();
 
 	// Enable the modification of the stat/skills for traits by using the perks ini file
 	static int  TraitsModEnable();
-	static bool TraitIsDisabled(int traitID);
 	static DWORD GetTraitStatBonus(int statID, int traitIndex);
 	static DWORD GetTraitSkillBonus(int skillID, int traitIndex);
 
@@ -52,6 +54,10 @@ public:
 	static void __fastcall SetPerkboxTitle(const char* title);
 	static void SetPerkName(int id, const char* value);
 	static void SetPerkDesc(int id, const char* value);
+
+	static __forceinline bool DudeHasTrait(DWORD traitID) {
+		return (TraitIsDisabled(traitID) == false && (fo::var::pc_trait[0] == traitID || fo::var::pc_trait[1] == traitID));
+	}
 };
 
 void PerksEnterCharScreen();
