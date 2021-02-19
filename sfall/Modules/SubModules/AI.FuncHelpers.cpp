@@ -252,8 +252,7 @@ bool AIHelpers::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
 
 // Проверяет относится ли предмет к типу стрелкового или метательному оружию
 bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
-	fo::Proto* proto;
-	fo::GetProto(item->protoId, &proto);
+	fo::Proto* proto = fo::GetProto(item->protoId);
 
 	if (type > fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) type--;
 

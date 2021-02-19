@@ -85,7 +85,7 @@ fo::GameObject* GetActiveItem();
 
 long GetCurrentAttackMode();
 
-fo::AttackSubType GetWeaponType(long weaponFlag);
+fo::AttackSubType GetWeaponType(unsigned long weaponFlag);
 
 bool HeroIsFemale();
 

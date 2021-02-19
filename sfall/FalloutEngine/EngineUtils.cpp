@@ -144,7 +144,7 @@ long GetCurrentAttackMode() {
 	return hitMode;
 }
 
-fo::AttackSubType GetWeaponType(long weaponFlag) {
+fo::AttackSubType GetWeaponType(unsigned long weaponFlag) {
 	static const fo::AttackSubType weapon_types[9] =
 	{
 		fo::AttackSubType::NONE,
@@ -157,7 +157,8 @@ fo::AttackSubType GetWeaponType(long weaponFlag) {
 		fo::AttackSubType::GUNS,
 		fo::AttackSubType::GUNS
 	};
-	return weapon_types[weaponFlag & 0xF];
+	unsigned long type = weaponFlag & 0xF;
+	return (type < 9) ? weapon_types[type] : fo::AttackSubType::NONE;
 }
 
 bool HeroIsFemale() {
