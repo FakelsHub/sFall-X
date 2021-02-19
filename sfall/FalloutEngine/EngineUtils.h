@@ -44,23 +44,23 @@ __forceinline void sf_rect_free(fo::RectList* rect) {
 }
 
 // returns message string from given file or "Error" when not found
-const char* GetMessageStr(const MessageList* fileAddr, long messageId);
+const char* GetMessageStr(const fo::MessageList* fileAddr, long messageId);
 
 // similar to GetMessageStr, but returns nullptr when no message is found
-const char* MessageSearch(const MessageList* fileAddr, long messageId);
+const char* MessageSearch(const fo::MessageList* fileAddr, long messageId);
 
-Queue* QueueFind(GameObject* object, long type);
+fo::Queue* QueueFind(fo::GameObject* object, long type);
 
 // returns weapon animation code
-long AnimCodeByWeapon(GameObject* weapon);
+long AnimCodeByWeapon(fo::GameObject* weapon);
 
 // returns False if the prototype does not exist, or pointer to prototype by PID in the outProto argument
-bool GetProto(long pid, Proto** outProto);
+bool GetProto(long pid, fo::Proto** outProto);
 
 // returns pointer to prototype by PID
 // Note: use the function if you need to get the parameter immediately without extra checks
-__forceinline Proto* GetProto(long pid) {
-	Proto* proto;
+__forceinline fo::Proto* GetProto(long pid) {
+	fo::Proto* proto;
 	fo::func::proto_ptr(pid, &proto);
 	return proto;
 }
@@ -73,19 +73,19 @@ void SkillGetTags(long* result, long num);
 // wrapper for skill_set_tags with bounds checking
 void SkillSetTags(long* tags, long num);
 
-long __fastcall GetItemType(GameObject* item);
+long __fastcall GetItemType(fo::GameObject* item);
 
-long GetCritterKillType(GameObject* critter);
+long GetCritterKillType(fo::GameObject* critter);
 
-_declspec(noinline) GameObject* GetItemPtrSlot(GameObject* critter, InvenType slot);
+_declspec(noinline) fo::GameObject* GetItemPtrSlot(fo::GameObject* critter, fo::InvenType slot);
 
 long& GetActiveItemMode();
 
-GameObject* GetActiveItem();
+fo::GameObject* GetActiveItem();
 
 long GetCurrentAttackMode();
 
-AttackSubType GetWeaponType(long weaponFlag);
+fo::AttackSubType GetWeaponType(long weaponFlag);
 
 bool HeroIsFemale();
 
@@ -167,7 +167,7 @@ DWORD GetCharGapWidth();
 DWORD GetMaxCharWidth();
 
 // Redraw the given object on screen (does not always redraws the whole object)
-void RedrawObject(GameObject* obj);
+void RedrawObject(fo::GameObject* obj);
 
 // Redraws all interface windows
 void RefreshGNW(bool skipOwner = false);

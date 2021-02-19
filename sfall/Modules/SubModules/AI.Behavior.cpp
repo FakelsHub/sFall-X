@@ -1218,7 +1218,7 @@ static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
 		Выполняем алгорим побега с поля боя	если атакующий имеет установленны флаг 'Flee'
 		или если атакующий имеет повреждение каких-либо частей тела
 	**************************************************************************/
-	if ((source->critter.IsFlee()) || (source->critter.damageFlags & attacker.cap->hurt_too_much)) {
+	if ((source->critter.IsFleeing()) || (source->critter.damageFlags & attacker.cap->hurt_too_much)) {
 		// fix for flee from sfall
 		if (!(source->critter.combatState & fo::CombatStateFlag::ReTarget))
 		{
@@ -1539,7 +1539,6 @@ static fo::GameObject* FindSafeWeaponAttack(fo::GameObject* source, fo::GameObje
 	long distance = fo::func::obj_dist(source, target);
 
 	fo::GameObject* pickWeapon = nullptr;
-	fo::Proto* proto;
 	DWORD slotNum = -1;
 
 	while (true)

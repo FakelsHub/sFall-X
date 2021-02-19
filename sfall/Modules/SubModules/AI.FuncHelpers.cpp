@@ -82,6 +82,7 @@ static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefSco
 		outPrefScore++;
 		if (++order > 4) break;
 	}
+	return score;
 }
 
 // Облегченная реализация функции ai_best_weapon_ без проверки на target

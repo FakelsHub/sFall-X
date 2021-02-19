@@ -32,8 +32,7 @@
 namespace sfall
 {
 
-using namespace fo;
-using namespace Fields;
+using namespace fo::Fields;
 
 static std::unordered_map<fo::GameObject*, fo::GameObject*> targets;
 static std::unordered_map<fo::GameObject*, fo::GameObject*> sources;
@@ -68,6 +67,7 @@ fo::GameObject* AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* at
 /////////////////////////////////////////////////////////////////////////////////////////
 
 static void __declspec(naked) ai_try_attack_hook_FleeFix() {
+	using namespace fo;
 	__asm {
 		or   byte ptr [esi + combatState], ReTarget; // set CombatStateFlag flag
 		jmp  fo::funcoffs::ai_run_away_;
@@ -76,6 +76,7 @@ static void __declspec(naked) ai_try_attack_hook_FleeFix() {
 
 static void __declspec(naked) combat_ai_hook_FleeFix() {
 	static const DWORD combat_ai_hook_flee_Ret = 0x42B206;
+	using namespace fo;
 	__asm {
 		test byte ptr [ebp], ReTarget; // CombatStateFlag flag (critter.combat_state)
 		jnz  reTarget;
@@ -215,6 +216,7 @@ skip:
 /////////////////////////////////////////////////////////////////////////////////////////
 
 static void __declspec(naked) ai_danger_source_hack_pm_newFind() {
+	using namespace fo;
 	__asm {
 		mov  ecx, [ebp + 0x18]; // source combat_data.who_hit_me
 		test ecx, ecx;
@@ -297,6 +299,7 @@ static long __fastcall ai_weapon_reload_fix(fo::GameObject* weapon, fo::GameObje
 }
 
 static void __declspec(naked) item_w_reload_hook() {
+	using namespace fo;
 	__asm {
 		cmp  dword ptr [eax + protoId], PID_SOLAR_SCORCHER;
 		je   skip;
@@ -333,6 +336,7 @@ evaluation:
 }
 
 static void __declspec(naked) cai_perform_distance_prefs_hack() {
+	using namespace fo;
 	__asm {
 		mov  ebx, eax; // current distance to target
 		mov  ecx, esi;
@@ -393,6 +397,7 @@ static long __fastcall RollFriendlyFire(fo::GameObject* target, fo::GameObject* 
 }
 
 static void __declspec(naked) combat_safety_invalidate_weapon_func_hook_init() {
+	using namespace fo;
 	__asm {
 		xor  ecx, ecx;
 		cmp  edi, ANIM_fire_burst;
@@ -432,6 +437,7 @@ static DWORD safety_invalidate_weapon_burst_loop = 0x42168B;
 static DWORD safety_invalidate_weapon_burst_exit = 0x4217AB;
 
 static void __declspec(naked) combat_safety_invalidate_weapon_func_hack1() { // jump
+	using namespace fo;
 	__asm {
 		dec  loopCounter;
 		jz   break;
@@ -452,6 +458,7 @@ break:
 }
 
 static void __declspec(naked) combat_safety_invalidate_weapon_func_hack2() { // call
+	using namespace fo;
 	__asm {
 		add  ecx, 4;
 		cmp  edi, ebp;

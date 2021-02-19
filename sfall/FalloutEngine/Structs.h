@@ -175,7 +175,7 @@ struct GameObject {
 			inline bool IsNotActiveAndDead() {
 				return ((damageFlags & (DamageFlag::DAM_DEAD | DamageFlag::DAM_KNOCKED_OUT | DamageFlag::DAM_LOSE_TURN)) != 0);
 			}
-			inline bool IsFlee() {
+			inline bool IsFleeing() {
 				return ((combatState & CombatStateFlag::InFlee) != 0);
 			}
 

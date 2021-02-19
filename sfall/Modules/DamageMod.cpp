@@ -26,7 +26,6 @@
 
 namespace sfall
 {
-using namespace fo;
 
 int DamageMod::formula;
 
@@ -307,6 +306,7 @@ void DamageMod::DamageYAAM(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamag
 
 // Display melee damage w/o perk bonus
 static __declspec(naked) void MeleeDmgDisplayPrintFix_hook() {
+	using namespace fo;
 	__asm {
 		mov  ecx, eax;                                 // Store pointer to critter
 		call fo::funcoffs::stat_level_;                // Get Melee Damage
@@ -326,6 +326,7 @@ static __declspec(naked) void MeleeDmgDisplayPrintFix_hook() {
 
 // Display max melee damage w/o perk bonus
 static __declspec(naked) void CommonDmgRngDispFix_hook() {
+	using namespace fo;
 	__asm {
 		mov  ebx, eax;                                 // Store pointer to critter
 		call fo::funcoffs::stat_level_;                // Get Melee Damage
@@ -344,6 +345,7 @@ static __declspec(naked) void CommonDmgRngDispFix_hook() {
 }
 
 static __declspec(naked) void HtHDamageFix1a_hack() {
+	using namespace fo;
 	__asm {
 		cmp  ecx, dword ptr ds:[FO_VAR_obj_dude];      // Is the critter == PC?
 		je   fix;                                      // Skip if no
@@ -360,6 +362,7 @@ fix:
 }
 
 static __declspec(naked) void HtHDamageFix1b_hook() {
+	using namespace fo;
 	__asm {
 		call fo::funcoffs::stat_level_;                // Get Total_Melee_Damage
 		cmp  ecx, dword ptr ds:[FO_VAR_obj_dude];      // Is the critter == PC?
@@ -378,6 +381,7 @@ fix:
 }
 
 static void __declspec(naked) DisplayBonusRangedDmg_hook() {
+	using namespace fo;
 	__asm {
 		mov  edx, PERK_bonus_ranged_damage;
 		mov  eax, dword ptr ds:[FO_VAR_stack];
@@ -390,6 +394,7 @@ static void __declspec(naked) DisplayBonusRangedDmg_hook() {
 }
 
 static void __declspec(naked) DisplayBonusHtHDmg1_hook() {
+	using namespace fo;
 	__asm {
 		mov  edx, PERK_bonus_hth_damage;
 		mov  eax, dword ptr ds:[FO_VAR_stack];
@@ -402,6 +407,7 @@ static void __declspec(naked) DisplayBonusHtHDmg1_hook() {
 
 static void __declspec(naked) DisplayBonusHtHDmg2_hack() {
 	static const DWORD DisplayBonusHtHDmg2Exit = 0x47254E;
+	using namespace fo;
 	__asm {
 		mov  ecx, eax;
 		call fo::funcoffs::stat_level_;

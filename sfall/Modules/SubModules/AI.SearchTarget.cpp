@@ -325,7 +325,7 @@ fo::GameObject* __fastcall AISearchTarget::AIDangerSource_Extended(fo::GameObjec
 				if (!lastTarget) lastTarget = fo::var::obj_dude->critter.getHitTarget(); // [add ext] Possible fix if suddenly last target is not be set
 
 				if (!lastTarget || (lastTarget->critter.teamNum == source->critter.teamNum) ||
-					(isIgnoreFlee && lastTarget->critter.IsFlee()) ||
+					(isIgnoreFlee && lastTarget->critter.IsFleeing()) ||
 					/* [FIX] Fixed the bug of taking tile from obj_dude->who_hit_me instead of lastTarget */ // TODO add hack fix to AI.cpp for phobos
 					(fo::func::make_path_func(source, source->tile, lastTarget->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) ||
 					(AICombatCheckBadShot(source, lastTarget, type))) // [add ext]
@@ -375,7 +375,7 @@ FindNewTargets:
 
 	if (isIgnoreFlee) { // remove from the list of targets if the Flee flag is set for the target
 		for (size_t i = 0; i < 4; i++) {
-			if (targets[i] && targets[i]->critter.IsFlee()) targets[i] = nullptr;
+			if (targets[i] && targets[i]->critter.IsFleeing()) targets[i] = nullptr;
 		}
 	}
 
