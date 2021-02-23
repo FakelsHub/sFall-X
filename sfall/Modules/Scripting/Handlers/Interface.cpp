@@ -346,18 +346,10 @@ void mf_inventory_redraw(OpcodeContext& ctx) {
 	int mode;
 	DWORD loopFlag = GetLoopFlags() & (INVENTORY | INTFACEUSE | INTFACELOOT | BARTER);
 	switch (loopFlag) {
-		case INVENTORY:
-			mode = 0;
-			break;
-		case INTFACEUSE:
-			mode = 1;
-			break;
-		case INTFACELOOT:
-			mode = 2;
-			break;
-		case BARTER:
-			mode = 3;
-			break;
+		case INVENTORY:   mode = 0; break;
+		case INTFACEUSE:  mode = 1; break;
+		case INTFACELOOT: mode = 2; break;
+		case BARTER:      mode = 3; break;
 		default:
 			return;
 	}
@@ -679,28 +671,18 @@ void mf_get_window_attribute(OpcodeContext& ctx) {
 	}
 	long result = 0;
 	switch (ctx.arg(1).rawValue()) {
-	case -1: // rectangle map.left map.top map.right map.bottom
-		result = CreateTempArray(-2, 0);
-		setArray(result, ScriptValue("left"), ScriptValue(win->rect.x), false);
-		setArray(result, ScriptValue("top"), ScriptValue(win->rect.y), false);
-		setArray(result, ScriptValue("right"), ScriptValue(win->rect.offx), false);
-		setArray(result, ScriptValue("bottom"), ScriptValue(win->rect.offy), false);
-		break;
-	case 0: // check if window exists
-		result = 1;
-		break;
-	case 1:
-		result = win->rect.x;
-		break;
-	case 2:
-		result = win->rect.y;
-		break;
-	case 3:
-		result = win->width;
-		break;
-	case 4:
-		result = win->height;
-		break;
+		case -1: // rectangle map.left map.top map.right map.bottom
+			result = CreateTempArray(-2, 0);
+			setArray(result, ScriptValue("left"), ScriptValue(win->rect.x), false);
+			setArray(result, ScriptValue("top"), ScriptValue(win->rect.y), false);
+			setArray(result, ScriptValue("right"), ScriptValue(win->rect.offx), false);
+			setArray(result, ScriptValue("bottom"), ScriptValue(win->rect.offy), false);
+			break;
+		case 0: result = 1;           break; // check if window exists
+		case 1: result = win->rect.x; break;
+		case 2: result = win->rect.y; break;
+		case 3: result = win->width;  break;
+		case 4: result = win->height; break;
 	}
 	ctx.setReturn(result);
 }

@@ -34,13 +34,105 @@ namespace sfall
 namespace script
 {
 
-#define exec_script_proc(script, proc) __asm {  \
-	__asm mov  eax, script                      \
-	__asm mov  edx, proc                        \
-	__asm call fo::funcoffs::exec_script_proc_  \
+static const char* protoFailedLoad = "%s() - failed to load a prototype ID: %d";
+
+static const char* nameNPCToInc;
+static long pidNPCToInc;
+static bool onceNpcLoop;
+
+static void __cdecl IncNPCLevel(const char* fmt, const char* name) {
+	fo::GameObject* mObj;
+	__asm {
+		push edx;
+		mov  eax, [ebp + 0x150 - 0x1C + 16]; // ebp <- esp
+		mov  edx, [eax];
+		mov  mObj, edx;
+	}
+
+	if ((pidNPCToInc && (mObj && mObj->protoId == pidNPCToInc)) || (!pidNPCToInc && !_stricmp(name, nameNPCToInc))) {
+		fo::func::debug_printf(fmt, name);
+
+		SafeWrite32(0x495C50, 0x01FB840F); // Want to keep this check intact. (restore)
+
+		SafeMemSet(0x495C77, CodeType::Nop, 6);   // Check that the player is high enough for the npc to consider this level
+		//SafeMemSet(0x495C8C, CodeType::Nop, 6); // Check that the npc isn't already at its maximum level
+		SafeMemSet(0x495CEC, CodeType::Nop, 6);   // Check that the npc hasn't already levelled up recently
+		if (!npcAutoLevelEnabled) {
+			SafeWrite8(0x495CFB, CodeType::JumpShort); // Disable random element
+		}
+		__asm mov [ebp + 0x150 - 0x28 + 16], 255; // set counter for exit loop
+	} else {
+		if (!onceNpcLoop) {
+			SafeWrite32(0x495C50, 0x01FCE9); // set goto next member
+			onceNpcLoop = true;
+		}
+	}
+	__asm pop edx;
 }
 
-static const char* protoFailedLoad = "%s() - failed to load a prototype ID: %d";
+void op_inc_npc_level(OpcodeContext& ctx) {
+	nameNPCToInc = ctx.arg(0).asString();
+	pidNPCToInc = ctx.arg(0).asInt(); // set to 0 if passing npc name
+	if (pidNPCToInc == 0 && nameNPCToInc[0] == 0) return;
+
+	MakeCall(0x495BF1, IncNPCLevel);  // Replace the debug output
+	__asm call fo::funcoffs::partyMemberIncLevels_;
+	onceNpcLoop = false;
+
+	// restore code
+	SafeWrite32(0x495C50, 0x01FB840F);
+	__int64 data = 0x01D48C0F;
+	SafeWriteBytes(0x495C77, (BYTE*)&data, 6);
+	//SafeWrite16(0x495C8C, 0x8D0F);
+	//SafeWrite32(0x495C8E, 0x000001BF);
+	data = 0x0130850F;
+	SafeWriteBytes(0x495CEC, (BYTE*)&data, 6);
+	if (!npcAutoLevelEnabled) {
+		SafeWrite8(0x495CFB, CodeType::JumpZ);
+	}
+}
+
+void op_get_npc_level(OpcodeContext& ctx) {
+	int level = -1;
+	DWORD findPid = ctx.arg(0).asInt(); // set to 0 if passing npc name
+	const char *critterName, *name = ctx.arg(0).asString();
+
+	if (findPid || name[0] != 0) {
+		DWORD pid = 0;
+		DWORD* members = fo::var::partyMemberList;
+		for (DWORD i = 0; i < fo::var::partyMemberCount; i++) {
+			if (!findPid) {
+				__asm {
+					mov  eax, members;
+					mov  eax, [eax];
+					call fo::funcoffs::critter_name_;
+					mov  critterName, eax;
+				}
+				if (!_stricmp(name, critterName)) { // found npc
+					pid = ((fo::GameObject*)*members)->protoId;
+					break;
+				}
+			} else {
+				DWORD _pid = ((fo::GameObject*)*members)->protoId;
+				if (findPid == _pid) {
+					pid = _pid;
+					break;
+				}
+			}
+			members += 4;
+		}
+		if (pid) {
+			DWORD* pids = fo::var::partyMemberPidList;
+			for (DWORD j = 0; j < fo::var::partyMemberMaxCount; j++) {
+				if (pids[j] == pid) {
+					level = fo::var::partyMemberLevelUpInfoList[j * 3];
+					break;
+				}
+			}
+		}
+	}
+	ctx.setReturn(level);
+}
 
 void op_remove_script(OpcodeContext& ctx) {
 	auto object = ctx.arg(0).object();
@@ -48,6 +140,12 @@ void op_remove_script(OpcodeContext& ctx) {
 		fo::func::scr_remove(object->scriptId);
 		object->scriptId = 0xFFFFFFFF;
 	}
+}
+
+#define exec_script_proc(script, proc) __asm {  \
+	__asm mov  eax, script                      \
+	__asm mov  edx, proc                        \
+	__asm call fo::funcoffs::exec_script_proc_  \
 }
 
 void op_set_script(OpcodeContext& ctx) {
@@ -104,6 +202,8 @@ void op_create_spatial(OpcodeContext& ctx) {
 	ctx.setReturn(fo::func::scr_find_obj_from_program(scriptPtr->program));
 }
 
+#undef exec_script_proc
+
 void mf_spatial_radius(OpcodeContext& ctx) {
 	auto spatialObj = ctx.arg(0).object();
 	fo::ScriptInstance* script;
@@ -159,7 +259,7 @@ void op_set_weapon_ammo_count(OpcodeContext& ctx) {
 	if (obj->IsItem()) obj->item.charges = ctx.arg(1).rawValue();
 }
 
-enum {
+enum class BlockType {
 	BLOCKING_TYPE_BLOCK  = 0,
 	BLOCKING_TYPE_SHOOT  = 1,
 	BLOCKING_TYPE_AI     = 2,
@@ -167,15 +267,15 @@ enum {
 	BLOCKING_TYPE_SCROLL = 4
 };
 
-static DWORD getBlockingFunc(DWORD type) {
+static DWORD getBlockingFunc(BlockType type) {
 	switch (type) {
-	case BLOCKING_TYPE_BLOCK: default:
+	case BlockType::BLOCKING_TYPE_BLOCK: default:
 		return fo::funcoffs::obj_blocking_at_;       // with call hook
-	case BLOCKING_TYPE_SHOOT:
+	case BlockType::BLOCKING_TYPE_SHOOT:
 		return fo::funcoffs::obj_shoot_blocking_at_; // w/o call hook
-	case BLOCKING_TYPE_AI:
+	case BlockType::BLOCKING_TYPE_AI:
 		return fo::funcoffs::obj_ai_blocking_at_;    // w/o call hook
-	case BLOCKING_TYPE_SIGHT:
+	case BlockType::BLOCKING_TYPE_SIGHT:
 		return fo::funcoffs::obj_sight_blocking_at_; // w/o call hook
 	//case 4:
 	//	return obj_scroll_blocking_at_;
@@ -184,10 +284,10 @@ static DWORD getBlockingFunc(DWORD type) {
 
 void op_make_straight_path(OpcodeContext& ctx) {
 	auto objFrom = ctx.arg(0).object();
-	DWORD tileTo = ctx.arg(1).rawValue(),
-		  type = ctx.arg(2).rawValue();
+	DWORD tileTo = ctx.arg(1).rawValue();
+	BlockType type = (BlockType)ctx.arg(2).rawValue();
 
-	long flag = (type == BLOCKING_TYPE_SHOOT) ? 32 : 0; // TODO: Maybe need to use a different 4/16 value instead of zero
+	long flag = (type == BlockType::BLOCKING_TYPE_SHOOT) ? 32 : 0; // TODO: Maybe need to use a different 4/16 value instead of zero
 	fo::GameObject* resultObj = nullptr;
 	fo::func::make_straight_path_func(objFrom, objFrom->tile, tileTo, 0, (DWORD*)&resultObj, flag, (void*)getBlockingFunc(type));
 	ctx.setReturn(resultObj);
@@ -195,9 +295,8 @@ void op_make_straight_path(OpcodeContext& ctx) {
 
 void op_make_path(OpcodeContext& ctx) {
 	auto objFrom = ctx.arg(0).object();
-	auto tileTo = ctx.arg(1).rawValue(),
-		 type = ctx.arg(2).rawValue();
-	auto func = getBlockingFunc(type);
+	auto tileTo = ctx.arg(1).rawValue();
+	auto func = getBlockingFunc((BlockType)ctx.arg(2).rawValue());
 
 	// if the object is not a critter, then there is no need to check tile (tileTo) for blocking
 	long checkFlag = (objFrom->IsCritter());
@@ -213,11 +312,11 @@ void op_make_path(OpcodeContext& ctx) {
 
 void op_obj_blocking_at(OpcodeContext& ctx) {
 	DWORD tile = ctx.arg(0).rawValue(),
-		  elevation = ctx.arg(1).rawValue(),
-		  type = ctx.arg(2).rawValue();
+		  elevation = ctx.arg(1).rawValue();
+	BlockType type = (BlockType)ctx.arg(2).rawValue();
 
 	fo::GameObject* resultObj = fo::func::obj_blocking_at_wrapper(0, tile, elevation, (void*)getBlockingFunc(type));
-	if (resultObj && type == BLOCKING_TYPE_SHOOT && (resultObj->flags & fo::ObjectFlag::ShootThru)) { // don't know what this flag means, copy-pasted from the engine code
+	if (resultObj && type == BlockType::BLOCKING_TYPE_SHOOT && (resultObj->flags & fo::ObjectFlag::ShootThru)) { // don't know what this flag means, copy-pasted from the engine code
 		// this check was added because the engine always does exactly this when using shoot blocking checks
 		resultObj = nullptr;
 	}
@@ -465,6 +564,16 @@ void mf_objects_in_radius(OpcodeContext& ctx) {
 		arrays[id].val[i].set((long)objects[i]);
 	}
 	ctx.setReturn(id);
+}
+
+void mf_npc_engine_level_up(OpcodeContext& ctx) {
+	if (ctx.arg(0).asBool()) {
+		if (!npcEngineLevelUp) SafeWrite16(0x4AFC1C, 0x840F); // enable
+		npcEngineLevelUp = true;
+	} else {
+		if (npcEngineLevelUp) SafeWrite16(0x4AFC1C, 0xE990);
+		npcEngineLevelUp = false;
+	}
 }
 
 }

@@ -26,11 +26,9 @@
 #include "..\..\HeroAppearance.h"
 //#include "..\..\MiscPatches.h"
 #include "..\..\Movies.h"
-#include "..\..\PartyControl.h"
 #include "..\..\PlayerModel.h"
 #include "..\..\ScriptExtender.h"
 #include "..\..\Sound.h"
-#include "..\..\Stats.h"
 
 #include "..\Arrays.h"
 
@@ -99,106 +97,7 @@ void __declspec(naked) op_eax_available() {
 	__asm {
 		xor  edx, edx
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-//		retn;
 	}
-}
-
-static const char* nameNPCToInc;
-static long pidNPCToInc;
-static bool onceNpcLoop;
-
-static void __cdecl IncNPCLevel(const char* fmt, const char* name) {
-	fo::GameObject* mObj;
-	__asm {
-		push edx;
-		mov  eax, [ebp + 0x150 - 0x1C + 16]; // ebp <- esp
-		mov  edx, [eax];
-		mov  mObj, edx;
-	}
-
-	if ((pidNPCToInc && (mObj && mObj->protoId == pidNPCToInc)) || (!pidNPCToInc && !_stricmp(name, nameNPCToInc))) {
-		fo::func::debug_printf(fmt, name);
-
-		SafeWrite32(0x495C50, 0x01FB840F); // Want to keep this check intact. (restore)
-
-		SafeMemSet(0x495C77, CodeType::Nop, 6);   // Check that the player is high enough for the npc to consider this level
-		//SafeMemSet(0x495C8C, CodeType::Nop, 6); // Check that the npc isn't already at its maximum level
-		SafeMemSet(0x495CEC, CodeType::Nop, 6);   // Check that the npc hasn't already levelled up recently
-		if (!npcAutoLevelEnabled) {
-			SafeWrite8(0x495CFB, CodeType::JumpShort); // Disable random element
-		}
-		__asm mov [ebp + 0x150 - 0x28 + 16], 255; // set counter for exit loop
-	} else {
-		if (!onceNpcLoop) {
-			SafeWrite32(0x495C50, 0x01FCE9); // set goto next member
-			onceNpcLoop = true;
-		}
-	}
-	__asm pop edx;
-}
-
-void op_inc_npc_level(OpcodeContext& ctx) {
-	nameNPCToInc = ctx.arg(0).asString();
-	pidNPCToInc = ctx.arg(0).asInt(); // set to 0 if passing npc name
-	if (pidNPCToInc == 0 && nameNPCToInc[0] == 0) return;
-
-	MakeCall(0x495BF1, IncNPCLevel);  // Replace the debug output
-	__asm call fo::funcoffs::partyMemberIncLevels_;
-	onceNpcLoop = false;
-
-	// restore code
-	SafeWrite32(0x495C50, 0x01FB840F);
-	__int64 data = 0x01D48C0F;
-	SafeWriteBytes(0x495C77, (BYTE*)&data, 6);
-	//SafeWrite16(0x495C8C, 0x8D0F);
-	//SafeWrite32(0x495C8E, 0x000001BF);
-	data = 0x0130850F;
-	SafeWriteBytes(0x495CEC, (BYTE*)&data, 6);
-	if (!npcAutoLevelEnabled) {
-		SafeWrite8(0x495CFB, CodeType::JumpZ);
-	}
-}
-
-void op_get_npc_level(OpcodeContext& ctx) {
-	int level = -1;
-	DWORD findPid = ctx.arg(0).asInt(); // set to 0 if passing npc name
-	const char *critterName, *name = ctx.arg(0).asString();
-
-	if (findPid || name[0] != 0) {
-		DWORD pid = 0;
-		DWORD* members = fo::var::partyMemberList;
-		for (DWORD i = 0; i < fo::var::partyMemberCount; i++) {
-			if (!findPid) {
-				__asm {
-					mov  eax, members;
-					mov  eax, [eax];
-					call fo::funcoffs::critter_name_;
-					mov  critterName, eax;
-				}
-				if (!_stricmp(name, critterName)) { // found npc
-					pid = ((fo::GameObject*)*members)->protoId;
-					break;
-				}
-			} else {
-				DWORD _pid = ((fo::GameObject*)*members)->protoId;
-				if (findPid == _pid) {
-					pid = _pid;
-					break;
-				}
-			}
-			members += 4;
-		}
-		if (pid) {
-			DWORD* pids = fo::var::partyMemberPidList;
-			for (DWORD j = 0; j < fo::var::partyMemberMaxCount; j++) {
-				if (pids[j] == pid) {
-					level = fo::var::partyMemberLevelUpInfoList[j * 3];
-					break;
-				}
-			}
-		}
-	}
-	ctx.setReturn(level);
 }
 
 static bool IsSpecialIni(const char* str, const char* end) {
@@ -290,19 +189,6 @@ end:
 	}
 }
 
-void __declspec(naked) op_set_hp_per_level_mod() {
-	__asm {
-		mov  esi, ecx;
-		_GET_ARG_INT(end);
-		push eax; // allowed -/+127
-		push 0x4AFBC1;
-		call SafeWrite8;
-end:
-		mov  ecx, esi;
-		retn;
-	}
-}
-
 static const char* valueOutRange = "%s() - argument values out of range.";
 
 void op_set_critical_table(OpcodeContext& ctx) {
@@ -341,40 +227,6 @@ void op_reset_critical_table(OpcodeContext& ctx) {
 		ctx.printOpcodeError(valueOutRange, ctx.getOpcodeName());
 	} else {
 		Criticals::ResetCriticalTable(critter, bodypart, slot, element);
-	}
-}
-
-void __declspec(naked) op_set_unspent_ap_bonus() {
-	__asm {
-		_GET_ARG_INT(end);
-		mov  Stats::standardApAcBonus, eax;
-end:
-		retn;
-	}
-}
-
-void __declspec(naked) op_get_unspent_ap_bonus() {
-	__asm {
-		mov  edx, Stats::standardApAcBonus;
-		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-//		retn;
-	}
-}
-
-void __declspec(naked) op_set_unspent_ap_perk_bonus() {
-	__asm {
-		_GET_ARG_INT(end);
-		mov  Stats::extraApAcBonus, eax;
-end:
-		retn;
-	}
-}
-
-void __declspec(naked) op_get_unspent_ap_perk_bonus() {
-	__asm {
-		mov  edx, Stats::extraApAcBonus;
-		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-//		retn;
 	}
 }
 
@@ -433,7 +285,6 @@ void __declspec(naked) op_get_light_level() {
 	__asm {
 		mov  edx, ds:[FO_VAR_ambient_light];
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-//		retn;
 	}
 }
 
@@ -496,7 +347,6 @@ void __declspec(naked) op_modified_ini() {
 	__asm {
 		mov  edx, modifiedIni;
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-//		retn;
 	}
 }
 
@@ -527,7 +377,6 @@ void __declspec(naked) op_tile_under_cursor() {
 		mov  ebx, esi;
 		mov  eax, esi;
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-//		retn;
 	}
 }
 
@@ -535,7 +384,6 @@ void __declspec(naked) op_gdialog_get_barter_mod() {
 	__asm {
 		mov  edx, dword ptr ds:[FO_VAR_gdBarterMod];
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-//		retn;
 	}
 }
 
@@ -646,16 +494,6 @@ void mf_get_ini_section(OpcodeContext& ctx) {
 		}
 	}
 	ctx.setReturn(arrayId);
-}
-
-void mf_npc_engine_level_up(OpcodeContext& ctx) {
-	if (ctx.arg(0).asBool()) {
-		if (!npcEngineLevelUp) SafeWrite16(0x4AFC1C, 0x840F); // enable
-		npcEngineLevelUp = true;
-	} else {
-		if (npcEngineLevelUp) SafeWrite16(0x4AFC1C, 0xE990);
-		npcEngineLevelUp = false;
-	}
 }
 
 }

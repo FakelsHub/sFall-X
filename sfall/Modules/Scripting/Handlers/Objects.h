@@ -25,6 +25,10 @@ namespace sfall
 namespace script
 {
 
+void op_inc_npc_level(OpcodeContext&);
+
+void op_get_npc_level(OpcodeContext&);
+
 void op_remove_script(OpcodeContext&);
 
 void op_set_script(OpcodeContext&);
@@ -100,6 +104,8 @@ void mf_set_drugs_data(OpcodeContext&);
 void mf_set_unique_id(OpcodeContext&);
 
 void mf_objects_in_radius(OpcodeContext&);
+
+void mf_npc_engine_level_up(OpcodeContext&);
 
 }
 }

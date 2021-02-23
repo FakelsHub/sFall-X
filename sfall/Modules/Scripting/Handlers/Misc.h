@@ -47,10 +47,6 @@ void op_get_year(OpcodeContext&);
 
 void __declspec() op_eax_available();
 
-void op_inc_npc_level(OpcodeContext&);
-
-void op_get_npc_level(OpcodeContext&);
-
 void op_get_ini_setting(OpcodeContext&);
 
 void op_get_ini_string(OpcodeContext&);
@@ -59,21 +55,11 @@ void __declspec() op_get_uptime();
 
 void __declspec() op_set_car_current_town();
 
-void __declspec() op_set_hp_per_level_mod();
-
 void op_set_critical_table(OpcodeContext&);
 
 void op_get_critical_table(OpcodeContext&);
 
 void op_reset_critical_table(OpcodeContext&);
-
-void __declspec() op_set_unspent_ap_bonus();
-
-void __declspec() op_get_unspent_ap_bonus();
-
-void __declspec() op_set_unspent_ap_perk_bonus();
-
-void __declspec() op_get_unspent_ap_perk_bonus();
 
 void op_set_palette(OpcodeContext&);
 
@@ -115,8 +101,6 @@ void mf_set_ini_setting(OpcodeContext&);
 void mf_get_ini_sections(OpcodeContext&);
 
 void mf_get_ini_section(OpcodeContext&);
-
-void mf_npc_engine_level_up(OpcodeContext&);
 
 }
 }
