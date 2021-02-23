@@ -11,7 +11,6 @@
 #endif
 
 #include "..\headers\define.h"
-#include "..\headers\command.h"
 #include "main.h"
 
 #include "..\scripting\headers\lib.math.h"
@@ -32,6 +31,7 @@ procedure map_enter_p_proc;
 procedure map_update_p_proc;
 // end inline
 
+procedure AddAmmo(variable ammo, variable cAmmo, variable inven);
 procedure InventoryMoveHandler;
 procedure KeyPressHandler;
 
@@ -139,6 +139,23 @@ procedure map_update_p_proc begin
    if (autoSaveIsEnabled andalso dude_elevation != dudeElevation) then call CheckSaveTime;
 end
 
+procedure AddAmmo(variable ammoPid, variable cAmmo, variable inven) begin
+   variable ammoObj := create_object(ammoPid, 0, 0);
+
+   variable packSize = get_proto_data(ammoPid, PROTO_AM_PACK_SIZE); // количество патронов в одной пачке
+   if (cAmmo > packSize) then begin
+      variable count = cAmmo / packSize; // количество добавляемых пачек
+      add_mult_objs_to_inven(inven, ammoObj, count);
+      cAmmo = cAmmo % packSize; // остаточное количество патронов (если будет)
+      if (cAmmo == 0) then return;
+      // создать дополнительную пaчку
+      DEBUGMSG("additionally created ammo pack with size of " + cAmmo)
+      ammoObj := create_object(ammoPid, 0, 0);
+   end
+   if (cAmmo != packSize) then set_weapon_ammo_count(ammoObj, cAmmo);
+   add_obj_to_inven(inven, ammoObj);
+end
+
 procedure InventoryMoveHandler begin
 /*
    int     arg1 - Target slot (0 - main backpack, 1 - left hand, 2 - right hand, 3 - armor slot, 4 - weapon, when reloading it by dropping ammo, 5 - container, like bag/backpack, 6 - dropping on the ground)
@@ -150,25 +167,40 @@ procedure InventoryMoveHandler begin
    variable event := get_sfall_arg,
             itemDrop := get_sfall_arg,
             itemWeapon := get_sfall_arg,
-            cAmmo, ammoPid, ammoObj, inven;
+            cAmmo, ammoPid, dropPid, inven;
 
    if (event == 4) then begin
       if (quickAmmoReload == false) then return;
       cAmmo := get_weapon_ammo_count(itemWeapon);
       if (cAmmo == 0) then return;
 
-      ammoPid := get_weapon_ammo_pid(itemWeapon);
-      if (obj_pid(itemDrop) == ammoPid) then return;
+      ammoPid = get_weapon_ammo_pid(itemWeapon);
+      dropPid = obj_pid(itemDrop);
+      if (ammoPid == dropPid) then return;
+
+      variable weaponPid = obj_pid(itemWeapon);
+      if (get_proto_data(dropPid, PROTO_AM_CALIBER) != get_proto_data(weaponPid, PROTO_WP_CALIBER)) then begin
+         return;
+      end
 
       inven := DUDE_INVEN;
-      if (obj_is_carrying_obj(inven, itemWeapon) > 1) then return;
+      variable icount = obj_is_carrying_obj(inven, itemWeapon);
+      if (icount > 1) then begin
+         // если патроны перемещаются(кидаются) на стопку оружия в инвентаре
+         rm_obj_from_inven(inven, itemWeapon); // отделяет один предемет из стека для перезарядки
 
-      // force unload
+         // fake unload ammo
+         set_weapon_ammo_count(itemWeapon, 0);
+         // add ammo to inventory
+         call AddAmmo(ammoPid, cAmmo, inven);
+
+         add_obj_to_inven(inven, itemWeapon); // возвращаем обратно отделенный предмет от стека
+         return;
+      end
+      // fake unload ammo
       set_weapon_ammo_count(itemWeapon, 0);
       // add ammo to inventory
-      ammoObj := create_object(ammoPid, 0, 0);
-      set_weapon_ammo_count(ammoObj, cAmmo);
-      add_obj_to_inven(inven, ammoObj);
+      call AddAmmo(ammoPid, cAmmo, inven);
    end
    else if (event == 7) then begin
        if (pickupItem andAlso pickupItem == itemDrop) then begin
