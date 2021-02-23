@@ -44,6 +44,8 @@ namespace script
 	__asm call fo::funcoffs::exec_script_proc_  \
 }
 
+static const char* protoFailedLoad = "%s() - failed to load a prototype ID: %d";
+
 void op_remove_script(OpcodeContext& ctx) {
 	auto object = ctx.arg(0).object();
 	if (object->scriptId != 0xFFFFFFFF) {
@@ -125,22 +127,40 @@ void op_set_critter_burst_disable(OpcodeContext& ctx) {
 
 void op_get_weapon_ammo_pid(OpcodeContext& ctx) {
 	auto obj = ctx.arg(0).object();
-	ctx.setReturn(obj->item.ammoPid);
+	long pid = -1;
+	fo::Proto* proto;
+	if (obj->IsItem() && GetProto(obj->protoId, &proto)) {
+		long type = proto->item.type;
+		if (type == fo::ItemType::item_type_weapon || type == fo::ItemType::item_type_misc_item) {
+			pid = obj->item.ammoPid;
+		}
+	}
+	ctx.setReturn(pid);
 }
 
 void op_set_weapon_ammo_pid(OpcodeContext& ctx) {
 	auto obj = ctx.arg(0).object();
-	obj->item.ammoPid = ctx.arg(1).rawValue();
+	if (obj->IsNotItem()) return;
+
+	fo::Proto* proto;
+	if (GetProto(obj->protoId, &proto)) {
+		long type = proto->item.type;
+		if (type == fo::ItemType::item_type_weapon || type == fo::ItemType::item_type_misc_item) {
+			obj->item.ammoPid = ctx.arg(1).rawValue();
+		}
+	} else {
+		ctx.printOpcodeError(protoFailedLoad, ctx.getOpcodeName(), obj->protoId);
+	}
 }
 
 void op_get_weapon_ammo_count(OpcodeContext& ctx) {
 	auto obj = ctx.arg(0).object();
-	ctx.setReturn(obj->item.charges);
+	ctx.setReturn((obj->IsItem()) ?obj->item.charges : 0);
 }
 
 void op_set_weapon_ammo_count(OpcodeContext& ctx) {
 	auto obj = ctx.arg(0).object();
-	obj->item.charges = ctx.arg(1).rawValue();
+	if (obj->IsItem()) obj->item.charges = ctx.arg(1).rawValue();
 }
 
 enum {
@@ -384,7 +404,6 @@ void mf_get_loot_object(OpcodeContext& ctx) {
 	ctx.setReturn((GetLoopFlags() & INTFACELOOT) ? fo::var::target_stack[fo::var::target_curr_stack] : 0);
 }
 
-static const char* failedLoad = "%s() - failed to load a prototype ID: %d";
 static bool protoMaxLimitPatch = false;
 
 void op_get_proto_data(OpcodeContext& ctx) {
@@ -394,7 +413,7 @@ void op_get_proto_data(OpcodeContext& ctx) {
 	if (result != -1) {
 		result = *(long*)((BYTE*)protoPtr + ctx.arg(1).rawValue());
 	} else {
-		ctx.printOpcodeError(failedLoad, ctx.getOpcodeName(), pid);
+		ctx.printOpcodeError(protoFailedLoad, ctx.getOpcodeName(), pid);
 	}
 	ctx.setReturn(result);
 }
@@ -407,7 +426,7 @@ void op_set_proto_data(OpcodeContext& ctx) {
 			protoMaxLimitPatch = true;
 		}
 	} else {
-		ctx.printOpcodeError(failedLoad, ctx.getOpcodeName(), pid);
+		ctx.printOpcodeError(protoFailedLoad, ctx.getOpcodeName(), pid);
 	}
 }
 
