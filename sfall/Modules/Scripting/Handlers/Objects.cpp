@@ -21,15 +21,11 @@
 #include "..\..\CritterStats.h"
 #include "..\..\Drugs.h"
 #include "..\..\Explosions.h"
-//#include "..\..\Inventory.h"
 #include "..\..\LoadGameHook.h"
 #include "..\..\Objects.h"
 #include "..\..\PartyControl.h"
 #include "..\..\ScriptExtender.h"
 #include "..\Arrays.h"
-#include "..\OpcodeContext.h"
-
-#include "..\..\..\Game\inventory.h"
 
 #include "Objects.h"
 
@@ -254,49 +250,6 @@ void op_get_party_members(OpcodeContext& ctx) {
 	ctx.setReturn(arrayId);
 }
 
-void op_art_exists(OpcodeContext& ctx) {
-	ctx.setReturn(fo::func::art_exists(ctx.arg(0).rawValue()));
-}
-
-void op_obj_is_carrying_obj(OpcodeContext& ctx) {
-	int num = 0;
-	const ScriptValue &invenObjArg = ctx.arg(0),
-		&itemObjArg = ctx.arg(1);
-
-	fo::GameObject *invenObj = invenObjArg.object(),
-		*itemObj = itemObjArg.object();
-	if (invenObj != nullptr && itemObj != nullptr) {
-		for (int i = 0; i < invenObj->invenSize; i++) {
-			if (invenObj->invenTable[i].object == itemObj) {
-				num = invenObj->invenTable[i].count;
-				break;
-			}
-		}
-	}
-	ctx.setReturn(num);
-}
-
-void mf_critter_inven_obj2(OpcodeContext& ctx) {
-	fo::GameObject* critter = ctx.arg(0).object();
-	int slot = ctx.arg(1).rawValue();
-	switch (slot) {
-	case 0:
-		ctx.setReturn(fo::func::inven_worn(critter));
-		break;
-	case 1:
-		ctx.setReturn(fo::func::inven_right_hand(critter));
-		break;
-	case 2:
-		ctx.setReturn(fo::func::inven_left_hand(critter));
-		break;
-	case -2:
-		ctx.setReturn(critter->invenSize);
-		break;
-	default:
-		ctx.printOpcodeError("%s() - invalid type.", ctx.getMetaruleName());
-	}
-}
-
 void mf_set_outline(OpcodeContext& ctx) {
 	auto obj = ctx.arg(0).object();
 	int color = ctx.arg(1).rawValue();
@@ -321,10 +274,6 @@ void mf_get_flags(OpcodeContext& ctx) {
 
 void mf_outlined_object(OpcodeContext& ctx) {
 	ctx.setReturn(fo::var::outlined_object);
-}
-
-void mf_item_weight(OpcodeContext& ctx) {
-	ctx.setReturn(fo::func::item_weight(ctx.arg(0).object()));
 }
 
 void mf_set_dude_obj(OpcodeContext& ctx) {
@@ -384,10 +333,6 @@ void mf_item_make_explosive(OpcodeContext& ctx) {
 		ctx.printOpcodeError("%s() - invalid PID number, must be greater than 0.", ctx.getMetaruleName());
 		ctx.setReturn(-1);
 	}
-}
-
-void mf_get_current_inven_size(OpcodeContext& ctx) {
-	ctx.setReturn(game::Inventory::item_total_size(ctx.arg(0).object()));
 }
 
 void mf_get_dialog_object(OpcodeContext& ctx) {

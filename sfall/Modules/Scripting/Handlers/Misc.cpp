@@ -22,12 +22,8 @@
 #include "..\..\..\FalloutEngine\Fallout2.h"
 
 #include "..\..\..\Utils.h"
-#include "..\..\AI.h"
-#include "..\..\Combat.h"
 #include "..\..\Criticals.h"
 #include "..\..\HeroAppearance.h"
-#include "..\..\Inventory.h"
-#include "..\..\KillCounter.h"
 //#include "..\..\MiscPatches.h"
 #include "..\..\Movies.h"
 #include "..\..\PartyControl.h"
@@ -37,9 +33,6 @@
 #include "..\..\Stats.h"
 
 #include "..\Arrays.h"
-#include "..\OpcodeContext.h"
-
-#include "..\..\SubModules\CombatBlock.h"
 
 #include "Misc.h"
 
@@ -49,6 +42,18 @@ namespace script
 {
 
 const char* stringTooLong = "%s() - the string exceeds maximum length of 64 characters.";
+
+void __declspec(naked) op_stop_game() {
+	__asm {
+		jmp fo::funcoffs::map_disable_bk_processes_;
+	}
+}
+
+void __declspec(naked) op_resume_game() {
+	__asm {
+		jmp fo::funcoffs::map_enable_bk_processes_;
+	}
+}
 
 void op_set_dm_model(OpcodeContext& ctx) {
 	auto model = ctx.arg(0).strValue();
@@ -88,138 +93,6 @@ void op_get_year(OpcodeContext& ctx) {
 		call fo::funcoffs::game_time_date_;
 	}
 	ctx.setReturn(year);
-}
-
-void __declspec(naked) op_game_loaded() {
-	__asm {
-		mov  esi, ecx;
-		push eax; // script
-		call ScriptExtender::ScriptHasLoaded;
-		mov  edx, eax;
-		mov  eax, ebx;
-		_RET_VAL_INT;
-		mov  ecx, esi;
-		retn;
-	}
-}
-
-void __declspec(naked) op_set_pipboy_available() {
-	__asm {
-		_GET_ARG_INT(end);
-		cmp  eax, 0;
-		jl   end;
-		cmp  eax, 1;
-		jg   end;
-		mov  byte ptr ds:[FO_VAR_gmovie_played_list][0x3], al;
-end:
-		retn;
-	}
-}
-
-// Kill counters
-static bool extraKillCounter;
-void SetExtraKillCounter(bool value) { extraKillCounter = value; }
-
-void __declspec(naked) op_get_kill_counter() {
-	__asm {
-		_GET_ARG_INT(fail); // get kill type value
-		cmp  extraKillCounter, 1;
-		jne  skip;
-		cmp  eax, 38;
-		jae  fail;
-		movzx edx, word ptr ds:[FO_VAR_pc_kill_counts][eax * 2];
-		jmp  end;
-skip:
-		cmp  eax, 19;
-		jae  fail;
-		mov  edx, ds:[FO_VAR_pc_kill_counts][eax * 4];
-end:
-		mov  eax, ebx; // script
-		_RET_VAL_INT;
-		retn;
-fail:
-		xor  edx, edx; // return 0
-		jmp  end;
-	}
-}
-
-void __declspec(naked) op_mod_kill_counter() {
-	__asm {
-		push ecx;
-		_GET_ARG(ecx, esi); // get mod value
-		mov  eax, ebx;
-		_GET_ARG_INT(end);  // get kill type value
-		cmp  si, VAR_TYPE_INT;
-		jnz  end;
-		////////////////////////
-		cmp  extraKillCounter, 1;
-		je   skip;
-		cmp  eax, 19;
-		jae  end;
-		add  ds:[FO_VAR_pc_kill_counts][eax * 4], ecx;
-		pop  ecx;
-		retn;
-skip:
-		cmp  eax, 38;
-		jae  end;
-		add  word ptr ds:[FO_VAR_pc_kill_counts][eax * 2], cx;
-end:
-		pop  ecx;
-		retn;
-	}
-}
-
-void op_set_object_knockback(OpcodeContext& ctx) {
-	int mode = 0;
-	switch (ctx.opcode()) {
-	case 0x196:
-		mode = 1;
-		break;
-	case 0x197:
-		mode = 2;
-		break;
-	}
-	fo::GameObject* object = ctx.arg(0).object();
-	if (mode) {
-		if (object->IsNotCritter()) {
-			ctx.printOpcodeError("%s() - the object is not a critter.", ctx.getOpcodeName());
-			return;
-		}
-	} else {
-		if (object->IsNotItem()) {
-			ctx.printOpcodeError("%s() - the object is not an item.", ctx.getOpcodeName());
-			return;
-		}
-	}
-	KnockbackSetMod(object, ctx.arg(1).rawValue(), ctx.arg(2).asFloat(), mode);
-}
-
-void op_remove_object_knockback(OpcodeContext& ctx) {
-	int mode = 0;
-	switch (ctx.opcode()) {
-	case 0x199:
-		mode = 1;
-		break;
-	case 0x19a:
-		mode = 2;
-		break;
-	}
-	KnockbackRemoveMod(ctx.arg(0).object(), mode);
-}
-
-void __declspec(naked) op_active_hand() {
-	__asm {
-		mov  edx, dword ptr ds:[FO_VAR_itemCurrentItem];
-		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-//		retn;
-	}
-}
-
-void __declspec(naked) op_toggle_active_hand() {
-	__asm {
-		mov eax, 1;
-		jmp fo::funcoffs::intface_toggle_items_;
-	}
 }
 
 void __declspec(naked) op_eax_available() {
@@ -430,40 +303,6 @@ end:
 	}
 }
 
-void __declspec(naked) op_get_bodypart_hit_modifier() {
-	__asm {
-		_GET_ARG_INT(fail); // get body value
-		cmp  eax, 8; // Body_Head - Body_Uncalled
-		ja   fail;
-		mov  edx, ds:[FO_VAR_hit_location_penalty][eax * 4];
-end:
-		mov  eax, ebx; // script
-		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-		/////////////////////////////
-fail:
-		xor  edx, edx; // return 0
-		jmp  end;
-	}
-}
-
-void __declspec(naked) op_set_bodypart_hit_modifier() {
-	__asm {
-		push ecx;
-		_GET_ARG(ecx, esi); // get body value
-		mov  eax, ebx;
-		_GET_ARG_INT(end);  // get modifier value
-		cmp  si, VAR_TYPE_INT;
-		jnz  end;
-		///////////
-		cmp  eax, 8; // Body_Head - Body_Uncalled
-		ja   end;
-		mov  ds:[FO_VAR_hit_location_penalty][eax * 4], ecx;
-end:
-		pop  ecx;
-		retn;
-	}
-}
-
 static const char* valueOutRange = "%s() - argument values out of range.";
 
 void op_set_critical_table(OpcodeContext& ctx) {
@@ -607,10 +446,6 @@ void __declspec(naked) op_refresh_pc_art() {
 	}
 }
 
-void op_get_attack_type(OpcodeContext& ctx) {
-	ctx.setReturn(fo::GetCurrentAttackMode());
-}
-
 void op_play_sfall_sound(OpcodeContext& ctx) {
 	long soundID = 0;
 	long mode = ctx.arg(1).rawValue();
@@ -665,30 +500,6 @@ void __declspec(naked) op_modified_ini() {
 	}
 }
 
-void __declspec(naked) op_force_aimed_shots() {
-	__asm {
-		mov  esi, ecx;
-		_GET_ARG_INT(end);
-		push eax;
-		call ForceAimedShots;
-end:
-		mov  ecx, esi;
-		retn;
-	}
-}
-
-void __declspec(naked) op_disable_aimed_shots() {
-	__asm {
-		mov  esi, ecx;
-		_GET_ARG_INT(end);
-		push eax;
-		call DisableAimedShots;
-end:
-		mov  ecx, esi;
-		retn;
-	}
-}
-
 void __declspec(naked) op_mark_movie_played() {
 	__asm {
 		_GET_ARG_INT(end);
@@ -698,54 +509,6 @@ void __declspec(naked) op_mark_movie_played() {
 		jge  end;
 		mov  byte ptr ds:[eax + FO_VAR_gmovie_played_list], 1;
 end:
-		retn;
-	}
-}
-
-void __declspec(naked) op_get_last_attacker() {
-	__asm {
-		_GET_ARG_INT(fail);
-		mov  esi, ecx;
-		push eax;
-		call AI::AIGetLastAttacker;
-		mov  edx, eax;
-		mov  ecx, esi;
-end:
-		mov  eax, ebx;
-		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-		/////////////////////////////
-fail:
-		xor  edx, edx; // return 0
-		jmp  end;
-	}
-}
-
-void __declspec(naked) op_get_last_target() {
-	__asm {
-		_GET_ARG_INT(fail);
-		mov  esi, ecx;
-		push eax;
-		call AI::AIGetLastTarget;
-		mov  edx, eax;
-		mov  ecx, esi;
-end:
-		mov  eax, ebx;
-		_J_RET_VAL_TYPE(VAR_TYPE_INT);
-		/////////////////////////////
-fail:
-		xor  edx, edx; // return 0
-		jmp  end;
-	}
-}
-
-void __declspec(naked) op_block_combat() {
-	__asm {
-		mov  esi, ecx;
-		_GET_ARG_INT(end);
-		push eax;
-		call CombatBlock::SetBlockCombat;
-end:
-		mov  ecx, esi;
 		retn;
 	}
 }
@@ -774,27 +537,6 @@ void __declspec(naked) op_gdialog_get_barter_mod() {
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
 //		retn;
 	}
-}
-
-void __declspec(naked) op_set_inven_ap_cost() {
-	__asm {
-		mov  esi, ecx;
-		_GET_ARG_INT(end);
-		mov  ecx, eax;
-		call Inventory::SetInvenApCost;
-end:
-		mov  ecx, esi;
-		retn;
-	}
-}
-
-void mf_get_inven_ap_cost(OpcodeContext& ctx) {
-	ctx.setReturn(Inventory::GetInvenApCost());
-}
-
-void mf_attack_is_aimed(OpcodeContext& ctx) {
-	DWORD isAimed, unused;
-	ctx.setReturn(!fo::func::intface_get_attack(&unused, &isAimed) ? isAimed : 0);
 }
 
 void op_sneak_success(OpcodeContext& ctx) {
@@ -914,14 +656,6 @@ void mf_npc_engine_level_up(OpcodeContext& ctx) {
 		if (npcEngineLevelUp) SafeWrite16(0x4AFC1C, 0xE990);
 		npcEngineLevelUp = false;
 	}
-}
-
-void mf_combat_data(OpcodeContext& ctx) {
-	fo::ComputeAttackResult* ctd = nullptr;
-	if (fo::var::combat_state & 1) {
-		ctd = &fo::var::main_ctd;
-	}
-	ctx.setReturn((unsigned long)ctd, DataType::INT);
 }
 
 }

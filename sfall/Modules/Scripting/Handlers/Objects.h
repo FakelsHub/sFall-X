@@ -18,9 +18,7 @@
 
 #pragma once
 
-#include "..\..\..\main.h"
-#include "..\..\Inventory.h"
-#include "..\..\ScriptExtender.h"
+#include "..\OpcodeContext.h"
 
 namespace sfall
 {
@@ -57,12 +55,6 @@ void op_tile_get_objects(OpcodeContext&);
 
 void op_get_party_members(OpcodeContext&);
 
-void op_art_exists(OpcodeContext&);
-
-void op_obj_is_carrying_obj(OpcodeContext&);
-
-void mf_critter_inven_obj2(OpcodeContext&);
-
 void mf_set_outline(OpcodeContext&);
 
 void mf_get_outline(OpcodeContext&);
@@ -72,8 +64,6 @@ void mf_set_flags(OpcodeContext&);
 void mf_get_flags(OpcodeContext&);
 
 void mf_outlined_object(OpcodeContext&);
-
-void mf_item_weight(OpcodeContext&);
 
 void mf_set_dude_obj(OpcodeContext&);
 
@@ -88,8 +78,6 @@ void mf_unjam_lock(OpcodeContext&);
 void mf_set_unjam_locks_time(OpcodeContext&);
 
 void mf_item_make_explosive(OpcodeContext&);
-
-void mf_get_current_inven_size(OpcodeContext&);
 
 void mf_get_dialog_object(OpcodeContext&);
 

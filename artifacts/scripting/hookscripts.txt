@@ -26,7 +26,7 @@ end
 There are script functions available, specific to hook scripts:
 
 > int init_hook()
-The hook script equivalent of game_loaded; it returns 2 when the script is first loaded, 1 when the player reloads and 0 otherwise.
+The hook script equivalent of game_loaded; it returns 1 when the script is loaded for the first time or when the player reloads the game, and 0 otherwise.
 
 > mixed get_sfall_arg()
 Gets the next argument from sfall. Each time it's called it returns the next argument, or otherwise it returns 0 if there are no more arguments left.
@@ -120,6 +120,7 @@ critter arg0 - The critter performing the action
 int     arg1 - Attack Type (see ATKTYPE_* constants)
 int     arg2 - Is aimed attack (1 or 0)
 int     arg3 - The normal AP cost
+Item    arg4 - The weapon
 
 int     ret0 - The new AP cost
 
@@ -146,7 +147,7 @@ Runs after Fallout has calculated the death animation. Lets you set your own cus
 When using critter_dmg function, this script will also run. In that case weapon pid will be -1 and attacker will point to an object with obj_art_fid == 0x20001F5.
 Does not run for critters in the knockdown/out state.
 
-item    arg0 - The pid of the weapon performing the attack. (May be -1 if the attack is unarmed)
+Item    arg0 - The pid of the weapon performing the attack. (May be -1 if the attack is unarmed)
 critter arg1 - The attacker
 critter arg2 - The target
 int     arg3 - The amount of damage
@@ -248,7 +249,7 @@ This is fired before the object is used, and the relevant use_obj script procedu
 NOTE: you can't remove and/or destroy this object during the hookscript (game will crash otherwise). To remove it, return 1.
 
 Critter arg0 - The user
-int     arg1 - The object used
+Obj     arg1 - The object used
 
 int     ret0 - overrides hard-coded handler and selects what should happen with the item (0 - place it back, 1 - remove it, -1 - use engine handler)
 
@@ -259,7 +260,7 @@ HOOK_REMOVEINVENOBJ (hs_removeinvenobj.int)
 Runs when an object is removed from a container or critter's inventory for any reason
 
 Obj     arg0 - the owner that the object is being removed from
-item    arg1 - the item that is being removed
+Item    arg1 - the item that is being removed
 int     arg2 - the number of items to remove
 int     arg3 - The reason the object is being removed (see RMOBJ_* constants)
 Obj     arg4 - The destination object when the item is moved to another object, 0 otherwise
@@ -457,7 +458,7 @@ NOTE: when replacing a previously wielded armor or weapon, the unwielding hook w
 If you need to rely on this, try checking if armor/weapon is already equipped when wielding hook is executed.
 
 Critter arg0 - critter
-Obj     arg1 - item being wielded or unwielded (weapon/armor)
+Item    arg1 - item being wielded or unwielded (weapon/armor)
 int     arg2 - slot (INVEN_TYPE_*)
 int     arg3 - 1 when wielding, 0 when unwielding
 int     arg4 - 1 when removing an equipped item from inventory, 0 otherwise
@@ -485,7 +486,7 @@ HOOK_COMBATTURN (hs_combatturn.int)
 Runs before and after each turn in combat (for both PC and NPC).
 
 int     arg0 - event type: 1 - start of turn, 0 - normal end of turn, -1 - combat ends abruptly (by script or by pressing Enter during PC turn), -2 - combat ends normally (hook always runs at the end of combat)
-int     arg1 - critter doing the turn
+Critter arg1 - critter doing the turn
 bool    arg2 - 1 at the start/end of the player's turn after loading a game saved in combat mode, 0 otherwise
 
 int     ret0 - pass 1 at the start of turn to skip the turn, pass -1 at the end of turn to force end of combat
@@ -616,7 +617,7 @@ Does not run for misses, non-combat damage like dynamite explosions, or if one o
 
 Critter arg0  - the attacker
 Critter arg1  - the target
-Obj     arg2  - the weapon used in the attack
+Item    arg2  - the weapon used in the attack
 int     arg3  - attack type (see ATKTYPE_* constants)
 int     arg4  - number of bullets actually hit the target (1 for melee attacks)
 int     arg5  - target's Damage Resistance (DR) value (affected by critical hit effects, perks, traits, and special unarmed attacks)
@@ -703,7 +704,7 @@ HOOK_ADJUSTPOISON (hs_adjustpoison.int)
 
 Runs when the critter's poison level is changed or damage is caused by the poison effect.
 
-Obj     arg0 - critter
+Critter arg0 - critter
 int     arg1 - amount of the increase/decrease of the poisoning level
 int     arg2 - damage value at the time of applying poison effect
                (damage the poison effect is implemented only for the player's character, for other critters this value will always be 0)
@@ -717,7 +718,7 @@ HOOK_ADJUSTRADIATION (hs_adjustradiation.int)
 
 Runs when the critter's rads level is changed.
 
-Obj     arg0 - critter (usual dude_obj)
+Critter arg0 - critter (usual dude_obj)
 int     arg1 - amount of the increase/decrease of the rads level
 
 int     ret0 - the new value of the amount rads level
