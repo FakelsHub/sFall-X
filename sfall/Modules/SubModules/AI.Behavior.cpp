@@ -102,35 +102,40 @@ badDistance:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Это исправление причина того, что NPC не может тут же поднять предмет который выпал у него из рук??? - нужно это проверить
-static bool __fastcall AISearchWeaponFix(fo::GameObject* critter, long distance) {
+// Исправляет редкую ситуацию для NPC, когда атакующий NPC (безоружный или вооруженный ближнем оружием)
+// захочет подобрать оружие лежащее на карте, но для совершения действий у него не будет хватать AP,
+// чтобы подобрать этот предмет, после на следующем ходу он будет атаковать игрока.
+// Это предотвратит в начале атаки попытку поднять оружие при недостаточном количестве AP.
+static long  __fastcall AIPickupWeaponFix(fo::GameObject* critter, long distance) {
 	long maxAP = fo::func::stat_level(critter, fo::STAT_max_move_points);
 	long currAP = critter->critter.getAP();
-	if (currAP >= maxAP) return true; // NPC not already used their AP?
+	if (currAP != maxAP) return true; // NPC already used their AP?
 
 	bool allowPickUp = ((currAP - pickupCostAP) >= distance); // distance & AP check
 	if (!allowPickUp) {
-		// если NPC имеет стрелковое или метательное оружие, в этом случае ему позволено подойти к предмету
+		// если NPC имеет стрелковое или метательное оружие, тогда позволено подойти к предмету
 		fo::GameObject* item = fo::func::inven_right_hand(critter);
 		if (item && AIHelpers::IsGunOrThrowingWeapon(item)) return true; // allow pickup
 	}
-	return allowPickUp; // false - next item
+	return (allowPickUp) ? distance : 0; // false - next item
 }
 
-// Исправляет ситуацию оригинального алгоритма, когда безоружный NPC (или вооруженный оружием ближнего действия) будет бегать к игроку и обратно к предмету
-// который он хочет поднять, но у него не будет хватать AP чтобы подобрать предмет, на следующем ходу он будет снова атаковать игрока.
 static void __declspec(naked) ai_search_environ_hook() {
 	static const DWORD ai_search_environ_Ret = 0x429D3E;
 	__asm {
 		call fo::funcoffs::obj_dist_;
-		cmp  [esp + 0x28 + 0x1C + 4], item_type_weapon;
+		cmp  eax, [esp + 0x28 - 0x20 + 4]; // max_dist (PE + 5)
+		jle  fix;
+		retn;
+fix:
+		cmp  [esp + 0x28 - 0x1C + 4], item_type_weapon;
 		jne  skip;
-		pushadc
+		push ecx;
 		mov  edx, eax; // distance
 		mov  ecx, esi; // critter
-		call AISearchWeaponFix;
-		test al, al;
-		popadc;
+		call AIPickupWeaponFix;
+		pop  ecx;
+		test eax, eax;
 		jz   continue;
 skip:
 		retn;
@@ -142,10 +147,16 @@ continue:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static uint32_t __fastcall AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
+// Неподбирать оружие если у него пустой магазин, и к нему нет патронов в инвентаре или на земле
+static long __fastcall AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
+	if (fo::func::ai_can_use_weapon(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) return 1;
+	if (weapon->item.charges > 0 || weapon->item.ammoPid == -1) return 1;
+
+	//TODO: если оружие расположено близко то подобрать
+
 	if (AIHelpers::CritterHaveAmmo(critter, weapon)) return 1;
 
-	// check on ground
+	// check ammo on ground
 	uint32_t result = 0;
 	long maxDist = fo::func::stat_level(critter, STAT_pe) + 5;
 	long* objectsList = nullptr;
@@ -166,27 +177,15 @@ static uint32_t __fastcall AICheckAmmo(fo::GameObject* weapon, fo::GameObject* c
 		}
 		fo::func::obj_delete_list(objectsList);
 	}
-	return result; // 0 - no have ammo
+	return result; // 0 - critter no have ammo
 }
 
-//
 static void __declspec(naked) ai_search_environ_hook_weapon() {
 	__asm {
-		call fo::funcoffs::ai_can_use_weapon_;
-		test eax, eax;
-		jnz  checkAmmo;
-		retn;
-checkAmmo:
-		mov  edx, [esp + 4]; // base
-		mov  eax, [edx + ecx];
-		cmp  dword ptr [eax + charges], 0; // ammo count
-		jnz  end;
 		push ecx;
-		mov  ecx, eax; // weapon
-		mov  edx, esi; // source
-		call AICheckAmmo;
+		mov  ecx, esi;    // source
+		call AICheckAmmo; // edx - weapon
 		pop  ecx;
-end:
 		retn;
 	}
 }
@@ -1693,6 +1692,9 @@ void AIBehavior::init() {
 
 	//////////////////// Combat AI improved behavior //////////////////////////
 
+	// Увеличивать количество дополнительных очков действий, взависимомти от настройки сложности боя игры
+	useCombatDifficulty = (GetConfigInt("CombatAI", "DifficultyMode", 1) != 0);
+
 	if (smartBehaviorEnabled) {
 		//HookCall(0X4230E8, combat_attack_hook);
 		//LoadGameHook::OnCombatStart() += []() { lastAttackerTile.clear(); };
@@ -1705,6 +1707,7 @@ void AIBehavior::init() {
 		SafeWrite8(0x422B8D, 0xF1); // mov  eax, esi > mov ecx, esi
 
 		// Don't pickup a weapon if its magazine is empty and there are no ammo for it
+		// Это поблажка для AI
 		HookCall(0x429CF2, ai_search_environ_hook_weapon);
 
 		/**** Точки входа в функции AI_Try_Attack ****/
@@ -1742,10 +1745,13 @@ void AIBehavior::init() {
 
 		// Точка входа когда дистанция превышает радиус атаки
 		//HookCall(0x42ABD7, ai_try_attack_hook_out_of_range);
+
 		// дополнительная точка когда атака по цели не эффективна
-		//HookCall(0x42ABA8, ai_try_attack_hook_out_of_range_bad_tohit); // (блокируется в AI.cpp)
+		//HookCall(0x42ABA8, ai_try_attack_hook_out_of_range_bad_tohit); // (переопределяется в AI.cpp)
 
-
+		// Точка: плохой шанс поразить цель (вызывается ai_run_away_)
+		// Поведение попробовать сменить оружие или цель
+		//HookCall(0x42ACE5, ai_try_attack_hook_out_of_range_bad_tohit);
 
 
 		/***** Разное ******/
@@ -1766,10 +1772,11 @@ void AIBehavior::init() {
 		LookupOnGround = (BetterWeapons > 1); // always check the items available on the ground
 	}
 
-	// Fixes the situation of the original algorithm, when an unarmed NPC (or armed a melee weapon)
-	// will run to the player and back to the item he wants to pick up, but he will not have enough AP to pick up the item,
-	// on the next turn he will attack the player again.
-	if (GetConfigInt("CombatAI", "ItemPickUpFix", 0)) {
+	// Fixes a rare situation for an NPC when an attacking NPC (unarmed or armed with a melee weapon)
+	// wants to pickup a weapon placed on the map, but to perform actions, he will not have enough AP to pickup this item,
+	// after the next turn, he will attack the player's
+	// This will prevent an attempt to pickup the weapon at the beginning of the attack if there is not enough AP
+	if (GetConfigInt("CombatAI", "ItemPickUpFix", 0)) { // TODO rename to WeaponPickUpFix
 		HookCall(0x429CAF, ai_search_environ_hook);
 	}
 
@@ -1778,9 +1785,6 @@ void AIBehavior::init() {
 	//if (GetConfigInt("CombatAI", "NPCSwitchingWeaponFix", 1)) {
 	//	HookCall(0x42AB57, ai_try_attack_hook_switch_fix);
 	//}
-
-	// Увеличивать количество дополнительных очков действий, взависимомти от настройки сложности боя игры
-	useCombatDifficulty = (GetConfigInt("CombatAI", "DifficultyMode", 1) != 0);
 }
 
 }
