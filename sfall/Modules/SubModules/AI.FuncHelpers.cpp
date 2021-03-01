@@ -52,6 +52,11 @@ bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, lo
 	return (game::Items::item_weapon_range(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) >= distance);
 }
 
+fo::GameObject* AIHelpers::GetNearestEnemyCritter(fo::GameObject* source) {
+	fo::GameObject* enemyCritter = fo::func::ai_find_nearest_team_in_combat(source, source, 2);
+	return (enemyCritter && enemyCritter->critter.getHitTarget()->critter.teamNum == source->critter.teamNum) ? enemyCritter : nullptr;
+}
+
 static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefScore) {
 	long score;
 	fo::AttackSubType weapType = fo::AttackSubType::NONE;
@@ -187,7 +192,7 @@ long AIHelpers::ForceMoveToTarget(fo::GameObject* source, fo::GameObject* target
 }
 
 long AIHelpers::MoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
-	dist |= 0x01000000; // sfall force flag (stay)
+	dist |= 0x01000000; // sfall force flag (stay_close)
 	return fo::func::ai_move_steps_closer(source, target, ~dist, 0); // 0 - ok, -1 - don't move
 }
 
@@ -271,13 +276,55 @@ bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 	return false;
 }
 
-// Проверяет имеет ли криттер в своем инвентаре патроны к оружию в слоте для перезарядки
-bool AIHelpers::CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
+fo::GameObject* AIHelpers::GetInventAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
 	DWORD slotNum = -1;
 	while (true) {
 		fo::GameObject* ammo = fo::func::inven_find_type(critter, fo::item_type_ammo, &slotNum);
 		if (!ammo) break;
-		if (fo::func::item_w_can_reload(weapon, ammo)) return true; // можно перезарядить?
+		if (fo::func::item_w_can_reload(weapon, ammo)) return ammo;
+	}
+	return nullptr;
+}
+
+// Проверяет имеет ли криттер в своем инвентаре патроны к оружию для перезарядки
+bool AIHelpers::CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
+	if (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER) return true;
+	return (GetInventAmmo(critter, weapon) != nullptr);
+}
+
+bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon) {
+	if (!weapon) return false;
+
+	fo::GameObject* ammo = nullptr;
+	bool reload = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER);;
+
+	if (weapon->item.ammoPid != -1 || reload) {
+		fo::Proto* proto = fo::GetProto(weapon->protoId);
+		if (proto->item.type == fo::ItemType::item_type_weapon) {
+			if (weapon->item.charges < proto->item.weapon.maxAmmo / 2) {
+				if (!reload) ammo = GetInventAmmo(critter, weapon);
+			} else {
+				reload = false;
+			}
+		}
+	}
+	if (reload || ammo) {
+		long result = fo::func::item_w_reload(weapon, ammo);
+		if (result != -1) {
+			if (!result && ammo) //obj_destroy_(ammo);
+
+			//volume = gsound_compute_relative_volume_(_source);
+			//v10 = gsnd_build_weapon_sfx_name_(0, right_weapon, hit_mode, 0);
+			//gsound_play_sfx_file_volume_(v10, volume);
+			//fo::func::ai_magic_hands(critter, weapon, 5002);
+
+			if (critter->critter.getAP() > 2) {
+				critter->critter.movePoints -= 2;
+			} else {
+				critter->critter.movePoints = 0;
+			}
+			return true;
+		}
 	}
 	return false;
 }

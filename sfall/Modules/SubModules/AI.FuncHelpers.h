@@ -23,6 +23,8 @@ public:
 
 	static bool AttackInRange(fo::GameObject* source, fo::GameObject* weapon, long distance);
 
+	static fo::GameObject* GetNearestEnemyCritter(fo::GameObject* source);
+
 	// Альтернативная реализация функции ai_search_inven_weap_
 	static fo::GameObject* GetInventoryWeapon(fo::GameObject* source, bool checkAP, bool useHand);
 
@@ -40,10 +42,10 @@ public:
 
 	static long CombatRunToTile(fo::GameObject* source, long tile, long dist);
 
-	// Принудительно заставит NPC подойти к цели на указанную дистанцию
+	// Принудительно заставит NPC подойти к цели на указанную дистанцию (игнорируется stay и stay_close)
 	static long ForceMoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist);
 
-	// Принудительно заставит NPC подойти к цели на указанную дистанцию (stay_close не игнорируется)
+	// Принудительно заставит NPC подойти к цели на указанную дистанцию (игнорируется stay_close)
 	static long MoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist);
 
 	// Оценивает и возвращает одно из оружие чей навык использования для AI лучше, если навыки равны то возвращается sWeapon оружие
@@ -56,7 +58,11 @@ public:
 	// Проверяет относится ли предмет к типу стрелковому или метательному оружию
 	static bool IsGunOrThrowingWeapon(fo::GameObject* item, long type = -1);
 
+	static fo::GameObject* GetInventAmmo(fo::GameObject* critter, fo::GameObject* weapon);
+
 	static bool CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon);
+
+	static bool AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon);
 
 	static long GetFreeTile(fo::GameObject* source, long tile, long distMax);
 

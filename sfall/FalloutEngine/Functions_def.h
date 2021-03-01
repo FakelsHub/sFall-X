@@ -39,6 +39,8 @@ WRAP_WATCOM_FFUNC6(long, combat_safety_invalidate_weapon_func, fo::GameObject*, 
 WRAP_WATCOM_FFUNC3(void, correctFidForRemovedItem, fo::GameObject*, critter, fo::GameObject*, item, long, slotFlag)
 WRAP_WATCOM_FFUNC7(long, createWindow, const char*, winName, DWORD, x, DWORD, y, DWORD, width, DWORD, height, long, color, long, flags)
 WRAP_WATCOM_FFUNC4(long, determine_to_hit, fo::GameObject*, source, fo::GameObject*, target, long, bodyPart, long, hitMode)
+WRAP_WATCOM_FFUNC5(long, determine_to_hit_from_tile, fo::GameObject*, source, long, sourceTile, fo::GameObject*, target, long, bodyPart, long, hitMode)
+WRAP_WATCOM_FFUNC4(long, determine_to_hit_no_range, fo::GameObject*, source, fo::GameObject*, target, long, bodyPart, long, hitMode)
 WRAP_WATCOM_FFUNC3(void, display_inventory, long, inventoryOffset, long, visibleOffset, long, mode)
 WRAP_WATCOM_FFUNC4(void, display_target_inventory, long, inventoryOffset, long, visibleOffset, DWORD*, targetInventory, long, mode)
 WRAP_WATCOM_FFUNC3(fo::FrmFrameData*, frame_ptr, fo::FrmHeaderData*, frm, long, frame, long, direction)

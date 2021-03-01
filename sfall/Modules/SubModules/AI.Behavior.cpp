@@ -43,14 +43,28 @@ using namespace Fields;
 
 constexpr int pickupCostAP = 3; // engine default cost
 
+enum class CombatDifficulty : long
+{
+	Easy   = 0,
+	Normal = 1,
+	Hard   = 2
+};
+
+static CombatDifficulty combatDifficulty = CombatDifficulty::Normal;
+
 static struct AttackerData {
 	const char* name = nullptr; // не совсем безопасно так хранить указатель, так как память может быть использована под другое
 	fo::AIcap*  cap  = nullptr;
+
 	long killType;
 	long bodyType;
-	long maxAP; // без учета бонуса
 	bool InDudeParty;
-	bool BonusMoveAP = false;
+
+	long maxAP; // количество AP у NPC в начале хода (без учета бонусов)
+	long totalBonusAP;
+	long moveBonusAP;
+
+	long currentHitMode; // текущий режим атаки для напаюдающего
 
 	struct CoverTile {
 		long tile;
@@ -64,35 +78,79 @@ static struct AttackerData {
 		bodyType = fo::func::critter_body_type(_attacker);
 		killType = GetCritterKillType(_attacker);
 		maxAP = _attacker->critter.getAP();
+		totalBonusAP = 0;
+		moveBonusAP = 0;
+		currentHitMode = 0;
 		cover.tile = -1;
 	}
+
+	bool IsHumanoid() {
+		return (bodyType == BodyType::Biped && killType != fo::KillType::KILL_TYPE_gecko);
+	}
+
+	void SetMoveBonusAP(fo::GameObject* source) {
+		long bonusAP;
+		if (IsHumanoid()) {
+			switch (combatDifficulty) {
+				case CombatDifficulty::Easy:
+					bonusAP = 4;
+					break;
+				case CombatDifficulty::Normal:
+					bonusAP = 6;
+					break;
+				case CombatDifficulty::Hard:
+					bonusAP = 8;
+					break;
+			}
+			source->critter.movePoints += bonusAP;
+			totalBonusAP += bonusAP;
+			moveBonusAP = bonusAP;
+		}
+	}
+
+	void RemoveMoveBonusAP(fo::GameObject* source) {
+		if (moveBonusAP == 0) return;
+		totalBonusAP -= moveBonusAP;
+		if (source->critter.getAP() > 0) {
+			if (source->critter.getAP() <= moveBonusAP) {
+				source->critter.movePoints = 0;
+			} else {
+				source->critter.movePoints -= moveBonusAP;
+			}
+		}
+		moveBonusAP = 0;
+	}
 } attacker;
+
+long AIBehavior::AttackerHitMode() {
+	return attacker.currentHitMode;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // Доработка функции ai_move_steps_closer_ которая принимает флаги в параметре дистанции для игнорирования stay/stat_close
 // параметр дистанции при этом должен передаваться в инвертированном значении
 // flags:
-//	0x01000000 - игнорирует stay
+//	0x01000000 - игнорирует только stay_close
 //  0x02000000 - игнорирует stay и stay_close
 static void __declspec(naked) ai_move_steps_closer_hook() {
-	static DWORD ai_move_steps_closer_ForceMoveRet = 0x42A02F;
-	static DWORD ai_move_steps_closer_MoveRet      = 0x429FF4;
-	static DWORD ai_move_steps_closer_ErrorRet     = 0x42A1B1;
+	static DWORD ai_move_steps_closer_MoveRet  = 0x42A02F;
+	static DWORD ai_move_steps_closer_ErrorRet = 0x42A1B1;
 	__asm {
 		jz   badDistance;
-		not  ebx; // здесь значение дистанции в отрицательном значении
+		not  ebx;              // здесь значение дистанции в отрицательном значении
 		mov  ebp, ebx;         // restored the distance value
 		and  ebp, ~0x0F000000; // unset flags
-		test ebx, 0x02000000;  // check force move flag
-		jz   stayClose;
-		jmp  ai_move_steps_closer_ForceMoveRet;
+		test ebx, 0x02000000;  // check move flag
+		jz   stayClose;        // неустановлен бит
+		jmp  ai_move_steps_closer_MoveRet;
 
 stayClose:
-		test ebx, 0x01000000; // check move flag
-		jz   badDistance;
+		test ebx, 0x01000000;  // check move flag
+		jz   badDistance;      // неустановлен бит
 		call fo::funcoffs::ai_cap_;
-		mov  eax, [eax + 0xA0]; // cap.distance
+		cmp  [eax + 0xA0], 4;  // cap.distance
+		je   badDistance;      // это stay
 		jmp  ai_move_steps_closer_MoveRet;
 
 badDistance:
@@ -109,15 +167,15 @@ badDistance:
 static long  __fastcall AIPickupWeaponFix(fo::GameObject* critter, long distance) {
 	long maxAP = fo::func::stat_level(critter, fo::STAT_max_move_points);
 	long currAP = critter->critter.getAP();
-	if (currAP != maxAP) return true; // NPC already used their AP?
+	if (currAP != (maxAP + attacker.totalBonusAP)) return 1; // NPC already used their AP?
 
 	bool allowPickUp = ((currAP - pickupCostAP) >= distance); // distance & AP check
 	if (!allowPickUp) {
 		// если NPC имеет стрелковое или метательное оружие, тогда позволено подойти к предмету
 		fo::GameObject* item = fo::func::inven_right_hand(critter);
-		if (item && AIHelpers::IsGunOrThrowingWeapon(item)) return true; // allow pickup
+		if (item && AIHelpers::IsGunOrThrowingWeapon(item)) return 1; // allow pickup
 	}
-	return (allowPickUp) ? distance : 0; // false - next item
+	return (allowPickUp) ? 1 : 0; // false - next item
 }
 
 static void __declspec(naked) ai_search_environ_hook() {
@@ -424,7 +482,7 @@ static bool LookupIntoContainers = false;
 // Атакующий попытается найти лучшее оружие в своем инвентаре или подобрать близлежащее на земле оружие
 // TODO: Добавить поддержку осматривать контейнеры/трупы на наличие в них оружия
 // Executed once when the NPC starts attacking
-static long __fastcall AISearchBestWeaponOnFirstAttack(fo::GameObject* source, fo::GameObject* target, fo::GameObject* &weapon, uint32_t &hitMode) {
+static fo::AttackType AISearchBestWeaponOnFirstAttack(fo::GameObject* source, fo::GameObject* target, fo::GameObject* &weapon, fo::AttackType hitMode) {
 
 	fo::GameObject* itemHand   = fo::func::inven_right_hand(source); // current item
 	fo::GameObject* bestWeapon = itemHand;
@@ -490,26 +548,23 @@ static long __fastcall AISearchBestWeaponOnFirstAttack(fo::GameObject* source, f
 notRetrieve:
 	DEV_PRINTF2("\n[AI] BestWeapon Pid: %d AP: %d", ((bestWeapon) ? bestWeapon->protoId : 0), source->critter.getAP());
 
-	int32_t _hitMode = -1;
 	if (bestWeapon && (!itemHand || itemHand->protoId != bestWeapon->protoId)) {
 		weapon = bestWeapon;
-		hitMode = _hitMode = fo::func::ai_pick_hit_mode(source, bestWeapon, target);
+		hitMode = (fo::AttackType)fo::func::ai_pick_hit_mode(source, bestWeapon, target);
 		fo::func::inven_wield(source, bestWeapon, fo::InvenType::INVEN_TYPE_RIGHT_HAND);
 		__asm call fo::funcoffs::combat_turn_run_;
 		if (isDebug) fo::func::debug_printf("\n[AI] Wield best weapon pid: %d AP: %d", bestWeapon->protoId, source->critter.getAP());
 	}
-	return _hitMode;
+	return hitMode;
 }
-
-static bool weaponIsSwitched = false; // поиск оружия уже был произведен
 
 static void PrintShootResult(long result) {
 	const char* type;
 	switch (result) {
-		case 0: type = "0 [Ok]"; break;
+		case 0: type = "0 [OK]"; break;
 		case 1: type = "1 [No Ammo]"; break;
 		case 2: type = "2 [Out of Range]"; break;
-		case 3: type = "3 [No Action]"; break;
+		case 3: type = "3 [No Action Point]"; break;
 		case 4: type = "4 [Target dead]"; break;
 		case 5: type = "5 [Shot Blocked]"; break;
 		default:
@@ -519,74 +574,74 @@ static void PrintShootResult(long result) {
 	fo::func::debug_printf("\n[AI] Check bad shot result: %s.", type);
 }
 
-static long __fastcall CheckCombatShoot(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode, fo::GameObject* weapon) {
+static bool weaponIsSwitched = false; // true - смена оружия уже была произведена
+
+static long __fastcall AICheckAttack(fo::GameObject* &weapon, fo::GameObject* target, fo::GameObject* source, fo::AttackType &hitMode, long attackCounter, long safetyRange) {
+	// safetyRange: значение дистанции для перестройки во время выполнения атаки для оружия по площади
+
+	if (attackCounter == 0 && safetyRange == 0 && !weaponIsSwitched) {
+		hitMode = AISearchBestWeaponOnFirstAttack(source, target, weapon, hitMode);
+	}
 	weaponIsSwitched = false;
 
+	long dist = fo::func::obj_dist(source, target) - 1;
+	if (attackCounter == 0 && hitMode == fo::AttackType::ATKTYPE_RWEAPON_PRIMARY && dist <= 3) {
+		// атакующий расположен достаточно близко к цели, его оружие имеет стрельбу очередью (burst attack)
+		// принудительно использовать втоичный режим стрельбы если атака по цели будет безопасной
+		if (fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst &&
+			!fo::func::combat_safety_invalidate_weapon_func(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY, target, 0, 0)) // weapon is safety
+		{
+			hitMode = fo::AttackType::ATKTYPE_RWEAPON_SECONDARY; // TODO: скриптово запрещается испоьзование вторичного режима
+			DEV_PRINTF("\n[AI] Force use burst attack.");
+		}
+	}
 	long result = fo::func::combat_check_bad_shot(source, target, hitMode, 0);
 
 	#ifndef NDEBUG
 	PrintShootResult(result);
 	#endif
 
-	switch (result) {
-		case 0: // OK
-			// если атакующий будет стрелять очерьдью то проверить расстояние между целью, и атакующим
-			// если атакующему хватате очков на подход в плотную то выполнить перемещение к цели
-			if (hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) {
-				long anim = fo::func::item_w_anim_weap(weapon, hitMode);
-				if (anim == fo::Animation::ANIM_fire_burst) {
-					long dist = fo::func::obj_dist(source, target);
-					if (dist < source->critter.getAP()) {
-						long costAp = game::Items::item_w_mp_cost(weapon, hitMode, 0); // (8) 3dist 6cost 6+3=9
-						if (source->critter.getAP() > (costAp + dist)) {
-							dist = costAp - source->critter.getAP();
-							AIHelpers::ForceMoveToTarget(source, target, dist);
+	switch (result)
+	{
+		case 0: // [OK]
+			if (hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY && safetyRange == 0) {
+				// используется вторичный режим оружия (стрельба очередью) и имеется расстояние между целью и атакующим
+				// если атакующему хватате очков действия на подход к цели то выполнить передвижение к цели
+				if (dist >= 1 && fo::func::ai_cap(source)->distance != fo::AIpref::distance::snipe) {
+					if (fo::func::item_w_anim_weap(weapon, hitMode) == fo::Animation::ANIM_fire_burst) {
+						long costAP = game::Items::item_w_mp_cost(weapon, hitMode, 0);
+						long moveDist = source->critter.getAP() - costAP;
+						if (moveDist > 0) {
+							if (moveDist >= costAP && fo::func::determine_to_hit(source, target, fo::BodyParts::Uncalled, hitMode) >= 70) {
+								// если процент попадания по цели достатояно высокий, уменьшить дистанцию передвижения, чтобы хватило на несколько атак
+								while (moveDist >= costAP) moveDist -= costAP;
+							}
+							if (moveDist > 0) AIHelpers::MoveToTarget(source, target, moveDist);
 						}
 					}
 				}
 			}
 			break;
-		case 1:	break;
-		case 2:	break;
-		case 3:	break;
-		case 4:	break;
-		case 5:	break;
+		case 1:	break; // [No Ammo]
+		case 2:	break; // [Out of Range]
+		case 3:	break; // [No Action Point]
+		case 4:	break; // [Target dead]
+		case 5:	break; // [Shot Blocked]
 	}
 	return result;
 }
 
-static void __declspec(naked) ai_try_attack_hook() {
+static void __declspec(naked) ai_try_attack_hook_check_attack() {
 	__asm {
-		test edi, edi;                        // first attack loop ?
-		jnz  skip;
-		test weaponIsSwitched, 1;             // оружие уже было сменено кодом в движке (ai_try_attack_hook_switch)
-		jnz  skip;
-		cmp  [esp + 0x364 - 0x44 + 4], 0;     // check safety_range
-		jnz  skip;
-		//
-		lea  eax, [esp + 0x364 - 0x38 + 4];   // hit_mode
+		mov  eax, [esp + 0x364 - 0x44 + 4]; // safety_range
+		lea  ebx, [esp + 0x364 - 0x38 + 4]; // hit_mode ref
+		lea  ecx, [esp + 0x364 - 0x3C + 4]; // right_weapon ref
 		push eax;
-		lea  eax, [esp + 0x364 - 0x3C + 8];   // right_weapon
-		push eax;
-		mov  ecx, esi;                        // source
-		call AISearchBestWeaponOnFirstAttack; // edx - target
-		test eax, eax;
-		cmovge ebx, eax;                      // >= 0 (hit_mode)
-		// restore register value
-		//mov  eax, esi;
-		//mov  edx, ebp;
-		//xor  ecx, ecx;
-skip:
-		//mov  weaponIsSwitched, 0;
-		//call fo::funcoffs::combat_check_bad_shot_; // возвращает результат 4 когда криттер умирает в цикле хода
-
-		push [esp + 0x364 - 0x3C + 4];   // right_weapon
-		push ebx; // hit_mode
-		mov  edx, ebp;
-		mov  ecx, esi;
-		call CheckCombatShoot;
-
-		cmp  eax, 4;
+		push edi;                           // attack_counter
+		push ebx;
+		push esi;                           // source
+		call AICheckAttack;                 // edx - target
+		cmp  eax, 4;                        // возвращает результат 4 когда криттер умирает в цикле хода
 		je   targetIsDead;
 		retn;
 targetIsDead:
@@ -730,52 +785,59 @@ static void MoveAwayFromTarget(fo::GameObject* source, fo::GameObject* target, l
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // Заставляет NPC двигаться ближе к цели, чтобы начать атаковать, когда расстояние до цели превышает дальность действия оружия
-static int32_t __fastcall AIMoveStepsToTile(fo::GameObject* source, fo::GameObject* target, int32_t &outHitMode) {
+static long __fastcall AIMoveStepToAttackTile(fo::GameObject* source, fo::GameObject* target, long &outHitMode) {
+	if (attacker.cap->distance == AIpref::distance::stay) return 1;
 
 	fo::GameObject* itemHand = fo::func::inven_right_hand(source);
 	if (!itemHand) return 1;
 
-	long getTile = -1, dist = -1;
-
-	long mode = fo::func::ai_pick_hit_mode(source, itemHand, target);
-	long cost = game::Items::item_w_mp_cost(source, mode, 0);
+	long hitMode = outHitMode; //fo::func::ai_pick_hit_mode(source, itemHand, target);
 
 	// check the distance and number of remaining AP's
-	long weaponRange = fo::func::item_w_range(source, mode);
+	long weaponRange = fo::func::item_w_range(source, hitMode);
 	if (weaponRange <= 1) return 1;
 
-	dist = fo::func::obj_dist(source, target) - weaponRange; // required approach distance
-	long ap = source->critter.getAP() - dist; // subtract the number of action points to the move, leaving the number for the shot
-	long remainingAP = ap % cost;
+	long cost = game::Items::item_w_mp_cost(source, hitMode, 0);
+	long distToMove = fo::func::obj_dist(source, target) - weaponRange; // required approach distance
+
+	long ap = source->critter.getAP() - distToMove; // subtract the number of action points to the move, leaving the number for the shot
+	long remainingAP = ap % cost;             // оставшиеся очки действия после атаки
 
 	bool notEnoughAP = (cost > ap); // check whether the critter has enough AP to perform the attack
 
 	char rotationData[800];
 	long pathLength = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, (void*)fo::funcoffs::obj_blocking_at_);
 
-	if (pathLength > 0) {
-		if (notEnoughAP) return 1;
+	long getTile = -1;
 
-		dist += remainingAP; // add remaining AP's to distance
-		if (dist > pathLength) dist = pathLength;
+	if (pathLength > 0) {          // путь до цели построен успешно
+		if (notEnoughAP) return 1; // но нехватает очков действия для совершения атаки
 
 		getTile = source->tile;
 
 		// get tile to perform an attack
-		for (long i = 0; i < dist; i++)	{
+		for (long i = 0; i < distToMove; i++)	{
 			getTile = fo::func::tile_num_in_direction(getTile, rotationData[i], 1);
 		}
+
+		// проверяем вероятность поразить цель, если более 50% то атакуем с гекса, иначе двигаемя до конца дистанции
+		if (fo::func::determine_to_hit_from_tile(source, getTile, target, fo::BodyParts::Uncalled, hitMode) < 50) {
+			long start = distToMove;
+			// подходим на все имеющиеся AP
+			distToMove += remainingAP; // add remaining AP's to distance
+			if (distToMove > pathLength) distToMove = pathLength;
+
+			for (long i = start; i < distToMove; i++)	{
+				getTile = fo::func::tile_num_in_direction(getTile, rotationData[i], 1);
+			}
+		}
+		DEV_PRINTF3("\nAIMoveStepToAttackTile: distToMove/pathLength: %d/%d, distTile: %d", distToMove, pathLength, fo::func::tile_dist(source->tile, getTile));
 	}
 	else if (!notEnoughAP) {
+		// AP достаточно для подхода и совершения атакит, но путь до цели построить не удалось
+		// построить путь до предпологаемой плитки атаки
 		long dir = fo::func::tile_dir(source->tile, target->tile);
-		getTile = fo::func::tile_num_in_direction(source->tile, dir, dist); // get tile to move to
-
-		// make a path and check the actual distance of the path
-		pathLength = fo::func::make_path_func(source, source->tile, getTile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-		if (pathLength > dist) {
-			long diff = pathLength - dist;
-			if (diff > remainingAP) return 1;
-		}
+		getTile = fo::func::tile_num_in_direction(source->tile, dir, distToMove); // get tile to move to
 
 		long _dir = dir, _getTile = getTile;
 		long i = 0;
@@ -787,46 +849,61 @@ static int32_t __fastcall AIMoveStepsToTile(fo::GameObject* source, fo::GameObje
 				break; // OK, tile is free
 			}
 			if (++i > 2) return 1; // neighboring tiles are also blocked
+
 			if (i == 1) {
 				if (++_dir > 5) _dir = 0;
 			} else {
 				_dir = dir - 1;
 				if (_dir < 0) _dir = 5;
 			}
-			if (remainingAP < 1) _dir = (_dir + 3) % 6; // invert direction, if there is no AP's in reserve
+
+			if (remainingAP <= 0) _dir = (_dir + 3) % 6; // invert direction, if there is no AP's in reserve
 			_getTile = fo::func::tile_num_in_direction(getTile, _dir, 1);
 		}
-		// Note: here the value of dist and the distance between getTile and source tile may not match by 1 unit
+
+		// make a path and check the actual distance of the path
+		pathLength = fo::func::make_path_func(source, source->tile, getTile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
+		if (pathLength == 0) return 1; // путь до гекса построить не удалось
+		if (pathLength > distToMove) {
+			// путь больше чем дистанция, учитываем оставшиеся AP
+			long diff = pathLength - distToMove;
+			if (diff > remainingAP) return 1; // NPC нехватит очков действия для совершения атаки
+		}
+		// Примечание: здесь значение distToMove и расстояние между getTile и исходной плиткой могут не совпадать на 1 единицу
+		DEV_PRINTF3("\nAIMoveStepToAttackTile: distToMove/pathLength: %d/%d, distTile: %d", distToMove, pathLength, fo::func::tile_dist(source->tile, getTile));
+		distToMove = pathLength;
 	}
-	// make sure that the distance is within the range of the weapon and the attack is not blocked
+
+	// убедитесь, что расстояние находится в пределах досягаемости оружия и атака не заблокирована
 	if (getTile != -1 && (fo::func::obj_dist_with_tile(source, getTile, target, target->tile) > weaponRange ||
 		fo::func::combat_is_shot_blocked(source, getTile, target->tile, target, 0)))
 	{
 		return 1;
 	}
 
-	//if (dist == -1) dist = source->critter.getAP(); // in dist - the distance to move
-	if (getTile != -1 && isDebug) fo::func::debug_printf("\n[AI] %s: Weapon out of range. Move to tile for shot.", fo::func::critter_name(source));
+	if (getTile != -1 && isDebug) fo::func::debug_printf("\n[AI] %s: Attack out of range. Move to tile for attack.", fo::func::critter_name(source));
 
-	int result = (getTile != -1) ? AIHelpers::CombatMoveToTile(source, getTile, dist) : 1;
-	if (!result) outHitMode = fo::func::ai_pick_hit_mode(source, itemHand, target); // try pick new weapon mode after step move
+	int result = (getTile != -1) ? AIHelpers::CombatMoveToTile(source, getTile, distToMove) : 1;
+	if (!result) outHitMode = fo::func::ai_pick_hit_mode(source, itemHand, target); // try pick new weapon mode after move
 
 	return result;
 }
 
 static void __declspec(naked) ai_try_attack_hook_out_of_range() {
 	__asm {
-		pushadc;
-		mov  ecx, eax;
-		lea  eax, [esp + 0x364 - 0x38 + 12 + 4];
+		push ecx;
+		lea  eax, [esp + 0x364 - 0x38 + 4 + 4]; // hit mode ref
 		push eax;
-		call AIMoveStepsToTile;
+		mov  ecx, esi;
+		call AIMoveStepToAttackTile;
+		pop  ecx;
 		test eax, eax;
-		popadc;
 		jnz  defaultMove;
 		retn;
 defaultMove:
-		jmp fo::funcoffs::ai_move_steps_closer_; // default behavior
+		mov  edx, ebp;
+		mov  eax, esi;
+		jmp  fo::funcoffs::ai_move_steps_closer_; // default behavior
 	}
 }
 
@@ -972,12 +1049,6 @@ static long CheckCoverConditionAndGetTile(fo::GameObject* source, fo::GameObject
 	return GetCoverBehindObjectTile(source, target, source->critter.getAP() + 1, source->critter.getAP());
 }
 
-//static void FleeCover(fo::GameObject* source, fo::GameObject* target) {
-//	if (source->critter.combatState & fo::CombatStateFlag::EnemyOutOfRange) return;
-//
-//
-//}
-
 static long GetRetargetTileSub(fo::GameObject* source, long shotDir, long roll, long range) {
 	roll = (roll == 5) ? 1 : 5;
 	long dir = (shotDir + roll) % 6;
@@ -1050,14 +1121,8 @@ enum class AIAttackResult : long
 	NoMovePoints = 2, // нет очков для передвижения
 	LostWeapon   = 3, // оружие упало
 	ReTryAttack  = 4,
+	BadToHit     = 5,
 	MoveAway
-};
-
-enum class CombatDifficulty : long
-{
-	Easy   = 0,
-	Normal = 1,
-	Hard   = 2
 };
 
 // Расстояния для напарников игрока когда они остаются без найденной цели
@@ -1072,42 +1137,8 @@ static inline long getAIPartyMemberDistances(long aiDistance) {
 	return (aiDistance > -1) ? aiPartyMemberDistances[aiDistance] : 8;
 }
 
-static long bonusAP = 6;
-static CombatDifficulty combatDifficulty = CombatDifficulty::Normal;
-static bool useCombatDifficulty = true;
 static bool npcPercentMinHP = false;
-
-static bool AttackerIsHumanoid() {
-	return (attacker.bodyType == BodyType::Biped && attacker.killType != fo::KillType::KILL_TYPE_gecko);
-}
-
-static void SetMoveBonusAP(fo::GameObject* source) {
-	if (AttackerIsHumanoid()) {
-		switch (combatDifficulty) {
-			case CombatDifficulty::Easy:
-				bonusAP = 4;
-				break;
-			case CombatDifficulty::Normal:
-				bonusAP = 6;
-				break;
-			case CombatDifficulty::Hard:
-				bonusAP = 8;
-				break;
-		}
-		source->critter.movePoints += bonusAP;
-		attacker.BonusMoveAP = true;
-	}
-}
-
-static void RemoveMoveBonusAP(fo::GameObject* source) {
-	attacker.BonusMoveAP = false;
-	if (source->critter.getAP() == 0) return;
-	if (source->critter.getAP() <= bonusAP) {
-		source->critter.movePoints = 0;
-	} else {
-		source->critter.movePoints -= bonusAP;
-	}
-}
+static bool useCombatDifficulty = true;
 
 // Реализация движковой функции cai_perform_distance_prefs с измененным и дополнительным функционалом
 static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* target) {
@@ -1196,6 +1227,8 @@ static void MoveToLastAttackTile(fo::GameObject* source, fo::GameObject* critter
 
 // Реализация движковой функции combat_ai_
 static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
+	fo::GameObject* lastTarget = source->critter.getHitTarget();;
+	long lastCombatAP = 0;
 
 	/**************************************************************************
 		Рассчет минимального значения HP при котором NPC начет убегать, когда
@@ -1223,10 +1256,8 @@ static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
 		{
 			fo::func::debug_printf("\n[AI] %s FLEEING: I'm Hurt!", attacker.name);
 
-			if (!target) target = fo::func::ai_find_nearest_team_in_combat(source, source, 2); // получить самого ближнего криттера не из своей команды
-			fo::func::ai_run_away(source, target);                                             // убегаем от цели или от игрока если цель не была назначена
-
-			//if (source->critter.getAP() > 0) FleeCover(source, target); // функция которая должна уводить NPC в укрытие, если расстояние до игрока/цели превышено
+			if (!target) target = AIHelpers::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
+			fo::func::ai_run_away(source, target);                           // убегаем от цели или от игрока если цель не была назначена
 			return;
 		}
 
@@ -1236,10 +1267,7 @@ static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
 		}
 	}
 
-	fo::GameObject* lastTarget = nullptr;
-	long lastCombatAP = 0;
 TrySpendExtraAP:
-
 	/**************************************************************************
 		Фаза лечения если атакующий ранен или использования каких-либо наркотических средств перед атакой
 	**************************************************************************/
@@ -1253,8 +1281,8 @@ TrySpendExtraAP:
 		if (attacker.InDudeParty) { // партийцы бегут к игроку
 			fo::func::ai_move_steps_closer(source, fo::var::obj_dude, source->critter.getAP(), 0); // !!! здесь диспозиция stay не позволяет бежать к игроку !!!
 		} else {
-			if (!target) target = fo::func::ai_find_nearest_team_in_combat(source, source, 2); // получить самого ближнего криттера не из своей команды
-			fo::func::ai_run_away(source, target);                                             // убегаем от потенцеально опасного криттера
+			if (!lastTarget) lastTarget = AIHelpers::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
+			fo::func::ai_run_away(source, lastTarget);                               // убегаем от потенцеально опасного криттера
 			source->critter.combatState ^= (fo::CombatStateFlag::EnemyOutOfRange | fo::CombatStateFlag::InFlee); // снять флаги после ai_run_away
 		}
 		return;
@@ -1267,18 +1295,6 @@ TrySpendExtraAP:
 	bool findTargetAfterKill = false;
 
 	if (!target) {
-		// если атакующий не вооружен, найти оружие в инвентаре перед поиском цели (исправляет ситуацию при поиске целей)
-		fo::GameObject* handItem = fo::func::inven_right_hand(source);
-		if (!handItem) {
-			// выбрать лучшее оружие (если имеется)
-			fo::GameObject* weapon = AIHelpers::GetInventoryWeapon(source, true, false);
-			if (weapon) {
-				DEV_PRINTF("\n[AI] Attacker wield weapon.");
-				fo::func::inven_wield(source, weapon, fo::InvenType::INVEN_TYPE_RIGHT_HAND);
-				__asm call fo::funcoffs::combat_turn_run_;
-			}
-		}
-
 ReFindNewTarget:
 		DEV_PRINTF("\n[AI] Find targets...");
 		target = AISearchTarget::AIDangerSource_Extended(source, 1); // fo::func::ai_danger_source(source);
@@ -1287,7 +1303,7 @@ ReFindNewTarget:
 
 		if (lastCombatAP && lastTarget == target) {
 			DEV_PRINTF("\n[AI] No find new target!");
-			return;
+			//return;
 		}
 		target = AISearchTarget::RevertTarget(source, target);
 	} else {
@@ -1297,31 +1313,32 @@ ReFindNewTarget:
 	/**************************************************************************
 		Фаза атаки если цель для атакующего была найдена
 	**************************************************************************/
-	if (target) {
-		if (target->critter.IsNotDead()) {
-			// Перестроится перед атакой при проверки дружественного огня или от установленных предпочтений дистанции
-			DistancePrefBeforeAttack(source, target); // используется вместо функции cai_perform_distance_prefs
-			ReTargetTileFromFriendlyFire(source, target, findTargetAfterKill);
-		}
+	if (target && target->critter.IsNotDead()) {
+		// Перестроится перед атакой при проверки дружественного огня или от установленных предпочтений дистанции
+		DistancePrefBeforeAttack(source, target); // используется вместо функции cai_perform_distance_prefs
+		ReTargetTileFromFriendlyFire(source, target, findTargetAfterKill);
 
-//TryAttack:
 		DEV_PRINTF("\n[AI] Try attack.");
 		switch ((AIAttackResult)fo::func::ai_try_attack(source, target)) // при TrySpendExtraAP атакующие не должны бежать к новой цели
 		{
 		case AIAttackResult::TargetDead:
 			findTargetAfterKill = true;
 			DEV_PRINTF("\n[AI] Attack result: TARGET DEAD!\n");
-			goto ReFindNewTarget; // поиск новой цели т.к. текущая была убита
+			goto ReFindNewTarget; // поиск новой цели, текущая была убита
+
+		case AIAttackResult::BadToHit:
+			break;
 
 		case AIAttackResult::NoMovePoints:
-			//
 			break;
 		}
-
 		DEV_PRINTF("\n[AI] End attack.");
+
 		if (source->critter.IsDead()) return; // атакующий мертв? (после ai_try_attack)
+
+		findTargetAfterKill = false;
 	} else {
-		DEV_PRINTF1("\n[AI] Attack skip: %s no have target.", attacker.name);
+		DEV_PRINTF1("\n[AI] Attack skip: %s no have target or dead.", attacker.name);
 	}
 
 	/**************************************************************************
@@ -1457,14 +1474,14 @@ ReFindNewTarget:
 
 	if (moveAwayTarget) { // у атакующего есть цель
 		// добавить AP атакующему только для перемещения, этот бонус можно использовать совместно со сложностью боя (только для типа Biped)
-		if (!attacker.InDudeParty) SetMoveBonusAP(source);
+		if (!attacker.InDudeParty) attacker.SetMoveBonusAP(source);
 
 		/*
 			Тактическое укрытие: определено для всех типов Biped кроме Gecko
 			для charge - недоступно, если цель находится на дистанции больше, чем атакующий может иметь очков действий (атакующий будет приближаться к цели)
 			для stay   - недоступно (можно позволить в пределах 3 гексов)
 		*/
-		long coverTile = (attacker.cap->getDistance() == fo::AIpref::distance::stay || !AttackerIsHumanoid() ||
+		long coverTile = (attacker.cap->getDistance() == fo::AIpref::distance::stay || !attacker.IsHumanoid() ||
 						 (attacker.cap->getDistance() == fo::AIpref::distance::charge && fo::func::obj_dist(source, moveAwayTarget) > attacker.maxAP))
 						? -1 // не использовать укрытие
 						: CheckCoverConditionAndGetTile(source, moveAwayTarget);
@@ -1484,7 +1501,7 @@ ReFindNewTarget:
 			if (AIHelpers::CombatMoveToTile(source, coverTile, source->critter.getAP()) != 0) coverTile = -1;
 			DEV_PRINTF1("\n[AI] AP's after move to cover tile: %d", source->critter.getAP());
 		}
-		if (attacker.BonusMoveAP) RemoveMoveBonusAP(source);  // удалить полученные бонусные очки передвижения
+		attacker.RemoveMoveBonusAP(source);  // удалить полученные бонусные очки передвижения
 
 		if (coverTile == -1) {
 			if (moveAwayDistance) MoveAwayFromTarget(source, moveAwayTarget, moveAwayDistance);
@@ -1499,7 +1516,7 @@ ReFindNewTarget:
 	if (source->critter.getAP() > 0) {
 		fo::func::debug_printf("\n[AI] %s had extra %d AP's.", attacker.name, source->critter.getAP());
 
-		//if (source->critter.getAP()) { // !target && !moveAwayTarget
+		if (!findTargetAfterKill) { // !target && !moveAwayTarget
 			if (lastCombatAP != source->critter.getAP()) {
 				lastCombatAP = source->critter.getAP(); // для того чтобы не было зависания в цикле
 				lastTarget = target;
@@ -1507,28 +1524,41 @@ ReFindNewTarget:
 				target = nullptr; // нет цели, попробовать найти другую цель (аналог опции TrySpendAPs)
 				goto TrySpendExtraAP;
 			}
-		//}
+		}
+
+		// перезарядить оружие
+		if (source->critter.getAP() >= 2) { // 2 default reload cost
+			fo::GameObject* item = fo::func::inven_right_hand(source);
+			if (item) AIHelpers::AITryReloadWeapon(source, item);
+		}
 		DEV_PRINTF1("\n[AI] left extra %d AP's", source->critter.getAP());
 	}
 }
+
+static bool combatDebug;
 
 static void __fastcall combat_ai_hook(fo::GameObject* source, fo::GameObject* target) {
 	combatDifficulty = (CombatDifficulty)iniGetInt("preferences", "combat_difficulty", (int)combatDifficulty, (const char*)FO_VAR_game_config);
 	attacker.setData(source);
 
-	// добавить очки действия атакующему для увеличении сложности боя [для не партийцев игрока]
-	if (useCombatDifficulty && !attacker.InDudeParty) source->critter.movePoints += (long)combatDifficulty * 2;
+	// добавить очки действия атакующему для увеличении сложности боя [не для партийцев игрока]
+	if (useCombatDifficulty && !attacker.InDudeParty) {
+		attacker.totalBonusAP = (long)combatDifficulty * 2;
+		source->critter.movePoints += attacker.totalBonusAP;
+	}
 
-	DEV_PRINTF2("\n[AI] Begin combat: %s ID: %d", attacker.name, source->id);
+	DEV_PRINTF3("\n[AI] Begin combat: %s ID: %d. CombatState: %d", attacker.name, source->id, source->critter.combatState);
 
 	CombatAI_Extended(source, target);
 
-	DEV_PRINTF1("\n[AI] End combat: %s\n", attacker.name);
+	DEV_PRINTF2("\n[AI] End combat: %s. CombatState: %d\n", attacker.name, source->critter.combatState);
 
 	// debugging
-	while (fo::func::get_input() != 27 && fo::var::mouse_buttons == 0) {
-		fo::func::process_bk();
-	};
+	if (combatDebug) {
+		while (fo::func::get_input() != 27 && fo::var::mouse_buttons == 0) {
+			fo::func::process_bk();
+		};
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -1544,20 +1574,20 @@ static fo::GameObject* FindSafeWeaponAttack(fo::GameObject* source, fo::GameObje
 	{
 		fo::GameObject* item = fo::func::inven_find_type(source, fo::item_type_weapon, &slotNum);
 		if (!item) break;
-		if (hWeapon && hWeapon->protoId == item->protoId) continue; // это тоже самое оружие
+		if (hWeapon && hWeapon->protoId == item->protoId) continue;
 
 		// проверить дальность оружия до цели
 		if (AIHelpers::AttackInRange(source, item, distance) == false) continue;
 
-		if (game::Items::item_w_mp_cost(source, AttackType::ATKTYPE_RWEAPON_PRIMARY, 0) <= source->critter.getAP() && //proto->item.weapon.AttackHaveEnoughAP(
+		if (game::Items::item_w_mp_cost(source, AttackType::ATKTYPE_RWEAPON_PRIMARY, 0) <= source->critter.getAP() &&
 			(fo::func::ai_can_use_weapon(source, item, AttackType::ATKTYPE_RWEAPON_PRIMARY) ||
 			fo::func::ai_can_use_weapon(source, item, AttackType::ATKTYPE_LWEAPON_SECONDARY)))
 		{
-			if ((item->item.ammoPid == -1 || // оружие не имеет заряжаемых патронов
+			if ((item->item.ammoPid == -1 || // оружие не имеет магазина для патронов
 				fo::func::item_w_curr_ammo(item)) &&
 				!fo::func::combat_safety_invalidate_weapon_func(source, pickWeapon, AttackType::ATKTYPE_RWEAPON_PRIMARY, target, 0, 0)) // weapon is safety
 			{
-				pickWeapon = fo::func::ai_best_weapon(source, pickWeapon, item, target); // выбрать лучшее из доступных
+				pickWeapon = fo::func::ai_best_weapon(source, pickWeapon, item, target);
 			}
 		}
 	}
@@ -1617,7 +1647,7 @@ static AIAttackResult __fastcall AICheckResultAfterAttack(fo::GameObject* source
 		if (source->critter.getAP() >= (dist + costAP)) { // очков действия хватает чтобы сделать удар
 			DEV_PRINTF("\n[AI] Attack result: UNARMED ATTACK\n");
 
-			// проверить веротность удара и очки жизней предле чем подходиь
+			// проверить веротность удара и очки жизней прежде чем подходить
 
 			if (dist > 0 && AIHelpers::ForceMoveToTarget(source, target, dist) == -1) return AIAttackResult::Default; // не удалось приблизиться к цели
 			hitMode = AttackType::ATKTYPE_PUNCH; // установить тип атаки
@@ -1628,8 +1658,9 @@ static AIAttackResult __fastcall AICheckResultAfterAttack(fo::GameObject* source
 	return AIAttackResult::Default;
 }
 
+static const uint32_t ai_try_attack_hack_GoNext_Ret = 0x42A9F2;
+
 static void __declspec(naked) ai_try_attack_hack_after_attack() {
-	static const uint32_t ai_try_attack_hack_GoNext_Ret  = 0x42A9F2;
 	__asm {
 		test eax, eax; // -1 error attack
 		jl   end;
@@ -1661,21 +1692,64 @@ ReTryAttack:
 	}
 }
 
-static fo::GameObject* __fastcall SetLastAttacker(fo::GameObject* attacker, fo::GameObject* target) {
-	lastAttackerTile[target] = attacker->tile;
-	return attacker;
+static fo::GameObject* __fastcall AIBadToHit(fo::GameObject* source, fo::GameObject* target, long hitMode) {
+	//TODO: попробовать сменить оружие
+
+	attacker.currentHitMode = hitMode;
+
+	fo::GameObject* newTarget = AISearchTarget::AIDangerSource(source, 8);
+	if (!newTarget || newTarget == target) {
+		if (fo::func::combatai_rating(target) > (fo::func::combatai_rating(source) * 2)) {
+			source->critter.combatState |= fo::CombatStateFlag::ReTarget;
+			return nullptr;
+		}
+		return (fo::GameObject*)-1;
+	}
+	return newTarget;
 }
 
-static void __declspec(naked) combat_attack_hook() {
+static void __declspec(naked) ai_try_attack_hook_bad_tohit() {
+	static const uint32_t ai_try_attack_hack_Attack_Ret0 = 0x42ABBB;
+	static const uint32_t ai_try_attack_hack_Attack_Ret1 = 0x42AE09; // for no_range
 	__asm {
-		push ecx;
+		push [esp + 0x364 - 0x38 + 4]; // hit_mode
 		mov  ecx, eax;
-		call SetLastAttacker;
-		pop  ecx;
-		mov  edx, edi;
-		jmp  fo::funcoffs::combatAIInfoSetLastTarget_;
+		call AIBadToHit;
+		test eax, eax;
+		jnz  reTarget;
+		mov  edx, ebp;
+		mov  eax, esi;
+		jmp  fo::funcoffs::ai_run_away_;
+reTarget:
+		cmp  eax, -1;
+		je   forceAttack;
+		add  esp, 4;
+		mov  ebp, eax;
+		jmp  ai_try_attack_hack_GoNext_Ret;
+forceAttack:
+		pop  edx; // return addr
+		mov  eax, ai_try_attack_hack_Attack_Ret0;
+		cmp  edx, 0x42ACE5 + 5; // no_range
+		cmove eax, ai_try_attack_hack_Attack_Ret1;
+		jmp  eax;
 	}
 }
+
+//static fo::GameObject* __fastcall SetLastAttacker(fo::GameObject* attacker, fo::GameObject* target) {
+//	lastAttackerTile[target] = attacker->tile;
+//	return attacker;
+//}
+//
+//static void __declspec(naked) combat_attack_hook() {
+//	__asm {
+//		push ecx;
+//		mov  ecx, eax;
+//		call SetLastAttacker;
+//		pop  ecx;
+//		mov  edx, edi;
+//		jmp  fo::funcoffs::combatAIInfoSetLastTarget_;
+//	}
+//}
 
 void AIBehavior::init() {
 
@@ -1734,7 +1808,7 @@ void AIBehavior::init() {
 		//HookCall(0x42AC05, ai_try_attack_hook_switch_weapon_out_of_range);
 
 		// Точка проверки сделать атаку по цели, combat_check_bad_shot_ возвращается результат проверки (0-7)
-		HookCall(0x42A92F, ai_try_attack_hook); //HookCall(0x42A92F, ai_try_attack_hook_check_attack);
+		HookCall(0x42A92F, ai_try_attack_hook_check_attack);
 
 		// Точка входа, попытка найти патроны на земле, если они не были найдены в инвентаре
 		//HookCall(0x42AA25, ai_try_attack_hook_check_attack);
@@ -1744,15 +1818,12 @@ void AIBehavior::init() {
 		HookCall(0x42AC55, ai_try_attack_hook_shot_blocked);
 
 		// Точка входа когда дистанция превышает радиус атаки
-		//HookCall(0x42ABD7, ai_try_attack_hook_out_of_range);
+		// Forces the AI to move to target closer to make an attack on the target when the distance exceeds the range of the weapon
+		HookCall(0x42ABD7, ai_try_attack_hook_out_of_range);
 
-		// дополнительная точка когда атака по цели не эффективна
-		//HookCall(0x42ABA8, ai_try_attack_hook_out_of_range_bad_tohit); // (переопределяется в AI.cpp)
-
-		// Точка: плохой шанс поразить цель (вызывается ai_run_away_)
-		// Поведение попробовать сменить оружие или цель
-		//HookCall(0x42ACE5, ai_try_attack_hook_out_of_range_bad_tohit);
-
+		// Точка: плохой шанс поразить цель (вызывается ai_run_away_) [переопределяется в AI.cpp]
+		// Поведение попробовать сменить оружие или цель, если другой цели нет продолжить атаку текушей
+		HookCalls(ai_try_attack_hook_bad_tohit, { 0x42ACE5, 0x42ABA8 });
 
 		/***** Разное ******/
 
@@ -1760,9 +1831,6 @@ void AIBehavior::init() {
 		HookCall(0x429FDB, ai_move_steps_closer_hook); // jle hook
 
 	}
-
-	// Forces the AI to move to target closer to make an attack on the target when the distance exceeds the range of the weapon
-	HookCall(0x42ABD7, ai_try_attack_hook_out_of_range);
 
 	// Before starting his turn npc will always check if it has better weapons in inventory, than there is a current weapon
 	int BetterWeapons = GetConfigInt("CombatAI", "TakeBetterWeapons", 0);
@@ -1779,6 +1847,8 @@ void AIBehavior::init() {
 	if (GetConfigInt("CombatAI", "ItemPickUpFix", 0)) { // TODO rename to WeaponPickUpFix
 		HookCall(0x429CAF, ai_search_environ_hook);
 	}
+
+	combatDebug = (GetConfigInt("CombatAI", "DebugMode", 1) != 0);
 
 	// Пренести в AI.cpp
 	// Fixed switching weapons when action points is not enough

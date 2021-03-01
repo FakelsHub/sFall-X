@@ -14,6 +14,7 @@ public:
 	static void init(bool);
 
 	static fo::GameObject* __fastcall AIDangerSource_Extended(fo::GameObject* source, long type);
+	static fo::GameObject* AIDangerSource(fo::GameObject* source, long type);
 
 	static fo::GameObject* __fastcall RevertTarget(fo::GameObject* source, fo::GameObject* target);
 };

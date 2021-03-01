@@ -24,8 +24,9 @@ namespace sfall
 class AIBehavior {
 
 public:
-static void init();
+	static void init();
 
+	static long AttackerHitMode();
 };
 
 }

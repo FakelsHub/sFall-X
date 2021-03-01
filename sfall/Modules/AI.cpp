@@ -591,7 +591,7 @@ void AI::init() {
 
 	// Fix for NPC stuck in fleeing mode when the hit chance of a target was too low
 	HookCall(0x42B1E3, combat_ai_hook_FleeFix);
-	HookCalls(ai_try_attack_hook_FleeFix, { 0x42ABA8, 0x42ACE5 });
+	// used in AI.Behavior HookCalls(ai_try_attack_hook_FleeFix, { 0x42ABA8, 0x42ACE5 });
 
 	// Restore combat flags after fleeing when NPC cannot move closer to target
 	HookCall(0x42ADF6, ai_try_attack_hook_runFix);
