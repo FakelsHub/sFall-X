@@ -486,6 +486,13 @@ startLoop:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+static void __declspec(naked) ai_try_attack_hack_check_safe_weapon() {
+	__asm {
+		mov  ebx, [esp + 0x364 - 0x38 + 4]; // hit mode
+		retn;
+	}
+}
+
 static void __fastcall CombatAttackHook(fo::GameObject* source, fo::GameObject* target) {
 	sources[target] = source; // who attacked the 'target' from the last time
 	targets[source] = target; // who was attacked by the 'source' from the last time
@@ -553,12 +560,13 @@ void AI::init() {
 
 	// Fix to reduce friendly fire in burst attacks
 	// Modification function of safe use of weapon when the AI uses burst shooting mode
-	switch (checkBurstFriendlyFireMode = GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 0)) { // -1 disable fix
+	checkBurstFriendlyFireMode = GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 0);
+	switch (checkBurstFriendlyFireMode) { // -1 disable fix
 	case 3: // both 1 and 2 mode
 	case 0: // adds a check/roll for friendly critters in the line of fire when AI uses burst attacks
 	case 1: // always prevent a burst shot if there is a friendly NPC on the line of fire
 		HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_check);
-		if (checkBurstFriendlyFireMode <= 1) break;
+		if (checkBurstFriendlyFireMode <= 1) break; // for 0/1
 	case 2: // adds additional evaluation checks
 		if (checkBurstFriendlyFireMode == 2) HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
 		HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
@@ -598,6 +606,9 @@ void AI::init() {
 	// also patch combat_safety_invalidate_weapon_func_ for returning out_range argument in a negative value
 	SafeWrite8(0x421628, 0xD0);    // sub edx, eax > sub eax, edx
 	SafeWrite16(0x42162A, 0xFF40); // lea eax, [edx+1] > lea eax, [eax-1]
+
+	// Checking the safety of weapons based on the selected attack(hit) mode (instead of the always selected primary weapon hit mode)
+	MakeCall(0x42A8D9, ai_try_attack_hack_check_safe_weapon);
 }
 
 fo::GameObject* __stdcall AI::AIGetLastAttacker(fo::GameObject* target) {

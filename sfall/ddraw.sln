@@ -26,8 +26,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripting Headers", "Script
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripting Docs", "Scripting Docs", "{7FDEF226-35ED-4A7C-996B-8EA6E6AACD17}"
 	ProjectSection(SolutionItems) = preProject
-		..\artifacts\scripting\arrays.txt = ..\artifacts\scripting\arrays.txt
-		..\artifacts\scripting\hookscripts.txt = ..\artifacts\scripting\hookscripts.txt
+		..\artifacts\scripting\arrays.md = ..\artifacts\scripting\arrays.md
+		..\artifacts\scripting\HookScripts.md = ..\artifacts\scripting\HookScripts.md
 		..\artifacts\scripting\sfall function notes.txt = ..\artifacts\scripting\sfall function notes.txt
 		..\artifacts\scripting\sfall opcode list.txt = ..\artifacts\scripting\sfall opcode list.txt
 	EndProjectSection
@@ -57,8 +57,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RU", "RU", "{11A83234-CA6C-
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RU", "RU", "{F194EF63-A395-411A-83F4-B701B8D3C289}"
 	ProjectSection(SolutionItems) = preProject
-		..\artifacts\scripting\RU\Arrays [RU].txt = ..\artifacts\scripting\RU\Arrays [RU].txt
-		..\artifacts\scripting\RU\Hookscripts [RU].txt = ..\artifacts\scripting\RU\Hookscripts [RU].txt
 		..\artifacts\scripting\RU\sfall function notes [RU].txt = ..\artifacts\scripting\RU\sfall function notes [RU].txt
 	EndProjectSection
 EndProject
