@@ -1,4 +1,4 @@
-/*
+﻿/*
  *    sfall
  *    Copyright (C) 2020  The sfall team
  *
@@ -22,11 +22,19 @@ namespace sfall
 #endif
 
 class AIBehavior {
-
 public:
 	static void init();
 
-	static long AttackerHitMode();
+	enum class AttackResult : long
+	{
+		Default      = -1,
+		TargetDead   = 1, // цель была убита
+		NoMovePoints = 2, // нет очков для передвижения
+		LostWeapon   = 3, // оружие упало
+		ReTryAttack  = 4,
+		BadToHit     = 5,
+		MoveAway
+	};
 };
 
 }

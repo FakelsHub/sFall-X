@@ -15,7 +15,9 @@
 #include "..\..\Game\objects.h"
 
 #include "AI.Behavior.h"
+#include "AI.Combat.h"
 #include "AI.FuncHelpers.h"
+
 #include "AI.SearchTarget.h"
 
 namespace sfall
@@ -221,41 +223,6 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target, 
 }
 
 static const char* reTargetMsg = "\n[AI] I can't get at my target. Try picking alternate.";
-//#ifndef NDEBUG
-//static const char* targetGood  = "-> is possible attack!\n";
-//#endif
-
-//static void __declspec(naked) ai_danger_source_hack_find() {
-//	static const uint32_t ai_danger_source_hack_find_PickRet = 0x42908C;
-//	static const uint32_t ai_danger_source_hack_find_Ret  = 0x4290BB;
-//	__asm {
-//		push eax;
-//		push edx;
-//		mov  edx, eax; // source.who_hit_me target
-//		mov  ecx, esi; // source
-//		call FindAlternativeTarget;
-//		pop  edx;
-//		test al, al;
-//		pop  eax;
-//		jnz  reTarget;
-//		add  esp, 0x1C;
-//		pop  ebp;
-//		pop  edi;
-//#ifndef NDEBUG
-//		push eax;
-//		push targetGood;
-//		call fo::funcoffs::debug_printf_;
-//		add  esp, 4;
-//		pop  eax;
-//#endif
-//		jmp  ai_danger_source_hack_find_Ret;
-//reTarget:
-//		push reTargetMsg;
-//		call fo::funcoffs::debug_printf_;
-//		add  esp, 4;
-//		jmp  ai_danger_source_hack_find_PickRet;
-//	}
-//}
 
 static bool AICheckCurrentAttackerTarget(fo::GameObject* source, fo::GameObject* target, fo::AIcap* sourceCap) {
 	bool result = CheckAttackerTarget(source, target, sourceCap);
@@ -290,7 +257,7 @@ static long AICombatCheckBadShot(fo::GameObject* source, fo::GameObject* target,
 			}
 			else if (type & 8) { // for attack bad to hit
 				long min_to_hit = fo::func::ai_cap(source)->min_to_hit;
-				long hit = fo::func::determine_to_hit_no_range(source, target, fo::BodyParts::Uncalled, AIBehavior::AttackerHitMode());
+				long hit = fo::func::determine_to_hit_no_range(source, target, fo::BodyParts::Uncalled, AICombat::AttackerHitMode());
 				if (hit < min_to_hit) return 1; // bad
 			}
 		}
