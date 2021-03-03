@@ -7,7 +7,7 @@
 namespace sfall
 {
 
-enum CodeType : BYTE {
+enum CodeType : uint8_t {
 	Ret       = 0xC3,
 	Call      = 0xE8,
 	Jump      = 0xE9,
@@ -18,7 +18,7 @@ enum CodeType : BYTE {
 };
 
 template <typename T>
-void __stdcall SafeWrite(DWORD addr, T data) {
+void __stdcall SafeWrite(uint32_t addr, T data) {
 	DWORD oldProtect;
 	VirtualProtect((void*)addr, sizeof(T), PAGE_EXECUTE_READWRITE, &oldProtect);
 	*((T*)addr) = data;
@@ -35,32 +35,32 @@ void __stdcall SafeWriteBatch(T data, ForwardIteratorType begin, ForwardIterator
 }
 
 template <class T, size_t N>
-void __stdcall SafeWriteBatch(T data, const DWORD (&addrs)[N]) {
+void __stdcall SafeWriteBatch(T data, const unsigned long (&addrs)[N]) {
 	SafeWriteBatch<T>(data, std::begin(addrs), std::end(addrs));
 }
 
 template <typename T>
-void __stdcall SafeWriteBatch(T data, std::initializer_list<DWORD> addrs) {
+void __stdcall SafeWriteBatch(T data, std::initializer_list<uint32_t> addrs) {
 	SafeWriteBatch<T>(data, addrs.begin(), addrs.end());
 }
 
-void __stdcall SafeWrite8(DWORD addr, BYTE data);
-void __stdcall SafeWrite16(DWORD addr, WORD data);
-void __stdcall SafeWrite32(DWORD addr, DWORD data);
-void __stdcall SafeWriteStr(DWORD addr, const char* data);
+void __stdcall SafeWrite8(uint32_t addr, uint8_t data);
+void __stdcall SafeWrite16(uint32_t addr, uint16_t data);
+void __stdcall SafeWrite32(uint32_t addr, uint32_t data);
+void __stdcall SafeWriteStr(uint32_t addr, const char* data);
 
-void SafeMemSet(DWORD addr, BYTE val, int len);
-void SafeWriteBytes(DWORD addr, BYTE* data, int count);
+void SafeMemSet(uint32_t addr, uint8_t val, size_t len);
+void SafeWriteBytes(uint32_t addr, uint8_t* data, size_t count);
 
-void HookCall(DWORD addr, void* func);
-void MakeCall(DWORD addr, void* func);
-void MakeCall(DWORD addr, void* func, int len);
-void MakeJump(DWORD addr, void* func);
-void MakeJump(DWORD addr, void* func, int len);
-void BlockCall(DWORD addr);
+void HookCall(uint32_t addr, void* func);
+void MakeCall(uint32_t addr, void* func);
+void MakeCall(uint32_t addr, void* func, size_t len);
+void MakeJump(uint32_t addr, void* func);
+void MakeJump(uint32_t addr, void* func, size_t len);
+void BlockCall(uint32_t addr);
 
-void HookCalls(void* func, std::initializer_list<DWORD> addrs);
-void MakeCalls(void* func, std::initializer_list<DWORD> addrs);
-void MakeJumps(void* func, std::initializer_list<DWORD> addrs);
+void HookCalls(void* func, std::initializer_list<uint32_t> addrs);
+void MakeCalls(void* func, std::initializer_list<uint32_t> addrs);
+void MakeJumps(void* func, std::initializer_list<uint32_t> addrs);
 
 }

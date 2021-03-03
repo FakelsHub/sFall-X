@@ -156,18 +156,6 @@ static int CritTableLoad() {
 	return 0;
 }
 
-enum BodyPart {
-	Head,
-	ArmLeft,
-	ArmRight,
-	Torso,
-	LegRight,
-	LegLeft,
-	Eyes,
-	Groin,
-	Uncalled
-};
-
 enum CritParam {
 	DmgMult,
 	Flags,
@@ -185,6 +173,8 @@ static void CriticalTableOverride() {
 	playerCrit = &critTable[38];
 	SafeWrite32(0x423F96, (DWORD)playerCrit);
 	SafeWrite32(0x423FB3, (DWORD)critTable);
+
+	{ using namespace fo;
 
 	if (mode == 2 || mode == 3) { // bug fixes
 		// Children
@@ -323,6 +313,7 @@ static void CriticalTableOverride() {
 		SetEntry(18, Uncalled, 4, DmgMult,  4);    // 5
 		SetEntry(18, Uncalled, 4, Message,  7101); // 7106
 		SetEntry(18, Uncalled, 5, Message,  7101); // 7106
+	}
 	}
 
 	if (CritTableLoad()) {
