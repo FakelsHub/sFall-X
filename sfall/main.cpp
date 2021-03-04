@@ -175,6 +175,7 @@ void InitReplacementHack() {
 	game::Render::init();
 	game::Skills::init();
 	game::Stats::init();
+	game::Items::init();
 }
 
 static void InitModules() {

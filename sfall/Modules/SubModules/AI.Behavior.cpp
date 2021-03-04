@@ -521,10 +521,10 @@ static long __fastcall AICheckAttack(fo::GameObject* &weapon, fo::GameObject* ta
 				// если атакующему хватате очков действия на подход к цели то выполнить передвижение к цели
 				if (dist >= 1 && fo::func::ai_cap(source)->distance != fo::AIpref::distance::snipe) {
 					if (fo::func::item_w_anim_weap(weapon, hitMode) == fo::Animation::ANIM_fire_burst) {
-						long costAP = game::Items::item_w_mp_cost(weapon, hitMode, 0);
+						long costAP = game::Items::item_weapon_mp_cost(source, weapon, hitMode, 0);
 						long moveDist = source->critter.getAP() - costAP;
 						if (moveDist > 0) {
-							if (moveDist >= costAP && fo::func::determine_to_hit(source, target, fo::BodyParts::Uncalled, hitMode) >= 70) {
+							if (moveDist >= costAP && fo::func::determine_to_hit(source, target, fo::BodyPart::Uncalled, hitMode) >= 70) {
 								// если процент попадания по цели достатояно высокий, уменьшить дистанцию передвижения, чтобы хватило на несколько атак
 								while (moveDist >= costAP) moveDist -= costAP;
 							}
@@ -628,7 +628,7 @@ static long __fastcall AIMoveStepToAttackTile(fo::GameObject* source, fo::GameOb
 		}
 
 		// проверяем вероятность поразить цель, если более 50% то атакуем с гекса, иначе двигаемя до конца дистанции
-		if (fo::func::determine_to_hit_from_tile(source, getTile, target, fo::BodyParts::Uncalled, hitMode) < 50) {
+		if (fo::func::determine_to_hit_from_tile(source, getTile, target, fo::BodyPart::Uncalled, hitMode) < 50) {
 			long start = distToMove;
 			// подходим на все имеющиеся AP
 			distToMove += remainingAP; // add remaining AP's to distance
@@ -730,7 +730,7 @@ static fo::GameObject* FindSafeWeaponAttack(fo::GameObject* source, fo::GameObje
 		// проверить дальность оружия до цели
 		if (AIHelpers::AttackInRange(source, item, distance) == false) continue;
 
-		if (game::Items::item_w_mp_cost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0) <= source->critter.getAP() &&
+		if (game::Items::item_weapon_mp_cost(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0) <= source->critter.getAP() &&
 			(fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) ||
 			fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_LWEAPON_SECONDARY)))
 		{

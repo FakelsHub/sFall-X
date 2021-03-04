@@ -26,7 +26,7 @@ WRAP_WATCOM_FFUNC4(long, ai_find_attackers, fo::GameObject*, source, fo::GameObj
 WRAP_WATCOM_FFUNC3(long, ai_find_friend, fo::GameObject*, critter, long, maxDistance, long, inRange)
 WRAP_WATCOM_FFUNC3(fo::GameObject*, ai_find_nearest_team, fo::GameObject*, source, fo::GameObject*, target, long, teamFlag)
 WRAP_WATCOM_FFUNC3(fo::GameObject*, ai_find_nearest_team_in_combat, fo::GameObject*, source, fo::GameObject*, targetTeam, long, teamFlag)
-WRAP_WATCOM_FFUNC3(long, ai_have_ammo, fo::GameObject*, critter, fo::GameObject*, item, DWORD*, buf)
+WRAP_WATCOM_FFUNC3(long, ai_have_ammo, fo::GameObject*, critter, fo::GameObject*, item, fo::GameObject**, outAmmo)
 WRAP_WATCOM_FFUNC3(long, ai_pick_hit_mode, fo::GameObject*, source, fo::GameObject*, item, fo::GameObject*, target)
 WRAP_WATCOM_FFUNC3(long, ai_move_away, fo::GameObject*, source, fo::GameObject*, target, long, distance)
 WRAP_WATCOM_FFUNC4(long, ai_move_steps_closer, fo::GameObject*, source, fo::GameObject*, target, long, distance, long, say)

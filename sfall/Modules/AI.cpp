@@ -260,6 +260,8 @@ end:
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+
 static long __fastcall ai_weapon_reload_fix(fo::GameObject* weapon, fo::GameObject* ammo, fo::GameObject* critter) {
 	fo::Proto* proto = nullptr;
 	long result = -1;
@@ -314,12 +316,59 @@ skip:
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+
+static long tempReloadCost;
+
+static long __fastcall item_weapon_reload_cost_fix(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject** outAmmo) {
+	long reloadCost = game::Items::item_weapon_mp_cost(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
+	if (reloadCost > source->critter.getAP()) return -1; // no action points
+	tempReloadCost = reloadCost;
+
+	return fo::func::ai_have_ammo(source, weapon, outAmmo); // 0 - no ammo
+}
+
+static void __declspec(naked) ai_try_attack_hook_cost_reload() {
+	static const DWORD ai_try_attack_hook_unwield_Ret = 0x42AACD;
+	__asm {
+		push ebx;      // ammoObj ref
+		mov  ecx, eax; // source
+		call item_weapon_reload_cost_fix; // edx - weapon
+		cmp  eax, -1;
+		je   noAPs;
+		retn;
+noAPs:
+		add  esp, 4; // destroy ret
+		jmp  ai_try_attack_hook_unwield_Ret; // unwield weapon (default)
+	}
+}
+
+static void __declspec(naked) ai_try_attack_hook_cost_1() {
+	__asm {
+		xor  ebx, ebx;
+		sub  edx, tempReloadCost; // curr.mp - reload cost
+		cmovg ebx, edx;           // if curr.mp > 0
+		retn;
+	}
+}
+
+static void __declspec(naked) ai_try_attack_hook_cost_2() {
+	__asm {
+		xor  ecx, ecx;
+		sub  ebx, tempReloadCost; // curr.mp - reload cost
+		cmovg ecx, ebx;           // if curr.mp > 0
+		retn;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
 static long __fastcall CheckWeaponRangeAndApCost(fo::GameObject* source, fo::GameObject* target) {
 	long weaponRange = fo::func::item_w_range(source, fo::ATKTYPE_RWEAPON_SECONDARY);
 	long targetDist  = fo::func::obj_dist(source, target);
 	if (targetDist > weaponRange) return 0; // don't use secondary mode
 
-	return (source->critter.movePoints >= game::Items::item_w_mp_cost(source, fo::ATKTYPE_RWEAPON_SECONDARY, 0)); // 1 - allow secondary mode
+	return (source->critter.getAP() >= game::Items::item_w_mp_cost(source, fo::ATKTYPE_RWEAPON_SECONDARY, 0)); // 1 - allow secondary mode
 }
 
 static void __declspec(naked) ai_pick_hit_mode_hook() {
@@ -338,15 +387,15 @@ evaluation:
 static void __declspec(naked) cai_perform_distance_prefs_hack() {
 	using namespace fo;
 	__asm {
-		mov  ebx, eax; // current distance to target
-		mov  ecx, esi;
-		push 0;        // no called shot
+		mov  ecx, eax; // current distance to target
+		xor  ebx, ebx; // no called shot
 		mov  edx, ATKTYPE_RWEAPON_PRIMARY;
-		call game::Items::item_w_mp_cost;
+		mov  eax, esi;
+		call fo::funcoffs::item_mp_cost_;
 		mov  edx, [esi + movePoints];
 		sub  edx, eax; // ap - cost = free AP's
 		jle  moveAway; // <= 0
-		lea  edx, [edx + ebx - 1];
+		lea  edx, [edx + ecx - 1];
 		cmp  edx, 5;   // minimum threshold distance
 		jge  skipMove; // distance >= 5?
 		// check combat rating
@@ -519,8 +568,6 @@ static void AICombatClear() {
 
 void AI::init() {
 
-	AIBehavior::init();
-
 	HookCalls(combat_attack_hook, {
 		0x426A95, // combat_attack_this_
 		0x42A796  // ai_attack_
@@ -552,6 +599,11 @@ void AI::init() {
 		0x42AF15,           // cai_attempt_w_reload_
 		0x42A970, 0x42AA56, // ai_try_attack_
 	});
+
+	// Fixes checking and incorrect action points cost for AI when reloading ammo
+	HookCall(0x42A955, ai_try_attack_hook_cost_reload);
+	MakeCall(0x42A9DE, ai_try_attack_hook_cost_1);
+	MakeCall(0x42AABC, ai_try_attack_hook_cost_2, 4);
 
 	// Adds a check for the weapon range and the AP cost when AI is choosing weapon attack modes
 	HookCall(0x429F6D, ai_pick_hit_mode_hook);
@@ -607,8 +659,10 @@ void AI::init() {
 	SafeWrite8(0x421628, 0xD0);    // sub edx, eax > sub eax, edx
 	SafeWrite16(0x42162A, 0xFF40); // lea eax, [edx+1] > lea eax, [eax-1]
 
-	// Checking the safety of weapons based on the selected attack(hit) mode (instead of the always selected primary weapon hit mode)
+	// Check the safety of weapons based on the selected attack mode instead of always the primary weapon hit mode
 	MakeCall(0x42A8D9, ai_try_attack_hack_check_safe_weapon);
+
+	AIBehavior::init();
 }
 
 fo::GameObject* __stdcall AI::AIGetLastAttacker(fo::GameObject* target) {

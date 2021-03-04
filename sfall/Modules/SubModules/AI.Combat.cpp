@@ -791,7 +791,7 @@ ReFindNewTarget:
 		}
 
 		// перезарядить оружие
-		if (source->critter.getAP() >= 2) { // 2 default reload cost
+		if (source->critter.getAP() > 0) {
 			fo::GameObject* item = fo::func::inven_right_hand(source);
 			if (item) AIHelpers::AITryReloadWeapon(source, item);
 		}

@@ -45,10 +45,14 @@ fo::GameObject* __fastcall AISearchTarget::RevertTarget(fo::GameObject* source, 
 	if (rememberTarget) { // rememberTarget: первая цель до которой превышен радиус действия атаки
 		DEV_PRINTF1("\n[AI] I have remember target: %s", fo::func::critter_name(rememberTarget));
 		if (target && target != rememberTarget) {
-			// выбрать ближайшую цель
+			// выбрать лучшую цель
+			long hit1 = fo::func::determine_to_hit_no_range(source, target, fo::BodyPart::Uncalled, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
+			long hit2 = fo::func::determine_to_hit_no_range(source, rememberTarget, fo::BodyPart::Uncalled, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
+
+			// выбрать ближайшую цель (ближайшая всегда rememberTarget?)
 			long dist1 = fo::func::obj_dist(source, target);
 			long dist2 = fo::func::obj_dist(source, rememberTarget);
-			if (dist1 > dist2) target = rememberTarget;
+			if ((hit1 < hit2) & (dist1 > dist2)) target = rememberTarget;
 		} else {
 			target = rememberTarget;
 		}
@@ -128,7 +132,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target, 
 
 	int distance = fo::func::obj_dist(source, target); // возвращает дистанцию 1 если цель расположена вплотную
 	if (distance <= 1) {
-		if (fo::func::determine_to_hit(source, target, fo::BodyParts::Uncalled, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) >= 50) return false;
+		if (fo::func::determine_to_hit(source, target, fo::BodyPart::Uncalled, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) >= 50) return false;
 	}
 	bool shotIsBlock = fo::func::combat_is_shot_blocked(source, source->tile, target->tile, target, 0);
 
@@ -219,7 +223,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target, 
 		DEV_PRINTF1("-> shot is blocked. I can move to target. [pathToTarget: %d]", pathToTarget);
 	}
 	// can shot and move / can shot and block move
-	return (fo::func::determine_to_hit_no_range(source, target, fo::BodyParts::Uncalled, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 30);
+	return (fo::func::determine_to_hit_no_range(source, target, fo::BodyPart::Uncalled, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 30);
 }
 
 static const char* reTargetMsg = "\n[AI] I can't get at my target. Try picking alternate.";
@@ -248,16 +252,16 @@ static long AICombatCheckBadShot(fo::GameObject* source, fo::GameObject* target,
 		if (type & 1 && result == CheckBadShootResult::OutOfRange) return 0; // good
 
 		if (type & 2 && !rememberTarget && (result == CheckBadShootResult::OutOfRange || result == CheckBadShootResult::ShootBlock)) {
-			rememberTarget = target;
+			rememberTarget = target; // запоминаем первую цель
 		}
 		if (result == CheckBadShootResult::Ok) {
 			if (type & 4) { // for retarget
-				long hit = fo::func::determine_to_hit_no_range(source, target, fo::BodyParts::Uncalled, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
+				long hit = fo::func::determine_to_hit_no_range(source, target, fo::BodyPart::Uncalled, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
 				if (hit <= 30) return 1; // bad
 			}
 			else if (type & 8) { // for attack bad to hit
 				long min_to_hit = fo::func::ai_cap(source)->min_to_hit;
-				long hit = fo::func::determine_to_hit_no_range(source, target, fo::BodyParts::Uncalled, AICombat::AttackerHitMode());
+				long hit = fo::func::determine_to_hit_no_range(source, target, fo::BodyPart::Uncalled, AICombat::AttackerHitMode());
 				if (hit < min_to_hit) return 1; // bad
 			}
 		}
@@ -400,21 +404,20 @@ FindNewTargets:
 fo::GameObject* __fastcall AISearchTarget::AIDangerSource_Extended(fo::GameObject* source, long type) {
 	if (!source) return nullptr;
 
-	bool wield = false;
-	fo::GameObject* weapon;
+	fo::GameObject* weapon = nullptr;
 	fo::GameObject* handItem = fo::func::inven_right_hand(source);
-	if (!handItem) { // если атакующий не вооружен, найти оружие в инвентаре перед поиском цели (исправляет ситуацию при поиске целей)
-		weapon = AIHelpers::GetInventoryWeapon(source, true, false); // выбрать лучшее оружие (если имеется)
+	if (!handItem) {
+		// если атакующий не вооружен, найти оружие в инвентаре перед поиском цели (исправляет ситуацию при поиске целей)
+		weapon = AIHelpers::GetInventoryWeapon(source, true, false); // выбрать лучшее оружие из инвентаря (если имеется)
 		if (weapon) {
 			DEV_PRINTF("\n[AI] Attacker wield weapon.");
 			weapon->flags |= fo::ObjectFlag::Right_Hand;
-			wield = true;
 		}
 	}
 
 	fo::GameObject* target = AIDangerSource(source, type);
 
-	if (wield && !target) weapon->flags ^= fo::ObjectFlag::Right_Hand;
+	if (weapon) weapon->flags ^= fo::ObjectFlag::Right_Hand;
 
 	return target;
 }

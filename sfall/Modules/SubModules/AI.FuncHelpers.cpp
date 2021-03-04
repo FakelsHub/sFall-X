@@ -295,6 +295,9 @@ bool AIHelpers::CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon)
 bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon) {
 	if (!weapon) return false;
 
+	long reloadCost = game::Items::item_weapon_mp_cost(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
+	if (reloadCost > critter->critter.getAP()) return false;
+
 	fo::GameObject* ammo = nullptr;
 	bool reload = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER);;
 
@@ -311,15 +314,15 @@ bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapo
 	if (reload || ammo) {
 		long result = fo::func::item_w_reload(weapon, ammo);
 		if (result != -1) {
-			if (!result && ammo) //obj_destroy_(ammo);
+			if (!result && ammo) fo::func::obj_destroy(ammo);
 
-			//volume = gsound_compute_relative_volume_(_source);
-			//v10 = gsnd_build_weapon_sfx_name_(0, right_weapon, hit_mode, 0);
-			//gsound_play_sfx_file_volume_(v10, volume);
+			//long volume = fo::func::gsound_compute_relative_volume(critter);
+			//const char* sfxName = fo::func::gsnd_build_weapon_sfx_name(0, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
+			//fo::func::gsound_play_sfx_file_volume(sfxName, volume);
 			//fo::func::ai_magic_hands(critter, weapon, 5002);
 
-			if (critter->critter.getAP() > 2) {
-				critter->critter.movePoints -= 2;
+			if (critter->critter.getAP() > reloadCost) {
+				critter->critter.movePoints -= reloadCost;
 			} else {
 				critter->critter.movePoints = 0;
 			}

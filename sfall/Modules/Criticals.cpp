@@ -174,9 +174,8 @@ static void CriticalTableOverride() {
 	SafeWrite32(0x423F96, (DWORD)playerCrit);
 	SafeWrite32(0x423FB3, (DWORD)critTable);
 
-	{ using namespace fo;
-
 	if (mode == 2 || mode == 3) { // bug fixes
+		using namespace fo;
 		// Children
 		SetEntry(2, LegRight, 1, FlagsFail, 0);
 		SetEntry(2, LegRight, 1, Message,   5216);
@@ -313,7 +312,6 @@ static void CriticalTableOverride() {
 		SetEntry(18, Uncalled, 4, DmgMult,  4);    // 5
 		SetEntry(18, Uncalled, 4, Message,  7101); // 7106
 		SetEntry(18, Uncalled, 5, Message,  7101); // 7106
-	}
 	}
 
 	if (CritTableLoad()) {

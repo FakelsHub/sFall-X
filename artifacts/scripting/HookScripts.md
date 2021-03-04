@@ -144,8 +144,8 @@ You can get the weapon object by checking item slot based on attack type (`ATKTY
 critter arg0 - The critter performing the action
 int     arg1 - Attack Type (see ATKTYPE_* constants)
 int     arg2 - Is aimed attack (1 or 0)
-int     arg3 - The normal AP cost
-Item    arg4 - The weapon
+int     arg3 - The normal AP cost (default)
+Item    arg4 - The weapon for which the cost is calculated, if it is 0 this case the pointer to the weapon can be obtained by the value "Attack Type" pointing to the slot containing the weapon
 
 int     ret0 - The new AP cost
 ```
@@ -415,7 +415,7 @@ int     ret0 - overrides the pressed key (a new key DX scancode or 0 for no over
 ```
 -------------------------------------------
 
-##### `HOOK_MOUSECLICK (hs_mouseclick.int)`
+#### `HOOK_MOUSECLICK (hs_mouseclick.int)`
 
 Runs once every time when a mouse button was pressed or release.
 
