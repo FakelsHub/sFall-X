@@ -136,8 +136,7 @@ static fo::GameObject* BestWeaponLite(fo::GameObject* source, fo::GameObject* we
 
 // Альтернативная реализация функции ai_search_inven_weap_
 fo::GameObject* AIHelpers::GetInventoryWeapon(fo::GameObject* source, bool checkAP, bool useHand) {
-	int bodyType = fo::func::critter_body_type(source);
-	if (bodyType && bodyType != fo::BodyType::Robotic && source->protoId != fo::PID_GORIS) {
+	if (fo::func::critter_body_type(source) == fo::BodyType::Quadruped && source->protoId != fo::ProtoID::PID_GORIS) {
 		return 0;
 	}
 	fo::GameObject* bestWeapon = (useHand) ? fo::func::inven_right_hand(source) : nullptr;
@@ -287,24 +286,24 @@ fo::GameObject* AIHelpers::GetInventAmmo(fo::GameObject* critter, fo::GameObject
 }
 
 // Проверяет имеет ли криттер в своем инвентаре патроны к оружию для перезарядки
-bool AIHelpers::CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
-	if (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER) return true;
-	return (GetInventAmmo(critter, weapon) != nullptr);
+long AIHelpers::CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
+	if (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER) return -1;
+	fo::GameObject* ammo = GetInventAmmo(critter, weapon);
+	return (ammo) ? ammo->item.charges : 0;
 }
 
-bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon) {
+bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon, fo::GameObject* ammo) {
 	if (!weapon) return false;
 
 	long reloadCost = game::Items::item_weapon_mp_cost(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
 	if (reloadCost > critter->critter.getAP()) return false;
 
-	fo::GameObject* ammo = nullptr;
 	bool reload = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER);;
 
-	if (weapon->item.ammoPid != -1 || reload) {
+	if (!ammo && weapon->item.ammoPid != -1 || reload) {
 		fo::Proto* proto = fo::GetProto(weapon->protoId);
 		if (proto->item.type == fo::ItemType::item_type_weapon) {
-			if (weapon->item.charges < proto->item.weapon.maxAmmo / 2) {
+			if (weapon->item.charges <= 0 || weapon->item.charges < (proto->item.weapon.maxAmmo / 2)) {
 				if (!reload) ammo = GetInventAmmo(critter, weapon);
 			} else {
 				reload = false;
@@ -319,7 +318,7 @@ bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapo
 			//long volume = fo::func::gsound_compute_relative_volume(critter);
 			//const char* sfxName = fo::func::gsnd_build_weapon_sfx_name(0, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
 			//fo::func::gsound_play_sfx_file_volume(sfxName, volume);
-			//fo::func::ai_magic_hands(critter, weapon, 5002);
+			fo::func::ai_magic_hands(critter, weapon, 5002);
 
 			if (critter->critter.getAP() > reloadCost) {
 				critter->critter.movePoints -= reloadCost;

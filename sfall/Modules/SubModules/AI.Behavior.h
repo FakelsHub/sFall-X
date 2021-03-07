@@ -28,11 +28,11 @@ public:
 	enum class AttackResult : long
 	{
 		Default      = -1,
-		TargetDead   = 1, // цель была убита
-		NoMovePoints = 2, // нет очков для передвижения
-		LostWeapon   = 3, // оружие упало
-		ReTryAttack  = 4,
-		BadToHit     = 5,
+		TargetDead   = 4, // цель была убита
+		NoMovePoints = 8, // нет очков для передвижения
+		LostWeapon   = 9, // оружие упало
+		ReTryAttack  = 10,
+		BadToHit     = 11,
 		MoveAway
 	};
 };

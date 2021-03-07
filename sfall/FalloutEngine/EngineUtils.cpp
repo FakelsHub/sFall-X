@@ -124,6 +124,16 @@ fo::GameObject* GetActiveItem() {
 	return fo::var::itemButtonItems[fo::var::itemCurrentItem].item;
 }
 
+fo::GameObject* GetInventItem(fo::GameObject* source, long pid) {
+	for (long i = 0; i < source->invenSize; i++) {
+		fo::GameObject* item = source->invenTable[i].object;
+		if (item->protoId == pid) return item;
+		item = GetInventItem(item, pid); // for containers
+		if (item) return item;
+	}
+	return nullptr;
+}
+
 long GetCurrentAttackMode() {
 	long hitMode = -1;
 	if (fo::var::interfaceWindow != -1) {

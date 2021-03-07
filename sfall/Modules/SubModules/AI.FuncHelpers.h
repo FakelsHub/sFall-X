@@ -60,9 +60,9 @@ public:
 
 	static fo::GameObject* GetInventAmmo(fo::GameObject* critter, fo::GameObject* weapon);
 
-	static bool CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon);
+	static long CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon);
 
-	static bool AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon);
+	static bool AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon, fo::GameObject* ammo);
 
 	static long GetFreeTile(fo::GameObject* source, long tile, long distMax);
 

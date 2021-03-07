@@ -83,6 +83,8 @@ long& GetActiveItemMode();
 
 fo::GameObject* GetActiveItem();
 
+fo::GameObject* GetInventItem(fo::GameObject* source, long pid);
+
 long GetCurrentAttackMode();
 
 fo::AttackSubType GetWeaponType(unsigned long weaponFlag);

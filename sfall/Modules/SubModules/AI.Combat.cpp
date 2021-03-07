@@ -12,6 +12,8 @@
 #include "..\..\Utils.h"
 //#include "..\LoadGameHook.h"
 
+#include "..\..\Game\items.h"
+
 #include "..\AI.h"
 #include "AI.Behavior.h"
 #include "AI.FuncHelpers.h"
@@ -21,6 +23,40 @@
 
 namespace sfall
 {
+
+// Реализация движковой функции combat_check_bad_shot_ для функции ai_try_attack_
+// В данной реализаци изменен порядок проверки результатов:
+//	"NoAmmo" проверяется перед "NotEnoughAPs" и "OutOfRange"
+//	проверка "OutOfRange" помещена перед "NotEnoughAPs"
+// дополнительно добавлен результат "NoActionPoint", когда когда у атакующего нет очков действий
+CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode, long isCalled) {
+	if (source->critter.getAP() <= 0) return CombatShootResult::NoActionPoint;
+	if (target && target->critter.damageFlags & fo::DAM_DEAD) return CombatShootResult::TargetDead; // target is dead
+
+	fo::GameObject* item = fo::func::inven_right_hand(source);
+	if (item) {
+		long flags = source->critter.damageFlags;
+		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
+			return CombatShootResult::CrippledHand; // one of the hands is crippled, can't use a two-handed weapon
+		}
+		if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
+			return CombatShootResult::CrippledHands; // crippled both hands
+		}
+		if (fo::func::item_w_max_ammo(item) > 0 && item->item.charges <= 0) return CombatShootResult::NoAmmo;
+	}
+	long distance = (target) ? fo::func::obj_dist(source, target) : 1;
+	long attackRange = fo::func::item_w_range(source, hitMode);
+	if (distance > attackRange) return CombatShootResult::OutOfRange; // target is out of range of the attack
+
+	if (game::Items::item_w_mp_cost(source, hitMode, isCalled) > source->critter.getAP()) return CombatShootResult::NotEnoughAPs;
+
+	if (target && attackRange > 1 && fo::func::combat_is_shot_blocked(source, source->tile, target->tile, target, 0)) {
+		return CombatShootResult::ShootBlock; // shot to target is blocked
+	}
+	return CombatShootResult::Ok;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 // Карта должна хранить номер тайла где криттер последний раз видел его атакующего криттера
 // используется в тех случая когда не была найдена цель
@@ -120,6 +156,14 @@ long AICombat::AttackerBonusAP() {
 	return attacker.totalBonusAP;
 }
 
+long AICombat::AttackerBodyType() {
+	return attacker.bodyType;
+}
+
+bool AICombat::AttackerIsHumanoid() {
+	return attacker.IsHumanoid();
+}
+
 // Расстояния для напарников игрока когда они остаются без найденной цели
 static inline long getAIPartyMemberDistances(long aiDistance) {
 	static long aiPartyMemberDistances[5] = {
@@ -129,7 +173,7 @@ static inline long getAIPartyMemberDistances(long aiDistance) {
 		8,   // on_your_own
 		5000 // stay
 	};
-	return (aiDistance > -1) ? aiPartyMemberDistances[aiDistance] : 8;
+	return (aiDistance >= 0 && aiDistance < 5) ? aiPartyMemberDistances[aiDistance] : 6;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -566,7 +610,7 @@ ReFindNewTarget:
 		if (!target) DEV_PRINTF("\n[AI] No find target!"); else DEV_PRINTF1("\n[AI] Pick target: %s", fo::func::critter_name(target));
 
 		if (lastCombatAP && lastTarget == target) {
-			DEV_PRINTF("\n[AI] No find new target!");
+			DEV_PRINTF("\n[AI] TrySpendAP: No find new target!");
 			//return;
 		}
 		target = AISearchTarget::RevertTarget(source, target);
@@ -678,9 +722,9 @@ ReFindNewTarget:
 		// если critter не найден и атакующий из команды игрока, то присвоить в качестве critter obj_dude
 		if (!ally_Critter && source->critter.teamNum == 0) ally_Critter = fo::var::obj_dude;
 
-		long distance = (attacker.InDudeParty) ? getAIPartyMemberDistances(attacker.cap->distance) : 8; // default (было 5)
+		long distance = (attacker.InDudeParty) ? getAIPartyMemberDistances(attacker.cap->distance) : 6; // default (было 5)
 
-		DEV_PRINTF1("\n[AI] Find team critter: %s", (ally_Critter) ? fo::func::critter_name(ally_Critter) : "None");
+		DEV_PRINTF1("\n[AI] Find team critter: %s", (ally_Critter) ? fo::func::critter_name(ally_Critter) : "<None>");
 		if (ally_Critter) {
 			long dist = fo::func::obj_dist(source, ally_Critter);
 			if (dist > distance) // дистанция больше чем определено по умолчанию, идем к криттеру из своей команды который имеет цель
@@ -697,7 +741,7 @@ ReFindNewTarget:
 				//MoveToLastAttackTile(source, critter);
 
 				// рандомное перемещение вокруг ally_Critter
-				long tile = AIHelpers::GetRandomDistTile(source, ally_Critter->tile, 6);
+				long tile = AIHelpers::GetRandomDistTile(source, ally_Critter->tile, 5);
 				if (tile != -1) {
 					DEV_PRINTF("\n[AI] Random move tile.");
 					AIHelpers::CombatMoveToTile(source, tile, source->critter.getAP());
@@ -792,8 +836,7 @@ ReFindNewTarget:
 
 		// перезарядить оружие
 		if (source->critter.getAP() > 0) {
-			fo::GameObject* item = fo::func::inven_right_hand(source);
-			if (item) AIHelpers::AITryReloadWeapon(source, item);
+			if (AIHelpers::AITryReloadWeapon(source, fo::func::inven_right_hand(source), nullptr)) DEV_PRINTF("\n[AI] Reload weapon.");;
 		}
 		DEV_PRINTF1("\n[AI] left extra %d AP's", source->critter.getAP());
 	}
@@ -802,6 +845,8 @@ ReFindNewTarget:
 static bool combatDebug;
 
 static void __fastcall combat_ai_hook(fo::GameObject* source, fo::GameObject* target) {
+	//if (!source) return;
+
 	combatDifficulty = (CombatDifficulty)iniGetInt("preferences", "combat_difficulty", (int)combatDifficulty, (const char*)FO_VAR_game_config);
 	attacker.setData(source);
 
@@ -811,7 +856,7 @@ static void __fastcall combat_ai_hook(fo::GameObject* source, fo::GameObject* ta
 		source->critter.movePoints += attacker.totalBonusAP;
 	}
 
-	DEV_PRINTF3("\n[AI] Begin combat: %s ID: %d. CombatState: %d", attacker.name, source->id, source->critter.combatState);
+	DEV_PRINTF3("\n\n[AI] Begin combat: %s ID: %d. CombatState: %d", attacker.name, source->id, source->critter.combatState);
 
 	CombatAI_Extended(source, target);
 

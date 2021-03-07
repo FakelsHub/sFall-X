@@ -30,8 +30,10 @@ WRAP_WATCOM_FFUNC3(long, ai_have_ammo, fo::GameObject*, critter, fo::GameObject*
 WRAP_WATCOM_FFUNC3(long, ai_pick_hit_mode, fo::GameObject*, source, fo::GameObject*, item, fo::GameObject*, target)
 WRAP_WATCOM_FFUNC3(long, ai_move_away, fo::GameObject*, source, fo::GameObject*, target, long, distance)
 WRAP_WATCOM_FFUNC4(long, ai_move_steps_closer, fo::GameObject*, source, fo::GameObject*, target, long, distance, long, say)
+WRAP_WATCOM_FFUNC3(long, ai_magic_hands, fo::GameObject*, source, fo::GameObject*, object, long, msgNumber)
 WRAP_WATCOM_FFUNC3(fo::GameObject*, ai_search_inven_weap, fo::GameObject*, source, long, apCheck, fo::GameObject*, target)
 WRAP_WATCOM_FFUNC3(long, cai_retargetTileFromFriendlyFire, fo::GameObject*, source, fo::GameObject*, target, long*, outTile)
+WRAP_WATCOM_FFUNC3(long, art_get_base_name, long, artType, long, fid, char*, strBuf)
 WRAP_WATCOM_FFUNC3(void, check_for_death, fo::GameObject*, critter, long, amountDamage, long*, flags)
 WRAP_WATCOM_FFUNC4(long, combat_check_bad_shot, fo::GameObject*, source, fo::GameObject*, target, long, hitMode, long, isSecondary)
 WRAP_WATCOM_FFUNC5(bool, combat_is_shot_blocked, fo::GameObject*, source, DWORD, tileSource, DWORD, tileTarget, fo::GameObject*, target, long*, accumulator)
@@ -49,6 +51,7 @@ WRAP_WATCOM_FFUNC3(void, intface_update_items, long, animate, long, modeLeft,lon
 WRAP_WATCOM_FFUNC3(fo::GameObject*, inven_find_type, fo::GameObject*, critter, long, itemType, DWORD*, slot)
 WRAP_WATCOM_FFUNC3(long, inven_wield, fo::GameObject*, critter, fo::GameObject*, item, long, slot)
 WRAP_WATCOM_FFUNC3(long, item_add_force, fo::GameObject*, critter, fo::GameObject*, item, long, count)
+WRAP_WATCOM_FFUNC4(long, item_move, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC3(long, item_w_mp_cost, fo::GameObject*, source, long, hitMode, long, isCalled)
 WRAP_WATCOM_FFUNC7(void, make_straight_path_func, fo::GameObject*, objFrom, DWORD, tileFrom, DWORD, tileTo, void*, rotationPtr, DWORD*, result, long, flags, void*, func)
 WRAP_WATCOM_FFUNC3(long, message_find, DWORD*, msgFile, long, msgNumber, DWORD*, outBuf)
@@ -67,6 +70,7 @@ WRAP_WATCOM_FFUNC4(long, register_object_move_to_object, fo::GameObject*, source
 WRAP_WATCOM_FFUNC5(long, register_object_move_to_tile, fo::GameObject*, source, long, tile, long, elev, long, distance, long, delay)
 WRAP_WATCOM_FFUNC4(long, register_object_run_to_object, fo::GameObject*, source, fo::GameObject*, target, long, distance, long, delay)
 WRAP_WATCOM_FFUNC5(long, register_object_run_to_tile, fo::GameObject*, source, long, tile, long, elev, long, distance, long, delay)
+WRAP_WATCOM_FFUNC3(long, register_object_play_sfx, fo::GameObject*, object, const char*, sfxName, long, delay)
 WRAP_WATCOM_FFUNC3(long, scr_get_local_var, long, sid, long, varId, long*, value)
 WRAP_WATCOM_FFUNC3(long, scr_set_local_var, long, sid, long, varId, long, value)
 WRAP_WATCOM_FFUNC6(long, text_object_create, fo::GameObject*, object, const char*, text, long, font, long, colorText, long, colorOutline, fo::BoundRect*, rect)
@@ -80,6 +84,7 @@ WRAP_WATCOM_FFUNC3(const char*, interpretGetString, fo::Program*, scriptPtr, DWO
 
 /* stdcall */
 WRAP_WATCOM_FUNC1(fo::AIcap*, ai_cap, fo::GameObject*, critter)
+WRAP_WATCOM_FUNC2(long, ai_can_use_drug, fo::GameObject*, critter, fo::GameObject*, item)
 WRAP_WATCOM_FUNC1(void, ai_check_drugs, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC1(fo::GameObject*, ai_danger_source, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC2(void, ai_print_msg, fo::GameObject*, object, long, mode)
@@ -217,7 +222,7 @@ WRAP_WATCOM_FUNC1(const char*, map_get_short_name, long, mapID)
 WRAP_WATCOM_FUNC2(void, MapDirErase, const char*, folder, const char*, ext)
 WRAP_WATCOM_FUNC1(void, mem_free, void*, mem)
 WRAP_WATCOM_FUNC2(void*, mem_realloc, void*, lpmem, DWORD, msize)
-WRAP_WATCOM_FUNC2(long, message_add, fo::MessageList*, file, MessageNode*, msg)
+//WRAP_WATCOM_FUNC2(long, message_add, fo::MessageList*, file, fo::MessageNode*, msg)
 WRAP_WATCOM_FUNC1(long, message_exit, fo::MessageList*, msgList) // Destroys message list
 WRAP_WATCOM_FUNC1(long, message_filter, fo::MessageList*, file)
 WRAP_WATCOM_FUNC2(long, message_load, fo::MessageList*, msgList, const char*, msgFilePath) // Loads MSG file into given MessageList
@@ -229,10 +234,10 @@ WRAP_WATCOM_FUNC0(void, mouse_hide)
 // Calculates path and returns it's length
 WRAP_WATCOM_FUNC6(long, make_path_func, fo::GameObject*, objectFrom, long, tileFrom, long, tileTo, char*, pathDataBuffer, long, arg5, void*, blockingFunc)
 WRAP_WATCOM_FUNC0(long, new_obj_id)
-WRAP_WATCOM_FUNC2(void, obj_bound, fo::GameObject*, object, BoundRect*, boundRect) // Calculates bounding box (rectangle) for a given object
+WRAP_WATCOM_FUNC2(void, obj_bound, fo::GameObject*, object, fo::BoundRect*, boundRect) // Calculates bounding box (rectangle) for a given object
 WRAP_WATCOM_FUNC1(long, obj_destroy, fo::GameObject*, object)
 WRAP_WATCOM_FUNC2(long, obj_dist, fo::GameObject*, obj_src, fo::GameObject*, obj_trg)
-WRAP_WATCOM_FUNC2(long, obj_erase_object, fo::GameObject*, object, BoundRect*, boundRect)
+WRAP_WATCOM_FUNC2(long, obj_erase_object, fo::GameObject*, object, fo::BoundRect*, boundRect)
 WRAP_WATCOM_FUNC0(fo::GameObject*, obj_find_first)
 WRAP_WATCOM_FUNC0(fo::GameObject*, obj_find_next)
 WRAP_WATCOM_FUNC2(fo::GameObject*, obj_find_first_at_tile, long, elevation, long, tileNum)
@@ -274,7 +279,6 @@ WRAP_WATCOM_FUNC3(long, register_object_light, fo::GameObject*, object, long, li
 // WRAP_WATCOM_FUNC3(long, register_object_must_call_, fo::GameObject*, object;
 WRAP_WATCOM_FUNC1(long, register_object_must_erase, fo::GameObject*, object)
 // WRAP_WATCOM_FUNC3(long, register_object_outline_, fo::GameObject*, object;
-// WRAP_WATCOM_FUNC3(long, register_object_play_sfx_, fo::GameObject*, object;
 WRAP_WATCOM_FUNC3(long, register_object_take_out, fo::GameObject*, object, long, holdFrameId, long, nothing)
 WRAP_WATCOM_FUNC3(long, register_object_turn_towards, fo::GameObject*, object, long, tileNum, long, nothing)
 WRAP_WATCOM_FUNC2(long, roll_random, long, minValue, long, maxValue)
