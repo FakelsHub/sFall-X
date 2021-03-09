@@ -9,29 +9,34 @@ Arrays can be extremely useful for some more advanced scripting, in conjunction 
 ### ARRAYS CONCEPT
 
 Arrays are created and manipulated with the array functions. An array must first be created with `create_array` or `temp_array`, specifying how many data elements the array can hold. You can store any of ints, floats and strings in an array, and can mix all 3 in a single array. The id returned by `create/temp_array` can then be used with the other array functions. Arrays are shared between all scripts. (i.e. you can call `create_array` from one script, and then use the returned id from another script.) They are also saved across savegames.
-*You must remember to free any arrays you create with `create_array` when you are done with them, or you will leak memory.**
+
+*You must remember to free any arrays you create with `create_array` when you are done with them, or you will leak memory.*
+
 Arrays created with `temp_array` will be automatically freed at the end of the frame. These functions are safe, in that supplying a bad id or trying to access out of range elements will not crash the script. `create_array` is the only function that returns a permanent array, all other functions which return arrays (`string_split`, `list_as_array` etc,) all return temp arrays. You can use `fix_array` to make a temp array permanent.
 
-Array elements are accessed by index or key. For example:
+Array elements are accessed by index or key. _For example:_
 ```js
     // this code puts some string in array "list" at index 5:
     list[5] := "Value";
 ```
 
 There are 2 different types of arrays currently available:
-1. Lists - a set of values with specific size (number of elements), where all elements have numeric indexes starting from zero (0) up to array length minus one. For example:
-```js
+
+1. **Lists** - a set of values with specific size (number of elements), where all elements have numeric indexes starting from zero (0) up to array length minus one.
+
+    _For example:_
+    ```js
     // this creates list with 3 elements. Element "A" has index 0, element "B" has index 1, element "C" - 2
     list := ["A", "B", "C"];
-```
-  Limitations:
-  - all indexes are numeric, starting from 0;
-  - to assign value to a specific index, you must first resize array to contain this index
-    for example, if list is of size 3 (indexes from 0 to 2), you can't assign value to index 4 unless you change list size to 5 first).
+    ```
+    Limitations:
+    - all indexes are numeric, starting from 0;
+    - to assign value to a specific index, you must first resize array to contain this index
+        for example, if list is of size 3 (indexes from 0 to 2), you can't assign value to index 4 unless you change list size to 5 first).
 
-2. Maps (or associative arrays) - a set of key=>value pairs, where all elements (values) are accessed by corresponding keys.
+2. **Maps** (or associative arrays) - a set of key=>value pairs, where all elements (values) are accessed by corresponding keys.
 
-  Differences from list:
+    Differences from list:
     - maps don't have specific size (to assign values, you don't need to resize array first);
     - keys, just like values, can be of any type (but avoid using -1 as array keys or you won't be able to use some  functions reliably).
 
@@ -85,14 +90,13 @@ ___
 A part from lists/maps arrays are divided by how they are stored.
 There a 3 types of arrays:
 
-1. **Temporary**. They are created using `temp_array` function or when using array expressions. Arrays of this type are auto-deleted at the end of the frame. So, for example, if you have a global script which runs at regular intervals, where you create `temp_array`, it will not be available next time your global script is executed.
+* **Temporary**. They are created using `temp_array` function or when using array expressions. Arrays of this type are auto-deleted at the end of the frame. So, for example, if you have a global script which runs at regular intervals, where you create `temp_array`, it will not be available next time your global script is executed.
 
-2. **Permanent**. They are created using `create_array` function or `fix_array` (from pre-existing temporary array). This type of arrays are always available (by their ID) until you start a new game or load a saved game (at which point they are deleted).
+* **Permanent**. They are created using `create_array` function or `fix_array` (from pre-existing temporary array). This type of arrays are always available (by their ID) until you start a new game or load a saved game (at which point they are deleted).
 
-3. **Saved**. If you want your array to really stay for a while, use function `save_array` to make any array "saved". However, they are, like permanent arrays, "deleted" from memory when loading game. In order to use them properly, you must load them from the savegame using `load_array` whenever you want to use them.
-
-Example:
-```js
+* **Saved**. If you want your array to really stay for a while, use function `save_array` to make any array "saved". However, they are, like permanent arrays, "deleted" from memory when loading game. In order to use them properly, you must load them from the savegame using `load_array` whenever you want to use them.
+    _Example:_
+    ```js
     variable savedArray;
     procedure start begin
         if game_loaded then begin
@@ -103,8 +107,7 @@ Example:
             end
         end
     end
-```
-
+    ```
 ___
 ### PRACTICAL EXAMPLES
 
@@ -158,10 +161,9 @@ ___
 - creates permanent array (but not "saved")
 - if `size is >= 0`, creates list with given size
 - if `size == -1`, creates map (associative array)
-- if `size == -1 and flags == 2`, creates a "lookup" map (associative array) in which the values of existing keys are read-only and can't be updated.
-  This type of array allows you to store a zero (0) key value.
-  *NOTE: in earlier versions (up to 4.1.3/3.8.13) the second argument is not used, just use 0*
-- returns arrayID (valid until array is deleted)
+- if `size == -1` and `flags == 2`, creates a "lookup" map (associative array) in which the values of existing keys are read-only and can't be updated. This type of array allows you to store a zero (0) key value.
+  * NOTE: in earlier versions (up to 4.1.3/3.8.13) the second argument is not used, just use 0
+- returns **arrayID** (valid until array is deleted)
 
 
 #### `int temp_array(int size, int flags)`
@@ -177,7 +179,7 @@ ___
 - if used on list, "key" must be numeric and within valid index range (0..size-1)
 - if used on map, key can be of any type
 - to "unset" a value from map, just set it to zero (0).
-  *NOTE: to add a value of 0 for the key, use the float value of 0.0*
+  * NOTE: to add a value of 0 for the key, use the float value of 0.0
 - this works exactly like statement: `arrayID[key] := value;`
 
 
@@ -228,7 +230,7 @@ use macros `sort_array`, `sort_array_reverse`, `reverse_array`, `shuffle_array` 
 - **arrayID** is associated with given "key"
 - array becomes permanent (if it was temporary) and "saved"
 - key can be of any type (int, float or string)
-- if you specify 0 as the key for the array ID, it will make the array "unsaved"
+- if you specify 0 as the key for the **array ID**, it will make the array "unsaved"
 
 
 #### `int load_array(mixed key)`
@@ -236,7 +238,7 @@ use macros `sort_array`, `sort_array_reverse`, `reverse_array`, `shuffle_array` 
 - **arrayID** is returned or zero (0) if none found
 
 
-**mixed - means any type*
+_*mixed - means any type_
 
 ___
 ## BACKWARD COMPATIBILITY NOTES

@@ -27,9 +27,10 @@
 
 #include "HookScripts\CombatHS.h"
 
-#include "..\Game\items.h"
+//#include "..\Game\items.h"
 
 #include "SubModules\CombatBlock.h"
+#include "SubModules\CombatExt.h"
 
 #include "Combat.h"
 
@@ -39,7 +40,7 @@ namespace sfall
 static const DWORD bodypartAddr[] = {
 	0x425562,                     // combat_display_
 	0x42A68F, 0x42A739,           // ai_called_shot_
-//	0x429E82, 0x429EC2, 0x429EFF, // ai_pick_hit_mode_
+//	0x429E82, 0x429EC2, 0x429EFF, // ai_pick_hit_mode_ (used for hit mode)
 	0x423231, 0x423268,           // check_ranged_miss_
 	0x4242D4,                     // attack_crit_failure_
 	// for combat_ctd_init_ func
@@ -56,7 +57,7 @@ static const DWORD bodypartAddr[] = {
 	0x49C00C,                     // protinstTestDroppedExplosive_
 };
 
-static struct BodyParts {
+static struct {
 	long Head;
 	long Left_Arm;
 	long Right_Arm;
@@ -66,7 +67,7 @@ static struct BodyParts {
 	long Eyes;
 	long Groin;
 	long Uncalled;
-} bodypartHit;
+} bodyPartHit;
 
 struct KnockbackModifier {
 	long id;
@@ -76,7 +77,7 @@ struct KnockbackModifier {
 
 long Combat::determineHitChance; // the value of hit chance w/o any cap
 
-static std::vector<long> noBursts; // object id
+static std::vector<long> noBursts; // critter id
 
 static std::vector<KnockbackModifier> mTargets;
 static std::vector<KnockbackModifier> mAttackers;
@@ -243,26 +244,6 @@ static void __declspec(naked) compute_dmg_damage_hack() {
 	}
 }
 
-static void __declspec(naked) compute_damage_hack_knockback() {
-	static const DWORD compute_damage_hack_knockback_Ret = 0x424AF1;
-	using namespace fo;
-	__asm {
-		cmp [esi + 8], 0; // ctd.weapon
-		jz  checkHit;
-noKnockback:
-		retn;
-checkHit:
-		mov edx, [esi + 4]; // ctd.hit_mode
-		cmp edx, ATKTYPE_KICK;
-		je  knockback;
-		cmp edx, ATKTYPE_STRONGKICK;
-		jl  noKnockback;
-knockback:
-		add esp, 4; // destroy return addr
-		jmp compute_damage_hack_knockback_Ret;
-	}
-}
-
 static int __fastcall HitChanceMod(int base, fo::GameObject* critter) {
 	Combat::determineHitChance = base;
 	for (size_t i = 0; i < hitChanceMods.size(); i++) {
@@ -283,26 +264,34 @@ static void __declspec(naked) determine_to_hit_func_hack() {
 	}
 }
 
-static long __fastcall CheckDisableBurst(fo::GameObject* critter) {
+bool Combat::IsDisableBurst(fo::GameObject* critter) {
 	for (size_t i = 0; i < noBursts.size(); i++) {
-		if (noBursts[i] == critter->id) {
-			return 10; // Disable Burst (area_attack_mode - non-existent value)
-		}
+		if (noBursts[i] == critter->id) return true; 
+	}
+	return false;
+}
+
+static long __fastcall CheckDisableBurst(fo::GameObject* critter, fo::GameObject* weapon) {
+	if (fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst &&
+		Combat::IsDisableBurst(critter))
+	{
+		return 10; // Disable Burst (area_attack_mode - non-existent value)
 	}
 	return 0;
 }
 
-static void __declspec(naked) ai_pick_hit_mode_hack_noSecondary() {
+static void __declspec(naked) ai_pick_hit_mode_hack_noBurst() {
 	__asm {
 		mov  ebx, [eax + 0x94]; // cap->area_attack_mode
-		push eax;
+		//push eax;
 		push ecx;
-		mov  ecx, esi;          // source
+		mov  edx, ebp; // weapon
+		mov  ecx, esi; // source
 		call CheckDisableBurst;
 		test eax, eax;
 		cmovnz ebx, eax;
 		pop  ecx;
-		pop  eax;
+		//pop  eax;
 		retn;
 	}
 }
@@ -408,7 +397,7 @@ static void __declspec(naked) item_w_called_shot_hook() {
 	static const DWORD aimedShotRet2 = 0x478EEA;
 	__asm {
 		push edx;
-		mov  ecx, edx;       // item
+		mov  ecx, edx; // item
 		call AimedShotTest;
 		test eax, eax;
 		jg   force;
@@ -454,35 +443,38 @@ void __stdcall ForceAimedShots(DWORD pid) {
 
 static void BodypartHitChances() {
 	using fo::var::hit_location_penalty;
-	hit_location_penalty[0] = bodypartHit.Head;
-	hit_location_penalty[1] = bodypartHit.Left_Arm;
-	hit_location_penalty[2] = bodypartHit.Right_Arm;
-	hit_location_penalty[3] = bodypartHit.Torso;
-	hit_location_penalty[4] = bodypartHit.Right_Leg;
-	hit_location_penalty[5] = bodypartHit.Left_Leg;
-	hit_location_penalty[6] = bodypartHit.Eyes;
-	hit_location_penalty[7] = bodypartHit.Groin;
-	hit_location_penalty[8] = bodypartHit.Uncalled;
+	hit_location_penalty[0] = bodyPartHit.Head;
+	hit_location_penalty[1] = bodyPartHit.Left_Arm;
+	hit_location_penalty[2] = bodyPartHit.Right_Arm;
+	hit_location_penalty[3] = bodyPartHit.Torso;
+	hit_location_penalty[4] = bodyPartHit.Right_Leg;
+	hit_location_penalty[5] = bodyPartHit.Left_Leg;
+	hit_location_penalty[6] = bodyPartHit.Eyes;
+	hit_location_penalty[7] = bodyPartHit.Groin;
+	hit_location_penalty[8] = bodyPartHit.Uncalled;
 }
 
 static void BodypartHitReadConfig() {
-	bodypartHit.Head      = static_cast<long>(GetConfigInt("Misc", "BodyHit_Head", -40));
-	bodypartHit.Left_Arm  = static_cast<long>(GetConfigInt("Misc", "BodyHit_Left_Arm", -30));
-	bodypartHit.Right_Arm = static_cast<long>(GetConfigInt("Misc", "BodyHit_Right_Arm", -30));
-	bodypartHit.Torso     = static_cast<long>(GetConfigInt("Misc", "BodyHit_Torso", 0));
-	bodypartHit.Right_Leg = static_cast<long>(GetConfigInt("Misc", "BodyHit_Right_Leg", -20));
-	bodypartHit.Left_Leg  = static_cast<long>(GetConfigInt("Misc", "BodyHit_Left_Leg", -20));
-	bodypartHit.Eyes      = static_cast<long>(GetConfigInt("Misc", "BodyHit_Eyes", -60));
-	bodypartHit.Groin     = static_cast<long>(GetConfigInt("Misc", "BodyHit_Groin", -30));
-	bodypartHit.Uncalled  = static_cast<long>(GetConfigInt("Misc", "BodyHit_Torso_Uncalled", 0));
+	bodyPartHit.Head      = static_cast<long>(GetConfigInt("Misc", "BodyHit_Head",          -40));
+	bodyPartHit.Left_Arm  = static_cast<long>(GetConfigInt("Misc", "BodyHit_Left_Arm",      -30));
+	bodyPartHit.Right_Arm = static_cast<long>(GetConfigInt("Misc", "BodyHit_Right_Arm",     -30));
+	bodyPartHit.Torso     = static_cast<long>(GetConfigInt("Misc", "BodyHit_Torso",           0));
+	bodyPartHit.Right_Leg = static_cast<long>(GetConfigInt("Misc", "BodyHit_Right_Leg",     -20));
+	bodyPartHit.Left_Leg  = static_cast<long>(GetConfigInt("Misc", "BodyHit_Left_Leg",      -20));
+	bodyPartHit.Eyes      = static_cast<long>(GetConfigInt("Misc", "BodyHit_Eyes",          -60));
+	bodyPartHit.Groin     = static_cast<long>(GetConfigInt("Misc", "BodyHit_Groin",         -30));
+	bodyPartHit.Uncalled  = static_cast<long>(GetConfigInt("Misc", "BodyHit_Torso_Uncalled",  0));
 }
 
 static void __declspec(naked)  ai_pick_hit_mode_hook_bodypart() {
+	using fo::Uncalled;
 	__asm {
-		mov  ebx, 8; // replace Body_Torso with Body_Uncalled
+		mov  ebx, Uncalled; // replace Body_Torso with Body_Uncalled
 		jmp  fo::funcoffs::determine_to_hit_;
 	}
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 static void __declspec(naked) apply_damage_hack() {
 	__asm {
@@ -496,127 +488,12 @@ end:
 	}
 }
 
-static void CombatProcFix() {
-	//Ray's combat_p_proc fix
+static void CombatProcPatch() {
+	// Ray's combat_p_proc fix
 	dlog("Applying Ray's combat_p_proc patch.", DL_INIT);
 	MakeCall(0x424DD9, apply_damage_hack);
 	SafeWrite16(0x424DC6, 0x9090);
 	dlogr(" Done", DL_INIT);
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
-	fo::func::register_begin(fo::RB_RESERVED);
-	if (dist >= 3) {
-		fo::func::register_object_run_to_object(source, target, dist, -1);
-	} else {
-		fo::func::register_object_move_to_object(source, target, dist, -1);
-	}
-	long result = fo::func::register_end();
-	if (!result) {
-		__asm call fo::funcoffs::combat_turn_run_;
-		if (source->critter.damageFlags & (fo::DamageFlag::DAM_DEAD /*| fo::DamageFlag::DAM_KNOCKED_OUT | fo::DamageFlag::DAM_LOSE_TURN*/)) {
-			return -2; // break attack
-		}
-	}
-	return result; // 0 - ok, -1 - error
-}
-
-// Returns the distance to the target or -1 if the attack is not possible
-static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCalledShot, fo::GameObject* weapon) {
-	long wType = fo::func::item_w_subtype(weapon, hitMode);
-	if (wType > fo::AttackSubType::MELEE) return -1;
-
-	long distance = fo::func::make_path_func(fo::var::obj_dude, fo::var::obj_dude->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-	if (distance == 0) return -1;
-
-	// unarmed and melee weapon, check the distance and cost AP
-	long dudeAP = fo::var::obj_dude->critter.movePoints + fo::var::combat_free_move;
-	if (distance > dudeAP) return -1;
-	long cost = game::Items::item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
-	distance -= fo::func::item_w_range(fo::var::obj_dude, hitMode);
-
-	bool result = ((distance + cost) > dudeAP);
-	return (result) ? -1 : distance;
-}
-
-static int32_t __fastcall DudeMoveToAttackTarget(fo::GameObject* target, int32_t hitMode, int32_t isCalledShot) {
-	fo::GameObject* weapon = fo::func::item_hit_with(fo::var::obj_dude, hitMode);
-	long distance = DudeCanMeleeAttack(target, hitMode, isCalledShot, weapon);
-	if (distance == -1) return -1;
-
-	// check ammo
-	int result = ((fo::func::item_w_max_ammo(weapon) > 0) && !Combat::check_item_ammo_cost(weapon, hitMode));
-	return (result || CombatMoveToObject(fo::var::obj_dude, target, distance));
-}
-
-static void __declspec(naked) combat_attack_this_hack() {
-	static const DWORD combat_attack_this_hack_Ret1 = 0x4269F0;
-	static const DWORD combat_attack_this_hack_Ret2 = 0x4268AA;
-	static const DWORD combat_attack_this_hack_Ret3 = 0x426938;
-	__asm {
-		mov  ecx, esi;                     // target
-		mov  edx, [esp + 0xAC - 0x20 + 4]; // hit mode
-		push [esp + 0xAC - 0x1C + 4];      // called shot
-		call DudeMoveToAttackTarget;
-		test eax, eax;
-		jl   outRange;
-		jg   noAmmo;
-		add  esp, 4;
-		jmp  combat_attack_this_hack_Ret1; // attack target
-noAmmo:
-		add  esp, 4;
-		jmp  combat_attack_this_hack_Ret2; // no ammo report
-outRange:
-		cmp  eax, -2;
-		jz   breakAttack;
-		mov  ecx, 102; // engine code
-		retn;
-breakAttack:
-		add  esp, 4;
-		jmp  combat_attack_this_hack_Ret3;
-	}
-}
-
-static int32_t __fastcall CheckMeleeAttack(fo::GameObject* target, int32_t hitMode, int32_t isCalledShot) {
-	fo::GameObject* weapon = fo::func::item_hit_with(fo::var::obj_dude, hitMode);
-	return DudeCanMeleeAttack(target, hitMode, isCalledShot, weapon);
-}
-
-static int16_t setHitColor = 0;
-
-static void __declspec(naked) combat_to_hit_hack() {
-	static const DWORD combat_to_hit_hack_Ret = 0x426786;
-	__asm {
-		cmp  eax, 2;                       // out of range result combat_check_bad_shot_
-		je   checkMelee;
-		xor  eax,eax;                      // engine code
-		retn 8;
-checkMelee:
-		mov  ecx, esi;                     // target
-		mov  edx, [esp + 0x18 - 0x14 + 4]; // hit mode
-		push [esp + 0x18 - 0x18 + 4];      // called shot
-		call CheckMeleeAttack;
-		test eax, eax;
-		mov  eax, 0;
-		jge  canAttack;                    // >=0
-		retn 8;
-canAttack:
-		mov  setHitColor, 1;
-		mov  [esp], eax;                   // set NoRange for determine_to_hit_func_
-		jmp  combat_to_hit_hack_Ret;
-	}
-}
-
-static void __declspec(naked) gmouse_bk_process_hack() {
-	__asm {
-		mov   al, ds:[FO_VAR_WhiteColor]; // default color
-		cmp   setHitColor, 0;
-		cmovne ax, ds:[FO_VAR_DarkYellowColor];
-		mov   setHitColor, 0;
-		retn;
-	}
 }
 
 static void ResetOnGameLoad() {
@@ -633,7 +510,9 @@ static void ResetOnGameLoad() {
 void Combat::init() {
 
 	CombatBlock::init();
-	CombatProcFix();
+	CombatExt::init();
+
+	CombatProcPatch();
 
 	MakeCall(0x424B76, compute_damage_hack, 2);     // KnockbackMod
 	MakeJump(0x4136D3, compute_dmg_damage_hack);    // for op_critter_dmg
@@ -641,8 +520,8 @@ void Combat::init() {
 	MakeCall(0x424791, determine_to_hit_func_hack); // HitChanceMod
 	BlockCall(0x424796);
 
-	// Actually disables all secondary attacks for the critter, regardless of whether the weapon has a burst attack
-	MakeCall(0x429E44, ai_pick_hit_mode_hack_noSecondary, 1);   // NoBurst
+	// Disables second burst attacks for the critter
+	MakeCall(0x429E44, ai_pick_hit_mode_hack_noBurst, 1);
 
 	if (GetConfigInt("Misc", "CheckWeaponAmmoCost", 0)) {
 		MakeCall(0x4234B3, compute_spray_hack, 1);
@@ -652,16 +531,6 @@ void Combat::init() {
 	}
 
 	SimplePatch<DWORD>(0x424FA7, "Misc", "KnockoutTime", 35, 35, 100);
-
-	if (GetConfigInt("Misc", "DisablePunchKnockback", 0)) {
-		MakeCall(0x424AD7, compute_damage_hack_knockback, 1);
-	}
-
-	if (GetConfigInt("Misc", "AutoMoveToAttack", 0)) {
-		MakeCall(0x42690C, combat_attack_this_hack);
-		MakeCall(0x42677A, combat_to_hit_hack);
-		MakeCall(0x44BBD2, gmouse_bk_process_hack);
-	}
 
 	BodypartHitReadConfig();
 	LoadGameHook::OnBeforeGameStart() += BodypartHitChances; // set on start & load
