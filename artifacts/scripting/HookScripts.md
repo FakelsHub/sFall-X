@@ -385,17 +385,17 @@ By default, weapon will shoot when at least 1 round is left, regardless of ammo 
 To add proper check for ammo before shooting and proper calculation of number of burst rounds (hook type 1 and 2 in arg4), set **Misc**, **CheckWeaponAmmoCost=1** in ddraw.ini
 
 ```
-Item    arg0 - weapon
-int     arg1 - Number of bullets in burst (1 for single shots)
-int     arg2 - Ammo cost calculated by original function (this is basically 2 for Super Cattle Prod and Mega Power Fist)
+Item    arg0 - Weapon
+int     arg1 - Number of bullets in burst or 1 for single shots
+int     arg2 - Number of bullets that will be consumed, calculated by cost of the original function (this is basically 2 for Super Cattle Prod and Mega Power Fist)
+               for hook type 2 this is the cost of ammo
 int     arg3 - Type of hook:
                     0 - when subtracting ammo after single shot attack
                     1 - when checking for "out of ammo" before attack
                     2 - when calculating number of burst rounds
                     3 - when subtracting ammo after burst attack)
 
-int     ret0 - new ammo cost value (set to 0 for unlimited ammo)
-               Warning: for hook a type 2, you should return the value of the cost, instead of the new ammo count.
+int     ret0 - new number of bullets, or ammo cost value for hook type 2 (set to 0 for unlimited ammo)
 ```
 -------------------------------------------
 
@@ -448,7 +448,9 @@ int     ret0 - overrides hard-coded handler (-1 - use engine handler, any other 
 
 Runs when checking an attempt to steal or plant an item in other inventory using Steal skill.
 
-This is fired before the default handlers are called, which you can override. In this case you MUST provide message of the result to player (**"You steal the %s", "You are caught planting the %s"**, etc.). Example message (vanilla behavior):
+This is fired before the default handlers are called, which you can override. In this case you MUST provide message of the result to player (**"You steal the %s", "You are caught planting the %s"**, etc.).
+
+Example message (vanilla behavior):
 `display_msg(sprintf(mstr_skill(570 + (isSuccess != false) + arg4*2), obj_name(arg3)));`
 
 ```
@@ -490,15 +492,13 @@ int     ret0 - overrides the returned result of the function:
 
 Runs before moving items between inventory slots in dude interface. You can override the action.
 What you can NOT do with this hook:
-```
 - force moving items to inappropriate slots (like gun in armor slot)
-```
+
 What you can do:
-```
 - restrict player from using specific weapons or armors
 - add AP costs for all inventory movement including reloading
 - apply or remove some special scripted effects depending on PC's armor
-```
+
 ```
 int     arg0 - Target slot:
                 0 - main backpack
@@ -521,6 +521,7 @@ int     ret0 - Override setting (-1 - use engine handler, any other value - prev
 
 Runs before causing a critter or the player to wield/unwield an armor or a weapon (except when using the inventory by PC).
 An example usage would be to change critter art depending on armor being used or to dynamically customize weapon animations.
+
 **NOTE:** when replacing a previously wielded armor or weapon, the unwielding hook will not be executed.
 If you need to rely on this, try checking if armor/weapon is already equipped when wielding hook is executed.
 
