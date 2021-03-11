@@ -367,7 +367,7 @@ static void __declspec(naked) AmmoCostHook() {
 		mov  ecx, 3;               // hook type burst
 skip:
 		xchg eax, edx;
-		push eax;                  // rounds in attack
+		push eax;                  // rounds in attack ref
 		call AmmoCostHook_Script;  // edx - weapon
 		retn;
 	}
@@ -635,7 +635,7 @@ void Inject_ItemDamageHook() {
 }
 
 void Inject_AmmoCostHook() {
-	HookCall(0x423A7C, AmmoCostHook);
+	HookCall(0x423A7C, AmmoCostHook); // compute_attack_
 }
 
 void Inject_CombatTurnHook() {

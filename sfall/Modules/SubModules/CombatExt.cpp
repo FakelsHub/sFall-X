@@ -73,7 +73,7 @@ static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCall
 	return (result) ? -1 : distance;
 }
 
-static int32_t __fastcall DudeMoveToAttackTarget(fo::GameObject* target, int32_t hitMode, int32_t isCalledShot) {
+static long __fastcall DudeMoveToAttackTarget(fo::GameObject* target, fo::AttackType hitMode, long isCalledShot) {
 	fo::GameObject* weapon = fo::func::item_hit_with(fo::var::obj_dude, hitMode);
 	long distance = DudeCanMeleeAttack(target, hitMode, isCalledShot, weapon);
 	if (distance == -1) return -1;

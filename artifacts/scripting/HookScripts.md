@@ -395,6 +395,7 @@ int     arg3 - Type of hook:
                     3 - when subtracting ammo after burst attack)
 
 int     ret0 - new ammo cost value (set to 0 for unlimited ammo)
+               Warning: for hook a type 2, you should return the value of the cost, instead of the new ammo count.
 ```
 -------------------------------------------
 

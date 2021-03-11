@@ -77,6 +77,11 @@ struct KnockbackModifier {
 
 long Combat::determineHitChance; // the value of hit chance w/o any cap
 
+//struct DisableSecondMode {
+//	long noBurst;
+//	long noAll;
+//};
+
 static std::vector<long> noBursts; // critter id
 
 static std::vector<KnockbackModifier> mTargets;
@@ -90,34 +95,40 @@ static bool hookedAimedShot;
 static std::vector<DWORD> disabledAS;
 static std::vector<DWORD> forcedAS;
 
-DWORD __fastcall Combat::check_item_ammo_cost(fo::GameObject* weapon, DWORD hitMode) {
-	DWORD rounds = 1;
+static bool checkWeaponAmmoCost;
 
-	long anim = fo::func::item_w_anim_weap(weapon, (fo::AttackType)hitMode);
+// Compares the cost (required count of rounds) for a one ammo and the count of current ammo to make an attack or other check
+long __fastcall Combat::check_item_ammo_cost(fo::GameObject* weapon, fo::AttackType hitMode) {
+	long currAmmo = fo::func::item_w_curr_ammo(weapon);
+	if (checkWeaponAmmoCost == false || currAmmo <= 0) return currAmmo;
+
+	long rounds = 1; // default ammo for single shoot
+
+	long anim = fo::func::item_w_anim_weap(weapon, hitMode);
 	if (anim == fo::Animation::ANIM_fire_burst || anim == fo::Animation::ANIM_fire_continuous) {
 		rounds = fo::func::item_w_rounds(weapon); // ammo in burst
 	}
-	if (HookScripts::IsInjectHook(HOOK_AMMOCOST)) {
-		AmmoCostHook_Script(1, weapon, rounds);   // get rounds cost from hook
-	} else if (rounds == 1) {
-		fo::func::item_w_compute_ammo_cost(weapon, &rounds);
-	}
-	long currAmmo = fo::func::item_w_curr_ammo(weapon);
 
-	long cost = 1; // default cost
-	if (currAmmo > 0) {
-		cost = rounds / currAmmo;
-		if (rounds % currAmmo) cost++; // round up
+	DWORD newRounds = rounds;
+
+	if (HookScripts::IsInjectHook(HOOK_AMMOCOST)) {
+		AmmoCostHook_Script(1, weapon, newRounds); // в newRounds возвращается новое значение "ammo" умноженное на стоимость
 	}
-	return (cost > currAmmo) ? 0 : 1;  // 0 - this will force "Out of ammo", 1 - this will force success (enough ammo)
+	else if (rounds == 1) { // NOTE: it doesn't make sense to call the item_w_compute_ammo_cost for rounds greater than one
+		fo::func::item_w_compute_ammo_cost(weapon, &newRounds);
+	}
+
+	// calculate the cost
+	long cost = (newRounds != rounds) ? newRounds / rounds : 1; // 1 - default cost
+	return (cost > currAmmo) ? 0 : currAmmo; // 0 - this will force "Not Enough Ammo"
 }
 
 // adds check for weapons which require more than 1 ammo for single shot (super cattle prod & mega power fist) and burst rounds
 static void __declspec(naked) combat_check_bad_shot_hook() {
 	__asm {
 		push edx;
-		push ecx;         // weapon
-		mov  edx, edi;    // hitMode
+		push ecx;      // weapon
+		mov  edx, edi; // hitMode
 		call Combat::check_item_ammo_cost;
 		pop  ecx;
 		pop  edx;
@@ -130,9 +141,9 @@ static void __declspec(naked) ai_search_inven_weap_hook() {
 	using namespace fo;
 	__asm {
 		push ecx;
-		mov  ecx, eax;                      // weapon
-		mov  edx, ATKTYPE_RWEAPON_PRIMARY;  // hitMode
-		call Combat::check_item_ammo_cost;  // enough ammo?
+		mov  edx, ATKTYPE_RWEAPON_PRIMARY; // hitMode
+		mov  ecx, eax;                     // weapon
+		call Combat::check_item_ammo_cost; // enough ammo?
 		pop  ecx;
 		retn;
 	}
@@ -161,33 +172,35 @@ tryAttack:
 	}
 }
 
-static DWORD __fastcall divide_burst_rounds_by_ammo_cost(fo::GameObject* weapon, register DWORD currAmmo, DWORD burstRounds) {
-	DWORD rounds = 1; // default multiply
+/*** The return value should set the correct count of rounds for the burst calculated based on the cost ***/
+static long __fastcall divide_burst_rounds_by_ammo_cost(long currAmmo, fo::GameObject* weapon, long burstRounds) {
+	DWORD roundsCost = 1; // default burst cost
 
 	if (HookScripts::IsInjectHook(HOOK_AMMOCOST)) {
-		rounds = burstRounds;             // rounds in burst (количество патронов расходуемые в очереди)
-		AmmoCostHook_Script(2, weapon, rounds);
+		roundsCost = burstRounds;                   // rounds in burst (количество патронов расходуемые в очереди)
+		AmmoCostHook_Script(2, weapon, roundsCost); // в roundsCost возвращаетя стоимость!!!
 	}
 
-	DWORD cost = burstRounds * rounds;    // so much ammo is required for this burst (количество патронов в очереди умноженное на 1 или на значения возвращаемое из скрипта)
+	long cost = burstRounds * roundsCost; // so much ammo is required for this burst (количество патронов в очереди умноженное на 1 или на значение возвращаемое из HOOK_AMMOCOST)
 	if (cost > currAmmo) cost = currAmmo; // if cost ammo more than current ammo, set it to current
 
-	return (cost / rounds);               // divide back to get proper number of rounds for damage calculations
+	return (cost / roundsCost);           // divide back to get proper number of rounds for damage calculations
 }
 
 static void __declspec(naked) compute_spray_hack() {
-	__asm {
-		push edx;         // weapon
-		push ecx;         // current ammo in weapon
-		xchg ecx, edx;
-		push eax;         // eax - rounds in burst attack, need to set ebp
+	__asm { // ebp = current ammo
+//		push edx;      // weapon
+//		push ecx;      // current ammo in weapon
+		push eax;      // rounds in burst attack, need to set ebp
 		call divide_burst_rounds_by_ammo_cost;
-		mov  ebp, eax;    // overwriten code (в ebp устанавливаем правильное значение)
-		pop  ecx;
-		pop  edx;
+		mov  ebp, eax; // overwriten code
+//		pop  ecx;
+//		pop  edx;
 		retn;
 	}
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 static double ApplyModifiers(std::vector<KnockbackModifier>* mods, fo::GameObject* object, double val) {
 	for (size_t i = 0; i < mods->size(); i++) {
@@ -266,16 +279,17 @@ static void __declspec(naked) determine_to_hit_func_hack() {
 
 bool Combat::IsDisableBurst(fo::GameObject* critter) {
 	for (size_t i = 0; i < noBursts.size(); i++) {
-		if (noBursts[i] == critter->id) return true; 
+		if (noBursts[i] == critter->id) return true;
 	}
 	return false;
 }
 
 static long __fastcall CheckDisableBurst(fo::GameObject* critter, fo::GameObject* weapon) {
-	if (fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst &&
-		Combat::IsDisableBurst(critter))
-	{
-		return 10; // Disable Burst (area_attack_mode - non-existent value)
+	if (Combat::IsDisableBurst(critter)) {
+		long anim = fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY);
+		if (anim == fo::Animation::ANIM_fire_burst || anim == fo::Animation::ANIM_fire_continuous) {
+			return 10; // Disable Burst (area_attack_mode - non-existent value)
+		}
 	}
 	return 0;
 }
@@ -523,10 +537,11 @@ void Combat::init() {
 	// Disables second burst attacks for the critter
 	MakeCall(0x429E44, ai_pick_hit_mode_hack_noBurst, 1);
 
-	if (GetConfigInt("Misc", "CheckWeaponAmmoCost", 0)) {
+	checkWeaponAmmoCost = (GetConfigInt("Misc", "CheckWeaponAmmoCost", 0) != 0);
+	if (checkWeaponAmmoCost) {
 		MakeCall(0x4234B3, compute_spray_hack, 1);
 		HookCall(0x4266E9, combat_check_bad_shot_hook);
-		HookCall(0x429A37, ai_search_inven_weap_hook);
+		HookCall(0x429A37, ai_search_inven_weap_hook); // check if there is enough ammo to shoot
 		HookCall(0x42A95D, ai_try_attack_hook); // jz func
 	}
 
