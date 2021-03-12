@@ -946,7 +946,7 @@ void ScriptExtender::init() {
 		}
 	}
 
-	alwaysFindScripts = isDebug && (iniGetInt("Debugging", "AlwaysFindScripts", 0, ::sfall::ddrawIni) != 0);
+	alwaysFindScripts = isDebug && (IniReader::GetIntDefaultConfig("Debugging", "AlwaysFindScripts", 0) != 0);
 
 	MakeJump(0x4A390C, scr_find_sid_from_program_hack);
 	MakeJump(0x4A5E34, scr_ptr_hack);

@@ -358,6 +358,7 @@
     <ClInclude Include="Modules\SubModules\CombatExt.h">
       <Filter>Modules\SubModules</Filter>
     </ClInclude>
+    <ClInclude Include="IniReader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -662,6 +663,7 @@
     <ClCompile Include="Modules\SubModules\CombatExt.cpp">
       <Filter>Modules\SubModules</Filter>
     </ClCompile>
+    <ClCompile Include="IniReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="version.rc" />

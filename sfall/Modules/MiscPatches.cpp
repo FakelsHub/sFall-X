@@ -31,7 +31,7 @@ static char mapName[65]       = {};
 static char configName[65]    = {};
 static char patchName[65]     = {};
 static char versionString[65] = {};
-static char tempBuffer[65];
+static char messageBuffer[65];
 
 static int* scriptDialog = nullptr;
 
@@ -347,14 +347,14 @@ static long __fastcall HealthPointText(fo::GameObject* critter) {
 
 	if (displayElectricalStat > 1) {
 		const char* msg = fo::MessageSearch(&fo::var::inventry_message_file, 7); // default text
-		sprintf(tempBuffer, hpFmt, msg, curHP, maxHP);
+		sprintf(messageBuffer, hpFmt, msg, curHP, maxHP);
 		return 0;
 	} else {
-		sprintf(tempBuffer, hpFmt, hitPointMsg, curHP, maxHP);
+		sprintf(messageBuffer, hpFmt, hitPointMsg, curHP, maxHP);
 	}
 
 	int widthText = 0;
-	_asm lea  eax, tempBuffer;
+	_asm lea  eax, messageBuffer;
 	_asm call ds:[FO_VAR_text_width];
 	_asm mov  widthText, eax;
 
@@ -366,12 +366,12 @@ static long __fastcall CutoffName(const char* name) {
 	do {
 		char c = name[i];
 		if (!c) break;
-		tempBuffer[i] = c;
+		messageBuffer[i] = c;
 		if (c == ' ') j = i; // whitespace
 	} while (++i < 16);
 	if (j && i >= 10) i = j;
 	if (i > 10) i = 10;      // max 10 characters
-	tempBuffer[i] = '\0';
+	messageBuffer[i] = '\0';
 	return 0;
 }
 
@@ -385,7 +385,7 @@ static void __declspec(naked) display_stats_hook_hp() {
 		call fo::funcoffs::critter_name_;
 		mov  ecx, eax;
 		call CutoffName;
-		lea  edx, tempBuffer;                 // DisplayText
+		lea  edx, messageBuffer;              // DisplayText
 		mov  al, ds:[FO_VAR_GreenColor];
 		mov  ecx, [esp + 4];                  // ToWidth
 		push eax;
@@ -398,7 +398,7 @@ noName:
 		mov  ecx, eax;                        // critter
 		call HealthPointText;
 		add  edi, eax;                        // x shift position
-		lea  eax, tempBuffer;                 // DisplayText
+		lea  eax, messageBuffer;              // DisplayText
 		pop  ecx;                             // ToWidth
 		retn;
 	}
