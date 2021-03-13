@@ -385,17 +385,17 @@ By default, weapon will shoot when at least 1 round is left, regardless of ammo 
 To add proper check for ammo before shooting and proper calculation of number of burst rounds (hook type 1 and 2 in arg4), set **Misc**, **CheckWeaponAmmoCost=1** in ddraw.ini
 
 ```
-Item    arg0 - Weapon
+Item    arg0 - The weapon
 int     arg1 - Number of bullets in burst or 1 for single shots
-int     arg2 - Number of bullets that will be consumed, calculated by cost of the original function (this is basically 2 for Super Cattle Prod and Mega Power Fist)
-               for hook type 2 this is the cost of ammo
+int     arg2 - The amount of ammo that will be consumed, calculated by cost of the original function (this is basically 2 for Super Cattle Prod and Mega Power Fist)
+               Note: for hook type 2, this value is the cost of ammo (default is always 1)
 int     arg3 - Type of hook:
                     0 - when subtracting ammo after single shot attack
                     1 - when checking for "out of ammo" before attack
                     2 - when calculating number of burst rounds
                     3 - when subtracting ammo after burst attack)
 
-int     ret0 - new number of bullets, or ammo cost value for hook type 2 (set to 0 for unlimited ammo)
+int     ret0 - The new amount of ammo, or ammo cost value for hook type 2 (set to 0 for unlimited ammo)
 ```
 -------------------------------------------
 

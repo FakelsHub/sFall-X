@@ -1605,10 +1605,10 @@ end:
 static void __declspec(naked) ai_combat_turn_run_hook() {
 	__asm {
 		call  fo::funcoffs::combat_turn_run_;
-		movzx dx, word ptr [esi + damageFlags]; // combat_data.results
-		test  dx, DAM_DEAD or DAM_KNOCKED_OUT or DAM_LOSE_TURN;
+		mov   edx, [esi + damageFlags]; // combat_data.results
+		test  edx, DAM_DEAD or DAM_KNOCKED_OUT or DAM_LOSE_TURN;
 		jz    end;
-		mov   [esi + movePoints], 0;            // pobj.curr_mp (source reset ap)
+		mov   [esi + movePoints], 0; // pobj.curr_mp (source reset ap)
 end:
 		retn;
 	}
@@ -2941,6 +2941,18 @@ skip:
 	}
 }
 
+static void __declspec(naked) op_create_object_sid_hack() {
+	__asm {
+		mov  ebx, [esp + 0x50 - 0x20 + 4]; // createObj
+		mov  edx, 1; // 'start' procedure
+		mov  eax, [ebx + scriptId];
+		call fo::funcoffs::exec_script_proc_;
+		mov  edx, ebx;
+		mov  eax, esi;
+		retn;
+	}
+}
+
 void BugFixes::init()
 {
 	#ifndef NDEBUG
@@ -3706,6 +3718,9 @@ void BugFixes::init()
 	// Fix for the "Leave" event procedure of the window region not being triggered when the mouse cursor moved to a non-scripted window
 	MakeJump(0x4B6C3B, checkAllRegions_hack);
 	HookCall(0x4B6C13, checkAllRegions_hook);
+
+	// Fix a not-running the attached script of the object being created
+	MakeCall(0x4551C0, op_create_object_sid_hack, 1);
 }
 
 }
