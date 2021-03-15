@@ -51,7 +51,7 @@ public:
 
 	static long __fastcall check_item_ammo_cost(fo::GameObject* weapon, fo::AttackType hitMode);
 
-	static bool IsDisableBurst(fo::GameObject* critter);
+	static bool IsBurstDisabled(fo::GameObject* critter);
 };
 
 void __stdcall SetHitChanceMax(fo::GameObject* critter, DWORD maximum, DWORD mod);

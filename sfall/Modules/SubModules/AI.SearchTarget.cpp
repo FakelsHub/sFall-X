@@ -371,10 +371,7 @@ FindNewTargets:
 	FindTargetHook_Invoke(targets, source); // [HOOK_FINDTARGET] // TODO: Нужно добавлять тип крючка для вызовов когда происходит проверки для присоединею/отсоединение к бою
 
 	// [add ext] Переключаем режим с 1 к 2
-	if (type & 1) {
-		type ^= 1; // unset
-		type |= 2; // set type 2
-	}
+	if (type & 1) type ^= 3; // unset 1 and set type 2
 
 	// select the first available target
 	for (size_t i = 0; i < 4; i++)

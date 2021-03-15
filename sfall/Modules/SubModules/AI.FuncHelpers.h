@@ -38,6 +38,8 @@ public:
 	// Получает стоимость очков действия для оружия и цели атакующего
 	static long GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* target, fo::GameObject* weapon);
 
+	static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist);
+
 	static long CombatMoveToTile(fo::GameObject* source, long tile, long dist);
 
 	static long CombatRunToTile(fo::GameObject* source, long tile, long dist);

@@ -9,6 +9,8 @@
 #include "..\..\main.h"
 #include "..\..\Utils.h"
 
+#include "..\Combat.h"
+
 #include "..\..\Game\items.h"
 #include "..\..\Game\objects.h"
 
@@ -352,17 +354,13 @@ defaultMove:
 /////////////////////////////////////////////////////////////////////////////////////////
 
 static bool LookupOnGround = false;
-//static bool LookupContainers = false;
 static bool LootingCorpses = false;
 static fo::GameObject* itemCorpse;
 
 static long __fastcall pickup_item(fo::GameObject* source, fo::GameObject* item) {
 	itemCorpse = nullptr;
-	long result = fo::func::item_move(item->owner, source, item, 1);
-	if (result) {
-
-		//fo::func::display_print(msg);
-	}
+	long result = fo::func::item_move_force(item->owner, source, item, 1);
+	if (result) fo::func::debug_printf("\n[AI] Error pickup item!");
 	return result;
 }
 
@@ -539,7 +537,7 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 }
 
 // Поиск наилучшего оружия перед совершением атаки (в первом цикле ai_try_attack_)
-// Атакующий попытается найти лучшее оружие в своем инвентаре или подобрать близлежащее на земле оружие
+// Атакующий попытается найти лучшее оружие в своем инвентаре или подобрать близлежащее на оружие
 // Executed once when the NPC starts attacking
 static fo::AttackType AISearchBestWeaponOnFirstAttack(fo::GameObject* source, fo::GameObject* target, fo::GameObject* &weapon, fo::AttackType hitMode) {
 
@@ -555,12 +553,12 @@ static fo::AttackType AISearchBestWeaponOnFirstAttack(fo::GameObject* source, fo
 		if (!item) break;
 		if (itemHand && itemHand->protoId == item->protoId) continue;
 
-		if ((source->critter.getAP() >= fo::func::item_w_primary_mp_cost(item)) &&
+		if ((source->critter.getAP() >= game::Items::item_weapon_mp_cost(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0)) &&
 			fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY))
 		{
 			if (item->item.ammoPid == -1 || // оружие не имеет патронов
 				fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) == fo::AttackSubType::THROWING || // Зачем здесь метательные?
-				(fo::func::item_w_curr_ammo(item) || AIHelpers::CritterHaveAmmo(source, item)))
+				(Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) || AIHelpers::CritterHaveAmmo(source, item)))
 			{
 				if (!fo::func::combat_safety_invalidate_weapon_func(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, target, 0, 0)) { // weapon safety
 					bestWeapon = fo::func::ai_best_weapon(source, bestWeapon, item, target);
@@ -605,7 +603,7 @@ static fo::AttackType AISearchBestWeaponOnFirstAttack(fo::GameObject* source, fo
 
 				if (itemRetrieve && itemRetrieve->protoId == itemGround->protoId) {
 					// if there is not enough action points to use the weapon, then just pick up this item
-					bestWeapon = (!itemHand || source->critter.getAP() >= fo::func::item_w_primary_mp_cost(itemRetrieve)) ? itemRetrieve : nullptr;
+					bestWeapon = (!itemHand || source->critter.getAP() >= game::Items::item_weapon_mp_cost(source, itemRetrieve, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0)) ? itemRetrieve : nullptr;
 				}
 			}
 		}
@@ -655,11 +653,11 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 	if (attackCounter == 0 && hitMode == fo::AttackType::ATKTYPE_RWEAPON_PRIMARY && dist <= 3) {
 		// атакующий расположен достаточно близко к цели, его оружие имеет стрельбу очередью (burst attack)
 		// принудительно использовать втоичный режим стрельбы если атака по цели будет безопасной
-		if (fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst) {
+		if (!Combat::IsBurstDisabled(source) && fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst) {
 			if (statIQ < 5 || ((weapon->item.charges - fo::func::item_w_rounds(weapon) > 5 || AIHelpers::CritterHaveAmmo(source, weapon) > 5) &&
 				!fo::func::combat_safety_invalidate_weapon_func(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY, target, 0, 0))) // weapon is safety
 			{
-				hitMode = fo::AttackType::ATKTYPE_RWEAPON_SECONDARY; // TODO: скриптово запрещается испоьзование вторичного режима
+				hitMode = fo::AttackType::ATKTYPE_RWEAPON_SECONDARY;
 				DEV_PRINTF("\n[AI] Force use burst attack.");
 			}
 		}
@@ -899,13 +897,13 @@ static fo::GameObject* FindSafeWeaponAttack(fo::GameObject* source, fo::GameObje
 		// проверить дальность оружия до цели
 		if (AIHelpers::AttackInRange(source, item, distance) == false) continue;
 
-		fo::AttackType hitMode = (fo::AttackType)fo::func::ai_pick_hit_mode(source, item, target);
+		outHitMode = (fo::AttackType)fo::func::ai_pick_hit_mode(source, item, target);
 
-		if (game::Items::item_weapon_mp_cost(source, item, hitMode, 0) <= source->critter.getAP() && fo::func::ai_can_use_weapon(source, item, hitMode))
+		if (game::Items::item_weapon_mp_cost(source, item, outHitMode, 0) <= source->critter.getAP() && fo::func::ai_can_use_weapon(source, item, outHitMode))
 		{
 			if ((item->item.ammoPid == -1 || // оружие не имеет магазина для патронов
-				fo::func::item_w_curr_ammo(item)) &&
-				!fo::func::combat_safety_invalidate_weapon_func(source, pickWeapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, target, 0, 0)) // weapon is safety
+				Combat::check_item_ammo_cost(item, outHitMode)) &&
+				!fo::func::combat_safety_invalidate_weapon_func(source, pickWeapon, outHitMode, target, 0, 0)) // weapon is safety
 			{
 				pickWeapon = fo::func::ai_best_weapon(source, pickWeapon, item, target);
 			}
@@ -956,7 +954,6 @@ static AIBehavior::AttackResult __fastcall AICheckResultAfterAttack(fo::GameObje
 		fo::GameObject* findWeapon = FindSafeWeaponAttack(source, target, handItem, outHitMode);
 		if (findWeapon) {
 			DEV_PRINTF("\n[AI] Attack result: SWITCH WEAPON\n");
-
 
 			fo::func::inven_wield(source, findWeapon, fo::InvenType::INVEN_TYPE_RIGHT_HAND);
 

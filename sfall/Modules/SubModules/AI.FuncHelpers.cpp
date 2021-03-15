@@ -7,6 +7,7 @@
 #include "..\..\FalloutEngine\Fallout2.h"
 #include "..\..\Utils.h"
 #include "..\AI.h"
+#include "..\Combat.h"
 
 #include "..\..\Game\items.h"
 
@@ -148,15 +149,36 @@ fo::GameObject* AIHelpers::GetInventoryWeapon(fo::GameObject* source, bool check
 		if (!item) break;
 
 		if ((!bestWeapon || item->protoId != bestWeapon->protoId) &&
-			(!checkAP || fo::func::item_w_primary_mp_cost(item) <= source->critter.getAP()) &&
+			(!checkAP || game::Items::item_weapon_mp_cost(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0) <= source->critter.getAP()) &&
 			(fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) &&
-			((fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) != fo::AttackSubType::GUNS) ||
-			 fo::func::item_w_curr_ammo(item) || fo::func::ai_have_ammo(source, item, 0)))
+			(item->item.ammoPid == -1 || fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) != fo::AttackSubType::GUNS) ||
+			 fo::func::item_w_curr_ammo(item) || fo::func::ai_have_ammo(source, item, 0))
 		{
 			bestWeapon = BestWeaponLite(source, bestWeapon, item);
 		}
 	}
 	return bestWeapon;
+}
+
+long AIHelpers::CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
+	fo::func::register_begin(fo::RB_RESERVED);
+	if (dist >= 3) {
+		fo::func::register_object_run_to_object(source, target, dist, -1);
+	} else {
+		fo::func::register_object_move_to_object(source, target, dist, -1);
+	}
+	long result = fo::func::register_end();
+	if (!result) {
+		__asm call fo::funcoffs::combat_turn_run_;
+		if (source == fo::var::obj_dude) {
+			if (source->critter.IsDead()) { /*| fo::DamageFlag::DAM_KNOCKED_OUT | fo::DamageFlag::DAM_LOSE_TURN*/
+				return -2; // break attack for dude
+			}
+		} else if (source->critter.IsNotActiveOrDead()) {
+			source->critter.movePoints = 0; // для предотвращения дальнейших действий в бою
+		}
+	}
+	return result; // 0 - ok, -1 - error
 }
 
 long AIHelpers::CombatMoveToTile(fo::GameObject* source, long tile, long dist) {
@@ -165,7 +187,7 @@ long AIHelpers::CombatMoveToTile(fo::GameObject* source, long tile, long dist) {
 	long result = fo::func::register_end();
 	if (!result) {
 		__asm call fo::funcoffs::combat_turn_run_;
-		if (source->critter.IsNotActiveAndDead()) {
+		if (source->critter.IsNotActiveOrDead()) {
 			source->critter.movePoints = 0; // для предотвращения дальнейших действий в бою
 		}
 	}
@@ -178,7 +200,7 @@ long AIHelpers::CombatRunToTile(fo::GameObject* source, long tile, long dist) {
 	long result = fo::func::register_end();
 	if (!result) {
 		__asm call fo::funcoffs::combat_turn_run_;
-		if (source->critter.IsNotActiveAndDead()) {
+		if (source->critter.IsNotActiveOrDead()) {
 			source->critter.movePoints = 0; // для предотвращения дальнейших действий в бою
 		}
 	}
@@ -318,6 +340,7 @@ bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapo
 			//long volume = fo::func::gsound_compute_relative_volume(critter);
 			//const char* sfxName = fo::func::gsnd_build_weapon_sfx_name(0, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
 			//fo::func::gsound_play_sfx_file_volume(sfxName, volume);
+
 			fo::func::ai_magic_hands(critter, weapon, 5002);
 
 			if (critter->critter.getAP() > reloadCost) {

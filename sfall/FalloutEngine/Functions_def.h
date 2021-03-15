@@ -52,6 +52,7 @@ WRAP_WATCOM_FFUNC3(fo::GameObject*, inven_find_type, fo::GameObject*, critter, l
 WRAP_WATCOM_FFUNC3(long, inven_wield, fo::GameObject*, critter, fo::GameObject*, item, long, slot)
 WRAP_WATCOM_FFUNC3(long, item_add_force, fo::GameObject*, critter, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC4(long, item_move, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
+WRAP_WATCOM_FFUNC4(long, item_move_force, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC3(long, item_w_mp_cost, fo::GameObject*, source, long, hitMode, long, isCalled)
 WRAP_WATCOM_FFUNC7(void, make_straight_path_func, fo::GameObject*, objFrom, DWORD, tileFrom, DWORD, tileTo, void*, rotationPtr, DWORD*, result, long, flags, void*, func)
 WRAP_WATCOM_FFUNC3(long, message_find, DWORD*, msgFile, long, msgNumber, DWORD*, outBuf)

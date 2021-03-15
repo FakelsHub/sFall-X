@@ -6,10 +6,11 @@
 
 #include "..\..\main.h"
 #include "..\..\FalloutEngine\Fallout2.h"
-
 #include "..\Combat.h"
 
 #include "..\..\Game\items.h"
+
+#include "AI.FuncHelpers.h"
 
 #include "CombatExt.h"
 
@@ -38,23 +39,6 @@ knockback:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
-	fo::func::register_begin(fo::RB_RESERVED);
-	if (dist >= 3) {
-		fo::func::register_object_run_to_object(source, target, dist, -1);
-	} else {
-		fo::func::register_object_move_to_object(source, target, dist, -1);
-	}
-	long result = fo::func::register_end();
-	if (!result) {
-		__asm call fo::funcoffs::combat_turn_run_;
-		if (source->critter.damageFlags & (fo::DamageFlag::DAM_DEAD /*| fo::DamageFlag::DAM_KNOCKED_OUT | fo::DamageFlag::DAM_LOSE_TURN*/)) {
-			return -2; // break attack
-		}
-	}
-	return result; // 0 - ok, -1 - error
-}
-
 // Returns the distance to the target or -1 if the attack is not possible
 static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCalledShot, fo::GameObject* weapon) {
 	long wType = fo::func::item_w_subtype(weapon, hitMode);
@@ -80,7 +64,7 @@ static long __fastcall DudeMoveToAttackTarget(fo::GameObject* target, fo::Attack
 
 	// check ammo
 	int result = ((fo::func::item_w_max_ammo(weapon) > 0) && !Combat::check_item_ammo_cost(weapon, hitMode));
-	return (result || CombatMoveToObject(fo::var::obj_dude, target, distance));
+	return (result || AIHelpers::CombatMoveToObject(fo::var::obj_dude, target, distance));
 }
 
 static void __declspec(naked) combat_attack_this_hack() {

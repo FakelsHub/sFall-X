@@ -11,6 +11,7 @@
 #include "..\..\main.h"
 #include "..\..\Utils.h"
 //#include "..\LoadGameHook.h"
+#include "..\Combat.h"
 
 #include "..\..\Game\items.h"
 
@@ -42,7 +43,7 @@ CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::Ga
 		if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
 			return CombatShootResult::CrippledHands; // crippled both hands
 		}
-		if (fo::func::item_w_max_ammo(item) > 0 && item->item.charges <= 0) return CombatShootResult::NoAmmo;
+		if (fo::func::item_w_max_ammo(item) > 0 && Combat::check_item_ammo_cost(item, hitMode) <= 0) return CombatShootResult::NoAmmo;
 	}
 	long distance = (target) ? fo::func::obj_dist(source, target) : 1;
 	long attackRange = fo::func::item_w_range(source, hitMode);
