@@ -2942,6 +2942,7 @@ skip:
 }
 
 static void __declspec(naked) op_create_object_sid_hack() {
+	static const char* proDbgMsg = "\nError: %s - failure to create object with PID of %d.";
 	using fo::Scripts::start;
 	__asm {
 		mov  ebx, [esp + 0x50 - 0x20 + 4]; // createObj
@@ -2950,10 +2951,17 @@ static void __declspec(naked) op_create_object_sid_hack() {
 		mov  edx, start; // procedure
 		mov  eax, [ebx + scriptId];
 		call fo::funcoffs::exec_script_proc_;
-noObject:
+end:
 		mov  edx, ebx;
 		mov  eax, esi;
 		retn;
+noObject:
+		push [esp + 0x50 - 0x34 + 4]; // object pid
+		push [esi];
+		push proDbgMsg;
+		call fo::funcoffs::debug_printf_;
+		add  esp, 3*4;
+		jmp  end;
 	}
 }
 
@@ -3725,6 +3733,8 @@ void BugFixes::init()
 
 	// Fix the script attached to an object not being initialized (not run) properly upon object creation
 	MakeCall(0x4551C0, op_create_object_sid_hack, 1);
+	// Additional fix op_create_object_sid_ for prevent the game crashing when the prototype of object is not exist
+	SafeWrite8(0x45507B, 0x51); // jz 0x4550CD
 }
 
 }
