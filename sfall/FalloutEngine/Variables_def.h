@@ -23,7 +23,7 @@ VAR_(cmap,                       DWORD)
 VAR_(colorTable,                 DWORD)
 VAR_(combat_end_due_to_load,     DWORD)
 VAR_(combat_free_move,           DWORD)
-VAR_(combat_list,                DWORD)
+VARD(combat_list,                fo::GameObject*)
 VAR_(combat_obj,                 fo::GameObject*)
 VAR_(combat_state,               DWORD)
 VAR_(combat_turn_running,        DWORD)
@@ -139,7 +139,7 @@ VAR_(num_game_global_vars,       DWORD)
 VAR_(num_map_global_vars,        DWORD)
 VAR_(num_windows,                DWORD)
 VAR_(obj_dude,                   fo::GameObject*)
-VARA(objectTable,                ObjectTable*, 40000)
+VARA(objectTable,                fo::ObjectTable*, 40000)
 VAR_(objItemOutlineState,        DWORD)
 VAR_(optionRect,                 DWORD)
 VAR_(optionsButtonDown,          DWORD)
@@ -252,3 +252,4 @@ VAR_(YellowColor,                BYTE)
 #undef VARA
 #undef VAR2
 #undef VAR3
+#undef VARD

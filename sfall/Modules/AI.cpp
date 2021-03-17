@@ -25,6 +25,7 @@
 #include "..\Game\items.h"
 
 #include "SubModules\AI.Behavior.h"
+#include "SubModules\AI.Combat.h"
 #include "SubModules\AI.FuncHelpers.h"
 
 #include "AI.h"
@@ -99,13 +100,11 @@ static void __declspec(naked) ai_try_attack_hook_runFix() {
 	}
 }
 
-static bool npcPercentMinHP = false;
-
 static void __declspec(naked) combat_ai_hack() {
 	static const DWORD combat_ai_hack_Ret = 0x42B204;
 	__asm {
 		mov  edx, [ebx + 0x10];             // cap.min_hp
-		test npcPercentMinHP, 0xFF;
+		test AICombat::npcPercentMinHP, 0xFF;
 		jz   skip;
 		cmp  dword ptr [ebx + 0x98], -1;    // cap.run_away_mode (none)
 		je   skip;
@@ -231,6 +230,32 @@ isNotDead:
 		retn;
 	}
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+static long __fastcall ai_try_attack_switch_fix(fo::GameObject* target, long &hitMode, fo::GameObject* source, fo::GameObject* weapon) {
+	if (source->critter.getAP() <= 0) return -1; // exit from ai_try_attack_
+	return AIBehavior::AICheckBeforeWeaponSwitch(target, hitMode, source, weapon);
+}
+
+static void __declspec(naked) ai_try_attack_hook_switch_fix() {
+	__asm {
+		push edx;
+		push [ebx]; // weapon
+		push esi;   // source
+		call ai_try_attack_switch_fix; // ecx - target, edx - hit mode
+		pop  edx;
+		test eax, eax;
+		jle  noSwitch; // <= 0
+		mov  ecx, ebp;
+		mov  eax, esi;
+		jmp  fo::funcoffs::ai_switch_weapons_;
+noSwitch:
+		retn; // -1 - for exit from ai_try_attack_
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 static long RetryCombatMinAP;
 
@@ -576,7 +601,8 @@ void AI::init() {
 	LoadGameHook::OnCombatStart() += AICombatClear;
 	LoadGameHook::OnCombatEnd() += AICombatClear;
 
-	if (GetConfigInt("CombatAI", "SmartBehavior", 0) == 0) {
+	bool smartBehavior = (GetConfigInt("CombatAI", "SmartBehavior", 1) > 0);
+	if (!smartBehavior) {
 		RetryCombatMinAP = GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
 		if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility
 		if (RetryCombatMinAP > 0) {
@@ -585,12 +611,30 @@ void AI::init() {
 			dlogr(" Done", DL_INIT);
 		}
 
-		// TODO move hack to AIBehavior
-		// Enables the use of the RunAwayMode value from the AI-packet for the NPC
-		// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
-		//npcPercentMinHP = (GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
+		// Fix AI weapon switching when not having enough AP to make an attack
+		// AI will try to change attack mode before deciding to switch weapon
+		if (GetConfigInt("CombatAI", "NPCSwitchingWeaponFix", 1)) {
+			HookCall(0x42AB57, ai_try_attack_hook_switch_fix);
+		}
 	}
 
+	// Fix to reduce friendly fire in burst attacks
+	// Modification function of safe use of weapon when the AI uses burst shooting mode
+	checkBurstFriendlyFireMode = GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 0);
+	switch (checkBurstFriendlyFireMode) { // -1 disable fix
+	case 3: // both 1 and 2 mode
+	case 0: // adds a check/roll for friendly critters in the line of fire when AI uses burst attacks
+	case 1: // always prevent a burst shot if there is a friendly NPC on the line of fire
+		HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_check);
+		if (checkBurstFriendlyFireMode <= 1) break; // for 0/1
+	case 2: // adds additional evaluation checks
+		if (checkBurstFriendlyFireMode == 2) HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
+		HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
+		HookCall(0x4216F7, combat_safety_invalidate_weapon_func_hack1); // jle combat_safety_invalidate_weapon_func_hack1
+		MakeCall(0x4217A0, combat_safety_invalidate_weapon_func_hack2);
+	}
+
+	/////////////////////// Combat behavior AI fixes ///////////////////////
 	#ifndef NDEBUG
 	if (GetConfigInt("Debugging", "AIBugFixes", 1) == 0) return;
 	#endif
@@ -609,24 +653,6 @@ void AI::init() {
 	// Adds a check for the weapon range and the AP cost when AI is choosing weapon attack modes
 	HookCall(0x429F6D, ai_pick_hit_mode_hook);
 
-	/////////////////////// Combat AI behavior fixes ///////////////////////
-
-	// Fix to reduce friendly fire in burst attacks
-	// Modification function of safe use of weapon when the AI uses burst shooting mode
-	checkBurstFriendlyFireMode = GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 0);
-	switch (checkBurstFriendlyFireMode) { // -1 disable fix
-	case 3: // both 1 and 2 mode
-	case 0: // adds a check/roll for friendly critters in the line of fire when AI uses burst attacks
-	case 1: // always prevent a burst shot if there is a friendly NPC on the line of fire
-		HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_check);
-		if (checkBurstFriendlyFireMode <= 1) break; // for 0/1
-	case 2: // adds additional evaluation checks
-		if (checkBurstFriendlyFireMode == 2) HookCall(0x421666, combat_safety_invalidate_weapon_func_hook_init);
-		HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
-		HookCall(0x4216F7, combat_safety_invalidate_weapon_func_hack1); // jle combat_safety_invalidate_weapon_func_hack1
-		MakeCall(0x4217A0, combat_safety_invalidate_weapon_func_hack2);
-	}
-
 	// Fix for duplicate critters being added to the list of potential targets for AI
 	MakeCall(0x428E75, ai_find_attackers_hack_target2, 2);
 	MakeCall(0x428EB5, ai_find_attackers_hack_target3);
@@ -644,7 +670,7 @@ void AI::init() {
 
 	// Fix for NPC stuck in fleeing mode when the hit chance of a target was too low
 	HookCall(0x42B1E3, combat_ai_hook_FleeFix);
-	// used in AI.Behavior HookCalls(ai_try_attack_hook_FleeFix, { 0x42ABA8, 0x42ACE5 });
+	if (!smartBehavior) HookCalls(ai_try_attack_hook_FleeFix, { 0x42ABA8, 0x42ACE5 });
 
 	// Restore combat flags after fleeing when NPC cannot move closer to target
 	HookCall(0x42ADF6, ai_try_attack_hook_runFix);
@@ -663,7 +689,7 @@ void AI::init() {
 	// Check the safety of weapons based on the selected attack mode instead of always the primary weapon hit mode
 	MakeCall(0x42A8D9, ai_try_attack_hack_check_safe_weapon);
 
-	AIBehavior::init();
+	AIBehavior::init(smartBehavior);
 }
 
 fo::GameObject* __stdcall AI::AIGetLastAttacker(fo::GameObject* target) {

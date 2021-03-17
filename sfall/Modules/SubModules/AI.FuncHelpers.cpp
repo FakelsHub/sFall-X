@@ -53,6 +53,10 @@ bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, lo
 	return (game::Items::item_weapon_range(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) >= distance);
 }
 
+bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* target) {
+	return AIHelpers::AttackInRange(source, weapon, fo::func::obj_dist_with_tile(source, source->tile, target, target->tile));
+}
+
 fo::GameObject* AIHelpers::GetNearestEnemyCritter(fo::GameObject* source) {
 	fo::GameObject* enemyCritter = fo::func::ai_find_nearest_team_in_combat(source, source, 2);
 	return (enemyCritter && enemyCritter->critter.getHitTarget()->critter.teamNum == source->critter.teamNum) ? enemyCritter : nullptr;
@@ -256,6 +260,11 @@ fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, bool isSecon
 	return fo::GetWeaponType(type);
 }
 
+fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, fo::AttackType hitMode) {
+	bool isSecond = (hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY || fo::AttackType::ATKTYPE_LWEAPON_SECONDARY);
+	return GetWeaponSubType(item, isSecond);
+}
+
 //
 // нужна ли поддержка для многогексовых критеров? если нужна то заменить на combat_is_shot_blocked_
 bool AIHelpers::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
@@ -343,11 +352,8 @@ bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapo
 
 			fo::func::ai_magic_hands(critter, weapon, 5002);
 
-			if (critter->critter.getAP() > reloadCost) {
-				critter->critter.movePoints -= reloadCost;
-			} else {
-				critter->critter.movePoints = 0;
-			}
+			critter->critter.movePoints -= reloadCost;
+			if (critter->critter.getAP() < 0) critter->critter.movePoints = 0;
 			return true;
 		}
 	}

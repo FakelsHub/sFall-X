@@ -427,27 +427,23 @@ static void __declspec(naked) ai_danger_source_replacement() {
 	}
 }
 
-void AISearchTarget::init(bool state) {
+void AISearchTarget::init(bool smartBehavior) {
 
-	reFindNewTargets = (GetConfigInt("CombatAI", "TryToFindTargets", 0) > 0);
-
-	//if (state || reFindNewTargets)
+	if (smartBehavior) {
 		MakeJump(fo::funcoffs::ai_danger_source_ + 1, ai_danger_source_replacement); // 0x428F4C
 		SafeWrite8(0x428F4C, 0x52); // push edx
 
-	//switch (GetConfigInt("CombatAI", "TryToFindTargets", 0)) {
-	//case 1:
-	//	MakeJump(0x4290B6, ai_danger_source_hack_find);
-	//	break;
-	//case 2: // w/o logic
-	//	SafeWrite16(0x4290B3, 0xDFEB); // jmp 0x429094
-	//	SafeWrite8(0x4290B5, 0x90);
-	//}
+		reFindNewTargets = (GetConfigInt("CombatAI", "TryToFindTargets", 1) > 0);
 
-	// Changes the behavior of the AI so that the AI moves to its target to perform an attack/shot when the range of its weapon is less than
-	// the distance to the target or the AI will choose the nearest target if any other targets are available
-	// если опция SmartBehavior не будет выключена
-	if (!state) HookCall(0x42B240, combat_ai_hook_revert_target); // also need for TryToFindTargets option
+		///for TryToFindTargets=2 w/o logic
+		///SafeWrite16(0x4290B3, 0xDFEB); // jmp 0x429094
+		///SafeWrite8(0x4290B5, 0x90);
+	} else {
+		/// Changes the behavior of the AI so that the AI moves to its target to perform an attack/shot when the range of its weapon is less than
+		/// the distance to the target or the AI will choose the nearest target if any other targets are available
+
+		HookCall(0x42B240, combat_ai_hook_revert_target); // also need for TryToFindTargets option
+	}
 
 	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
 	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {

@@ -23,7 +23,7 @@ namespace sfall
 
 class AIBehavior {
 public:
-	static void init();
+	static void init(bool);
 
 	enum class AttackResult : long
 	{
@@ -35,6 +35,8 @@ public:
 		BadToHit     = 11,
 		MoveAway
 	};
+
+	static long __fastcall AICheckBeforeWeaponSwitch(fo::GameObject* target, long &hitMode, fo::GameObject* source, fo::GameObject* weapon);
 };
 
 }

@@ -22,6 +22,7 @@ public:
 	static fo::GameObject* CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker, long destTile);
 
 	static bool AttackInRange(fo::GameObject* source, fo::GameObject* weapon, long distance);
+	static bool AttackInRange(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* target);
 
 	static fo::GameObject* GetNearestEnemyCritter(fo::GameObject* source);
 
@@ -54,6 +55,7 @@ public:
 	static fo::GameObject* AICheckWeaponSkill(fo::GameObject* source, fo::GameObject* hWeapon, fo::GameObject* sWeapon);
 
 	static fo::AttackSubType GetWeaponSubType(fo::GameObject* item, bool isSecond);
+	static fo::AttackSubType GetWeaponSubType(fo::GameObject* item, fo::AttackType hitMode);
 
 	static bool CanSeeObject(fo::GameObject* source, fo::GameObject* target);
 

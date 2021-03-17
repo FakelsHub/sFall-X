@@ -25,6 +25,8 @@ class AICombat {
 public:
 	static void init(bool);
 
+	static bool AICombat::npcPercentMinHP;
+
 	static CombatShootResult combat_check_bad_shot(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode, long isCalled);
 
 	static void AttackerSetHitMode(fo::AttackType mode);

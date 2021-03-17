@@ -72,7 +72,7 @@ enum class CombatDifficulty : long
 
 static CombatDifficulty combatDifficulty = CombatDifficulty::Normal;
 
-static bool npcPercentMinHP = false;
+bool AICombat::npcPercentMinHP = false;
 static bool useCombatDifficulty = true;
 
 static struct AttackerData {
@@ -178,9 +178,6 @@ static inline long getAIPartyMemberDistances(long aiDistance) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-
-static bool TargetPerception(fo::GameObject* item) {
-}
 
 static bool CheckCoverTile(std::vector<long> &v, long tile) {
 	return (std::find(v.cbegin(), v.cend(), tile) != v.cend());
@@ -341,7 +338,7 @@ static long GetMoveAwayDistaceFromTarget(fo::GameObject* source, fo::GameObject*
 	if (attacker.killType > fo::KillType::KILL_TYPE_women ||    // critter is not men & women
 		attacker.cap->disposition == fo::AIpref::disposition::berserk ||
 		///cap->distance == AIpref::distance::stay || // stay в ai_move_away запрещает движение
-		attacker.cap->distance == fo::AIpref::distance::charge) // charge в движке используется для сближения с целью
+		attacker.cap->distance == fo::AIpref::distance::charge) // charge в используется для сближения с целью
 	{
 		return 0;
 	}
@@ -418,6 +415,23 @@ static void MoveAwayFromTarget(fo::GameObject* source, fo::GameObject* target, l
 	// функция принимает отрицательный аргумент дистанции для того чтобы держаться на определенной дистанции от указанной цели при этом поведение stay будет игнорироваться
 	fo::func::ai_move_away(source, target, distance);
 }
+
+//static void __declspec(naked) ai_try_attack_hack_move() {
+//	__asm {
+//		mov  eax, [esi + movePoints];
+//		test eax, eax;
+//		jz   noMovePoint;
+//		mov  eax, dword ptr [esp + 0x364 - 0x3C + 4]; // right_weapon
+//		push [esp + 0x364 - 0x38 + 4]; // hit_mode
+//		mov  edx, ebp;
+//		mov  ecx, esi;
+//		push eax;
+//		call GetMoveAwayDistaceFromTarget;
+//noMovePoint:
+//		mov  eax, -1;
+//		retn;
+//	}
+//}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -530,6 +544,23 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 	ReTargetTileFromFriendlyFire(source, target);
 }
 
+static bool CheckExistEnemyCritters(fo::GameObject* source) {
+	for (size_t i = 0; i < fo::var::list_com; i++)
+	{
+		fo::GameObject* obj = fo::var::combat_list[i];
+
+		// Проверки на всякий случай
+		if (obj->critter.IsDead() || obj->critter.combatState & fo::CombatStateFlag::EnemyOutOfRange) continue;
+		if (obj->critter.combatState & fo::CombatStateFlag::InFlee && !(obj->critter.combatState & fo::CombatStateFlag::ReTarget)) continue;
+
+		fo::GameObject* target = obj->critter.getHitTarget();
+		if (target && target->critter.teamNum == source->critter.teamNum) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -544,7 +575,7 @@ static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
 		включена опция NPCRunAwayMode и атакующий не является постоянным партийцем игрока
 		(для постоянных партийцев min_hp рассчитывается при выборе предпочтений в панели управления)
 	**************************************************************************/
-	if (npcPercentMinHP && attacker.cap->getRunAwayMode() != fo::AIpref::run_away_mode::none && !fo::IsPartyMember(source))
+	if (AICombat::npcPercentMinHP && attacker.cap->getRunAwayMode() != fo::AIpref::run_away_mode::none && !fo::IsPartyMember(source))
 	{
 		long caiMinHp = fo::func::cai_get_min_hp(attacker.cap);
 		long maxHP = fo::func::stat_level(source, fo::STAT_max_hit_points);
@@ -580,7 +611,9 @@ TrySpendExtraAP:
 	/**************************************************************************
 		Фаза лечения если атакующий ранен или использования каких-либо наркотических средств перед атакой
 	**************************************************************************/
-	fo::func::ai_check_drugs(source); // TODO: требуется сделать проверку на врагов прежде чем применять наркотик (NPC может в конце боя принять)
+	if (fo::var::combatNumTurns == 0 || CheckExistEnemyCritters(source)) { // Проверяет имеются ли враждебные криттеры перед употреблением (NPC может в конце боя принять)
+		fo::func::ai_check_drugs(source);
+	}
 
 	// текущие очки жизней меньше чем значение min_hp
 	// определяет поведение, когда нет медикаментов для лечения
@@ -852,8 +885,8 @@ static void __fastcall combat_ai_hook(fo::GameObject* source, fo::GameObject* ta
 	attacker.setData(source);
 
 	// добавить очки действия атакующему для увеличении сложности боя [не для партийцев игрока]
-	if (useCombatDifficulty && !attacker.InDudeParty) {
-		attacker.totalBonusAP = (long)combatDifficulty * 2;
+	if (useCombatDifficulty && combatDifficulty > CombatDifficulty::Easy  && !attacker.InDudeParty) {
+		attacker.totalBonusAP = (long)combatDifficulty * 2; // +0 easy, +2 normal, +4 hard
 		source->critter.movePoints += attacker.totalBonusAP;
 	}
 
@@ -864,10 +897,27 @@ static void __fastcall combat_ai_hook(fo::GameObject* source, fo::GameObject* ta
 	DEV_PRINTF2("\n[AI] End combat: %s. CombatState: %d\n", attacker.name, source->critter.combatState);
 
 	// debugging
-	if (combatDebug) {
-		while (fo::func::get_input() != 27 && fo::var::mouse_buttons == 0) {
-			fo::func::process_bk();
-		};
+	#ifndef NDEBUG
+	if (combatDebug) while (fo::func::get_input() != 27 && fo::var::mouse_buttons == 0) fo::func::process_bk();
+	#endif
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+// Принудительно использовать прицельный выстрел вместо шанса 1/N, если цель находится в пределах 5-ти гексов
+static void __declspec(naked) ai_called_shot_hook() {
+	__asm {
+		call fo::funcoffs::roll_random_;
+		cmp  eax, 1;
+		jne  distCheck;
+		retn;
+distCheck:
+		mov  edx, [esp + 0x1C - 0x14 + 4]; // target
+		mov  eax, esi; // source
+		call fo::funcoffs::obj_dist_;
+		cmp  eax, 5;
+		setbe al;
+		retn;
 	}
 }
 
@@ -932,13 +982,13 @@ static void __declspec(naked) combat_attack_hook() {
 */
 /////////////////////////////////////////////////////////////////////////////////////////
 
-void AICombat::init(bool state) {
+void AICombat::init(bool smartBehavior) {
 
 	// Enables the use of the RunAwayMode value from the AI-packet for the NPC
 	// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
 	npcPercentMinHP = (GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
 
-	if (state) {
+	if (smartBehavior) {
 		// Override combat_ai_ engine function
 		HookCall(0x422B94, combat_ai_hook);
 		SafeWrite8(0x422B91, 0xF1); // mov  eax, esi > mov ecx, esi
@@ -946,13 +996,17 @@ void AICombat::init(bool state) {
 		SafeWrite32(0x422B89, 0x8904518B);
 		SafeWrite8(0x422B8D, 0xF1); // mov  eax, esi > mov ecx, esi
 
+		HookCall(0x42A6BF, ai_called_shot_hook);
+
 		//HookCall(0X4230E8, combat_attack_hook);
 		//LoadGameHook::OnCombatStart() += []() { lastAttackerTile.clear(); };
 
-		// Увеличивать количество дополнительных очков действий, взависимомти от настройки сложности боя игры
+		// Добавить дополнительные очки действий, взависимомти от настройки сложности боя
 		useCombatDifficulty = (GetConfigInt("CombatAI", "DifficultyMode", 1) != 0);
 
-		combatDebug = (GetConfigInt("CombatAI", "DebugMode", 1) != 0);
+		#ifndef NDEBUG
+		combatDebug = (GetConfigInt("CombatAI", "DebugMode", 0) != 0);
+		#endif
 	}
 }
 
