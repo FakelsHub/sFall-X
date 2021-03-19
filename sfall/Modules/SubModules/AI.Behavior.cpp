@@ -892,7 +892,7 @@ default:
 
 // Выбрать другое подходящее оружие из инвентаря для атаки по цели, когда не хватает очков действия
 static fo::GameObject* FindSafeWeaponAttack(fo::GameObject* source, fo::GameObject* target, fo::GameObject* hWeapon, fo::AttackType &outHitMode) {
-	long distance = fo::func::obj_dist_with_tile(source, source->tile, target, target->tile);
+	long distance = fo::func::obj_dist(source, target);
 
 	fo::GameObject* pickWeapon = nullptr;
 	DWORD slotNum = -1;

@@ -54,7 +54,7 @@ bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, lo
 }
 
 bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* target) {
-	return AIHelpers::AttackInRange(source, weapon, fo::func::obj_dist_with_tile(source, source->tile, target, target->tile));
+	return AIHelpers::AttackInRange(source, weapon, fo::func::obj_dist(source, target));
 }
 
 fo::GameObject* AIHelpers::GetNearestEnemyCritter(fo::GameObject* source) {

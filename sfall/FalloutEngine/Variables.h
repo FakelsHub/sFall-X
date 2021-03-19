@@ -74,7 +74,7 @@ struct ArrayWrapper {
 #define VARD(name, type) \
 	extern type*& name;
 
-// defines const pointer to variable (useful for dynamic arrays)
+// defines const pointer to variable (useful for static arrays, when exact size is unknown)
 #define VARP(name, type) \
 	extern type* const name;
 

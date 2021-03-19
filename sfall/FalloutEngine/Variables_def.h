@@ -63,7 +63,7 @@ VAR_(folder_card_title,          DWORD)
 VAR_(folder_card_title2,         DWORD)
 VAR_(frame_time,                 DWORD)
 VAR_(free_perk,                  char)
-VAR_(game_global_vars,           long*)  // dynamic array of size == num_game_global_vars
+VARD(game_global_vars,           long)  // dynamic array of size == num_game_global_vars
 VAR_(game_user_wants_to_quit,    DWORD)
 VAR_(gcsd,                       fo::CombatGcsd*)
 VAR_(gdBarterMod,                DWORD)
@@ -153,9 +153,9 @@ VAR_(outlined_object,            fo::GameObject*)
 VAR_(partyMemberAIOptions,       DWORD)
 VAR_(partyMemberCount,           DWORD)
 VAR_(partyMemberLevelUpInfoList, DWORD*)
-VAR_(partyMemberList,            DWORD*) // each struct - 4 integers, first integer - objPtr
+VAR_(partyMemberList,            fo::ObjectListData*) // dynamic array
 VAR_(partyMemberMaxCount,        DWORD)
-VAR_(partyMemberPidList,         DWORD*)
+VARD(partyMemberPidList,         DWORD) // dynamic array
 VAR_(patches,                    char*)
 VAR_(paths,                      fo::PathNode*)  // array
 VAR2(pc_crit_succ_eff,           fo::CritInfo, 9, 6)  // 9 body parts, 6 effects
@@ -165,7 +165,7 @@ VAR_(pc_proto,                   fo::Proto)
 VARA(pc_trait,                   long, 2)  // 2 of them
 VAR_(PeanutButter,               BYTE)
 VARA(perk_data,                  fo::PerkInfo, fo::PERK_count)
-VAR_(perkLevelDataList,          long*) // dynamic array, limited to PERK_Count
+VARD(perkLevelDataList,          fo::PartyMemberPerkListData) // dynamic array, limited to [PERK_Count * partyMemberMaxCount]
 VARC(pip_win,                    DWORD)
 VAR_(pipboy_message_file,        fo::MessageList)
 VAR_(pipmesg,                    DWORD)
@@ -178,7 +178,7 @@ VAR_(pud,                        DWORD)
 VAR_(queue,                      fo::Queue*)
 VAR_(quick_done,                 DWORD)
 VAR_(read_callback,              DWORD)
-VAR_(rectList,                   fo::RectList*) 
+VAR_(rectList,                   fo::RectList*)
 VAR_(RedColor,                   BYTE)
 VAR2(retvals,                    fo::ElevatorExit, 24, 4)  // 24 elevators, 4 exits each
 VAR_(rotation,                   DWORD)
@@ -198,7 +198,7 @@ VAR_(square,                     DWORD)
 VAR_(squares,                    DWORD*)
 VARA(stack,                      DWORD, 10)
 VARA(stack_offset,               DWORD, 10)
-VARA(stat_data,                  fo::StatInfo, fo::STAT_real_max_stat) // dynamic array
+VARA(stat_data,                  fo::StatInfo, fo::STAT_real_max_stat)
 VAR_(stat_flag,                  DWORD)
 VAR_(subtitleList,               fo::SubTitleList*)
 VARA(sWindows,                   fo::sWindow, 16)

@@ -47,7 +47,7 @@ namespace var
 
 // defines reference pointer to dynamic array
 #define VARD(name, type) \
-	type*& name = reinterpret_cast<type*>(*reinterpret_cast<type**>(FO_VAR_##name));
+	type*& name = *reinterpret_cast<type**>(FO_VAR_##name);
 
 // defines const pointer to variable (useful for static arrays, when exact size is unknown)
 #define VARP(name, type) \
