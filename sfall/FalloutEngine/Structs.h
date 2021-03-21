@@ -1091,7 +1091,15 @@ struct ObjectListData {
 };
 
 struct PartyMemberPerkListData {
-	long perkData[fo::Perk::PERK_count];
+	long perkData[Perk::PERK_count];
+};
+
+struct QuestData {
+	long location;
+	long description;
+	long gvarIndex;
+	long displayThreshold;
+	long completedThreshold;
 };
 
 #pragma pack(pop)
