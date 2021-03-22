@@ -3682,7 +3682,7 @@ void BugFixes::init()
 	HookCall(0x447ACD, gdialog_bk_hook);
 
 	// Cosmetic fix to the dialog review interface
-	// to prevent the player name from being displayed in the bottom area of the window when the text does out of bounds
+	// to prevent the player name from being displayed at the bottom of the window when the text is longer than one screen
 	MakeCall(0x445ECC, gdReviewDisplay_hack);
 
 	// Fix crash or animation glitch of the critter in combat when an explosion from explosives
@@ -3748,7 +3748,7 @@ void BugFixes::init()
 
 	// Fix the script attached to an object not being initialized (not run) properly upon object creation
 	MakeCall(0x4551C0, op_create_object_sid_hack, 1);
-	// Additional fix op_create_object_sid_ for prevent the game crashing when the prototype of object is not exist
+	// Additional fix op_create_object_sid_ for prevent the crash when the prototype of object is missing
 	SafeWrite8(0x45507B, 0x51); // jz 0x4550CD
 }
 

@@ -462,15 +462,21 @@ static void __fastcall QuestListSort(fo::QuestData* questList, size_t numElemets
 	std::memcpy(tmpList, questList, numElemets * sizeof(fo::QuestData));
 
 	long locStart = 1500; // number from which the locations starting
+	size_t leftStart = 0;
+
 	for (size_t i = 0; i < numElemets;)
 	{
-		for (size_t j = 0; j < numElemets; j++)
+		for (size_t j = leftStart; j < numElemets; j++)
 		{
-			if (tmpList[j].location && tmpList[j].location == locStart) {
+			if (!tmpList[j].location) {
+			    if ((j - leftStart) == 1) leftStart = j;
+			    continue;
+			}
+			if (tmpList[j].location == locStart) {
 				// unsorted?
 				if (j != i)	questList[i] = tmpList[j];
-				tmpList[j].location = 0;
 				if (++i >= numElemets) break;
+				tmpList[j].location = 0;
 			}
 		}
 		locStart++;
@@ -522,7 +528,7 @@ void QuestList::init() {
 		HookCall(0x498186, PipStatus_hook_printfix); // fix "out of bounds" bug when printing a list of quests
 	}
 
-	// Replacing the qsort_ unstable sorting function with simple stable sorting algorithm
+	// Replace the qsort_ unstable sorting function with a simple stable sorting algorithm
 	HookCall(0x49A7C2, quest_init_hook);
 }
 
