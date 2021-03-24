@@ -787,13 +787,19 @@ optional arguments:
 - fills the rectangle area of the currently selected script window with the specified color, or clears the transparent window (use function without arguments or color index 0)
 - color: the color index in the game palette (from 0 to 255)
 
-> int sfall_func2("interface_overlay", winType, mode)
-> int sfall_func6("interface_overlay", winType, 2, x, y, w, h)
+> int sfall_func2("interface_overlay", int winType, int mode)
+> int sfall_func6("interface_overlay", int winType, 2, int x, int y, int w, int h)
 - creates an additional drawing surface for the specified interface window, which will be located above the graphic layer of the interface window
 - winType: the type number of the interface window (see WINTYPE_* constants in sfall.h)
 - mode: 1 - creates a new overlay surface
         2 - clears the overlay area or the specified rectangle defined by the x, y, w, h arguments
 		0 - destroys the created overlay surface (frees up memory allocated under the surface)
+
+> void sfall_func2("set_quest_failure_value", int gvarNumber, int thresholdValue)
+- sets the threshold value (failure_threshold) for the quest at which the quest will be considered failed (its description in Pip-Boy will be crossed out and colored red)
+- gvarNumber: the number of the global variable to which the quest is bound
+- thresholdValue: the value of the global variable at which the quest is counted as a failure
+
 
 ------------------------
 ------ MORE INFO -------
