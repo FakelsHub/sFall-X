@@ -46,7 +46,7 @@ static bool calledflag = false;
 static DWORD called_quest_number = 0;
 static DWORD total_quests_pages = 0;
 static DWORD curent_quest_page = 0;
-static DWORD look_quests = 0;         // check current quests
+static DWORD look_quests = 0; // check current quests
 
 static DWORD first_quest_page = 0;
 static DWORD last_quest_page = INT_MAX;
@@ -87,7 +87,7 @@ static void __declspec(naked) pip_print_hack() {
 	__asm {
 		test bh, 1;
 		jz   skip;
-		add  edx, 60;  // pixel offset
+		add  edx, 60; // pixel offset
 		jmp  end;
 skip:
 		test bh, 2;
@@ -100,7 +100,6 @@ end:
 }
 
 static void ResetPageValues() {
-
 	if (total_quests_pages > 0) pageQuest.resize(1);
 
 	pageFlag = false;
@@ -246,6 +245,7 @@ jbreak:
 
 static char bufPage[16];
 static const char* format = "%s %d %s %d";
+
 static void __declspec(naked) PrintPages() {
 	__asm {
 		// total pages
@@ -335,7 +335,7 @@ static void __declspec(naked) pipboy_hack_action() {
 		mov  ecx, ebx;
 		call ActionButtons;
 		cmp  eax, -1;
-		cmovne ebx, eax;  // called_quest_number
+		cmovne ebx, eax; // called_quest_number
 		pop  edx;
 		pop  eax;
 		xor  ecx, ecx;
@@ -420,9 +420,9 @@ static void __declspec(naked) StartPipboy_hack() {
 	}
 
 	__asm {
-		mov  esp, ebp;    // epilog
+		mov  esp, ebp;   // epilog
 		pop  edi;
-		mov  ebp, 0x1F4;  // overwrite engine code
+		mov  ebp, 0x1F4; // overwrite engine code
 		retn;
 	}
 }
@@ -536,7 +536,7 @@ static void __declspec(naked) PipStatus_hack() {
 		push ecx;
 		mov   dl, ds:[0x6A5B34]; // completeColor (dark green)
 		mov  ecx, ds:[FO_VAR_quests];
-		add  ecx, [esp + 0x4BC - 0x28 + 8];
+		add  ecx, [esp + 0x4BC - 0x28 + 12];
 		call CheckQuestFailureState;
 		mov  bl, al;
 		pop  ecx;

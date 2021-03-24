@@ -1007,41 +1007,27 @@ runToObject:
 
 static void __declspec(naked) MultiHexAIMissHitFix() {
 	__asm {
-		push ebx;                           // var: weaponRange
+		mov  ecx, ebx;                      // distance weaponRange
 		call fo::funcoffs::tile_num_beyond_;
-		mov  ebx, [esi];                    // source
-		test [ebx + flags + 1], 0x08;       // is MultiHex?
-		jz   skip;
-		// check tile
-		push eax;                           // tile form tile_num_beyond_
-		mov  edx, [ebx + tile];             // source tile
-		call fo::funcoffs::tile_dist_;
-		cmp  eax, 2;
-		pop  eax;
-		jl   fix;                           // distance greater than 1, so everything okay
-skip:
-		add  esp, 4;
+		mov  ebx, [esi];                    // ctd.source
+		test [ebx + flags], MultiHex;       // is MultiHex?
+		jnz  checkTile;
 		retn;
-fix:	// get correct tile
+checkTile:
+		mov  edx, [ebx + tile];             // source tile
+		call fo::funcoffs::tile_dist_;      // eax - tile form tile_num_beyond_
+		cmp  eax, 1;                        // if distance is less or equal to 1, this is a self-hit
+		jle  fix;
+		retn;
+fix:	// get correct tile beyond
 		mov  eax, [ebx + tile];             // source tile
-		mov  edx, [esi + 0x20];             // ctd.target
-		mov  ebx, edx;
-		mov  edx, [edx + tile]              // target tile
-		call fo::funcoffs::tile_dist_;
-		pop  edx;                           // distance weaponRange
-		sub  edx, eax;
-		mov  eax, 1;
-		cmovle edx, eax;                    // if dist <= 0
-		call fo::funcoffs::roll_random_;
-		push eax;
-		mov  eax, [ebx + tile];             // target tile
-		mov  edx, [ebx + rotation];
-		pop  ebx;                           // distance from target
+		mov  edx, [ebx + rotation];         // source rotation
+		mov  ebx, ecx;                      // distance weaponRange
 		jmp  fo::funcoffs::tile_num_in_direction_; // return new tile for miss projectile
 	}
 }
 
-//checks if an attacked object is a critter before attempting dodge animation
+// checks if an attacked object is a critter before attempting dodge animation
 static void __declspec(naked) action_melee_hack() {
 	__asm {
 		mov  edx, 0x4113DC
@@ -3218,13 +3204,13 @@ void BugFixes::init()
 		dlogr(" Done", DL_INIT);
 	//}
 
-	// Fix the impact in itself in case of a miss hit for multihex critters when using throwing weapon
+	// Fix a projectile weapon hit itself in the case of a miss for multihex critters when they use throwing weapons
 	// Note: in fact, the bug is in tile_num_beyond_ and related functions, in case of fix, this crutch will need to be removed
-	if (GetConfigInt("Misc", "MultiHexSelfHitFix", 1)) {
+	//if (GetConfigInt("Misc", "MultiHexSelfHitFix", 1)) {
 		dlog("Applying multihex critter self hit fix.", DL_INIT);
 		HookCalls(MultiHexAIMissHitFix, { 0x423B44, 0x42315D });
 		dlogr(" Done", DL_INIT);
-	}
+	//}
 
 	//if (GetConfigInt("Misc", "DodgyDoorsFix", 1)) {
 		dlog("Applying Dodgy Door Fix.", DL_INIT);
