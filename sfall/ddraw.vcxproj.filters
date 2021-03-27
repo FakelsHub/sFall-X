@@ -28,6 +28,9 @@
     <Filter Include="Game">
       <UniqueIdentifier>{7f5e0899-7240-4a24-a99b-aaea1aabf440}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Modules\SubModules\ImproveAI">
+      <UniqueIdentifier>{04e331b6-12ad-4e74-82b0-cccd3cd19d7c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h" />
@@ -301,9 +304,6 @@
     <ClInclude Include="Modules\Scripting\Handlers\Math.h">
       <Filter>Modules\Scripting\Handlers</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\SubModules\AI.Behavior.h">
-      <Filter>Modules\SubModules</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\Sound.h">
       <Filter>Modules</Filter>
     </ClInclude>
@@ -334,17 +334,11 @@
     <ClInclude Include="Modules\SubModules\WindowRender.h">
       <Filter>Modules\SubModules</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\SubModules\AI.FuncHelpers.h">
-      <Filter>Modules\SubModules</Filter>
-    </ClInclude>
     <ClInclude Include="Game\items.h">
       <Filter>Game</Filter>
     </ClInclude>
     <ClInclude Include="Game\objects.h">
       <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Modules\SubModules\AI.SearchTarget.h">
-      <Filter>Modules\SubModules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\Scripting\Handlers\Inventory.h">
       <Filter>Modules\Scripting\Handlers</Filter>
@@ -352,13 +346,25 @@
     <ClInclude Include="Modules\Scripting\Handlers\Combat.h">
       <Filter>Modules\Scripting\Handlers</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\SubModules\AI.Combat.h">
-      <Filter>Modules\SubModules</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\SubModules\CombatExt.h">
       <Filter>Modules\SubModules</Filter>
     </ClInclude>
     <ClInclude Include="IniReader.h" />
+    <ClInclude Include="Modules\SubModules\AI.Behavior.h">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SubModules\AI.Combat.h">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SubModules\AI.FuncHelpers.h">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SubModules\AI.SearchTarget.h">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\tilemap.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -608,9 +614,6 @@
     <ClCompile Include="Modules\Scripting\Handlers\Math.cpp">
       <Filter>Modules\Scripting\Handlers</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\SubModules\AI.Behavior.cpp">
-      <Filter>Modules\SubModules</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\Sound.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
@@ -639,17 +642,11 @@
     <ClCompile Include="Modules\SubModules\WindowRender.cpp">
       <Filter>Modules\SubModules</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\SubModules\AI.FuncHelpers.cpp">
-      <Filter>Modules\SubModules</Filter>
-    </ClCompile>
     <ClCompile Include="Game\items.cpp">
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Game\objects.cpp">
       <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Modules\SubModules\AI.SearchTarget.cpp">
-      <Filter>Modules\SubModules</Filter>
     </ClCompile>
     <ClCompile Include="Modules\Scripting\Handlers\Inventory.cpp">
       <Filter>Modules\Scripting\Handlers</Filter>
@@ -657,13 +654,25 @@
     <ClCompile Include="Modules\Scripting\Handlers\Combat.cpp">
       <Filter>Modules\Scripting\Handlers</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\SubModules\AI.Combat.cpp">
-      <Filter>Modules\SubModules</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\SubModules\CombatExt.cpp">
       <Filter>Modules\SubModules</Filter>
     </ClCompile>
     <ClCompile Include="IniReader.cpp" />
+    <ClCompile Include="Modules\SubModules\AI.Behavior.cpp">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\AI.Combat.cpp">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\AI.FuncHelpers.cpp">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\AI.SearchTarget.cpp">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\tilemap.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="version.rc" />

@@ -20,10 +20,6 @@
 
 #include <psapi.h>
 
-#include <algorithm>
-#include <stdio.h>
-#include <memory>
-
 #include "FalloutEngine\Fallout2.h"
 #include "ModuleManager.h"
 #include "Modules\Module.h"
@@ -80,7 +76,6 @@
 #include "Modules\Worldmap.h"
 
 #include "CRC.h"
-#include "SimplePatch.h"
 #include "Logging.h"
 #include "ReplacementFuncs.h"
 #include "Version.h"
@@ -109,6 +104,7 @@ void InitReplacementHack() {
 	game::Skills::init();
 	game::Stats::init();
 	game::Items::init();
+	game::Tilemap::init();
 }
 
 static void InitModules() {

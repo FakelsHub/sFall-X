@@ -1005,28 +1005,6 @@ runToObject:
 	}
 }
 
-static void __declspec(naked) MultiHexAIMissHitFix() {
-	__asm {
-		mov  ecx, ebx;                      // distance weaponRange
-		call fo::funcoffs::tile_num_beyond_;
-		mov  ebx, [esi];                    // ctd.source
-		test [ebx + flags], MultiHex;       // is MultiHex?
-		jnz  checkTile;
-		retn;
-checkTile:
-		mov  edx, [ebx + tile];             // source tile
-		call fo::funcoffs::tile_dist_;      // eax - tile form tile_num_beyond_
-		cmp  eax, 1;                        // if distance is less or equal to 1, this is a self-hit
-		jle  fix;
-		retn;
-fix:	// get correct tile beyond
-		mov  eax, [ebx + tile];             // source tile
-		mov  edx, [ebx + rotation];         // source rotation
-		mov  ebx, ecx;                      // distance weaponRange
-		jmp  fo::funcoffs::tile_num_in_direction_; // return new tile for miss projectile
-	}
-}
-
 // checks if an attacked object is a critter before attempting dodge animation
 static void __declspec(naked) action_melee_hack() {
 	__asm {
@@ -3201,14 +3179,6 @@ void BugFixes::init()
 		// Check neighboring tiles to prevent critters from overlapping other object tiles when moving to the retargeted tile
 		SafeWrite16(0x42A3A6, 0xE889); // xor eax, eax > mov eax, ebp (fix retargeting tile for multihex critters)
 		HookCall(0x42A3A8, MultiHexRetargetTileFix); // cai_retargetTileFromFriendlyFire_
-		dlogr(" Done", DL_INIT);
-	//}
-
-	// Fix a projectile weapon hit itself in the case of a miss for multihex critters when they use throwing weapons
-	// Note: in fact, the bug is in tile_num_beyond_ and related functions, in case of fix, this crutch will need to be removed
-	//if (GetConfigInt("Misc", "MultiHexSelfHitFix", 1)) {
-		dlog("Applying multihex critter self hit fix.", DL_INIT);
-		HookCalls(MultiHexAIMissHitFix, { 0x423B44, 0x42315D });
 		dlogr(" Done", DL_INIT);
 	//}
 

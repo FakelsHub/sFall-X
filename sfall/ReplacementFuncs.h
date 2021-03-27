@@ -11,3 +11,4 @@
 #include "Game\skills.h"
 #include "Game\stats.h"
 #include "Game\items.h"
+#include "Game\tilemap.h"
