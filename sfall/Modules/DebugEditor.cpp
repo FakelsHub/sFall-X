@@ -382,7 +382,7 @@ static void __declspec(naked) debugMsg() {
 		push scrNameFmt;
 		call fo::funcoffs::debug_printf_;
 		add  esp, 8;
-		jmp  fo::funcoffs::debug_printf_;
+		jmp  fo::funcoffs::debug_printf_; // ERROR: attempt to reference...
 	}
 }
 
@@ -477,6 +477,7 @@ void AlwaysReloadMsgs() {
 		dlogr(" Done", DL_INIT);
 	}
 }
+
 /*
 void TestingTimerResolution() {
 	unsigned long ticksList[50];
@@ -497,6 +498,7 @@ void TestingTimerResolution() {
 	fo::func::debug_printf("System timer resolution: %d - %d ms.\n", min, max);
 }
 */
+
 void DebugEditor::init() {
 	if (DebugModePatch() > 1) {
 		//LoadGameHook::OnGameInit() += TestingTimerResolution;

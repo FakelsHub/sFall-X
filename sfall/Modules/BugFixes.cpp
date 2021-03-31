@@ -1053,6 +1053,7 @@ static void __declspec(naked) set_new_results_hack() {
 
 //////////////////////////// "NPC turns into a container" bug ///////////////////////////
 
+// called when leaving map if the critter has a "knockout_event" event in the queue
 static void __declspec(naked) critter_wake_clear_hack() {
 	__asm {
 		jne  end;                                 // This is not a critter
@@ -2805,6 +2806,7 @@ skip:
 // if the combat ends before the turn passes to the critter, the DAM_KNOCKOUT_WAKED flag will remain set
 // therefore the flag for the critter is removed before the combat_turn_ execution, as well as when the combat ends in combat_over_
 static void __declspec(naked) critter_wake_up_hack() {
+	using fo::InCombat;
 	__asm {
 		or  byte ptr [eax], InCombat; // combat_data.combat_state
 		test dl, DAM_KNOCKED_OUT;     // critter is knocked out?
@@ -2966,7 +2968,7 @@ skip:
 }
 
 static void __declspec(naked) op_create_object_sid_hack() {
-	static const char* proDbgMsg = "\nError: %s - failure to create object with PID of %d.";
+	static const char* proDbgMsg = "\nERROR: %s - failure to create object with PID of %d.";
 	using fo::Scripts::start;
 	__asm {
 		mov  ebx, [esp + 0x50 - 0x20 + 4]; // createObj
