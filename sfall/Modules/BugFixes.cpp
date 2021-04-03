@@ -1047,17 +1047,18 @@ static void __declspec(naked) set_new_results_hack() {
 		retn;
 	}
 }
+
 static void __declspec(naked) op_critter_state_hack() {
 	__asm {
 		mov  ebx, 2;
-		test eax, DAM_KNOCKOUT_WAKED;
+		test eax, DAM_KNOCKOUT_WOKEN;
 		cmovnz esi, ebx;
 		and  eax, (DAM_CRIP_LEG_LEFT or DAM_CRIP_LEG_RIGHT or DAM_CRIP_ARM_LEFT or DAM_CRIP_ARM_RIGHT or DAM_BLIND);
 		retn;
 	}
 }
 
-// if the combat ends before the turn passes to the critter, the DAM_KNOCKOUT_WAKED flag will remain set
+// if the combat ends before the turn passes to the critter, the DAM_KNOCKOUT_WOKEN flag will remain set
 // therefore the flag for the critter is removed before the combat_turn_ execution, as well as when the combat ends in combat_over_
 static void __declspec(naked) critter_wake_up_hack() {
 	using fo::InCombat;
@@ -1065,7 +1066,7 @@ static void __declspec(naked) critter_wake_up_hack() {
 		or  byte ptr [eax], InCombat; // combat_data.combat_state
 		test dl, DAM_KNOCKED_OUT;     // critter is knocked out?
 		jz  skip;                     // no
-		or  dword ptr [ebx + damageFlags], DAM_KNOCKOUT_WAKED; // game is in combat, set the flag
+		or  dword ptr [ebx + damageFlags], DAM_KNOCKOUT_WOKEN; // game is in combat, set the flag
 skip:
 		xor eax, eax;
 		retn;
@@ -1129,20 +1130,14 @@ fix:
 		test byte ptr [eax + damageFlags], DAM_DEAD;
 		jnz  skip;     // is dead
 
-		and  dword ptr [eax + damageFlags], ~(DAM_KNOCKOUT_WAKED or DAM_LOSE_TURN); // clear DAM_LOSE_TURN for "NPC turns into a container" bug
+		and  dword ptr [eax + damageFlags], ~(DAM_KNOCKOUT_WOKEN or DAM_LOSE_TURN); // clear DAM_LOSE_TURN for "NPC turns into a container" bug
 
 		test byte ptr [eax + damageFlags], DAM_KNOCKED_OUT;
 		jnz  clear;    // flag is set, so the "knockout_event" event is already in the queue (if there is no event, then there is an bug somewhere)
 		test byte ptr [eax + damageFlags], DAM_KNOCKED_DOWN;
 		jz   clear;    // No
 		push eax;
-		//xor  ecx, ecx;
-		//mov  edx, eax; // object
-		//xor  ebx, ebx; // extramem null
-		//inc  ecx;      // type = 1 (knockout_event)
-		//xor  eax, eax; // time = 0
-		//call fo::funcoffs::queue_add_; // critter_wake_up_ will be called (run stand up anim)
-		call fo::funcoffs::critter_wake_up_;
+		call fo::funcoffs::critter_wake_up_; // (stand up anim)
 		pop  eax;
 clear:
 		//and  word ptr [eax + damageFlags], ~(DAM_LOSE_TURN or DAM_KNOCKED_DOWN);
@@ -1159,22 +1154,47 @@ static void __declspec(naked) partyMemberPrepLoadInstance_hook() {
 	}
 }
 
+// after combat_is_over_p_proc
 static void __declspec(naked) combat_over_hack() {
 	__asm {
-		mov  [eax + combatState], edx;
-		and  dword ptr [eax + damageFlags], ~(DAM_LOSE_TURN or DAM_KNOCKOUT_WAKED);
-		//
-		test [eax + damageFlags], DAM_DEAD or DAM_KNOCKED_OUT;
-		jnz  skip;
-		test [eax + damageFlags], DAM_KNOCKED_DOWN;
+		mov  eax, esi; // critter
+		mov  esi, ds:[FO_VAR_list_total];
+		mov  edx, [eax + damageFlags];
+		and  dword ptr [eax + damageFlags], ~(DAM_LOSE_TURN or DAM_KNOCKOUT_WOKEN); // clear DAM_LOSE_TURN for "NPC turns into a container" bug
+		test dl, DAM_DEAD or DAM_KNOCKED_OUT;
+		jnz  end;
+		test dl, DAM_KNOCKED_DOWN;
 		jnz  standup;
+end:
 		retn;
 standup:
-		push eax;
-		call fo::funcoffs::dude_standup_;
-		pop  eax;
+		test edx, DAM_KNOCKOUT_WOKEN;
+		jnz  delay;
+		jmp  fo::funcoffs::dude_standup_;
+delay:
+		xor  ecx, ecx;
+		mov  edx, eax; // object
+		xor  ebx, ebx; // extramem
+		inc  ecx;      // type = 1 (knockout_event)
+		mov  eax, ecx; // time
+		jmp  fo::funcoffs::queue_add_; // critter_wake_up_ will be called (stand up anim)
+	}
+}
+
+static void __declspec(naked) dude_standup_hook() {
+	__asm {
+		mov  edx, [ecx + artFid];
+		and  edx, 0xFF0000;
+		cmp  edx, ANIM_fall_back << 16;
+		je   standup;
+		cmp  edx, ANIM_fall_front << 16;
+		jne  skip;
+standup:
+		jmp  fo::funcoffs::register_begin_;
 skip:
-		retn;
+		add  esp, 4;
+		mov  edx, 0x4185AD;
+		jmp  edx;
 	}
 }
 
@@ -1298,7 +1318,7 @@ skip:
 		mov  dword ptr [edx + esi + 0xC], 0;       // aiInfo.lastMove
 end:
 		// remove the flag set by the critter_wake_up_ function if critter was knocked out
-		and  dword ptr [eax + damageFlags], ~DAM_KNOCKOUT_WAKED;
+		and  dword ptr [eax + damageFlags], ~DAM_KNOCKOUT_WOKEN;
 		mov  edx, edi;                             // dude_turn
 		retn;
 	}
@@ -3264,12 +3284,13 @@ void BugFixes::init()
 	HookCall(0x424F9A, set_new_results_hack);
 
 	// Fix for critter_state when a knockout critter in a combat comes out of the knockout state not in its turn
-	// DAM_KNOCKOUT_WAKED flag lets know that the critter was knocked out before it actually woke up (stand up)
+	// DAM_KNOCKOUT_WOKEN flag lets know that the critter was knocked out before it actually woke up (stand up)
 	MakeCall(0x45868E, op_critter_state_hack, 1);
 	MakeCall(0x42E44C, critter_wake_up_hack);
 
-	// Knockout issue
+	// Knockout/down issue
 	HookCall(0x42E456, critter_wake_up_hook);
+	HookCall(0x41857E, dude_standup_hook); // check whether the critter is actually in the prone position
 
 	// Fix for "NPC turns into a container" bug https://www.nma-fallout.com/threads/fo2-engine-tweaks-sfall.178390/page-123#post-4065716
 	//if (GetConfigInt("Misc", "NPCTurnsIntoContainerFix", 1)) {
@@ -3278,7 +3299,7 @@ void BugFixes::init()
 		MakeCall(0x488EF3, obj_load_func_hack, 1);
 		HookCall(0x4949B2, partyMemberPrepLoadInstance_hook);
 		// Fix for knocked down critters not playing stand up animation when the combat ends (when DAM_LOSE_TURN and DAM_KNOCKED_DOWN flags are set)
-		MakeCall(0x421F64, combat_over_hack, 1);
+		MakeCall(0x42206F, combat_over_hack, 1);
 		dlogr(" Done", DL_FIX);
 	//}
 
