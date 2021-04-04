@@ -843,3 +843,19 @@ int     arg4 - random chance, calculated as: (chance - random(1, 100)), where a 
 
 int     ret0 - override the roll result
 ```
+-------------------------------------------
+
+#### `HOOK_BESTWEAPON (hs_bestweapon.int)`
+
+Runs when the game (AI) calculates which weapon is the best when equipped in combat.
+This is also runs when the player's presses the equip better weapons button in the party member control panel.
+
+```
+Critter arg0 - the NPC for which weapons are equipped
+Item    arg1 - the chosen best weapon of two items
+Item    arg2 - first weapon item to choose from
+Item    arg3 - second weapon item to choose from
+Critter arg4 - target of current NPC (can be 0)
+
+Item    ret0 - overrides the chosen best weapon
+```
