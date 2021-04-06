@@ -39,7 +39,9 @@
 namespace sfall
 {
 
-static fo::GameObject* ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* itemGround);
+static const char* retargetTileMsg = "\nI'm in the way of friendly fire! I'll try to move to the nearest tile.";
+
+static fo::GameObject* ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* itemGround, fo::GameObject* weapon);
 
 constexpr int pickupCostAP = 3; // engine default cost
 
@@ -121,22 +123,55 @@ continue:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+fo::GameObject* ai_search_environ_ammo(fo::GameObject* critter, fo::GameObject* weapon) {
+	if (!weapon) {
+		weapon = fo::func::inven_right_hand(critter);
+		if (!weapon) return nullptr; // ERROR: не назначено или нет оружия для проверки
+	}
+
+	fo::GameObject* ammo = nullptr;
+
+	long* objectsList = nullptr;
+	long numObjects = fo::func::obj_create_list(-1, critter->elevation, fo::ObjType::OBJ_TYPE_ITEM, &objectsList);
+	if (numObjects > 0) {
+		fo::var::combat_obj = critter;
+		fo::func::qsort(objectsList, numObjects, 4, fo::funcoffs::compare_nearer_);
+
+		long maxDist = fo::func::stat_level(critter, fo::STAT_pe) + 5;
+
+		for (int i = 0; i < numObjects; i++)
+		{
+			fo::GameObject* item = (fo::GameObject*)objectsList[i];
+
+			if (fo::func::obj_dist(critter, item) > maxDist) break;
+			if (fo::GetItemType(item) != fo::ItemType::item_type_ammo) continue;
+
+			if (fo::func::item_w_can_reload(weapon, item)) {
+				ammo = item;
+				break;
+			};
+		}
+		fo::func::obj_delete_list(objectsList);
+	}
+	return ammo;
+}
+
 // Проверяет наличие патронов к оружию на карте или в инвентере
-static long AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
+long AIBehavior::AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
 	if (weapon->item.charges > 0 || weapon->item.ammoPid == -1) return 1;
 	if (AIHelpers::CritterHaveAmmo(critter, weapon)) return 1;
 
 	// check ammo in corpses
-	fo::GameObject* ammo = ai_search_environ_corpse(critter, fo::ItemType::item_type_ammo, 0);
+	fo::GameObject* ammo = ai_search_environ_corpse(critter, fo::ItemType::item_type_ammo, 0, weapon);
 	// check ammo on ground
-	if (!ammo) ammo = fo::func::ai_search_environ(critter, fo::ItemType::item_type_ammo);
+	if (!ammo) ammo = ai_search_environ_ammo(critter, weapon);
 	return (ammo) ? 1 : 0;
 }
 
 // Неподбирать оружие если у него пустой магазин, и к нему нет патронов в инвентаре или на карте
 static long __fastcall AICheckWeaponAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
 	if (fo::func::ai_can_use_weapon(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) {
-		return AICheckAmmo(weapon, critter);
+		return AIBehavior::AICheckAmmo(weapon, critter);
 	}
 	return 0; // 0 - critter no have ammo or can't use weapon
 }
@@ -472,13 +507,13 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 				if (!fo::func::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
 
 				// проверяем наличее и количество имеющихся патронов
-				if (!AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) {
+				if (!AIBehavior::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) {
 					continue;
 				}
 
 				DEV_PRINTF1("\n[AI] SearchBestWeaponInCorpses Find pid: %d", itemGround->protoId);
 
-				if (fo::func::ai_best_weapon(source, item, itemGround, target) == itemGround) {
+				if (AIHelpers::BestWeapon(source, item, itemGround, target) == itemGround) {
 					item = itemGround;
 					owner = object;
 					dist = toDistObject;
@@ -489,7 +524,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 		fo::func::obj_delete_list(objectsList);
 	}
 	if (owner) {
-		if (itemEnv && fo::func::ai_best_weapon(source, itemEnv, item, target) == itemEnv) return itemEnv;
+		if (itemEnv && AIHelpers::BestWeapon(source, itemEnv, item, target) == itemEnv) return itemEnv;
 
 		DEV_PRINTF2("\n[AI] SearchBestWeaponInCorpses: %s, Owner: %s", fo::func::critter_name(item), fo::func::critter_name(item->owner));
 		item->owner = owner;
@@ -521,9 +556,9 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 
 				if (fo::func::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) &&
 					// проверяем наличее и количество имеющихся патронов
-					AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 0)
+					AIBehavior::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 0)
 				{
-					if (fo::func::ai_best_weapon(source, item, itemGround, target) == itemGround) {
+					if (AIHelpers::BestWeapon(source, item, itemGround, target) == itemGround) {
 						item = itemGround;
 						distToObject = toDistObject;
 					}
@@ -576,7 +611,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 				(Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) || AIHelpers::CritterHaveAmmo(source, item)))
 			{
 				if (!fo::func::combat_safety_invalidate_weapon_func(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, target, 0, 0)) { // weapon safety
-					bestWeapon = fo::func::ai_best_weapon(source, bestWeapon, item, target);
+					bestWeapon = AIHelpers::BestWeapon(source, bestWeapon, item, target);
 				}
 			}
 		}
@@ -586,7 +621,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 		DEV_PRINTF1("\n[AI] Find best weapon Pid: %d", (bestWeapon) ? bestWeapon->protoId : -1);
 		bestWeapon = AIHelpers::AICheckWeaponSkill(source, itemHand, bestWeapon); // выбрать лучшее на основе навыка
 		// проверить сможет ли атакующий сразу атаковать свою цель
-		if (itemHand != bestWeapon && CheckCanAttackTarget(bestWeapon, itemHand, source, target) == false) bestWeapon = nullptr; // оружие неподходит в текущей ситуации
+		if (itemHand && (itemHand != bestWeapon) && CheckCanAttackTarget(bestWeapon, itemHand, source, target) == false) bestWeapon = nullptr; // оружие неподходит в текущей ситуации
 	}
 
 	if (LookupOnGround && source->critter.getAP() >= pickupCostAP && !fo::func::critterIsOverloaded(source) && fo::func::critter_body_type(source) == fo::BodyType::Biped) {
@@ -618,7 +653,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 				if (item != itemGround) goto notRetrieve;
 
 				// проверить сможет ли атакующий сразу атаковать свою цель
-				if (CheckCanAttackTarget(itemGround, itemHand, source, target) == false) goto notRetrieve; // оружие неподходит в текущей ситуации
+				if (itemHand && CheckCanAttackTarget(itemGround, itemHand, source, target) == false) goto notRetrieve; // оружие неподходит в текущей ситуации
 
 				fo::func::dev_printf("\n[AI] Try retrieve item pid: %d AP: %d", itemGround->protoId, source->critter.getAP());
 
@@ -914,7 +949,7 @@ static fo::GameObject* FindSafeWeaponAttack(fo::GameObject* source, fo::GameObje
 				Combat::check_item_ammo_cost(item, outHitMode)) &&
 				!fo::func::combat_safety_invalidate_weapon_func(source, pickWeapon, outHitMode, target, 0, 0)) // weapon is safety
 			{
-				pickWeapon = fo::func::ai_best_weapon(source, pickWeapon, item, target);
+				pickWeapon = AIHelpers::BestWeapon(source, pickWeapon, item, target);
 			}
 		}
 	}
@@ -1077,7 +1112,7 @@ forceAttack:
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // Аналог функции ai_search_environ, только стой разницей, что ищет требуемый предмет в инвентаре убитых криттеров
-static fo::GameObject* ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* itemGround) {
+static fo::GameObject* ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* itemGround, fo::GameObject* weapon) {
 	long* objectsList = nullptr;
 
 	long numObjects = fo::func::obj_create_list(-1, source->elevation, fo::ObjType::OBJ_TYPE_CRITTER, &objectsList);
@@ -1086,7 +1121,10 @@ static fo::GameObject* ai_search_environ_corpse(fo::GameObject* source, long ite
 		fo::func::qsort(objectsList, numObjects, 4, fo::funcoffs::compare_nearer_);
 
 		long maxDist = fo::func::stat_level(source, fo::Stat::STAT_pe) + 5;
-		fo::GameObject* itemHand = fo::func::inven_right_hand(source);
+		if (!weapon && itemType == fo::ItemType::item_type_ammo) {
+			weapon = fo::func::inven_right_hand(source);
+			if (!weapon) return itemGround; // ERROR: не назначено или нет оружия для проверки
+		}
 
 		for (int i = 0; i < numObjects; i++)
 		{
@@ -1095,31 +1133,7 @@ static fo::GameObject* ai_search_environ_corpse(fo::GameObject* source, long ite
 
 			if (fo::func::obj_dist(source, object) > maxDist) break;
 
-			fo::GameObject* item;
-			DWORD slot = -1;
-			while (true)
-			{
-				item = fo::func::inven_find_type(object, itemType, &slot);
-				if (item) {
-					switch (itemType) {
-					case fo::ItemType::item_type_weapon:
-						if (!fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
-						// проверяем наличее и количество имеющихся патронов
-						if (!AICheckAmmo(item, source) && Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) continue;
-						break;
-					case fo::ItemType::item_type_ammo:
-						if (!fo::func::item_w_can_reload(itemHand, item)) continue;
-						break;
-					case fo::ItemType::item_type_drug:
-					case fo::ItemType::item_type_misc_item:
-						if (!fo::func::ai_can_use_drug(source, item)) continue;
-						break;
-					default:
-						continue;
-					}
-				}
-				break; // exit while
-			}
+			fo::GameObject* item = AIHelpers::SearchInventoryItemType(source, itemType, object, weapon);
 			itemCorpse = item;
 			if (item) {
 				DEV_PRINTF2("\n[AI] ai_search_environ_corpse: %s, Owner: %s", fo::func::critter_name(item), fo::func::critter_name(item->owner));
@@ -1145,7 +1159,7 @@ static fo::GameObject* ai_search_environ_corpse(fo::GameObject* source, long ite
 }
 
 static long __fastcall AISearchCorpseWeapon(fo::GameObject* target, fo::GameObject* source, fo::GameObject* &weapon, long &hitMode, fo::GameObject* itemEnv) {
-	fo::GameObject* object = ai_search_environ_corpse(source, fo::ItemType::item_type_weapon, itemEnv);
+	fo::GameObject* object = ai_search_environ_corpse(source, fo::ItemType::item_type_weapon, itemEnv, weapon);
 	if (!object || !itemCorpse) return 1; // default
 
 	fo::GameObject* item = AIRetrieveCorpseItem(source, nullptr);
@@ -1187,7 +1201,7 @@ default:
 }
 
 static long __fastcall AISearchCorpseAmmo(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* itemEnv) {
-	fo::GameObject* object = ai_search_environ_corpse(source, fo::ItemType::item_type_ammo, itemEnv);
+	fo::GameObject* object = ai_search_environ_corpse(source, fo::ItemType::item_type_ammo, itemEnv, weapon);
 	if (!object || !itemCorpse) return 0; // default
 
 	fo::GameObject* item = AIRetrieveCorpseItem(source, nullptr);
@@ -1219,7 +1233,7 @@ default:
 
 static long __fastcall AISearchCorpseDrug(fo::GameObject* source, long addrType, fo::GameObject* &itemEnv) {
 	fo::ItemType type = (addrType == 0x4287B2 + 5) ? fo::ItemType::item_type_drug : fo::ItemType::item_type_misc_item;
-	fo::GameObject* object = ai_search_environ_corpse(source, type, itemEnv);
+	fo::GameObject* object = ai_search_environ_corpse(source, type, itemEnv, 0);
 	if (!object || !itemCorpse) return 0; // default (в itemEnv ref значение из ai_search_environ_)
 
 	fo::GameObject* item = AIRetrieveCorpseItem(source, nullptr);
@@ -1323,9 +1337,12 @@ void AIBehavior::init(bool smartBehavior) {
 	// wants to pickup a weapon placed on the map, but to perform actions, he will not have enough AP to pickup this item,
 	// after the next turn, he will attack the player's
 	// This will prevent an attempt to pickup the weapon at the beginning of the attack if there is not enough AP
-	if (GetConfigInt("CombatAI", "ItemPickUpFix", 0)) { // TODO rename to WeaponPickUpFix
+	if (GetConfigInt("CombatAI", "ItemPickUpFix", 0)) {
 		HookCall(0x429CAF, ai_search_environ_hook);
 	}
+
+	// Замена отладочного сообшения "In the way!"
+	SafeWrite32(0x42A467, (DWORD)&retargetTileMsg); // cai_retargetTileFromFriendlyFireSubFunc_
 }
 
 }

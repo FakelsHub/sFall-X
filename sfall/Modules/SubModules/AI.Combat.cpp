@@ -681,6 +681,7 @@ ReFindNewTarget:
 		findTargetAfterKill = false;
 	} else {
 		DEV_PRINTF1("\n[AI] Attack skip: %s no have target or dead.", attacker.name);
+		if (target && target->critter.IsDead()) target = nullptr;
 	}
 
 	/**************************************************************************
@@ -714,6 +715,8 @@ ReFindNewTarget:
 		* Данное поведение было определено в ванильной функции
 	***************************************************************************************/
 	if (source->critter.getAP() && target && target->critter.IsNotDead() && fo::func::obj_dist(source, target) > attacker.cap->max_dist * 2) { // дистанция max_dist была удвоенна
+		// проверить дистанцию стрелкового оружия
+
 		DEV_PRINTF("\n[AI] My target is over max distance!");
 		long peRange = fo::func::stat_level(source, fo::STAT_pe) * 5; // x5 множитель по умолчанию в is_within_perception (было x2)
 
@@ -738,6 +741,7 @@ ReFindNewTarget:
 			return;
 		}
 		// напарники игрока продолжат выполнять весь алгоритм ниже
+		//return;
 	}
 
 	/************************************************************************************
@@ -870,7 +874,7 @@ ReFindNewTarget:
 
 		// перезарядить оружие
 		if (source->critter.getAP() > 0) {
-			if (AIHelpers::AITryReloadWeapon(source, fo::func::inven_right_hand(source), nullptr)) DEV_PRINTF("\n[AI] Reload weapon.");;
+			if (AIHelpers::AITryReloadWeapon(source, fo::func::inven_right_hand(source), nullptr)) DEV_PRINTF("\n[AI] Reload weapon.");
 		}
 		DEV_PRINTF1("\n[AI] left extra %d AP's", source->critter.getAP());
 	}

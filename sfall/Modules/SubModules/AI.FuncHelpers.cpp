@@ -9,8 +9,11 @@
 #include "..\AI.h"
 #include "..\Combat.h"
 
+#include "..\HookScripts\CombatHs.h"
+
 #include "..\..\Game\items.h"
 
+#include "AI.Behavior.h"
 #include "AI.FuncHelpers.h"
 
 
@@ -62,6 +65,11 @@ fo::GameObject* AIHelpers::GetNearestEnemyCritter(fo::GameObject* source) {
 	return (enemyCritter && enemyCritter->critter.getHitTarget()->critter.teamNum == source->critter.teamNum) ? enemyCritter : nullptr;
 }
 
+fo::GameObject* AIHelpers::BestWeapon(fo::GameObject* source, fo::GameObject* weapon1, fo::GameObject* weapon2, fo::GameObject* target) {
+	fo::GameObject* bestWeapon = fo::func::ai_best_weapon(source, weapon1, weapon2, target);
+	return BestWeaponHook_Invoke(bestWeapon, source, weapon1, weapon2, target);
+}
+
 static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefScore) {
 	long score;
 	fo::AttackSubType weapType = fo::AttackSubType::NONE;
@@ -80,7 +88,7 @@ static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefSco
 		long radius = fo::func::item_w_area_damage_radius(weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
 		if (radius > 1) score += (2 * radius);
 
-		if (proto->item.weapon.perk) score *= 5; // TODO: add AIBestWeaponFix
+		if (proto->item.weapon.perk) score *= 3; // TODO: add AIBestWeaponFix
 	} else {
 		weapType = fo::AttackSubType::UNARMED;
 	}
@@ -158,10 +166,39 @@ fo::GameObject* AIHelpers::GetInventoryWeapon(fo::GameObject* source, bool check
 			(item->item.ammoPid == -1 || fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) != fo::AttackSubType::GUNS) ||
 			 fo::func::item_w_curr_ammo(item) || fo::func::ai_have_ammo(source, item, 0))
 		{
-			bestWeapon = BestWeaponLite(source, bestWeapon, item);
+			bestWeapon = BestWeaponHook_Invoke(BestWeaponLite(source, bestWeapon, item), source, bestWeapon, item, 0);
 		}
 	}
 	return bestWeapon;
+}
+
+fo::GameObject* AIHelpers::SearchInventoryItemType(fo::GameObject* source, long itemType, fo::GameObject* object, fo::GameObject* weapon) {
+	fo::GameObject* item;
+	DWORD slot = -1;
+	while (true)
+	{
+		item = fo::func::inven_find_type(object, itemType, &slot);
+		if (item) {
+			switch (itemType) {
+			case fo::ItemType::item_type_weapon:
+				if (!fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
+				// проверяем наличее и количество имеющихся патронов
+				if (!AIBehavior::AICheckAmmo(item, source) && Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) continue;
+				break;
+			case fo::ItemType::item_type_ammo:
+				if (!fo::func::item_w_can_reload(weapon, item)) continue;
+				break;
+			case fo::ItemType::item_type_drug:
+			case fo::ItemType::item_type_misc_item:
+				if (!fo::func::ai_can_use_drug(source, item)) continue;
+				break;
+			default:
+				continue;
+			}
+		}
+		break; // exit while
+	}
+	return item;
 }
 
 long AIHelpers::CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {

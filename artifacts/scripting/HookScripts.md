@@ -847,15 +847,15 @@ int     ret0 - override the roll result
 
 #### `HOOK_BESTWEAPON (hs_bestweapon.int)`
 
-Runs when the game (AI) calculates which weapon is the best when equipped in combat.
-This is also runs when the player's presses the equip better weapons button in the party member control panel.
+Runs when the game (AI) decides which weapon is the best while searching the inventory for a weapon to equip in combat.
+This is also runs when the player presses the "Use Best Weapon" button on the party member control panel.
 
 ```
-Critter arg0 - the NPC for which weapons are equipped
+Critter arg0 - the critter searching for a weapon
 Item    arg1 - the chosen best weapon of two items
-Item    arg2 - first weapon item to choose from
-Item    arg3 - second weapon item to choose from
-Critter arg4 - target of current NPC (can be 0)
+Item    arg2 - the first weapon item to choose from
+Item    arg3 - the second weapon item to choose from
+Critter arg4 - target of the critter (can be 0)
 
 Item    ret0 - overrides the chosen best weapon
 ```
