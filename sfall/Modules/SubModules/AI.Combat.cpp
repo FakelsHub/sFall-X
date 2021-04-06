@@ -17,8 +17,9 @@
 
 #include "..\AI.h"
 #include "AI.Behavior.h"
-#include "AI.FuncHelpers.h"
 #include "AI.SearchTarget.h"
+#include "AI.Inventory.h"
+#include "AI.FuncHelpers.h"
 
 #include "AI.Combat.h"
 
@@ -874,7 +875,7 @@ ReFindNewTarget:
 
 		// перезарядить оружие
 		if (source->critter.getAP() > 0) {
-			if (AIHelpers::AITryReloadWeapon(source, fo::func::inven_right_hand(source), nullptr)) DEV_PRINTF("\n[AI] Reload weapon.");
+			if (AIInventory::AITryReloadWeapon(source, fo::func::inven_right_hand(source), nullptr)) DEV_PRINTF("\n[AI] Reload weapon.");
 		}
 		DEV_PRINTF1("\n[AI] left extra %d AP's", source->critter.getAP());
 	}

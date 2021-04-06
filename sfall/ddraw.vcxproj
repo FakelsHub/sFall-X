@@ -399,6 +399,7 @@
     <ClInclude Include="Modules\SubModules\AI.Behavior.h" />
     <ClInclude Include="Modules\SubModules\AI.Combat.h" />
     <ClInclude Include="Modules\SubModules\AI.FuncHelpers.h" />
+    <ClInclude Include="Modules\SubModules\AI.Inventory.h" />
     <ClInclude Include="Modules\SubModules\AI.SearchTarget.h" />
     <ClInclude Include="Modules\SubModules\CombatBlock.h" />
     <ClInclude Include="Modules\SubModules\CombatExt.h" />
@@ -512,6 +513,7 @@
     <ClCompile Include="Modules\SubModules\AI.Behavior.cpp" />
     <ClCompile Include="Modules\SubModules\AI.Combat.cpp" />
     <ClCompile Include="Modules\SubModules\AI.FuncHelpers.cpp" />
+    <ClCompile Include="Modules\SubModules\AI.Inventory.cpp" />
     <ClCompile Include="Modules\SubModules\AI.SearchTarget.cpp" />
     <ClCompile Include="Modules\SubModules\CombatBlock.cpp" />
     <ClCompile Include="Modules\SubModules\CombatExt.cpp" />

@@ -36,8 +36,9 @@ public:
 		MoveAway
 	};
 
-	static long AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter);
 	static long __fastcall AICheckBeforeWeaponSwitch(fo::GameObject* target, long &hitMode, fo::GameObject* source, fo::GameObject* weapon);
 };
+
+constexpr int pickupCostAP = 3; // engine default cost
 
 }

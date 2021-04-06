@@ -7,15 +7,10 @@
 #include "..\..\FalloutEngine\Fallout2.h"
 #include "..\..\Utils.h"
 #include "..\AI.h"
-#include "..\Combat.h"
-
-#include "..\HookScripts\CombatHs.h"
 
 #include "..\..\Game\items.h"
 
-#include "AI.Behavior.h"
 #include "AI.FuncHelpers.h"
-
 
 namespace sfall
 {
@@ -63,142 +58,6 @@ bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, fo
 fo::GameObject* AIHelpers::GetNearestEnemyCritter(fo::GameObject* source) {
 	fo::GameObject* enemyCritter = fo::func::ai_find_nearest_team_in_combat(source, source, 2);
 	return (enemyCritter && enemyCritter->critter.getHitTarget()->critter.teamNum == source->critter.teamNum) ? enemyCritter : nullptr;
-}
-
-fo::GameObject* AIHelpers::BestWeapon(fo::GameObject* source, fo::GameObject* weapon1, fo::GameObject* weapon2, fo::GameObject* target) {
-	fo::GameObject* bestWeapon = fo::func::ai_best_weapon(source, weapon1, weapon2, target);
-	return BestWeaponHook_Invoke(bestWeapon, source, weapon1, weapon2, target);
-}
-
-static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefScore) {
-	long score;
-	fo::AttackSubType weapType = fo::AttackSubType::NONE;
-	if (weapon) {
-		fo::Proto* proto;
-		if (!fo::GetProto(weapon->protoId, &proto)) return 0;
-		if (proto->item.flagsExt & fo::ObjectFlag::HiddenItem) return -1;
-
-		weapType = fo::GetWeaponType(proto->item.flagsExt); // ATKTYPE_RWEAPON_PRIMARY
-
-		long maxDmg = proto->item.weapon.maxDamage;
-		long minDmg = proto->item.weapon.minDamage;
-		score = (maxDmg - minDmg) / 2;
-
-		// пассивные очки за радиус
-		long radius = fo::func::item_w_area_damage_radius(weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
-		if (radius > 1) score += (2 * radius);
-
-		if (proto->item.weapon.perk) score *= 3; // TODO: add AIBestWeaponFix
-	} else {
-		weapType = fo::AttackSubType::UNARMED;
-	}
-
-	int order = 0;
-	outPrefScore = 0;
-	while (weapType != fo::var::weapPrefOrderings[cap->best_weapon + 1][order]) //*(&weapPrefOrderings[5 * (cap->best_weapon + 1)] + order * 4)
-	{
-		outPrefScore++;
-		if (++order > 4) break;
-	}
-	return score;
-}
-
-// Облегченная реализация функции ai_best_weapon_ без проверки на target
-static fo::GameObject* BestWeaponLite(fo::GameObject* source, fo::GameObject* weaponPrimary, fo::GameObject* weaponSecondary) {
-	auto cap = fo::func::ai_cap(source);
-	if ((fo::AIpref::weapon_pref)cap->best_weapon == fo::AIpref::weapon_pref::random) {
-		return (fo::func::roll_random(1, 100) <= 50) ? weaponPrimary : weaponSecondary;
-	}
-
-	long primaryPrefScore = 999;
-	long primaryScore = WeaponScore(weaponPrimary, cap, primaryPrefScore);
-	if (primaryScore == -1) return weaponPrimary;
-
-	long secondaryPrefScore = 999;
-	long secondaryScore = WeaponScore(weaponSecondary, cap, secondaryPrefScore);
-	if (secondaryScore == -1) return weaponSecondary;
-
-	if (primaryPrefScore == secondaryPrefScore)	{
-		if (primaryPrefScore == 999) return nullptr; // ???
-
-		if (std::abs(secondaryScore - primaryScore) <= 5) {
-			return (fo::func::item_cost(weaponSecondary) > fo::func::item_cost(weaponPrimary)) ? weaponSecondary : weaponPrimary;
-		}
-		if (secondaryScore > primaryScore) return weaponSecondary;
-	} else {
-		// у оружия разное предпочтение
-		// у кого очки предпочтения меньше то лучше
-
-		if (weaponPrimary && weaponPrimary->protoId == fo::PID_FLARE && weaponSecondary) {
-			return weaponSecondary;
-		}
-		if (weaponSecondary && weaponSecondary->protoId == fo::PID_FLARE && weaponPrimary) {
-			return weaponPrimary;
-		}
-
-		fo::AIpref::weapon_pref pref = (fo::AIpref::weapon_pref)cap->best_weapon;
-		if ((pref < fo::AIpref::weapon_pref::no_pref || pref > fo::AIpref::weapon_pref::unarmed) && std::abs(secondaryScore - primaryScore) > 5) {
-			return (primaryScore < secondaryScore) ? weaponSecondary : weaponPrimary;
-		}
-		if (primaryPrefScore > secondaryPrefScore) {
-			return weaponSecondary;
-		}
-	}
-	return weaponPrimary;
-}
-
-// Альтернативная реализация функции ai_search_inven_weap_
-fo::GameObject* AIHelpers::GetInventoryWeapon(fo::GameObject* source, bool checkAP, bool useHand) {
-	if (fo::func::critter_body_type(source) == fo::BodyType::Quadruped && source->protoId != fo::ProtoID::PID_GORIS) {
-		return 0;
-	}
-	fo::GameObject* bestWeapon = (useHand) ? fo::func::inven_right_hand(source) : nullptr;
-
-	DWORD slot = -1;
-	while (true)
-	{
-		fo::GameObject* item = fo::func::inven_find_type(source, fo::ItemType::item_type_weapon, &slot);
-		if (!item) break;
-
-		if ((!bestWeapon || item->protoId != bestWeapon->protoId) &&
-			(!checkAP || game::Items::item_weapon_mp_cost(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0) <= source->critter.getAP()) &&
-			(fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) &&
-			(item->item.ammoPid == -1 || fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) != fo::AttackSubType::GUNS) ||
-			 fo::func::item_w_curr_ammo(item) || fo::func::ai_have_ammo(source, item, 0))
-		{
-			bestWeapon = BestWeaponHook_Invoke(BestWeaponLite(source, bestWeapon, item), source, bestWeapon, item, 0);
-		}
-	}
-	return bestWeapon;
-}
-
-fo::GameObject* AIHelpers::SearchInventoryItemType(fo::GameObject* source, long itemType, fo::GameObject* object, fo::GameObject* weapon) {
-	fo::GameObject* item;
-	DWORD slot = -1;
-	while (true)
-	{
-		item = fo::func::inven_find_type(object, itemType, &slot);
-		if (item) {
-			switch (itemType) {
-			case fo::ItemType::item_type_weapon:
-				if (!fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
-				// проверяем наличее и количество имеющихся патронов
-				if (!AIBehavior::AICheckAmmo(item, source) && Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) continue;
-				break;
-			case fo::ItemType::item_type_ammo:
-				if (!fo::func::item_w_can_reload(weapon, item)) continue;
-				break;
-			case fo::ItemType::item_type_drug:
-			case fo::ItemType::item_type_misc_item:
-				if (!fo::func::ai_can_use_drug(source, item)) continue;
-				break;
-			default:
-				continue;
-			}
-		}
-		break; // exit while
-	}
-	return item;
 }
 
 long AIHelpers::CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
@@ -337,60 +196,6 @@ bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 	if (type == -1 || type == fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) {
 		long typeSecondary = fo::GetWeaponType(proto->item.flagsExt >> 4);
 		if (typeSecondary >= fo::AttackSubType::THROWING) {
-			return true;
-		}
-	}
-	return false;
-}
-
-fo::GameObject* AIHelpers::GetInventAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
-	DWORD slotNum = -1;
-	while (true) {
-		fo::GameObject* ammo = fo::func::inven_find_type(critter, fo::item_type_ammo, &slotNum);
-		if (!ammo) break;
-		if (fo::func::item_w_can_reload(weapon, ammo)) return ammo;
-	}
-	return nullptr;
-}
-
-// Проверяет имеет ли криттер в своем инвентаре патроны к оружию для перезарядки
-long AIHelpers::CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
-	if (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER) return -1;
-	fo::GameObject* ammo = GetInventAmmo(critter, weapon);
-	return (ammo) ? ammo->item.charges : 0;
-}
-
-bool AIHelpers::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon, fo::GameObject* ammo) {
-	if (!weapon) return false;
-
-	long reloadCost = game::Items::item_weapon_mp_cost(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
-	if (reloadCost > critter->critter.getAP()) return false;
-
-	bool reload = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER);;
-
-	if (!ammo && weapon->item.ammoPid != -1 || reload) {
-		fo::Proto* proto = fo::GetProto(weapon->protoId);
-		if (proto->item.type == fo::ItemType::item_type_weapon) {
-			if (weapon->item.charges <= 0 || weapon->item.charges < (proto->item.weapon.maxAmmo / 2)) {
-				if (!reload) ammo = GetInventAmmo(critter, weapon);
-			} else {
-				reload = false;
-			}
-		}
-	}
-	if (reload || ammo) {
-		long result = fo::func::item_w_reload(weapon, ammo);
-		if (result != -1) {
-			if (!result && ammo) fo::func::obj_destroy(ammo);
-
-			//long volume = fo::func::gsound_compute_relative_volume(critter);
-			//const char* sfxName = fo::func::gsnd_build_weapon_sfx_name(0, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
-			//fo::func::gsound_play_sfx_file_volume(sfxName, volume);
-
-			fo::func::ai_magic_hands(critter, weapon, 5002);
-
-			critter->critter.movePoints -= reloadCost;
-			if (critter->critter.getAP() < 0) critter->critter.movePoints = 0;
 			return true;
 		}
 	}

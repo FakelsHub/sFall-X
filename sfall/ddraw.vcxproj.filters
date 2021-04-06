@@ -365,6 +365,9 @@
     <ClInclude Include="Game\tilemap.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\SubModules\AI.Inventory.h">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -672,6 +675,9 @@
     </ClCompile>
     <ClCompile Include="Game\tilemap.cpp">
       <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\AI.Inventory.cpp">
+      <Filter>Modules\SubModules\ImproveAI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

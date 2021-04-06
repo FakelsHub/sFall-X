@@ -16,6 +16,7 @@
 
 #include "AI.Behavior.h"
 #include "AI.Combat.h"
+#include "AI.Inventory.h"
 #include "AI.FuncHelpers.h"
 
 #include "AI.SearchTarget.h"
@@ -398,7 +399,7 @@ fo::GameObject* __fastcall AISearchTarget::AIDangerSource_Extended(fo::GameObjec
 	fo::GameObject* handItem = fo::func::inven_right_hand(source);
 	if (!handItem) {
 		// если атакующий не вооружен, найти оружие в инвентаре перед поиском цели (исправляет ситуацию при поиске целей)
-		weapon = AIHelpers::GetInventoryWeapon(source, true, false); // выбрать лучшее оружие из инвентаря (если имеется)
+		weapon = AIInventory::GetInventoryWeapon(source, true, false); // выбрать лучшее оружие из инвентаря (если имеется)
 		if (weapon) {
 			DEV_PRINTF("\n[AI] Attacker wield weapon.");
 			weapon->flags |= fo::ObjectFlag::Right_Hand;

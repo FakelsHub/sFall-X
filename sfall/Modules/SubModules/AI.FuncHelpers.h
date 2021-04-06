@@ -26,13 +26,6 @@ public:
 
 	static fo::GameObject* GetNearestEnemyCritter(fo::GameObject* source);
 
-	static fo::GameObject* BestWeapon(fo::GameObject* source, fo::GameObject* weapon1, fo::GameObject* weapon2, fo::GameObject* target);
-
-	// Альтернативная реализация функции ai_search_inven_weap_
-	static fo::GameObject* GetInventoryWeapon(fo::GameObject* source, bool checkAP, bool useHand);
-
-	static fo::GameObject* SearchInventoryItemType(fo::GameObject* source, long itemType, fo::GameObject* object, fo::GameObject* weapon);
-
 	// Получает стоимость очков действия для текущего оружия в правом слоте и указанного режима
 	// в случае ошибки возвращается -1
 	static long GetCurrenShootAPCost(fo::GameObject* source, long modeHit, long isCalled);
@@ -65,12 +58,6 @@ public:
 
 	// Проверяет относится ли предмет к типу стрелковому или метательному оружию
 	static bool IsGunOrThrowingWeapon(fo::GameObject* item, long type = -1);
-
-	static fo::GameObject* GetInventAmmo(fo::GameObject* critter, fo::GameObject* weapon);
-
-	static long CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapon);
-
-	static bool AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* weapon, fo::GameObject* ammo);
 
 	static long GetFreeTile(fo::GameObject* source, long tile, long distMax);
 
