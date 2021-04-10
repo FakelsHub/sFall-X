@@ -26,6 +26,8 @@
 //#include "Objects.h"
 
 #include "..\Game\inventory.h"
+#include "..\Game\objects.h"
+#include "..\Game\tilemap.h"
 
 #include "PartyControl.h"
 
@@ -667,8 +669,38 @@ static void __declspec(naked) gdControlUpdateInfo_hook() {
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+
 static bool partyOrderPickTargetLoop;
 static std::vector<std::string> partyOrderAttackMsg;
+
+struct PartyTarget {
+	fo::GameObject* member;
+	fo::GameObject* target;
+};
+
+static std::vector<PartyTarget> partyOrderAttackTarget;
+
+static fo::GameObject* GetMemberTarget(fo::GameObject* member) {
+	for (auto &el : partyOrderAttackTarget) {
+		if (el.member->id == member->id) {
+			fo::GameObject* target = el.target;
+			if (target && target->critter.IsDead()) el.target = nullptr;
+			return el.target;
+		}
+	}
+	return nullptr;
+}
+
+static void SetMemberTarget(fo::GameObject* member, fo::GameObject* target) {
+	for (auto &el : partyOrderAttackTarget) {
+		if (el.member->id == member->id) {
+			el.target = target;
+			return;
+		}
+	}
+	partyOrderAttackTarget.push_back({member, target});
+}
 
 // disables the display of the hit chance value when picking a target
 static void __declspec(naked) gmouse_bk_process_hack() {
@@ -711,7 +743,10 @@ static void __fastcall action_attack_to(long unused, fo::GameObject* partyMember
 			if (underObject->critter.IsNotDead()) {
 				outlineColor = underObject->outline;
 
-				if (fo::var::combatNumTurns || underObject->critter.combatState) {
+				if ((fo::var::combatNumTurns || underObject->critter.combatState) &&
+					game::Objects::is_within_perception(partyMember, underObject, 0) && // [HOOK_WITHINPERCEPTION]
+					fo::func::make_path_func(partyMember, partyMember->tile, underObject->tile, 0, 0, game::Tilemap::obj_path_blocking_at_) > 0)
+				{
 					underObject->outline = 254 << 8; // flashing red
 					validTarget = underObject;
 				} else {
@@ -727,7 +762,7 @@ static void __fastcall action_attack_to(long unused, fo::GameObject* partyMember
 	} while (fo::var::mouse_buttons != 2 && fo::func::get_input() != 27); // 27 - escape code
 
 	if (validTarget && fo::var::mouse_buttons == 1) {
-		partyMember->critter.whoHitMe = validTarget;
+		SetMemberTarget(partyMember, validTarget);
 		validTarget->outline = outlineColor;
 
 		fo::AIcap* cap = fo::func::ai_cap(partyMember);
@@ -794,15 +829,39 @@ static void __declspec(naked) gmouse_handle_event_hook_restore() {
 	}
 }
 
+void __fastcall PartyControl::SetOrderTarget(fo::GameObject* attacker) {
+	if (attacker->critter.teamNum || partyOrderAttackTarget.empty()) return;
+	fo::GameObject* target = GetMemberTarget(attacker);
+	if (target) attacker->critter.whoHitMe = target;
+}
+
+static void __declspec(naked) combat_ai_hook_targer() {
+	__asm {
+		push ecx;
+		mov  ecx, eax;
+		call PartyControl::SetOrderTarget;
+		pop  ecx;
+		mov  eax, esi;
+		jmp  fo::funcoffs::ai_danger_source_;
+	}
+}
+
 void PartyControl::OrderAttackPatch() {
 	MakeCall(0x44C4A7, gmouse_handle_event_hack, 2);
 	HookCall(0x44C75F, gmouse_handle_event_hook);
 	HookCall(0x44C69A, gmouse_handle_event_hook_restore);
 	MakeCall(0x44B830, gmouse_bk_process_hack);
+
+	if (IniReader::GetConfigInt("CombatAI", "SmartBehavior", 1) <= 0) {
+		HookCall(0x42B235, combat_ai_hook_targer);
+	}
+	LoadGameHook::OnCombatEnd() += []() {
+		partyOrderAttackTarget.clear();
+	};
 }
 
 static void NpcAutoLevelPatch() {
-	npcAutoLevelEnabled = GetConfigInt("Misc", "NPCAutoLevel", 0) != 0;
+	npcAutoLevelEnabled = IniReader::GetConfigInt("Misc", "NPCAutoLevel", 0) != 0;
 	if (npcAutoLevelEnabled) {
 		dlog("Applying NPC autolevel patch.", DL_INIT);
 		SafeWrite8(0x495CFB, CodeType::JumpShort); // jmps 0x495D28 (skip random check)
@@ -831,27 +890,27 @@ void PartyControl::init() {
 
 	NpcAutoLevelPatch();
 
-	skipCounterAnim = (GetConfigInt("Misc", "SpeedInterfaceCounterAnims", 0) == 3);
+	skipCounterAnim = (IniReader::GetConfigInt("Misc", "SpeedInterfaceCounterAnims", 0) == 3);
 
 	// Party members buttons best weapon/armor - unwield behavior (from Crafty)
-	if (GetConfigInt("Misc", "PartyMemberTakeOffItem", 0)) {
+	if (IniReader::GetConfigInt("Misc", "PartyMemberTakeOffItem", 0)) {
 		HookCall(0x4494FC, gdControl_hook_weapon);
 		HookCall(0x449570, PartyMemberBestArmor); // gdControl_
 	}
 
 	// Display party member's current level & AC & addict flag
-	if (GetConfigInt("Misc", "PartyMemberExtraInfo", 0)) {
+	if (IniReader::GetConfigInt("Misc", "PartyMemberExtraInfo", 0)) {
 		dlog("Applying display NPC extra info patch.", DL_INIT);
 		HookCall(0x44926F, gdControlUpdateInfo_hook);
-		Translate("sfall", "PartyLvlMsg", "Level:", levelMsg, 12);
-		Translate("sfall", "PartyACMsg", "AC:", armorClassMsg, 12);
-		Translate("sfall", "PartyAddictMsg", "Addiction", addictMsg, 16);
+		IniReader::Translate("sfall", "PartyLvlMsg", "Level:", levelMsg, 12);
+		IniReader::Translate("sfall", "PartyACMsg", "AC:", armorClassMsg, 12);
+		IniReader::Translate("sfall", "PartyAddictMsg", "Addiction", addictMsg, 16);
 		dlogr(" Done", DL_INIT);
 	}
-	
-	partyOrderAttackMsg.push_back(std::move(Translate("sfall", "PartyOrderAttackCreature", "::Growl::", 33)));
-	partyOrderAttackMsg.push_back(std::move(Translate("sfall", "PartyOrderAttackRobot", "::Beep::", 33)));
-	auto msgs = TranslateList("sfall", "PartyOrderAttackHuman", "Okay, boss", '|', 512);
+
+	partyOrderAttackMsg.push_back(std::move(IniReader::Translate("sfall", "PartyOrderAttackCreature", "::Growl::", 33)));
+	partyOrderAttackMsg.push_back(std::move(IniReader::Translate("sfall", "PartyOrderAttackRobot", "::Beep::", 33)));
+	auto msgs = IniReader::TranslateList("sfall", "PartyOrderAttackHuman", "Okay, boss", '|', 512);
 	partyOrderAttackMsg.insert(partyOrderAttackMsg.cend(), msgs.cbegin(), msgs.cend());
 }
 

@@ -39,6 +39,7 @@ public:
 	static fo::GameObject* RealDudeObject();
 
 	static void OrderAttackPatch();
+	static void __fastcall SetOrderTarget(fo::GameObject* attacker); // for sfall ext.
 };
 
 extern bool npcAutoLevelEnabled;
