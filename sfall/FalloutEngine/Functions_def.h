@@ -47,6 +47,7 @@ WRAP_WATCOM_FFUNC3(void, display_inventory, long, inventoryOffset, long, visible
 WRAP_WATCOM_FFUNC4(void, display_target_inventory, long, inventoryOffset, long, visibleOffset, DWORD*, targetInventory, long, mode)
 WRAP_WATCOM_FFUNC3(fo::FrmFrameData*, frame_ptr, fo::FrmHeaderData*, frm, long, frame, long, direction)
 WRAP_WATCOM_FFUNC3(void, GNW_win_refresh, fo::Window*, win, fo::BoundRect*, rect, long*, buffer)
+WRAP_WATCOM_FFUNC4(const char*, gsnd_build_weapon_sfx_name, long, actionType, fo::GameObject*, weapon, fo::AttackType, hitMode, fo::GameObject*, target)
 WRAP_WATCOM_FFUNC3(void, intface_update_items, long, animate, long, modeLeft,long, modeRight)
 WRAP_WATCOM_FFUNC3(fo::GameObject*, inven_find_type, fo::GameObject*, critter, long, itemType, DWORD*, slot)
 WRAP_WATCOM_FFUNC3(long, inven_wield, fo::GameObject*, critter, fo::GameObject*, item, long, slot)
@@ -165,7 +166,9 @@ WRAP_WATCOM_FUNC1(void, gdialogDisplayMsg, const char*, message)
 WRAP_WATCOM_FUNC1(void, gmouse_3d_set_mode, long, mode)
 WRAP_WATCOM_FUNC1(long, gmouse_set_cursor, long, picNum)
 WRAP_WATCOM_FUNC1(long, gsound_background_volume_get_set, long, setVolume)
+WRAP_WATCOM_FUNC1(long, gsound_compute_relative_volume, fo::GameObject*, object)
 WRAP_WATCOM_FUNC1(void, gsound_play_sfx_file, const char*, name) // Plays SFX sound with given name
+WRAP_WATCOM_FUNC2(long, gsound_play_sfx_file_volume, const char*, name, long, volume)
 WRAP_WATCOM_FUNC1(fo::Window*, GNW_find, long, winRef)
 WRAP_WATCOM_FUNC2(long, interpret, fo::Program*, program, long, arg2)
 // Finds procedure ID for given script program pointer and procedure name

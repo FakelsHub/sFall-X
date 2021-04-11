@@ -12,6 +12,7 @@
 #include "..\..\Utils.h"
 //#include "..\LoadGameHook.h"
 #include "..\Combat.h"
+#include "..\PartyControl.h"
 
 #include "..\..\Game\items.h"
 
@@ -57,6 +58,29 @@ CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::Ga
 	}
 	return CombatShootResult::Ok;
 }
+
+static CombatShootResult CheckShotBeforeAttack(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode) {
+	fo::GameObject* item = fo::func::inven_right_hand(source);
+	if (item) {
+		long flags = source->critter.damageFlags;
+		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
+			return CombatShootResult::CrippledHand; // one of the hands is crippled, can't use a two-handed weapon
+		}
+		if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
+			return CombatShootResult::CrippledHands; // crippled both hands
+		}
+		if (fo::func::item_w_max_ammo(item) > 0 && Combat::check_item_ammo_cost(item, hitMode) <= 0) return CombatShootResult::NoAmmo;
+	}
+	long distance = (target) ? fo::func::obj_dist(source, target) : 1;
+	long attackRange = fo::func::item_w_range(source, hitMode);
+	if (distance > attackRange) return CombatShootResult::OutOfRange; // target is out of range of the attack
+
+	if (target && attackRange > 1 && fo::func::combat_is_shot_blocked(source, source->tile, target->tile, target, 0)) {
+		return CombatShootResult::ShootBlock; // shot to target is blocked
+	}
+	return CombatShootResult::Ok;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -213,11 +237,9 @@ reTryFindCoverTile:
 		long dirCentre = fo::func::tile_dir(target->tile, obj->tile);
 
 		// смежные направления гексов
-		long roll = GetRandom(1, 2);
-		if (roll > 1) roll = 5;
-		long dirNear0 = (dirCentre + roll) % 6;
-		roll = (roll == 5) ? 1 : 5;
-		long dirNear1 = (dirCentre + roll) % 6;
+		long r = (GetRandom(1, 2) == 2) ? 5 : 1;
+		long dirNear0 = (dirCentre + r) % 6;
+		long dirNear1 = (dirCentre + (r == 1) ? 5 : 1) % 6;
 
 		// берем первый не заблокированный гекс
 		for (size_t i = 1; i < 3; i++) // максимальный радиус 2 в гекса
@@ -284,7 +306,7 @@ reTryFindCoverTile:
 	return -1;
 }
 
-// Проверяет условия при которых будет доступено укрытие для NPC
+// Проверяет условия при которых будет доступно укрытие для NPC
 static long CheckCoverConditionAndGetTile(fo::GameObject* source, fo::GameObject* target) {
 	if (target->critter.IsNotActive()) return -1;
 
@@ -331,7 +353,7 @@ static unsigned long GetTargetDistance(fo::GameObject* source, fo::GameObject* &
 	return (distance >= distanceLast) ? distanceLast : distance;
 }
 
-// Функция анализирует используемое оружие у цели, и если цель использует оружие ближнего действия то атакующий AI
+// Функция анализирует используемое оружие у цели, и если цель использует оружие ближнего действия то атакующий NPC
 // по завершению хода попытается отойти от атакующей его цели на небольшое расстояние
 // Executed after the NPC attack
 static long GetMoveAwayDistaceFromTarget(fo::GameObject* source, fo::GameObject* &target) {
@@ -563,8 +585,6 @@ static bool CheckExistEnemyCritters(fo::GameObject* source) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-//
-/////////////////////////////////////////////////////////////////////////////////////////
 
 // Реализация движковой функции combat_ai_
 static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
@@ -638,9 +658,11 @@ TrySpendExtraAP:
 	bool findTargetAfterKill = false;
 
 	if (!target) {
+		PartyControl::SetOrderTarget(source); // Party order attack feature
+
 ReFindNewTarget:
 		DEV_PRINTF("\n[AI] Find targets...");
-		target = AISearchTarget::AIDangerSource_Extended(source, 1); // fo::func::ai_danger_source(source);
+		target = AISearchTarget::AIDangerSource_Extended(source, 1);
 
 		if (!target) DEV_PRINTF("\n[AI] No find target!"); else DEV_PRINTF1("\n[AI] Pick target: %s", fo::func::critter_name(target));
 
@@ -658,9 +680,10 @@ ReFindNewTarget:
 	**************************************************************************/
 	if (target && target->critter.IsNotDead()) {
 		// Перестроится перед атакой при проверки дружественного огня или от установленных предпочтений дистанции
-		DistancePrefBeforeAttack(source, target); // используется вместо функции cai_perform_distance_prefs
-		ReTargetTileFromFriendlyFire(source, target, findTargetAfterKill);
-
+		if (!CheckShotBeforeAttack(source, target, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) {
+			DistancePrefBeforeAttack(source, target); // используется вместо функции cai_perform_distance_prefs
+			ReTargetTileFromFriendlyFire(source, target, findTargetAfterKill);
+		}
 		DEV_PRINTF("\n[AI] Try attack.");
 		switch ((AIBehavior::AttackResult)fo::func::ai_try_attack(source, target)) // при TrySpendExtraAP атакующие не должны бежать к новой цели
 		{
@@ -852,7 +875,7 @@ ReFindNewTarget:
 
 		if (coverTile == -1) {
 			if (moveAwayDistance) MoveAwayFromTarget(source, moveAwayTarget, moveAwayDistance);
-			DEV_PRINTF1("\n[AI] distance prefs: %d AP's", source->critter.getAP());
+			DEV_PRINTF1("\n[AI] AP's before distance prefs: %d.", source->critter.getAP());
 			fo::func::cai_perform_distance_prefs(source, moveAwayTarget);
 		}
 	}
@@ -891,7 +914,7 @@ static void __fastcall combat_ai_hook(fo::GameObject* source, fo::GameObject* ta
 
 	// добавить очки действия атакующему для увеличении сложности боя [не для партийцев игрока]
 	if (useCombatDifficulty && combatDifficulty > CombatDifficulty::Easy  && !attacker.InDudeParty) {
-		attacker.totalBonusAP = (long)combatDifficulty * 2; // +0 easy, +2 normal, +4 hard
+		attacker.totalBonusAP = (long)combatDifficulty * 2; // +0 - easy, +2 - normal, +4 - hard
 		source->critter.movePoints += attacker.totalBonusAP;
 	}
 
@@ -905,25 +928,6 @@ static void __fastcall combat_ai_hook(fo::GameObject* source, fo::GameObject* ta
 	#ifndef NDEBUG
 	if (combatDebug) while (fo::func::get_input() != 27 && fo::var::mouse_buttons == 0) fo::func::process_bk();
 	#endif
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-// Принудительно использовать прицельный выстрел вместо шанса 1/N, если цель находится в пределах 5-ти гексов
-static void __declspec(naked) ai_called_shot_hook() {
-	__asm {
-		call fo::funcoffs::roll_random_;
-		cmp  eax, 1;
-		jne  distCheck;
-		retn;
-distCheck:
-		mov  edx, [esp + 0x1C - 0x14 + 4]; // target
-		mov  eax, esi; // source
-		call fo::funcoffs::obj_dist_;
-		cmp  eax, 5;
-		setbe al;
-		retn;
-	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -991,7 +995,7 @@ void AICombat::init(bool smartBehavior) {
 
 	// Enables the use of the RunAwayMode value from the AI-packet for the NPC
 	// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
-	npcPercentMinHP = (GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
+	npcPercentMinHP = (IniReader::GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
 
 	if (smartBehavior) {
 		// Override combat_ai_ engine function
@@ -1001,16 +1005,14 @@ void AICombat::init(bool smartBehavior) {
 		SafeWrite32(0x422B89, 0x8904518B);
 		SafeWrite8(0x422B8D, 0xF1); // mov  eax, esi > mov ecx, esi
 
-		HookCall(0x42A6BF, ai_called_shot_hook);
-
 		//HookCall(0X4230E8, combat_attack_hook);
 		//LoadGameHook::OnCombatStart() += []() { lastAttackerTile.clear(); };
 
 		// Добавить дополнительные очки действий, взависимомти от настройки сложности боя
-		useCombatDifficulty = (GetConfigInt("CombatAI", "DifficultyMode", 1) != 0);
+		useCombatDifficulty = (IniReader::GetConfigInt("CombatAI", "DifficultyMode", 1) != 0);
 
 		#ifndef NDEBUG
-		combatDebug = (GetConfigInt("CombatAI", "DebugMode", 0) != 0);
+		combatDebug = (IniReader::GetConfigInt("CombatAI", "DebugMode", 0) != 0);
 		#endif
 	}
 }

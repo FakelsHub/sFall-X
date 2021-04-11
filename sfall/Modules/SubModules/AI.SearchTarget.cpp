@@ -13,6 +13,7 @@
 
 #include "..\..\Game\items.h"
 #include "..\..\Game\objects.h"
+#include "..\..\Game\tilemap.h"
 
 #include "AI.Behavior.h"
 #include "AI.Combat.h"
@@ -378,14 +379,26 @@ FindNewTargets:
 	for (size_t i = 0; i < 4; i++)
 	{
 		if (targets[i]) {
-			if ((game::Objects::is_within_perception(source, targets[i], 3) == 0) || // [HOOK_WITHINPERCEPTION]
-				(fo::func::make_path_func(source, source->tile, targets[i]->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) ||
+			bool noPerception = (game::Objects::is_within_perception(source, targets[i], 3) == 0); // [HOOK_WITHINPERCEPTION]
+			if (noPerception ||	(fo::func::make_path_func(source, source->tile, targets[i]->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) ||
 				(AICombatCheckBadShot(source, targets[i], type))) // [add ext]
 			{
-				// (const char*)0x501104 "\nai_danger_source: I couldn't get at my target!  Picking alternate!"
-				fo::func::debug_printf("\n[AI] ai_danger_source: I couldn't get at my (%s) target! Picking alternate!", fo::func::critter_name(targets[i]));
+				const char* name = fo::func::critter_name(targets[i]);
+				if (noPerception) {
+					fo::func::debug_printf("\n[AI] ai_danger_source: I don't see (%s) target! Picking alternate!", name);
+					targets[i] = nullptr;
+				} else {
+					fo::func::debug_printf("\n[AI] ai_danger_source: I couldn't get (%s) target!", name);
+				}
 				continue;
 			}
+			return targets[i];
+		}
+	}
+	// Ни одна цель не была выбрана: Взять цель до которой можно дойти [add ext]
+	for (size_t i = 0; i < 4; i++) {
+		if (targets[i] && fo::func::make_path_func(source, source->tile, targets[i]->tile, 0, 0, game::Tilemap::obj_path_blocking_at_)) {
+			fo::func::debug_printf("\n[AI] ai_danger_source: I get block target (%s).", fo::func::critter_name(targets[i]));
 			return targets[i];
 		}
 	}
@@ -434,7 +447,7 @@ void AISearchTarget::init(bool smartBehavior) {
 		MakeJump(fo::funcoffs::ai_danger_source_ + 1, ai_danger_source_replacement); // 0x428F4C
 		SafeWrite8(0x428F4C, 0x52); // push edx
 
-		reFindNewTargets = (GetConfigInt("CombatAI", "TryToFindTargets", 1) > 0);
+		reFindNewTargets = (IniReader::GetConfigInt("CombatAI", "TryToFindTargets", 1) > 0);
 
 		///for TryToFindTargets=2 w/o logic
 		///SafeWrite16(0x4290B3, 0xDFEB); // jmp 0x429094
@@ -447,7 +460,7 @@ void AISearchTarget::init(bool smartBehavior) {
 	}
 
 	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
-	if (GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
+	if (IniReader::GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
 		//MakeCall(0x428F70, ai_danger_source_hack, 3);
 		npcAttackWhoFix = true;
 	}

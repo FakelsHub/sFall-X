@@ -12,6 +12,7 @@
 
 #include "..\..\Game\items.h"
 #include "..\..\Game\objects.h"
+#include "..\..\Game\tilemap.h"
 
 #include "..\AI.h"
 #include "AI.Combat.h"
@@ -219,15 +220,20 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 	DEV_PRINTF1("\n[AI] Search tile for shoot: max move distance %d", moveAP);
 
 	char rotationData[800];
-	long pathLength = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, (void*)fo::funcoffs::obj_blocking_at_);
+	long length = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, game::Tilemap::obj_path_blocking_at_);
+	long pathLength = length;
 	if (pathLength > moveAP) pathLength = moveAP;
 	else if (moveAP > pathLength) moveAP = pathLength;
+
+	DEV_PRINTF2("\n[AI] Search tile for shoot: make path distance: %d (set to: %d)", length, pathLength);
 
 	long checkTile = source->tile;
 	for (int i = 0; i < pathLength; i++)
 	{
 		checkTile = fo::func::tile_num_in_direction(checkTile, rotationData[i], 1);
 		DEV_PRINTF1("\n[AI] Search tile for shoot: check path tile %d", checkTile);
+
+		if (fo::func::obj_blocking_at(source, checkTile, source->elevation)) break;
 
 		// check the line of fire from target to checkTile
 		fo::GameObject* object = nullptr;
@@ -272,6 +278,8 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 			{
 				checkTile = fo::func::tile_num_in_direction(checkTile, rotationData[i], 1);
 				DEV_PRINTF2("\n[AI] Search tile for shoot: check extra path tile %d [leftAP: %d]", checkTile, leftAP);
+
+				if (fo::func::obj_blocking_at(source, checkTile, source->elevation)) break;
 
 				fo::GameObject* object = nullptr;
 				// check the line of fire from target to checkTile
@@ -399,6 +407,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 	return itemEnv;
 }
 
+// [Test Done]
 static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::GameObject* item, fo::GameObject* target, long &inCorpse, long &distToObject) {
 	long* objectsList = nullptr;
 
@@ -435,7 +444,7 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 }
 
 // Проверяет сможет ли атакующий атаковать цель с текущей позиции используя лучшее оружие
-// если лучшее оружие является оружием ближнего действия, а текущее оружие является метательным или стрельковым
+// если лучшее оружие является оружием ближнего действия, а текущее оружие является метательным или стрелковым
 static bool CheckCanAttackTarget(fo::GameObject* bestWeapon, fo::GameObject* itemHand, fo::GameObject* source, fo::GameObject* target) {
 	if (AIHelpers::GetWeaponSubType(bestWeapon, 0) <= fo::AttackSubType::MELEE) {
 		DEV_PRINTF("\n[AI] BestWeapon is MELEE.");
@@ -488,7 +497,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 		if (itemHand && (itemHand != bestWeapon) && CheckCanAttackTarget(bestWeapon, itemHand, source, target) == false) bestWeapon = nullptr; // оружие неподходит в текущей ситуации
 	}
 
-	if (LookupOnGround && source->critter.getAP() >= pickupCostAP && !fo::func::critterIsOverloaded(source) && fo::func::critter_body_type(source) == fo::BodyType::Biped) {
+	if (LookupOnGround && source->critter.getAP() >= pickupCostAP && fo::func::critter_body_type(source) == fo::BodyType::Biped && !fo::func::critterIsOverloaded(source)) {
 
 		// построить путь до цели
 		if (itemHand) {
@@ -577,18 +586,26 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 	long dist = fo::func::obj_dist(source, target) - 1;
 	long statIQ = fo::func::stat_level(source, fo::Stat::STAT_iq);
 
+	bool forceBurst = false;
 	if (attackCounter == 0 && hitMode == fo::AttackType::ATKTYPE_RWEAPON_PRIMARY && dist <= 3) {
 		// атакующий расположен достаточно близко к цели, его оружие имеет стрельбу очередью (burst attack)
 		// принудительно использовать втоичный режим стрельбы если атака по цели будет безопасной
 		if (!Combat::IsBurstDisabled(source) && fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst) {
-			if (statIQ < 5 || ((weapon->item.charges - fo::func::item_w_rounds(weapon) > 5 || AIInventory::CritterHaveAmmo(source, weapon) > 5) &&
-				!fo::func::combat_safety_invalidate_weapon_func(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY, target, 0, 0))) // weapon is safety
+			if (statIQ <= 3 || !fo::func::combat_safety_invalidate_weapon_func(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY, target, 0, 0)) // weapon is safety
 			{
+				forceBurst = true;
 				hitMode = fo::AttackType::ATKTYPE_RWEAPON_SECONDARY;
 				DEV_PRINTF("\n[AI] Force use burst attack.");
 			}
 		}
 	}
+
+	// проверить достаточно ли имеется запасов патронов для выстрела очередью
+	if (!forceBurst && hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY && dist > 10 && statIQ > 5 && fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst &&
+		(weapon->item.charges - fo::func::item_w_rounds(weapon) <= 5 || AIInventory::CritterHaveAmmo(source, weapon) <= 5)) {
+		hitMode = fo::AttackType::ATKTYPE_RWEAPON_PRIMARY; // сохраняем количество патронов
+	}
+
 	CombatShootResult result = AICombat::combat_check_bad_shot(source, target, hitMode, 0);
 
 	#ifndef NDEBUG
@@ -601,13 +618,13 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 			if (hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY && safetyRange == 0) {
 				// используется вторичный режим оружия (стрельба очередью) и имеется расстояние между целью и атакующим
 				// если атакующему хватате очков действия на подход к цели то выполнить передвижение к цели
-				if (statIQ > 5 && dist >= 1 && fo::func::ai_cap(source)->distance != fo::AIpref::distance::snipe) {
+				if (statIQ > 5 && dist > 0 && dist <= 5 && fo::func::ai_cap(source)->distance != fo::AIpref::distance::snipe) {
 					if (fo::func::item_w_anim_weap(weapon, hitMode) == fo::Animation::ANIM_fire_burst) {
 						long costAP = game::Items::item_weapon_mp_cost(source, weapon, hitMode, 0);
 						long moveDist = source->critter.getAP() - costAP;
 						if (moveDist > 0) {
 							if (moveDist >= costAP && fo::func::determine_to_hit(source, target, fo::BodyPart::Uncalled, hitMode) >= 70) {
-								// если процент попадания по цели достатояно высокий, уменьшить дистанцию передвижения, чтобы хватило на несколько атак
+								// если процент попадания по цели достаточно высокий, уменьшить дистанцию передвижения, чтобы хватило на несколько атак
 								while (moveDist >= costAP) moveDist -= costAP;
 							}
 							if (moveDist > 0) AIHelpers::MoveToTarget(source, target, moveDist);
@@ -827,7 +844,7 @@ static AIBehavior::AttackResult __fastcall AICheckResultAfterAttack(fo::GameObje
 			return AIBehavior::AttackResult::ReTryAttack; // сменили режим стрельбы, продолжить цикл атаки
 		}
 
-		// Выбрать другое подходящее оружие из инвентаря для атаки по цели, когда не хватает очков действия
+		// Выбрать другое подходящее оружие из инвентаря для атаки по цели
 		fo::AttackType outHitMode;
 		fo::GameObject* findWeapon = AIInventory::FindSafeWeaponAttack(source, target, handItem, outHitMode);
 		if (findWeapon) {
@@ -943,11 +960,98 @@ forceAttack:
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+std::vector<fo::GameObject*> moveBlockObjs;
+
+static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* target) {
+	fo::var::moveBlockObj = 0; // всегда содержит объект криттер или null
+	// check the path is clear
+	if (fo::func::make_path_func(source, source->tile, target->tile, 0, 0, AIHelpers::obj_ai_move_blocking_at_) > 0) {
+		return target;
+	}
+	if (fo::var::moveBlockObj) {
+		fo::GameObject* blockCritter = fo::var::moveBlockObj;
+		moveBlockObjs.push_back(blockCritter);
+		blockCritter->flags |= fo::ObjectFlag::WalkThru;
+
+		long len = fo::func::make_path_func(blockCritter, blockCritter->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
+		if (len) {
+			if (blockCritter->critter.teamNum != source->critter.teamNum || blockCritter->critter.IsNotActiveOrDead()) return blockCritter;
+
+			char rotation[800];
+			len = fo::func::make_path_func(source, source->tile, blockCritter->tile, rotation, 0, (void*)fo::funcoffs::obj_blocking_at_);
+
+			// move away, freeing the tile for movement
+			long dir = rotation[len - 1] + 3; // fo::func::tile_dir(blockCritter->tile, source->tile);
+			if (dir > 5) dir -= 6;
+			long moveTile = AIHelpers::GetFreeTile(blockCritter, blockCritter->tile, 1, dir);
+			//if (moveTile == -1) moveTile = AIHelpers::GetFreeTile(blockCritter, blockCritter->tile, 1);
+			if (moveTile == -1)	return blockCritter;
+
+			//long dist = fo::func::tile_dist(moveTile, blockCritter->tile);
+			if (AIHelpers::CombatMoveToTile(blockCritter, moveTile, 1)) return blockCritter; // error
+			if (blockCritter->critter.getAP()) blockCritter->critter.movePoints--;
+			blockCritter->flags ^= fo::ObjectFlag::WalkThru;
+		}
+		// recursively calling functions until the path is freed or completely blocked
+		return AIClearMovePath(source, target);
+	}
+	return nullptr;
+}
+
+static void __fastcall GetMoveObject(fo::GameObject* source, fo::GameObject* target, fo::GameObject* nearCritter) {
+	fo::GameObject* blockObject = AIClearMovePath(source, target);
+
+	for (fo::GameObject* obj : moveBlockObjs) obj->flags ^= fo::ObjectFlag::WalkThru;
+	moveBlockObjs.clear();
+
+	fo::var::moveBlockObj = (blockObject && fo::func::make_path_func(source, source->tile, blockObject->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0)
+	                      ? blockObject
+	                      : nearCritter;
+
+	DEV_PRINTF1("\n[AI] GetMoveObject: %s\n", (blockObject) ? fo::func::critter_name(blockObject) : "<Near>");
+	DEV_PRINTF1("\n[AI] NearMoveСritter: %s", fo::func::critter_name(fo::var::moveBlockObj));
+}
+
+static void __declspec(naked) ai_move_steps_closer_hack() {
+	__asm {
+		push edx;      // block critter to move
+		mov  ecx, esi; // source
+		mov  edx, edi; // target
+		call GetMoveObject;
+		retn;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+// Принудительно попробовать использовать прицельный выстрел вместо шанса 1/N, если цель атакующего находится в пределах 5-ти гексов
+static void __declspec(naked) ai_called_shot_hook() {
+	__asm {
+		call fo::funcoffs::roll_random_;
+		cmp  eax, 1;
+		jne  distCheck;
+		retn;
+distCheck:
+		mov  edx, [esp + 0x1C - 0x14 + 4]; // target
+		mov  eax, esi; // source
+		call fo::funcoffs::obj_dist_;
+		cmp  eax, 5;
+		setbe al;
+		retn;
+	}
+}
+
 void AIBehavior::init(bool smartBehavior) {
 
 	// Реализация поиска предметов в трупах убитых NPC (looting corpses)
-	LootingCorpses = (GetConfigInt("CombatAI", "LootingCorpses", 1) > 0);
+	LootingCorpses = (IniReader::GetConfigInt("CombatAI", "LootingCorpses", 1) > 0);
 	if (LootingCorpses) AIInventory::CorpsesLootingHack();
+
+	// Реализация функции освобождения пути криттера блокирующего путь к цели
+	MakeCall(0x42A0D6, ai_move_steps_closer_hack, 5);
+
+	BlockCall(0x42A06A); // unused code
 
 	//////////////////// Combat AI improved behavior //////////////////////////
 
@@ -956,7 +1060,9 @@ void AIBehavior::init(bool smartBehavior) {
 
 	if (smartBehavior) {
 		// Before starting his turn npc will always check if it has better weapons in inventory, than there is a current weapon
-		LookupOnGround = (GetConfigInt("CombatAI", "TakeBetterWeapons", 1) > 1); // always check the items available on the ground
+		LookupOnGround = (IniReader::GetConfigInt("CombatAI", "TakeBetterWeapons", 1) > 1); // always check the items available on the ground
+
+		HookCall(0x42A6BF, ai_called_shot_hook);
 
 		/**** Функция ai_try_attack_ ****/
 
@@ -1014,7 +1120,7 @@ void AIBehavior::init(bool smartBehavior) {
 	// wants to pickup a weapon placed on the map, but to perform actions, he will not have enough AP to pickup this item,
 	// after the next turn, he will attack the player's
 	// This will prevent an attempt to pickup the weapon at the beginning of the attack if there is not enough AP
-	if (GetConfigInt("CombatAI", "ItemPickUpFix", 0)) {
+	if (IniReader::GetConfigInt("CombatAI", "ItemPickUpFix", 0)) {
 		HookCall(0x429CAF, ai_search_environ_hook);
 	}
 

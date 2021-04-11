@@ -161,26 +161,6 @@ fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, fo::AttackTy
 	return GetWeaponSubType(item, isSecond);
 }
 
-//
-// нужна ли поддержка для многогексовых критеров? если нужна то заменить на combat_is_shot_blocked_
-bool AIHelpers::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
-	fo::GameObject* src = source;
-	fo::GameObject* object = target;
-	do {
-		fo::func::make_straight_path_func(src, src->tile, target->tile, 0, (DWORD*)&object, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-		if (object && object->TypeFid() != fo::ObjType::OBJ_TYPE_CRITTER && target != object) {
-			return false;
-		}
-		src = object;
-	} while (object && object->tile != target->tile);
-
-	return true;
-}
-
-//bool AIHelpers::IsSeeObject(fo::GameObject* source, fo::GameObject* target) {
-//	return fo::func::can_see(source, target) && AIHelpers::CanSeeObject(source, target);
-//}
-
 // Проверяет относится ли предмет к типу стрелкового или метательному оружию
 bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 	fo::Proto* proto = fo::GetProto(item->protoId);
@@ -202,15 +182,55 @@ bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 	return false;
 }
 
+// Получает свободный гекс по направлению и дистанции
+long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax, long dir) {
+	// рандомно смежные гексы
+	long r = (GetRandom(1, 2) == 2) ? 5 : 1;
+	long dirNear0 = (dir + r) % 6;
+	long dirNear1 = (dir + (r == 1) ? 5 : 1) % 6;
+
+	long freeTile = -1;
+	long dist = 1;
+
+	while (true)
+	{
+getTile:
+		long _tile = fo::func::tile_num_in_direction(tile, dir, 1);
+		if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
+			freeTile = _tile;
+			break;
+		}
+		_tile = fo::func::tile_num_in_direction(tile, dirNear0, 1);
+		if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
+			freeTile = _tile;
+			break;
+		}
+		_tile = fo::func::tile_num_in_direction(tile, dirNear1, 1);
+		if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
+			freeTile = _tile;
+		}
+		break;
+	}
+
+	if (freeTile != -1 && dist < distMax) {
+		dist++;
+		tile = freeTile;
+		goto getTile;
+	}
+	return freeTile;
+}
+
 long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax) {
 	long dist = 1;
 	do {
+		long dir = GetRandom(0, 5);
 		for (size_t r = 0; r < 6; r++)
 		{
-			long _tile = fo::func::tile_num_in_direction(tile, r, dist);
+			long _tile = fo::func::tile_num_in_direction(tile, dir, dist);
 			if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
 				return _tile;
 			}
+			if (++dir > 5) dir = 0;
 		}
 	} while (++dist <= distMax);
 	return -1;
@@ -258,7 +278,92 @@ long CheckLineOfFire(long sourceTile, long targetTile) {
 	return -1;
 }
 
-// TODO
+//
+// нужна ли поддержка для многогексовых критеров? если нужна то заменить на combat_is_shot_blocked_
+bool AIHelpers::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
+	fo::GameObject* src = source;
+	fo::GameObject* object = target;
+	do {
+		fo::func::make_straight_path_func(src, src->tile, target->tile, 0, (DWORD*)&object, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
+		if (object && object->TypeFid() != fo::ObjType::OBJ_TYPE_CRITTER && target != object) {
+			return false;
+		}
+		src = object;
+	} while (object && object->tile != target->tile);
+
+	return true;
+}
+
+//bool AIHelpers::IsSeeObject(fo::GameObject* source, fo::GameObject* target) {
+//	return fo::func::can_see(source, target) && AIHelpers::CanSeeObject(source, target);
+//}
+
+static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source, long tile, long elev) {
+	if (tile < 0 || tile >= 40000) return nullptr;
+
+	fo::ObjectTable* obj = fo::var::objectTable[tile];
+	while (obj)
+	{
+		if (elev == obj->object->elevation) {
+			fo::GameObject* object = obj->object;
+			long flags = object->flags;
+			// не установлены флаги Mouse_3d, NoBlock и WalkThru
+			if (!(flags & (fo::ObjectFlag::Mouse_3d | fo::ObjectFlag::NoBlock | fo::ObjectFlag::WalkThru)) && source != object) {
+				char type = object->TypeFid();
+				if (type != fo::ObjType::OBJ_TYPE_CRITTER /*type == fo::ObjType::OBJ_TYPE_SCENERY || type == fo::ObjType::OBJ_TYPE_WALL*/) {
+					return object;
+				}
+				//if (type == fo::ObjType::OBJ_TYPE_CRITTER) {
+					//if (fo::var::moveBlockObj) return object;
+					fo::var::moveBlockObj = object;
+					return object;
+				//}
+			}
+		}
+		obj = obj->nextObject;
+	}
+	// проверка на наличее мультигексовых объектов
+	long direction = 0;
+	do {
+		long _tile = fo::func::tile_num_in_direction(tile, direction, 1);
+		if (_tile >= 0 && _tile < 40000) {
+			obj = fo::var::objectTable[_tile];
+			while (obj)
+			{
+				if (elev == obj->object->elevation) {
+					fo::GameObject* object = obj->object;
+					long flags = object->flags;
+					if (flags & fo::ObjectFlag::MultiHex && !(flags & (fo::ObjectFlag::Mouse_3d | fo::ObjectFlag::NoBlock | fo::ObjectFlag::WalkThru)) && source != object) { // не установлены Mouse_3d и NoBlock
+						char type = object->TypeFid();
+						if (type != fo::ObjType::OBJ_TYPE_CRITTER /*fo::ObjType::OBJ_TYPE_SCENERY || type == fo::ObjType::OBJ_TYPE_WALL*/) {
+							return object;
+						}
+						//if (type == fo::ObjType::OBJ_TYPE_CRITTER) {
+							//if (fo::var::moveBlockObj) return object;
+							fo::var::moveBlockObj = object;
+							return object;
+						//}
+					}
+				}
+				obj = obj->nextObject;
+			}
+		}
+	} while (++direction < 6);
+	return nullptr;
+}
+
+void __declspec(naked) AIHelpers::obj_ai_move_blocking_at_() {
+	__asm {
+		push ecx;
+		push ebx;
+		mov  ecx, eax;
+		call obj_ai_move_blocking_at;
+		pop  ecx;
+		retn;
+	}
+}
+
+// TODO: WIP
 fo::GameObject* obj_light_blocking_at(fo::GameObject* source, long tile, long elev) {
 	if (tile < 0 || tile >= 40000) return nullptr;
 

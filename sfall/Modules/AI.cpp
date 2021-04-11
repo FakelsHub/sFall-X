@@ -569,6 +569,8 @@ static void __declspec(naked) ai_try_attack_hack_check_safe_weapon() {
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+
 static void __fastcall CombatAttackHook(fo::GameObject* source, fo::GameObject* target) {
 	sources[target] = source; // who attacked the 'target' from the last time
 	targets[source] = target; // who was attacked by the 'source' from the last time
@@ -602,10 +604,10 @@ void AI::init() {
 	LoadGameHook::OnCombatStart() += AICombatClear;
 	LoadGameHook::OnCombatEnd() += AICombatClear;
 
-	bool smartBehavior = (GetConfigInt("CombatAI", "SmartBehavior", 1) > 0);
+	bool smartBehavior = (IniReader::GetConfigInt("CombatAI", "SmartBehavior", 1) > 0);
 	if (!smartBehavior) {
-		RetryCombatMinAP = GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
-		if (RetryCombatMinAP == -1) RetryCombatMinAP = GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility
+		RetryCombatMinAP = IniReader::GetConfigInt("CombatAI", "NPCsTryToSpendExtraAP", -1);
+		if (RetryCombatMinAP == -1) RetryCombatMinAP = IniReader::GetConfigInt("Misc", "NPCsTryToSpendExtraAP", 0); // compatibility
 		if (RetryCombatMinAP > 0) {
 			dlog("Applying retry combat patch.", DL_INIT);
 			HookCall(0x422B94, RetryCombatHook); // combat_turn_
@@ -614,14 +616,14 @@ void AI::init() {
 
 		// Fix AI weapon switching when not having enough AP to make an attack
 		// AI will try to change attack mode before deciding to switch weapon
-		if (GetConfigInt("CombatAI", "NPCSwitchingWeaponFix", 1)) {
+		if (IniReader::GetConfigInt("CombatAI", "NPCSwitchingWeaponFix", 1)) {
 			HookCall(0x42AB57, ai_try_attack_hook_switch_fix);
 		}
 	}
 
 	// Fix to reduce friendly fire in burst attacks
 	// Modification function of safe use of weapon when the AI uses burst shooting mode
-	checkBurstFriendlyFireMode = GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 0);
+	checkBurstFriendlyFireMode = IniReader::GetConfigInt("CombatAI", "CheckBurstFriendlyFire", 0);
 	switch (checkBurstFriendlyFireMode) { // -1 disable fix
 	case 3: // both 1 and 2 mode
 	case 0: // adds a check/roll for friendly critters in the line of fire when AI uses burst attacks
@@ -637,7 +639,7 @@ void AI::init() {
 
 	/////////////////////// Combat behavior AI fixes ///////////////////////
 	#ifndef NDEBUG
-	if (GetConfigInt("Debugging", "AIBugFixes", 1) == 0) return;
+	if (IniReader::GetConfigInt("Debugging", "AIBugFixes", 1) == 0) return;
 	#endif
 
 	// Fix for NPCs not fully reloading a weapon if it has more ammo capacity than a box of ammo

@@ -37,9 +37,7 @@ public:
 	static long GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* target, fo::GameObject* weapon);
 
 	static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist);
-
 	static long CombatMoveToTile(fo::GameObject* source, long tile, long dist);
-
 	static long CombatRunToTile(fo::GameObject* source, long tile, long dist);
 
 	// Принудительно заставит NPC подойти к цели на указанную дистанцию (игнорируется stay и stay_close)
@@ -54,16 +52,18 @@ public:
 	static fo::AttackSubType GetWeaponSubType(fo::GameObject* item, bool isSecond);
 	static fo::AttackSubType GetWeaponSubType(fo::GameObject* item, fo::AttackType hitMode);
 
-	static bool CanSeeObject(fo::GameObject* source, fo::GameObject* target);
-
 	// Проверяет относится ли предмет к типу стрелковому или метательному оружию
 	static bool IsGunOrThrowingWeapon(fo::GameObject* item, long type = -1);
 
+	static long GetFreeTile(fo::GameObject* source, long tile, long distMax, long dir);
 	static long GetFreeTile(fo::GameObject* source, long tile, long distMax);
 
 	static long GetRandomTile(fo::GameObject* source, long min, long max);
-
 	static long GetRandomDistTile(fo::GameObject* source, long tile, long distMax);
+
+	static bool CanSeeObject(fo::GameObject* source, fo::GameObject* target);
+
+	static void obj_ai_move_blocking_at_();
 };
 
 }

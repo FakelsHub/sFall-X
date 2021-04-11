@@ -168,7 +168,7 @@ fo::GameObject* AIInventory::GetInventoryWeapon(fo::GameObject* source, bool che
 	return bestWeapon;
 }
 
-// Возвращает первый наденные патроны к оружию в инвентаре криттера
+// Возвращает первые наденные патроны к оружию в инвентаре криттера
 fo::GameObject* AIInventory::GetInventAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
 	DWORD slotNum = -1;
 	while (true) {
@@ -239,9 +239,8 @@ bool AIInventory::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* wea
 		if (result != -1) {
 			if (!result && ammo) fo::func::obj_destroy(ammo);
 
-			//long volume = fo::func::gsound_compute_relative_volume(critter);
-			//const char* sfxName = fo::func::gsnd_build_weapon_sfx_name(0, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
-			//fo::func::gsound_play_sfx_file_volume(sfxName, volume);
+			const char* sfxName = fo::func::gsnd_build_weapon_sfx_name(0, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
+			fo::func::gsound_play_sfx_file_volume(sfxName, fo::func::gsound_compute_relative_volume(critter));
 
 			fo::func::ai_magic_hands(critter, weapon, 5002);
 
@@ -336,10 +335,12 @@ fo::GameObject* AIInventory::AIRetrieveCorpseItem(fo::GameObject* source, fo::Ga
 		if (fo::GetInventItem(source, item->protoId) == item) {
 			DEV_PRINTF1("\n[AI] OK RetrieveCorpseItem: %s", fo::func::critter_name(item));
 			//fo::func::combatAIInfoSetLastItem(source, corpse); // устанавливaем 0, если предмет был подобран (функция не работает и неиспользуется движком в должном виде)
+			itemCorpse = nullptr;
 			return item;
 		}
 	}
 	DEV_PRINTF("\n[AI] Error RetrieveCorpseItem!");
+	itemCorpse = nullptr;
 	return nullptr;
 }
 
@@ -381,18 +382,19 @@ fo::GameObject* AIInventory::ai_search_environ_ammo(fo::GameObject* critter, fo:
 
 // Аналог функции ai_search_environ, только с той разницей, что ищет требуемый предмет в инвентаре убитых криттеров
 fo::GameObject* AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* itemGround, fo::GameObject* weapon) {
-	long* objectsList = nullptr;
+	if (!weapon && itemType == fo::ItemType::item_type_ammo) {
+		weapon = fo::func::inven_right_hand(source);
+		if (!weapon) return itemGround; // ERROR: не назначено или нет оружия для проверки
+	}
 
+	long* objectsList = nullptr;
 	long numObjects = fo::func::obj_create_list(-1, source->elevation, fo::ObjType::OBJ_TYPE_CRITTER, &objectsList);
+
 	if (numObjects > 0) {
 		fo::var::combat_obj = source;
 		fo::func::qsort(objectsList, numObjects, 4, fo::funcoffs::compare_nearer_);
 
 		long maxDist = fo::func::stat_level(source, fo::Stat::STAT_pe) + 5;
-		if (!weapon && itemType == fo::ItemType::item_type_ammo) {
-			weapon = fo::func::inven_right_hand(source);
-			if (!weapon) return itemGround; // ERROR: не назначено или нет оружия для проверки
-		}
 
 		for (int i = 0; i < numObjects; i++)
 		{
