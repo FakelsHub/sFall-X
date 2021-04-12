@@ -500,13 +500,21 @@ default:
 	}
 }
 
-static long __fastcall AISearchCorpseDrug(fo::GameObject* source, long addrType, fo::GameObject* &itemEnv) {
+static long __fastcall AISearchCorpseDrug(fo::GameObject* source, long addrType, long noInvenItem, fo::GameObject* &itemEnv) {
 	fo::ItemType type = (addrType == 0x4287B2 + 5) ? fo::ItemType::item_type_drug : fo::ItemType::item_type_misc_item;
 	fo::GameObject* object = AIInventory::ai_search_environ_corpse(source, type, itemEnv, 0);
 	if (!object || !itemCorpse) return 0; // default (в itemEnv ref значение из ai_search_environ_)
 
+	bool dontUse = false;
+	if (noInvenItem != 2) { // is set to 2 that healing is required
+		long pid = itemCorpse->protoId;
+		if (pid == fo::ProtoID::PID_STIMPAK || pid == fo::ProtoID::PID_SUPER_STIMPAK || pid == fo::ProtoID::PID_HEALING_POWDER) {
+			dontUse = ((10 + source->critter.health) >= fo::func::stat_level(source, fo::Stat::STAT_max_hit_points));
+		}
+	}
+
 	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, nullptr);
-	itemEnv = item;
+	itemEnv = (!dontUse) ? item : nullptr;
 	return (item) ? 1 : -1;
 }
 
@@ -516,17 +524,17 @@ static void __declspec(naked) ai_check_drugs_hook_search_drug() {
 		call fo::funcoffs::ai_search_environ_;
 		mov  edx, [esp]; // called addr
 		push eax;        // item
-		push esp;        // ref to item
+		push esp;        // itemEnv (ref to item)
+		push [esp + 0x34 - 0x30 + 12]; // noInvenItem
 		mov  ecx, esi;   // source
 		call AISearchCorpseDrug;
-		mov  ebp, [esp];
+		pop  ebp;        // itemEnv
 		test eax, eax;
 		jz   default;
-		add  esp, 8;
+		add  esp, 4;
 		jmp  ai_check_drugs_hook_search_drug_UseRet;
 default:
 		mov  eax, ebp;
-		add  esp, 4;
 		retn;
 	}
 }
