@@ -183,7 +183,7 @@ static void __fastcall game_init_databases_hook() { // eax = _master_db_handle
 /*
 static void __fastcall game_init_databases_hook1() {
 	char masterPatch[MAX_PATH];
-	iniGetString("system", "master_patches", "", masterPatch, MAX_PATH - 1, (const char*)FO_VAR_gconfig_file_name);
+	IniReader::GetString("system", "master_patches", "", masterPatch, MAX_PATH - 1, (const char*)FO_VAR_gconfig_file_name);
 
 	fo::PathNode* node = fo::var::paths;
 	while (node->next) {
@@ -214,11 +214,11 @@ static void GetExtraPatches() {
 	char patchFile[12] = "PatchFile";
 	for (int i = 0; i < 100; i++) {
 		_itoa(i, &patchFile[9], 10);
-		auto patch = GetConfigString("ExtraPatches", patchFile, "", MAX_PATH);
+		auto patch = IniReader::GetConfigString("ExtraPatches", patchFile, "", MAX_PATH);
 		if (patch.empty() || !NormalizePath(patch) || GetFileAttributes(patch.c_str()) == INVALID_FILE_ATTRIBUTES) continue;
 		patchFiles.push_back(patch);
 	}
-	std::string searchPath = "mods\\"; //GetConfigString("ExtraPatches", "AutoSearchPath", "mods\\", MAX_PATH);
+	std::string searchPath = "mods\\"; //IniReader::GetConfigString("ExtraPatches", "AutoSearchPath", "mods\\", MAX_PATH);
 	//if (!searchPath.empty() && NormalizePath(searchPath)) {
 		//if (searchPath.back() != '\\') searchPath += "\\";
 
@@ -465,7 +465,7 @@ void LoadOrder::init() {
 	//	HookCall(0x44436D, game_init_databases_hook1);
 	//}
 
-	femaleMsgs = GetConfigInt("Misc", "FemaleDialogMsgs", 0);
+	femaleMsgs = IniReader::GetConfigInt("Misc", "FemaleDialogMsgs", 0);
 	if (femaleMsgs) {
 		dlog("Applying alternative female dialog files patch.", DL_INIT);
 		MakeJump(0x4A6BCD, scr_get_dialog_msg_file_hack1);
@@ -489,7 +489,7 @@ void LoadOrder::init() {
 	// first check the existence of the art file of the current critter and then replace the art alias if file not found
 	HookCall(0x419440, art_get_name_hook);
 	SafeWrite16(0x419521, 0x003B); // jmp 0x419560
-	if (GetConfigInt("Misc", "EnableHeroAppearanceMod", 0) <= 0) { // Hero Appearance mod uses an additional code
+	if (IniReader::GetConfigInt("Misc", "EnableHeroAppearanceMod", 0) <= 0) { // Hero Appearance mod uses an additional code
 		MakeCall(0x419560, art_get_name_hack);
 	}
 

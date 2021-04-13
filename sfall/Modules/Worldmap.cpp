@@ -366,13 +366,13 @@ static void RestRestore() {
 }
 
 static void WorldLimitsPatches() {
-	DWORD data = GetConfigInt("Misc", "LocalMapXLimit", 0);
+	DWORD data = IniReader::GetConfigInt("Misc", "LocalMapXLimit", 0);
 	if (data) {
 		dlog("Applying local map x limit patch.", DL_INIT);
 		SafeWrite32(0x4B13B9, data);
 		dlogr(" Done", DL_INIT);
 	}
-	data = GetConfigInt("Misc", "LocalMapYLimit", 0);
+	data = IniReader::GetConfigInt("Misc", "LocalMapYLimit", 0);
 	if (data) {
 		dlog("Applying local map y limit patch.", DL_INIT);
 		SafeWrite32(0x4B13C7, data);
@@ -389,7 +389,7 @@ static void WorldLimitsPatches() {
 }
 
 static void TimeLimitPatch() {
-	int limit = GetConfigInt("Misc", "TimeLimit", 13);
+	int limit = IniReader::GetConfigInt("Misc", "TimeLimit", 13);
 	if (limit == -2 || limit == -3) {
 		addYear = true;
 		MakeCall(0x4A33B8, TimeDateFix, 1); // game_time_date_
@@ -416,10 +416,10 @@ static void TimeLimitPatch() {
 
 static void WorldmapFpsPatch() {
 	bool fpsPatchOK = (*(DWORD*)0x4BFE5E == 0x8D16);
-	if (GetConfigInt("Misc", "WorldMapFPSPatch", 0)) {
+	if (IniReader::GetConfigInt("Misc", "WorldMapFPSPatch", 0)) {
 		dlog("Applying world map fps patch.", DL_INIT);
 		if (fpsPatchOK) {
-			int delay = GetConfigInt("Misc", "WorldMapDelay2", 66);
+			int delay = IniReader::GetConfigInt("Misc", "WorldMapDelay2", 66);
 			worldMapDelay = max(1, delay);
 			dlogr(" Done", DL_INIT);
 		} else {
@@ -440,9 +440,9 @@ static void WorldmapFpsPatch() {
 		::sfall::availableGlobalScriptTypes |= 2;
 	}
 
-	if (GetConfigInt("Misc", "WorldMapEncounterFix", 0)) {
+	if (IniReader::GetConfigInt("Misc", "WorldMapEncounterFix", 0)) {
 		dlog("Applying world map encounter patch.", DL_INIT);
-		WorldMapEncounterRate = GetConfigInt("Misc", "WorldMapEncounterRate", 5);
+		WorldMapEncounterRate = IniReader::GetConfigInt("Misc", "WorldMapEncounterRate", 5);
 		SafeWrite32(0x4C232D, 0xB8); // mov eax, 0; (wmInterfaceInit_)
 		HookCall(0x4BFEE0, wmWorldMapFunc_hook);
 		MakeCall(0x4C0667, wmRndEncounterOccurred_hack);
@@ -451,30 +451,30 @@ static void WorldmapFpsPatch() {
 }
 
 static void PathfinderFixInit() {
-	//if (GetConfigInt("Misc", "PathfinderFix", 0)) {
+	//if (IniReader::GetConfigInt("Misc", "PathfinderFix", 0)) {
 		dlog("Applying Pathfinder patch.", DL_INIT);
 		SafeWrite16(0x4C1FF6, 0x9090);     // wmPartyWalkingStep_
 		HookCall(0x4C1C78, PathfinderFix); // wmGameTimeIncrement_
-		mapMultiMod = (double)GetConfigInt("Misc", "WorldMapTimeMod", 100) / 100.0;
+		mapMultiMod = (double)IniReader::GetConfigInt("Misc", "WorldMapTimeMod", 100) / 100.0;
 		dlogr(" Done", DL_INIT);
 	//}
 }
 
 static void StartingStatePatches() {
-	int date = GetConfigInt("Misc", "StartYear", -1);
+	int date = IniReader::GetConfigInt("Misc", "StartYear", -1);
 	if (date >= 0) {
 		dlog("Applying starting year patch.", DL_INIT);
 		SafeWrite32(0x4A336C, date);
 		dlogr(" Done", DL_INIT);
 	}
-	int month = GetConfigInt("Misc", "StartMonth", -1);
+	int month = IniReader::GetConfigInt("Misc", "StartMonth", -1);
 	if (month >= 0) {
 		if (month > 11) month = 11;
 		dlog("Applying starting month patch.", DL_INIT);
 		SafeWrite32(0x4A3382, month);
 		dlogr(" Done", DL_INIT);
 	}
-	date = GetConfigInt("Misc", "StartDay", -1);
+	date = IniReader::GetConfigInt("Misc", "StartDay", -1);
 	if (date >= 0) {
 		if (month == 1 && date > 28) { // for February
 			date = 28; // set 29th day
@@ -486,7 +486,7 @@ static void StartingStatePatches() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	long xPos = GetConfigInt("Misc", "StartXPos", -1);
+	long xPos = IniReader::GetConfigInt("Misc", "StartXPos", -1);
 	if (xPos != -1) {
 		if (xPos < 0) xPos = 0;
 		dlog("Applying starting x position patch.", DL_INIT);
@@ -495,7 +495,7 @@ static void StartingStatePatches() {
 		dlogr(" Done", DL_INIT);
 		customPosition = true;
 	}
-	long yPos = GetConfigInt("Misc", "StartYPos", -1);
+	long yPos = IniReader::GetConfigInt("Misc", "StartYPos", -1);
 	if (yPos != -1) {
 		if (yPos < 0) yPos = 0;
 		dlog("Applying starting y position patch.", DL_INIT);
@@ -509,7 +509,7 @@ static void StartingStatePatches() {
 	// also initializes the value of the current area for the METARULE_CURRENT_TOWN script function
 	HookCall(0x480DC0, main_load_new_hook);
 
-	xPos = GetConfigInt("Misc", "ViewXPos", -1);
+	xPos = IniReader::GetConfigInt("Misc", "ViewXPos", -1);
 	if (xPos != -1) {
 		if (xPos < 0) xPos = 0;
 		ViewportX = xPos;
@@ -517,7 +517,7 @@ static void StartingStatePatches() {
 		SafeWrite32(FO_VAR_wmWorldOffsetX, ViewportX);
 		dlogr(" Done", DL_INIT);
 	}
-	yPos = GetConfigInt("Misc", "ViewYPos", -1);
+	yPos = IniReader::GetConfigInt("Misc", "ViewYPos", -1);
 	if (yPos != -1) {
 		if (yPos < 0) yPos = 0;
 		ViewportY = yPos;

@@ -40,10 +40,32 @@ public:
 	// Gets the integer value from Sfall configuration INI file.
 	static int IniReader::GetConfigInt(const char* section, const char* setting, int defaultValue);
 
+	// Gets the string value from Sfall configuration INI file with trim function.
+	static std::string IniReader::GetConfigString(const char* section, const char* setting, const char* defaultValue, size_t bufSize = 128);
+
+	// Loads the string value from Sfall configuration INI file into the provided buffer.
+	static size_t IniReader::GetConfigString(const char* section, const char* setting, const char* defaultValue, char* buffer, size_t bufSize = 128);
+
+	// Parses the comma-separated list from the settings from Sfall configuration INI file.
+	static std::vector<std::string> IniReader::GetConfigList(const char* section, const char* setting, const char* defaultValue, size_t bufSize = 128);
+
+	// Gets the integer value from given INI file.
+	static int IniReader::GetInt(const char* section, const char* setting, int defaultValue, const char* iniFile);
+
+	// Gets the string value from given INI file.
+	static std::string IniReader::GetString(const char* section, const char* setting, const char* defaultValue, size_t bufSize, const char* iniFile);
+
+	// Gets the string value from given INI file.
+	static size_t IniReader::GetString(const char* section, const char* setting, const char* defaultValue, char* buf, size_t bufSize, const char* iniFile);
+
+	// Parses the comma-separated list setting from given INI file.
+	static std::vector<std::string> GetList(const char* section, const char* setting, const char* defaultValue, size_t bufSize, char delimiter, const char* iniFile);
+
 	// Translates given string using sfall translation INI file and puts the result into given buffer
 	static size_t IniReader::Translate(const char* section, const char* setting, const char* defaultValue, char* buffer, size_t bufSize);
 
-	static std::string IniReader::Translate(const char* section, const char* setting, const char* defaultValue, size_t bufSize);
+	// Translates given string using Sfall translation INI file.
+	static std::string IniReader::Translate(const char* section, const char* setting, const char* defaultValue, size_t bufSize = 128);
 
 	static std::vector<std::string> IniReader::TranslateList(const char* section, const char* setting, const char* defaultValue, char delimiter, size_t bufSize = 256);
 
@@ -53,15 +75,6 @@ public:
 // Gets the integer value from given INI file.
 int iniGetInt(const char* section, const char* setting, int defaultValue, const char* iniFile);
 
-// Gets the string value from given INI file.
-size_t iniGetString(const char* section, const char* setting, const char* defaultValue, char* buf, size_t bufSize, const char* iniFile);
-
-// Gets the string value from given INI file.
-std::string GetIniString(const char* section, const char* setting, const char* defaultValue, size_t bufSize, const char* iniFile);
-
-// Parses the comma-separated list setting from given INI file.
-std::vector<std::string> GetIniList(const char* section, const char* setting, const char* defaultValue, size_t bufSize, char delimiter, const char* iniFile);
-
 // Gets the integer value from Sfall configuration INI file.
 int GetConfigInt(const char* section, const char* setting, int defaultValue);
 
@@ -70,9 +83,6 @@ std::string GetConfigString(const char* section, const char* setting, const char
 
 // Loads the string value from Sfall configuration INI file into the provided buffer.
 size_t GetConfigString(const char* section, const char* setting, const char* defaultValue, char* buffer, size_t bufSize = 128);
-
-// Parses the comma-separated list from the settings from Sfall configuration INI file.
-std::vector<std::string> GetConfigList(const char* section, const char* setting, const char* defaultValue, size_t bufSize = 128);
 
 // Translates given string using Sfall translation INI file.
 std::string Translate(const char* section, const char* setting, const char* defaultValue, size_t bufSize = 128);

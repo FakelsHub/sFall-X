@@ -784,7 +784,7 @@ static void __declspec(naked) wmInterfaceRefreshCarFuel_hack() {
 static void WorldMapInterfacePatch() {
 	BlockCall(0x4C2380); // Remove disabling palette animations (can be used as a place to call a hack function in wmInterfaceInit_)
 
-	if (GetConfigInt("Misc", "WorldMapFontPatch", 0)) {
+	if (IniReader::GetConfigInt("Misc", "WorldMapFontPatch", 0)) {
 		dlog("Applying world map font patch.", DL_INIT);
 		HookCall(0x4C2343, wmInterfaceInit_text_font_hook);
 		dlogr(" Done", DL_INIT);
@@ -802,8 +802,8 @@ static void WorldMapInterfacePatch() {
 		dlogr(" Done", DL_INIT);
 	//}
 
-	DWORD wmSlots = GetConfigInt("Interface", "WorldMapSlots", -1);
-	if (wmSlots == -1) wmSlots = GetConfigInt("Misc", "WorldMapSlots", 0); // for compatibility
+	DWORD wmSlots = IniReader::GetConfigInt("Interface", "WorldMapSlots", -1);
+	if (wmSlots == -1) wmSlots = IniReader::GetConfigInt("Misc", "WorldMapSlots", 0); // for compatibility
 	if (wmSlots && wmSlots < 128) {
 		dlog("Applying world map slots patch.", DL_INIT);
 		if (wmSlots < 7) wmSlots = 7;
@@ -815,20 +815,20 @@ static void WorldMapInterfacePatch() {
 	}
 
 	if (hrpIsEnabled && hrpVersionValid) {
-		if (worldmapInterface = GetConfigInt("Interface", "ExpandWorldMap", 0)) {
+		if (worldmapInterface = IniReader::GetConfigInt("Interface", "ExpandWorldMap", 0)) {
 			LoadGameHook::OnAfterGameInit() += WorldmapViewportPatch; // Note: must be applied after WorldMapSlots patch
 		}
 	}
 
 	// Fallout 1 features, travel markers and displaying terrain types or town titles
-	if (GetConfigInt("Interface", "WorldMapTravelMarkers", 0)) {
+	if (IniReader::GetConfigInt("Interface", "WorldMapTravelMarkers", 0)) {
 		dlog("Applying world map travel markers patch.", DL_INIT);
 
-		int color = GetConfigInt("Interface", "TravelMarkerColor", 134); // color index in palette: R = 224, G = 0, B = 0
+		int color = IniReader::GetConfigInt("Interface", "TravelMarkerColor", 134); // color index in palette: R = 224, G = 0, B = 0
 		if (color > 255) color = 255; else if (color < 1) color = 1;
 		colorDot = color;
 
-		auto dotList = GetConfigList("Interface", "TravelMarkerStyles", "", 512);
+		auto dotList = IniReader::GetConfigList("Interface", "TravelMarkerStyles", "", 512);
 		if (!dotList.empty()) {
 			terrainCount = dotList.size();
 			dotStyle = new DotStyle[terrainCount];
@@ -856,7 +856,7 @@ static void WorldMapInterfacePatch() {
 		};
 		dlogr(" Done", DL_INIT);
 	}
-	showTerrainType = (GetConfigInt("Interface", "WorldMapTerrainInfo", 0) != 0);
+	showTerrainType = (IniReader::GetConfigInt("Interface", "WorldMapTerrainInfo", 0) != 0);
 	HookCall(0x4C3C7E, wmInterfaceRefresh_hook); // when calling wmDrawCursorStopped_
 	MakeCall(0x4BFE84, wmWorldMap_hack);
 
@@ -893,7 +893,7 @@ negative:
 }
 
 static void SpeedInterfaceCounterAnimsPatch() {
-	switch (GetConfigInt("Misc", "SpeedInterfaceCounterAnims", 0)) {
+	switch (IniReader::GetConfigInt("Misc", "SpeedInterfaceCounterAnims", 0)) {
 	case 1:
 		dlog("Applying SpeedInterfaceCounterAnims patch.", DL_INIT);
 		MakeJump(0x460BA1, intface_rotate_numbers_hack);
@@ -967,7 +967,7 @@ fix:
 }
 
 void Interface::init() {
-	if (GetConfigInt("Interface", "ActionPointsBar", 0)) {
+	if (IniReader::GetConfigInt("Interface", "ActionPointsBar", 0)) {
 		ActionPointsBarPatch();
 	}
 	DrawActionPointsNumber();
@@ -984,7 +984,7 @@ void Interface::init() {
 	};
 
 	// Set the normal font for death screen subtitles
-	if (GetConfigInt("Misc", "DeathScreenFontPatch", 0)) {
+	if (IniReader::GetConfigInt("Misc", "DeathScreenFontPatch", 0)) {
 		HookCall(0x4812DF, main_death_scene_hook);
 	}
 
