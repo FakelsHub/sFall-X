@@ -486,19 +486,19 @@ static void FileSystemOverride() {
 	HookCalls(asm_xfclose, {0x4C5DBD, 0x4C5EA5, 0x4C5EB4});
 	HookCalls(asm_xfopen, {0x4C5DA9, 0x4C5E16, 0x4C5EC8});
 
-	//HookCall(0x4C5F04, asm_xvfprintf);
+	HookCall(0x4C5F04, asm_xvfprintf);
 
 	HookCalls(asm_xfgetc, {0x4C5F31, 0x4C5F64});
 	HookCalls(asm_xfgets, {0x4C5F85, 0x4C5FD3});
-	//HookCalls(asm_xfputc, {0x4C5FE4, 0x4C61B5, 0x4C61E2, 0x4C61FE, 0x4C6479, 0x4C64B3, 0x4C64D2});
+	HookCalls(asm_xfputc, {0x4C5FE4, 0x4C61B5, 0x4C61E2, 0x4C61FE, 0x4C6479, 0x4C64B3, 0x4C64D2});
 
-	//HookCall(0x4C5FEC, asm_xfputs);
+	HookCall(0x4C5FEC, asm_xfputs);
 	HookCall(0x4C5FF4, asm_xfungetc);
 
 	HookCalls(asm_xfread, {0x4C5E5C, 0x4C5E8A, 0x4C5E9E, 0x4C603D, 0x4C6076, 0x4C60AA});
 	HookCall(0x4C6162, asm_xfread_fix); // with bug fix from BugFixes.cpp
 
-	//HookCall(0x4C60B8, asm_xfwrite);
+	HookCall(0x4C60B8, asm_xfwrite);
 	HookCall(0x4C60C0, asm_xfseek);
 	HookCall(0x4C60C8, asm_xftell);
 	HookCall(0x4C60D0, asm_xfrewind);
@@ -549,7 +549,7 @@ DWORD __stdcall FScopy(const char* path, const char* source) {
 	DWORD fsize;
 	sFile* file;
 
-	const char* mode = "r";
+	const char* mode = "rb"; // was 'r'
 	__asm {
 		mov  eax, source;
 		mov  edx, mode;
