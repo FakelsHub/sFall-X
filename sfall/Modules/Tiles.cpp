@@ -76,7 +76,7 @@ static BYTE* mask;
 static bool LoadMask() {
 	fo::DbFile* file = fo::func::db_fopen("art\\tiles\\gridmask.frm", "rb"); // same as grid000.frm from HRP
 	if (!file) {
-		dlogr("AllowLargeTiles: Failed to open gridmask.frm file.", DL_INIT);
+		dlogr("AllowLargeTiles: Unable to open art\\tiles\\gridmask.frm file.", DL_INIT);
 		return false;
 	}
 	mask = new BYTE[80 * 36];
@@ -91,7 +91,7 @@ static int ProcessTile(fo::Art* tiles, int tile, int listPos) {
 	char buf[32] = "art\\tiles\\";
 	const char* name = &tiles->names[13 * tile];
 	for (size_t i = 10; ; i++) {
-		if (i == 32) return 0; // too long name
+		if (i == 32) return 0; // name too long
 		char c = *name++;
 		buf[i] = c;
 		if (c == '\0') break;
@@ -212,7 +212,7 @@ static int __stdcall ArtInitHook() {
 	if (listpos != tiles->total) {
 		tiles->names = (char*)fo::func::mem_realloc(tiles->names, listpos * 13);
 		for (long i = tiles->total; i < listpos; i++) {
-			sprintf_s(&tiles->names[i * 13], 12, "zzz%04d.frm", i - tiles->total);
+			sprintf(&tiles->names[i * 13], "zzz%04d.frm", i - tiles->total);
 		}
 		tiles->total = listpos;
 	}

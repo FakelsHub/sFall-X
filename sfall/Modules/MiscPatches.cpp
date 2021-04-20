@@ -936,6 +936,8 @@ void MiscPatches::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
+	SafeWrite8(0x4810AB, CodeType::JumpShort); // Disable selfrun
+
 	BlockCall(0x4425E6); // Patch out ereg call
 
 	SimplePatch<DWORD>(0x440C2A, "Misc", "SpecialDeathGVAR", fo::GVAR_MODOC_SHITTY_DEATH);
