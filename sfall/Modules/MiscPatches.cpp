@@ -19,6 +19,8 @@
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\SimplePatch.h"
+#include "..\Translate.h"
+
 #include "LoadGameHook.h"
 #include "MainLoopHook.h"
 
@@ -28,7 +30,6 @@ namespace sfall
 {
 
 static char mapName[65]       = {};
-static char configName[65]    = {};
 static char patchName[65]     = {};
 static char versionString[65] = {};
 static char messageBuffer[65];
@@ -771,8 +772,8 @@ static void DisplayElectricalStatPatch() {
 	displayElectricalStat = GetConfigInt("Misc", "DisplayElectricalResist", 0);
 	if (displayElectricalStat) {
 		dlog("Applying display of the electrical resist stat of armor patch.", DL_INIT);
-		Translate("sfall", "DisplayStatHP", "HP:", hitPointMsg, 8); // short variant
-		Translate("sfall", "DisplayStatEL", " Electr.", electricalMsg, 10);
+		Translate::Get("sfall", "DisplayStatHP", "HP:", hitPointMsg, 8); // short variant
+		Translate::Get("sfall", "DisplayStatEL", " Electr.", electricalMsg, 10);
 		HookCall(0x471E55, display_stats_hook_hp);
 		HookCall(0x471FA7, display_stats_hook_electrical);
 		SafeWrite32(0x471D72, (DWORD)&StatsDisplayTable);
@@ -892,12 +893,6 @@ void MiscPatches::init() {
 	if (GetConfigString("Misc", "VersionString", "", versionString, 64)) {
 		dlog("Applying version string patch.", DL_INIT);
 		SafeWrite32(0x4B4588, (DWORD)&versionString);
-		dlogr(" Done", DL_INIT);
-	}
-
-	if (GetConfigString("Misc", "ConfigFile", "", configName, 64)) {
-		dlog("Applying config file patch.", DL_INIT);
-		SafeWriteBatch<DWORD>((DWORD)&configName, {0x444BA5, 0x444BCA});
 		dlogr(" Done", DL_INIT);
 	}
 

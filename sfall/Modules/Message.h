@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <memory>
 #include <unordered_map>
 
+#include "..\FalloutEngine\Fallout2.h"
 #include "..\main.h"
 
 #include "Module.h"

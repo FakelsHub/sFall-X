@@ -368,6 +368,7 @@
     <ClInclude Include="Modules\SubModules\AI.Inventory.h">
       <Filter>Modules\SubModules\ImproveAI</Filter>
     </ClInclude>
+    <ClInclude Include="Translate.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -679,6 +680,7 @@
     <ClCompile Include="Modules\SubModules\AI.Inventory.cpp">
       <Filter>Modules\SubModules\ImproveAI</Filter>
     </ClCompile>
+    <ClCompile Include="Translate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="version.rc" />
