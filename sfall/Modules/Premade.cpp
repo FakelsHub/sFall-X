@@ -28,7 +28,7 @@ namespace sfall
 static fo::PremadeChar* premade;
 
 static const char* __fastcall GetLangPremadePath(const char* premadePath) {
-	static char premadeLangPath[64]; // premade\language\combat.bio
+	static char premadeLangPath[65]; // premade\<language>\combat.bio
 	static bool isDefault = false;
 	static long len = 0;
 
@@ -110,7 +110,7 @@ void Premade::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Adding localization path for premade gcd/bio files
+	// Add language path for premade GCD/BIO files
 	HookCall(0x4A8B44, select_display_bio_hook);
 	HookCall(0x4A7D91, select_update_display_hook);
 }

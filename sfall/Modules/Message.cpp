@@ -54,7 +54,7 @@ const fo::MessageList* gameMsgFiles[] = {
 };
 #undef CASTMSG
 
-static char gameLanguage[65];
+static char gameLanguage[41]; // max length of language string is 40
 
 const char* Message::GameLanguage() {
 	return &gameLanguage[0];

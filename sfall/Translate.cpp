@@ -4,7 +4,6 @@
  *
  */
 
-#include "FalloutEngine\VariableOffsets.h"
 #include "IniReader.h"
 
 #include "Translate.h"
@@ -14,7 +13,7 @@ namespace sfall
 
 static struct Translation {
 	char def[65];
-	char lang[256];
+	char lang[174];
 	bool state = false;
 
 	const char* File() {
@@ -37,14 +36,12 @@ std::vector<std::string> Translate::GetList(const char* section, const char* set
 /////////////////////////////////////////////////////////////////////////////////////////
 
 static void MakeLangTranslationPath(const char* config) {
-	char patches[65], language[65];
+	char patches[65], language[41];
 	char fileConfig[65] = ".\\";
-
-	if (config[0] == '\0') config = (const char*)FO_VAR_fallout_config;
 	std::strcpy(&fileConfig[2], config);
 
-	IniReader::GetString("system", "language", "english", language, 64, fileConfig);
-	IniReader::GetString("system", "master_patches", "data", patches, 64, fileConfig);
+	IniReader::GetString("system", "language", "english", language, 41, fileConfig);
+	IniReader::GetString("system", "master_patches", "data", patches, 65, fileConfig);
 
 	const char* iniDef = translationIni.def;
 	while (*iniDef == '\\' || *iniDef == '/' || *iniDef == '.') iniDef++; // skip first characters

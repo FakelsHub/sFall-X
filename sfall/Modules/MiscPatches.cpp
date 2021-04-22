@@ -29,8 +29,8 @@
 namespace sfall
 {
 
-static char mapName[65]       = {};
-static char patchName[65]     = {};
+static char mapName[33]       = {};
+static char patchName[33]     = {};
 static char versionString[65] = {};
 static char messageBuffer[65];
 
@@ -489,7 +489,7 @@ static void __declspec(naked) map_check_state_hook() {
 }
 
 static void AdditionalWeaponAnimsPatch() {
-	if (GetConfigInt("Misc", "AdditionalWeaponAnims", 0)) {
+	if (IniReader::GetConfigInt("Misc", "AdditionalWeaponAnims", 0)) {
 		dlog("Applying additional weapon animations patch.", DL_INIT);
 		SafeWrite8(0x419320, 18); // art_get_code_
 		HookCalls(WeaponAnimHook, {
@@ -502,25 +502,25 @@ static void AdditionalWeaponAnimsPatch() {
 
 static void SkilldexImagesPatch() {
 	dlog("Checking for changed skilldex images.", DL_INIT);
-	long tmp = GetConfigInt("Misc", "Lockpick", 293);
+	long tmp = IniReader::GetConfigInt("Misc", "Lockpick", 293);
 	if (tmp != 293) SafeWrite32(0x518D54, tmp);
-	tmp = GetConfigInt("Misc", "Steal", 293);
+	tmp = IniReader::GetConfigInt("Misc", "Steal", 293);
 	if (tmp != 293) SafeWrite32(0x518D58, tmp);
-	tmp = GetConfigInt("Misc", "Traps", 293);
+	tmp = IniReader::GetConfigInt("Misc", "Traps", 293);
 	if (tmp != 293) SafeWrite32(0x518D5C, tmp);
-	tmp = GetConfigInt("Misc", "FirstAid", 293);
+	tmp = IniReader::GetConfigInt("Misc", "FirstAid", 293);
 	if (tmp != 293) SafeWrite32(0x518D4C, tmp);
-	tmp = GetConfigInt("Misc", "Doctor", 293);
+	tmp = IniReader::GetConfigInt("Misc", "Doctor", 293);
 	if (tmp != 293) SafeWrite32(0x518D50, tmp);
-	tmp = GetConfigInt("Misc", "Science", 293);
+	tmp = IniReader::GetConfigInt("Misc", "Science", 293);
 	if (tmp != 293) SafeWrite32(0x518D60, tmp);
-	tmp = GetConfigInt("Misc", "Repair", 293);
+	tmp = IniReader::GetConfigInt("Misc", "Repair", 293);
 	if (tmp != 293) SafeWrite32(0x518D64, tmp);
 	dlogr(" Done", DL_INIT);
 }
 
 static void ScienceOnCrittersPatch() {
-	switch (GetConfigInt("Misc", "ScienceOnCritters", 0)) {
+	switch (IniReader::GetConfigInt("Misc", "ScienceOnCritters", 0)) {
 	case 1:
 		HookCall(0x41276E, action_use_skill_on_hook_science);
 		break;
@@ -535,7 +535,7 @@ static void BoostScriptDialogLimitPatch() {
 		0x4A50C2, 0x4A5169, 0x4A52FA, 0x4A5302, 0x4A6B86, 0x4A6BE0, 0x4A6C37,
 	};
 
-	if (GetConfigInt("Misc", "BoostScriptDialogLimit", 0)) {
+	if (IniReader::GetConfigInt("Misc", "BoostScriptDialogLimit", 0)) {
 		const int scriptDialogCount = 10000;
 		dlog("Applying script dialog limit patch.", DL_INIT);
 		scriptDialog = new int[scriptDialogCount * 2]; // Because the msg structure is 8 bytes, not 4.
@@ -548,7 +548,7 @@ static void BoostScriptDialogLimitPatch() {
 }
 
 static void NumbersInDialoguePatch() {
-	if (GetConfigInt("Misc", "NumbersInDialogue", 0)) {
+	if (IniReader::GetConfigInt("Misc", "NumbersInDialogue", 0)) {
 		dlog("Applying numbers in dialogue patch.", DL_INIT);
 		SafeWrite32(0x502C32, 0x2000202E);
 		SafeWrite8(0x446F3B, 0x35);
@@ -571,7 +571,7 @@ static void InstantWeaponEquipPatch() {
 		0x472996, // invenWieldFunc_
 	};
 
-	if (GetConfigInt("Misc", "InstantWeaponEquip", 0)) {
+	if (IniReader::GetConfigInt("Misc", "InstantWeaponEquip", 0)) {
 		//Skip weapon equip/unequip animations
 		dlog("Applying instant weapon equip patch.", DL_INIT);
 		SafeWriteBatch<BYTE>(CodeType::JumpShort, PutAwayWeapon); // jmps
@@ -584,7 +584,7 @@ static void InstantWeaponEquipPatch() {
 }
 
 static void DontTurnOffSneakIfYouRunPatch() {
-	if (GetConfigInt("Misc", "DontTurnOffSneakIfYouRun", 0)) {
+	if (IniReader::GetConfigInt("Misc", "DontTurnOffSneakIfYouRun", 0)) {
 		dlog("Applying DontTurnOffSneakIfYouRun patch.", DL_INIT);
 		SafeWrite8(0x418135, CodeType::JumpShort);
 		dlogr(" Done", DL_INIT);
@@ -592,7 +592,7 @@ static void DontTurnOffSneakIfYouRunPatch() {
 }
 
 static void PlayIdleAnimOnReloadPatch() {
-	if (GetConfigInt("Misc", "PlayIdleAnimOnReload", 0)) {
+	if (IniReader::GetConfigInt("Misc", "PlayIdleAnimOnReload", 0)) {
 		dlog("Applying idle anim on reload patch.", DL_INIT);
 		HookCall(0x460B8C, intface_item_reload_hook);
 		dlogr(" Done", DL_INIT);
@@ -600,7 +600,7 @@ static void PlayIdleAnimOnReloadPatch() {
 }
 
 static void MotionScannerFlagsPatch() {
-	if (long flags = GetConfigInt("Misc", "MotionScannerFlags", 1)) {
+	if (long flags = IniReader::GetConfigInt("Misc", "MotionScannerFlags", 1)) {
 		dlog("Applying MotionScannerFlags patch.", DL_INIT);
 		if (flags & 1) MakeJump(0x41BBE9, automap_hack);
 		if (flags & 2) {
@@ -628,7 +628,7 @@ static void EncounterTableSizePatch() {
 		0x4C0815, 0x4C0D4A, 0x4C0FD4,
 	};
 
-	int tableSize = GetConfigInt("Misc", "EncounterTableSize", 0);
+	int tableSize = IniReader::GetConfigInt("Misc", "EncounterTableSize", 0);
 	if (tableSize > 40) {
 		dlog("Applying EncounterTableSize patch.", DL_INIT);
 		if (tableSize > 50) {
@@ -644,7 +644,7 @@ static void EncounterTableSizePatch() {
 }
 
 static void DisablePipboyAlarmPatch() {
-	if (GetConfigInt("Misc", "DisablePipboyAlarm", 0)) {
+	if (IniReader::GetConfigInt("Misc", "DisablePipboyAlarm", 0)) {
 		dlog("Applying Disable Pip-Boy alarm button patch.", DL_INIT);
 		SafeWrite8(0x499518, CodeType::Ret);
 		SafeWrite8(0x443601, 0x0);
@@ -653,7 +653,7 @@ static void DisablePipboyAlarmPatch() {
 }
 
 static void ObjCanSeeShootThroughPatch() {
-	if (GetConfigInt("Misc", "ObjCanSeeObj_ShootThru_Fix", 0)) {
+	if (IniReader::GetConfigInt("Misc", "ObjCanSeeObj_ShootThru_Fix", 0)) {
 		dlog("Applying obj_can_see_obj fix for seeing through critters and ShootThru objects.", DL_INIT);
 		HookCall(0x456BC6, op_obj_can_see_obj_hook);
 		dlogr(" Done", DL_INIT);
@@ -663,7 +663,7 @@ static void ObjCanSeeShootThroughPatch() {
 static void OverrideMusicDirPatch() {
 	static const char* musicOverridePath = "data\\sound\\music\\";
 
-	if (long overrideMode = GetConfigInt("Sound", "OverrideMusicDir", 0)) {
+	if (long overrideMode = IniReader::GetConfigInt("Sound", "OverrideMusicDir", 0)) {
 		SafeWriteBatch<DWORD>((DWORD)musicOverridePath, {0x4449C2, 0x4449DB}); // set paths if not present in the cfg
 		if (overrideMode == 2) {
 			SafeWriteBatch<DWORD>((DWORD)musicOverridePath, {0x518E78, 0x518E7C});
@@ -673,7 +673,7 @@ static void OverrideMusicDirPatch() {
 }
 
 static void DialogueFix() {
-	if (GetConfigInt("Misc", "DialogueFix", 1)) {
+	if (IniReader::GetConfigInt("Misc", "DialogueFix", 1)) {
 		dlog("Applying dialogue patch.", DL_INIT);
 		SafeWrite8(0x446848, 0x31);
 		dlogr(" Done", DL_INIT);
@@ -681,7 +681,7 @@ static void DialogueFix() {
 }
 
 static void InterfaceWindowPatch() {
-	if (GetConfigInt("Interface", "RemoveWindowRounding", 1)) {
+	if (IniReader::GetConfigInt("Interface", "RemoveWindowRounding", 1)) {
 		SafeWriteBatch<BYTE>(CodeType::JumpShort, {0x4D6EDD, 0x4D6F12});
 	}
 
@@ -710,7 +710,7 @@ static void InterfaceWindowPatch() {
 }
 
 static void InventoryCharacterRotationSpeedPatch() {
-	long setting = GetConfigInt("Misc", "SpeedInventoryPCRotation", 166);
+	long setting = IniReader::GetConfigInt("Misc", "SpeedInventoryPCRotation", 166);
 	if (setting != 166 && setting <= 1000) {
 		dlog("Applying SpeedInventoryPCRotation patch.", DL_INIT);
 		SafeWrite32(0x47066B, setting);
@@ -730,7 +730,7 @@ static void UIAnimationSpeedPatch() {
 }
 
 static void MusicInDialoguePatch() {
-	if (GetConfigInt("Misc", "EnableMusicInDialogue", 0)) {
+	if (IniReader::GetConfigInt("Misc", "EnableMusicInDialogue", 0)) {
 		dlog("Applying music in dialogue patch.", DL_INIT);
 		SafeWrite8(0x44525B, 0);
 		//BlockCall(0x450627);
@@ -739,7 +739,7 @@ static void MusicInDialoguePatch() {
 }
 
 static void PipboyAvailableAtStartPatch() {
-	switch (GetConfigInt("Misc", "PipBoyAvailableAtGameStart", 0)) {
+	switch (IniReader::GetConfigInt("Misc", "PipBoyAvailableAtGameStart", 0)) {
 	case 1:
 		LoadGameHook::OnBeforeGameStart() += []() {
 			fo::var::gmovie_played_list[3] = true; // PipBoy aquiring video
@@ -752,7 +752,7 @@ static void PipboyAvailableAtStartPatch() {
 }
 
 static void DisableHorriganPatch() {
-	if (GetConfigInt("Misc", "DisableHorrigan", 0)) {
+	if (IniReader::GetConfigInt("Misc", "DisableHorrigan", 0)) {
 		LoadGameHook::OnAfterGameStarted() += []() {
 			fo::var::Meet_Frank_Horrigan = true;
 		};
@@ -761,7 +761,7 @@ static void DisableHorriganPatch() {
 
 static void DisplaySecondWeaponRangePatch() {
 	// Display the range of the second attack mode in the inventory when you switch weapon modes in active item slots
-	//if (GetConfigInt("Misc", "DisplaySecondWeaponRange", 1)) {
+	//if (IniReader::GetConfigInt("Misc", "DisplaySecondWeaponRange", 1)) {
 		dlog("Applying display second weapon range patch.", DL_INIT);
 		HookCall(0x472201, display_stats_hook);
 		dlogr(" Done", DL_INIT);
@@ -769,7 +769,7 @@ static void DisplaySecondWeaponRangePatch() {
 }
 
 static void DisplayElectricalStatPatch() {
-	displayElectricalStat = GetConfigInt("Misc", "DisplayElectricalResist", 0);
+	displayElectricalStat = IniReader::GetConfigInt("Misc", "DisplayElectricalResist", 0);
 	if (displayElectricalStat) {
 		dlog("Applying display of the electrical resist stat of armor patch.", DL_INIT);
 		Translate::Get("sfall", "DisplayStatHP", "HP:", hitPointMsg, 8); // short variant
@@ -783,7 +783,7 @@ static void DisplayElectricalStatPatch() {
 }
 
 static void KeepWeaponSelectModePatch() {
-	//if (GetConfigInt("Misc", "KeepWeaponSelectMode", 1)) {
+	//if (IniReader::GetConfigInt("Misc", "KeepWeaponSelectMode", 1)) {
 		dlog("Applying keep weapon select mode patch.", DL_INIT);
 		MakeCall(0x4714EC, switch_hand_hack, 1);
 		dlogr(" Done", DL_INIT);
@@ -795,7 +795,7 @@ static void PartyMemberSkillPatch() {
 	// Note: this will cause the party member to apply his/her skill when you use First Aid/Doctor skill on the player, but only if
 	// the player is standing next to the party member. Because the related engine function is not fully implemented, enabling
 	// this option without a global script that overrides First Aid/Doctor functions has very limited usefulness
-	if (GetConfigInt("Misc", "PartyMemberSkillFix", 0) != 0) {
+	if (IniReader::GetConfigInt("Misc", "PartyMemberSkillFix", 0) != 0) {
 		dlog("Applying party member using First Aid/Doctor skill patch.", DL_INIT);
 		HookCall(0x412836, action_use_skill_on_hook);
 		dlogr(" Done", DL_INIT);
@@ -813,7 +813,7 @@ struct CodeData {
 #pragma pack(pop)
 
 static void SkipLoadingGameSettingsPatch() {
-	int skipLoading = GetConfigInt("Misc", "SkipLoadingGameSettings", -1);
+	int skipLoading = IniReader::GetConfigInt("Misc", "SkipLoadingGameSettings", -1);
 	if (skipLoading) {
 		dlog("Applying skip loading game settings from a saved game patch.", DL_INIT);
 		BlockCall(0x493421);
@@ -831,7 +831,7 @@ static void SkipLoadingGameSettingsPatch() {
 }
 
 static void UseWalkDistancePatch() {
-	int distance = GetConfigInt("Misc", "UseWalkDistance", 3) + 2;
+	int distance = IniReader::GetConfigInt("Misc", "UseWalkDistance", 3) + 2;
 	if (distance > 1 && distance < 5) {
 		dlog("Applying walk distance for using objects patch.", DL_INIT);
 		SafeWriteBatch<BYTE>(distance, {0x411FF0, 0x4121C4, 0x412475, 0x412906}); // default is 5
@@ -840,7 +840,7 @@ static void UseWalkDistancePatch() {
 }
 
 static void F1EngineBehaviorPatch() {
-	if (GetConfigInt("Misc", "Fallout1Behavior", 0)) {
+	if (IniReader::GetConfigInt("Misc", "Fallout1Behavior", 0)) {
 		dlog("Applying Fallout 1 engine behavior patch.", DL_INIT);
 		BlockCall(0x4A4343); // disable playing the final movie/credits after the endgame slideshow
 		SafeWrite8(0x477C71, CodeType::JumpShort); // disable halving the weight for power armor items
@@ -884,25 +884,25 @@ void MiscPatches::init() {
 
 	EngineOptimizationPatches();
 
-	if (GetConfigString("Misc", "StartingMap", "", mapName, 64)) {
+	if (IniReader::GetConfigString("Misc", "StartingMap", "", mapName, 33)) {
 		dlog("Applying starting map patch.", DL_INIT);
 		SafeWrite32(0x480AAA, (DWORD)&mapName);
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (GetConfigString("Misc", "VersionString", "", versionString, 64)) {
+	if (IniReader::GetConfigString("Misc", "VersionString", "", versionString, 65)) {
 		dlog("Applying version string patch.", DL_INIT);
 		SafeWrite32(0x4B4588, (DWORD)&versionString);
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (GetConfigString("Misc", "PatchFile", "", patchName, 64)) {
+	if (IniReader::GetConfigString("Misc", "PatchFile", "", patchName, 33)) {
 		dlog("Applying patch file patch.", DL_INIT);
 		SafeWrite32(0x444323, (DWORD)&patchName);
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (GetConfigInt("System", "SingleCore", 1)) {
+	if (IniReader::GetConfigInt("System", "SingleCore", 1)) {
 		dlog("Applying single core patch.", DL_INIT);
 		HANDLE process = GetCurrentProcess();
 		SetProcessAffinityMask(process, 1);
@@ -910,14 +910,14 @@ void MiscPatches::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (GetConfigInt("System", "OverrideArtCacheSize", 0)) {
+	if (IniReader::GetConfigInt("System", "OverrideArtCacheSize", 0)) {
 		dlog("Applying override art cache size patch.", DL_INIT);
 		SafeWrite32(0x418867, 0x90909090);
 		SafeWrite32(0x418872, 256);
 		dlogr(" Done", DL_INIT);
 	}
 
-	int time = GetConfigInt("Misc", "CorpseDeleteTime", 6); // time in days
+	int time = IniReader::GetConfigInt("Misc", "CorpseDeleteTime", 6); // time in days
 	if (time != 6) {
 		dlog("Applying corpse deletion time patch.", DL_INIT);
 		if (time <= 0) {
@@ -938,7 +938,7 @@ void MiscPatches::init() {
 	SimplePatch<DWORD>(0x440C2A, "Misc", "SpecialDeathGVAR", fo::GVAR_MODOC_SHITTY_DEATH);
 
 	// Remove hardcoding for maps with IDs 19 and 37
-	if (GetConfigInt("Misc", "DisableSpecialMapIDs", 0)) {
+	if (IniReader::GetConfigInt("Misc", "DisableSpecialMapIDs", 0)) {
 		dlog("Applying disable special map IDs patch.", DL_INIT);
 		SafeWriteBatch<BYTE>(0, {0x4836D6, 0x4836DB});
 		dlogr(" Done", DL_INIT);
