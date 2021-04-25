@@ -63,7 +63,7 @@ fo::MessageNode* GetMsgNode(fo::MessageList* msgList, int msgNum) {
 	return nullptr;
 }
 
-// Альтернативный вариант функции getmsg_
+// Alternative version of getmsg_ function
 char* GetMsg(fo::MessageList* msgList, int msgNum, int msgType) {
 	fo::MessageNode *msgNode = GetMsgNode(msgList, msgNum);
 	if (msgNode) {
@@ -672,7 +672,7 @@ fo::UnlistedFrm *LoadUnlistedFrm(char *frmName, unsigned int folderRef) {
 	char frmPath[MAX_PATH];
 
 	if (fo::var::use_language) {
-		sprintf_s(frmPath, MAX_PATH, "art\\%s\\%s\\%s", (const char*)&fo::var::language, artfolder, frmName);
+		sprintf_s(frmPath, MAX_PATH, "art\\%s\\%s\\%s", (const char*)fo::var::language, artfolder, frmName);
 	} else {
 		sprintf_s(frmPath, MAX_PATH, "art\\%s\\%s", artfolder, frmName);
 	}
