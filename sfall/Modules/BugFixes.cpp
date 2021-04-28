@@ -1835,6 +1835,15 @@ static void __declspec(naked) op_obj_can_hear_obj_hack() {
 	}
 }
 
+static void __declspec(naked) ai_best_weapon_hack() {
+	__asm {
+		sar  edx, 31;
+		sub  eax, edx
+		sar  eax, 1;
+		retn;
+	}
+}
+
 static void __declspec(naked) ai_best_weapon_hook() {
 	__asm {
 		mov  eax, [esp + 0xF4 - 0x10 + 4];  // prev.item
@@ -3470,19 +3479,15 @@ void BugFixes::init()
 		dlogr(" Done", DL_FIX);
 	}
 
-	// Fix: The wrong item was passed to the function to check the presence of perk at the weapon
-	int bestWeaponPerkMod = GetConfigInt("Misc", "AIBestWeaponFix", 0);
-	if (bestWeaponPerkMod > 0) {
+	if (GetConfigInt("Misc", "AIBestWeaponFix", 1) > 0) {
 		dlog("Applying AI best weapon choose fix.", DL_FIX);
+		// Fixed an wrong item was passed to the function to check the presence of perk at the weapon
 		HookCall(0x42954B, ai_best_weapon_hook);
-		// also corrected calculate weapon perk modifier
-		if (bestWeaponPerkMod > 1) {
-			// Score x3 it seems that this is the best way to fix it, because the difference >5 between the values is preserved,
-			// as with x5 (example: 7x3=21 and 9x3=27)
-			SafeWriteBatch<BYTE>(0x55, {0x42955E, 0x4296E7}); // lea eax, [edx * 2];
-			// Score x2
-			if (bestWeaponPerkMod > 2) SafeWriteBatch<WORD>(0x9066, {0x429563, 0x4296EC}); // nop
-		}
+		// Fixed calculate weapon score to: (maxDmd + minDmg) / 4
+		SafeWriteBatch<BYTE>(0x01, { 0x4294E2, 0x429675 }); // sub > add
+		MakeCalls(ai_best_weapon_hack, { 0x4294E6, 0x429679 });
+		// corrected calculate weapon perk modifier score to: 2x multiplier
+		SafeWriteBatch<BYTE>(0x15, {0x42955E, 0x4296E7}); // lea eax, [edx*4] > lea eax, [edx]
 		dlogr(" Done", DL_FIX);
 	}
 

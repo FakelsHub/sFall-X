@@ -1169,9 +1169,9 @@ cantUse:
 }
 
 static void FastShotTraitFix() {
-	switch (IniReader::GetConfigInt("Misc", "FastShotFix", 1)) {
+	switch (IniReader::GetConfigInt("Misc", "FastShotFix", 0)) {
 	case 1:
-		dlog("Applying Fast Shot trait patch. (Haenlomal's fix)", DL_INIT);
+		dlog("Applying Fast Shot trait patch. (Haenlomal's tweak)", DL_INIT);
 		MakeJump(0x478E79, item_w_called_shot_hack);
 		goto fix;
 	case 2:
