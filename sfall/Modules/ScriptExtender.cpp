@@ -429,14 +429,14 @@ void __fastcall SetSelfObject(fo::Program* script, fo::GameObject* obj) {
 
 // loads script from .int file into a sScriptProgram struct, filling script pointer and proc lookup table
 void InitScriptProgram(ScriptProgram &prog, const char* fileName, bool fullPath) {
-	fo::Program* scriptPtr = fullPath
-		? fo::func::allocateProgram(fileName)
-		: fo::func::loadProgram(fileName);
+	fo::Program* scriptPtr = (fullPath)
+	                       ? fo::func::allocateProgram(fileName)
+	                       : fo::func::loadProgram(fileName);
 
 	if (scriptPtr) {
-		const char** procTable = fo::var::procTableStrs;
 		prog.ptr = scriptPtr;
 		// fill lookup table
+		const char** procTable = fo::var::procTableStrs;
 		for (int i = 0; i < fo::Scripts::ScriptProc::count; ++i) {
 			prog.procLookup[i] = fo::func::interpretFindProcedure(prog.ptr, procTable[i]);
 		}
@@ -480,6 +480,26 @@ bool IsGameScript(const char* filename) {
 		} while (left <= right);
 	}
 	return false; // name of script was not found in scripts.lst
+}
+
+// loads and initialize script file (for normal game script)
+long __fastcall ScriptExtender::InitScript(long sid) {
+	fo::ScriptInstance* scriptPrt;
+	if (fo::func::scr_ptr(sid, &scriptPrt) == -1) return -1;
+
+	scriptPrt->program = fo::func::loadProgram(fo::var::scriptListInfo[scriptPrt->scriptIdx & 0xFFFFFF].fileName);
+	if (!scriptPrt->program) return -1;
+	if (scriptPrt->program->flags & 0x124) return 0;
+
+	// fill lookup table
+	fo::func::scr_build_lookup_table(scriptPrt);
+
+	scriptPrt->flags |= 4 | 1; // init | loaded
+	scriptPrt->action = fo::Scripts::ScriptProc::no_p_proc;
+	scriptPrt->scriptOverrides = 0;
+
+	fo::func::runProgram(scriptPrt->program);
+	return 0;
 }
 
 static void LoadGlobalScriptsList() {
