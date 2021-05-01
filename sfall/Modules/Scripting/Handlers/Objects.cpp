@@ -286,7 +286,7 @@ void op_make_straight_path(OpcodeContext& ctx) {
 	DWORD tileTo = ctx.arg(1).rawValue();
 	BlockType type = (BlockType)ctx.arg(2).rawValue();
 
-	long flag = (type == BlockType::BLOCKING_TYPE_SHOOT) ? 32 : 0; // TODO: Maybe need to use a different 4/16 value instead of zero
+	long flag = (type == BlockType::BLOCKING_TYPE_SHOOT) ? 32 : 0;
 	fo::GameObject* resultObj = nullptr;
 	fo::func::make_straight_path_func(objFrom, objFrom->tile, tileTo, 0, (DWORD*)&resultObj, flag, (void*)getBlockingFunc(type));
 	ctx.setReturn(resultObj);
@@ -437,9 +437,9 @@ void mf_get_dialog_object(OpcodeContext& ctx) {
 }
 
 void mf_obj_under_cursor(OpcodeContext& ctx) {
-	ctx.setReturn((fo::var::gmouse_3d_current_mode != 0)
-				  ? fo::func::object_under_mouse(ctx.arg(0).asBool() ? 1 : -1, ctx.arg(1).rawValue(), fo::var::map_elevation)
-				  : 0);
+	ctx.setReturn(
+		fo::func::object_under_mouse(ctx.arg(0).asBool() ? 1 : -1, ctx.arg(1).rawValue(), fo::var::map_elevation)
+	);
 }
 
 void mf_get_loot_object(OpcodeContext& ctx) {
