@@ -943,12 +943,7 @@ void ScriptExtender::init() {
 	}
 
 	idle = IniReader::GetConfigInt("System", "ProcessorIdle", -1);
-	if (idle > -1) {
-		if (idle > 127) idle = 127;
-		fo::var::idle_func = reinterpret_cast<void*>(Sleep);
-		SafeWrite8(0x4C9F12, 0x6A); // push idle
-		SafeWrite8(0x4C9F13, idle);
-	}
+	if (idle > -1 && idle > 10) idle = 10;
 
 	arraysBehavior = IniReader::GetConfigInt("Scripts", "arraysBehavior", 1);
 	if (arraysBehavior > 0) {
