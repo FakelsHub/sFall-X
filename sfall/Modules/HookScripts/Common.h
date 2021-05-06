@@ -27,7 +27,7 @@ public:
 // Struct for registered hook script
 struct HookScript {
 	ScriptProgram prog;
-	int callback;        // proc number in script's proc table
+	int callback;        // procedure position in script's proc table
 	char isGlobalScript; // 0 for hs_* scripts, 1/2 type for gl* scripts
 };
 

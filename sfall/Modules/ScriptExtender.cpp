@@ -623,27 +623,27 @@ static void ClearGlobalScripts() {
 
 void RunScriptProc(ScriptProgram* prog, const char* procName) {
 	fo::Program* sptr = prog->ptr;
-	int procNum = fo::func::interpretFindProcedure(sptr, procName);
-	if (procNum != -1) {
-		fo::func::executeProcedure(sptr, procNum);
+	int procPosition = fo::func::interpretFindProcedure(sptr, procName);
+	if (procPosition != -1) {
+		fo::func::executeProcedure(sptr, procPosition);
 	}
 }
 
 void RunScriptProc(ScriptProgram* prog, long procId) {
 	if (procId > 0 && procId < fo::Scripts::ScriptProc::count) {
-		int procNum = prog->procLookup[procId];
-		if (procNum != -1) {
-			fo::func::executeProcedure(prog->ptr, procNum);
+		int procPosition = prog->procLookup[procId];
+		if (procPosition != -1) {
+			fo::func::executeProcedure(prog->ptr, procPosition);
 		}
 	}
 }
 
 int RunScriptStartProc(ScriptProgram* prog) {
-	int procNum = prog->procLookup[fo::Scripts::ScriptProc::start];
-	if (procNum != -1) {
-		fo::func::executeProcedure(prog->ptr, procNum);
+	int procPosition = prog->procLookup[fo::Scripts::ScriptProc::start];
+	if (procPosition != -1) {
+		fo::func::executeProcedure(prog->ptr, procPosition);
 	}
-	return procNum;
+	return procPosition;
 }
 
 static void RunScript(GlobalScript* script) {

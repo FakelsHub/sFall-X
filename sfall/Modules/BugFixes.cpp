@@ -2330,7 +2330,7 @@ static void __declspec(naked) obj_load_dude_hook0() {
 		mov  eax, ds:[FO_VAR_obj_dude];
 		mov  eax, [eax + scriptId];
 		mov  dudeScriptID, eax;
-		ret;
+		retn;
 	}
 }
 
@@ -2356,10 +2356,12 @@ skip:
 
 static void __declspec(naked) exec_script_proc_hack() {
 	__asm {
-		mov  eax, [esi + 0x58];
+		test edi, edi; // loading?
+		jnz  end;
+		mov  eax, [esi + 0x58]; // script.procedure_table.start
 		test eax, eax;
-		ja   end;
-		inc  eax; // start proc
+		ja   end; // != 0
+		dec  eax; // is bad - set to -1 for skip execute
 end:
 		retn;
 	}
@@ -2367,10 +2369,10 @@ end:
 
 static void __declspec(naked) exec_script_proc_hack1() {
 	__asm {
-		mov  esi, [edi + 0x58];
+		mov  esi, [edi + 0x58]; // script.procedure_table.start
 		test esi, esi;
-		ja   end;
-		inc  esi; // start proc
+		ja   end; // != 0
+		inc  esi; // 1 - default position
 end:
 		retn;
 	}
