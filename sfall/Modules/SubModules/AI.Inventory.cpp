@@ -10,6 +10,7 @@
 #include "..\Combat.h"
 #include "..\HookScripts\CombatHs.h"
 
+#include "..\..\Game\combatAI.h"
 #include "..\..\Game\items.h"
 
 #include "AI.Behavior.h"
@@ -49,7 +50,7 @@ fo::GameObject* AIInventory::SearchInventoryItemType(fo::GameObject* source, lon
 		if (item) {
 			switch (itemType) {
 			case fo::ItemType::item_type_weapon:
-				if (!fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
+				if (!game::CombatAI::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
 				// проверяем наличее и количество имеющихся патронов
 				if (!AICheckAmmo(item, source) && Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) continue;
 				break;
@@ -164,7 +165,7 @@ fo::GameObject* AIInventory::GetInventoryWeapon(fo::GameObject* source, bool che
 
 		if ((!bestWeapon || item->protoId != bestWeapon->protoId) &&
 			(!checkAP || game::Items::item_weapon_mp_cost(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0) <= source->critter.getAP()) &&
-			(fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) &&
+			(game::CombatAI::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) &&
 			(item->item.ammoPid == -1 || fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) != fo::AttackSubType::GUNS) ||
 			 fo::func::item_w_curr_ammo(item) || fo::func::ai_have_ammo(source, item, 0))
 		{
@@ -209,7 +210,7 @@ fo::GameObject* AIInventory::FindSafeWeaponAttack(fo::GameObject* source, fo::Ga
 
 		outHitMode = (fo::AttackType)fo::func::ai_pick_hit_mode(source, item, target);
 
-		if (game::Items::item_weapon_mp_cost(source, item, outHitMode, 0) <= source->critter.getAP() && fo::func::ai_can_use_weapon(source, item, outHitMode))
+		if (game::Items::item_weapon_mp_cost(source, item, outHitMode, 0) <= source->critter.getAP() && game::CombatAI::ai_can_use_weapon(source, item, outHitMode))
 		{
 			if ((item->item.ammoPid == -1 || // оружие не имеет магазина для патронов
 				Combat::check_item_ammo_cost(item, outHitMode)) &&

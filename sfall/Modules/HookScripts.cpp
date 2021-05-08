@@ -112,6 +112,7 @@ static HooksInjectInfo injectHooks[] = {
 	{HOOK_ADJUSTRADS,       Inject_AdjustPadsHook,       1},  // always embedded for party control fix
 	{HOOK_ROLLCHECK,        Inject_RollCheckHook,        0},
 	{HOOK_BESTWEAPON,       Inject_BestWeaponHook,       0},
+	{HOOK_CANUSEWEAPON,     Inject_CanUseWeaponHook,     0},
 };
 
 void HookScripts::InjectingHook(int hookId) {

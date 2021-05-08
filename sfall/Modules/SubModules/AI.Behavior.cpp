@@ -10,6 +10,7 @@
 #include "..\..\Utils.h"
 #include "..\Combat.h"
 
+#include "..\..\Game\combatAI.h"
 #include "..\..\Game\items.h"
 #include "..\..\Game\objects.h"
 #include "..\..\Game\tilemap.h"
@@ -122,7 +123,7 @@ continue:
 
 // Неподбирать оружие если у него пустой магазин, и к нему нет патронов в инвентаре или на карте
 static long __fastcall AICheckWeaponAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
-	if (fo::func::ai_can_use_weapon(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) {
+	if (game::CombatAI::ai_can_use_weapon(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) {
 		return AIInventory::AICheckAmmo(weapon, critter);
 	}
 	return 0; // 0 - critter no have ammo or can't use weapon
@@ -375,7 +376,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 				}
 
 				if (item && item->protoId == itemGround->protoId) continue;
-				if (!fo::func::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
+				if (!game::CombatAI::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
 
 				// проверяем наличее и количество имеющихся патронов
 				if (!AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) {
@@ -427,7 +428,7 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 				int toDistObject = fo::func::make_path_func(source, source->tile, itemGround->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
 				if (toDistObject == 0 || toDistObject > source->critter.getAP() + 1) continue;
 
-				if (fo::func::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) &&
+				if (game::CombatAI::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) &&
 					// проверяем наличее и количество имеющихся патронов
 					AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 0)
 				{
@@ -478,7 +479,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 		if (itemHand && itemHand->protoId == item->protoId) continue;
 
 		if ((source->critter.getAP() >= game::Items::item_weapon_mp_cost(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0)) &&
-			fo::func::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY))
+			game::CombatAI::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY))
 		{
 			if (item->item.ammoPid == -1 || // оружие не имеет патронов
 				fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) == fo::AttackSubType::THROWING || // Зачем здесь метательные?
