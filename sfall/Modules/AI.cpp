@@ -55,6 +55,9 @@ fo::GameObject* AI::CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object,
 
 		object = CheckShootAndTeamCritterOnLineOfFire(obj, targetTile, team);
 	}
+	if (object) {
+		DEV_PRINTF3("\n[AI] TeamCritterOnLineOfFire: %s (team: %d==%d)", fo::func::critter_name(object), object->critter.teamNum, team);
+	}
 	return object; // friendly critter, any object or null
 }
 

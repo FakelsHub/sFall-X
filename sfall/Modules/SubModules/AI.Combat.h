@@ -21,11 +21,19 @@ enum CombatShootResult : long {
 	NoActionPoint = 8, // add ext
 };
 
+enum class CombatDifficulty : long
+{
+	Easy   = 0,
+	Normal = 1,
+	Hard   = 2
+};
+
 class AICombat {
 public:
 	static void init(bool);
 
 	static bool AICombat::npcPercentMinHP;
+	static CombatDifficulty AICombat::combatDifficulty;
 
 	static CombatShootResult combat_check_bad_shot(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode, long isCalled);
 
@@ -34,6 +42,7 @@ public:
 	static long AttackerBonusAP();
 	static long AttackerBodyType();
 	static bool AttackerIsHumanoid();
+	static fo::AIcap* AttackerAI();
 };
 
 }

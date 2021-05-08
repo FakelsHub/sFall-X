@@ -56,9 +56,11 @@ public:
 	static bool IsGunOrThrowingWeapon(fo::GameObject* item, long type = -1);
 
 	static long GetFreeTile(fo::GameObject* source, long tile, long distMax, long dir);
-	static long GetFreeTile(fo::GameObject* source, long tile, long distMax);
+	static long GetDirFreeTile(fo::GameObject* source, long tile, long distMax);
 
-	static long GetRandomTile(fo::GameObject* source, long min, long max);
+	static long GetRandomTile(long sourceTile, long minDist, long maxDist);
+	static long GetRandomTileToMove(fo::GameObject* source, long minDist, long maxDist);
+
 	static long GetRandomDistTile(fo::GameObject* source, long tile, long distMax);
 
 	static bool CanSeeObject(fo::GameObject* source, fo::GameObject* target);

@@ -6,7 +6,7 @@
 
 #include "..\..\FalloutEngine\Fallout2.h"
 
-#include "..\..\SafeWrite.h"
+#include "..\..\main.h"
 #include "..\Combat.h"
 #include "..\HookScripts\CombatHs.h"
 
@@ -20,6 +20,8 @@
 namespace sfall
 {
 
+static bool bestWeaponFix;
+
 fo::GameObject* AIInventory::BestWeapon(fo::GameObject* source, fo::GameObject* weapon1, fo::GameObject* weapon2, fo::GameObject* target) {
 	fo::GameObject* bestWeapon = fo::func::ai_best_weapon(source, weapon1, weapon2, target);
 	return BestWeaponHook_Invoke(bestWeapon, source, weapon1, weapon2, target);
@@ -30,8 +32,9 @@ long AIInventory::AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
 	if (weapon->item.charges > 0 || weapon->item.ammoPid == -1) return 1;
 	if (AIInventory::CritterHaveAmmo(critter, weapon)) return 1;
 
+	fo::GameObject* ammo = nullptr;
 	// check ammo in corpses
-	fo::GameObject* ammo = AIInventory::ai_search_environ_corpse(critter, fo::ItemType::item_type_ammo, 0, weapon);
+	AIInventory::ai_search_environ_corpse(critter, fo::ItemType::item_type_ammo, ammo, weapon);
 	// check ammo on ground
 	if (!ammo) ammo = AIInventory::ai_search_environ_ammo(critter, weapon);
 	return (ammo) ? 1 : 0;
@@ -78,13 +81,17 @@ static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefSco
 
 		long maxDmg = proto->item.weapon.maxDamage;
 		long minDmg = proto->item.weapon.minDamage;
-		score = (maxDmg - minDmg) / 2;
+		if (bestWeaponFix) {
+			score = (maxDmg + minDmg) / 4;
+		} else {
+			score = (maxDmg - minDmg) / 2;
+		}
 
 		// пассивные очки за радиус
 		long radius = fo::func::item_w_area_damage_radius(weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
 		if (radius > 1) score += (2 * radius);
 
-		if (proto->item.weapon.perk) score *= 3; // TODO: add AIBestWeaponFix
+		if (proto->item.weapon.perk >= 0) score *= (bestWeaponFix) ? 2 : 5;
 	} else {
 		weapType = fo::AttackSubType::UNARMED;
 	}
@@ -122,8 +129,7 @@ static fo::GameObject* BestWeaponLite(fo::GameObject* source, fo::GameObject* we
 		}
 		if (secondaryScore > primaryScore) return weaponSecondary;
 	} else {
-		// у оружия разное предпочтение
-		// у кого очки предпочтения меньше то лучше
+		// у оружия разное предпочтение, у кого очков предпочтения меньше то лучше
 
 		if (weaponPrimary && weaponPrimary->protoId == fo::PID_FLARE && weaponSecondary) {
 			return weaponSecondary;
@@ -254,16 +260,31 @@ bool AIInventory::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* wea
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static fo::GameObject* itemCorpse;
-
 static long __fastcall pickup_item(fo::GameObject* source, fo::GameObject* item) {
-	itemCorpse = nullptr;
-	long result = fo::func::item_move_force(item->owner, source, item, 1);
+	int moveCount = 1;
+
+	// патроны: берем сразу несколько штук для полной перезарядки оружия
+	fo::Proto* protoAmmo = fo::GetProto(item->protoId);
+	if (protoAmmo->item.type == fo::ItemType::item_type_ammo) {
+		fo::GameObject* weapon = fo::func::inven_right_hand(source);
+		if (weapon) {
+			fo::Proto* protoWeapon = fo::GetProto(weapon->protoId);
+			long magMax = protoWeapon->item.weapon.maxAmmo;
+			long packSize = protoAmmo->item.ammo.packSize;
+			long count = magMax / packSize;
+			if (count > 0) moveCount += count;
+
+			long items = game::Items::item_count(item->owner, item);
+			if (moveCount > items) moveCount = items;
+		}
+	}
+
+	long result = fo::func::item_move_force(item->owner, source, item, moveCount);
 	if (result) fo::func::debug_printf("\n[AI] Error pickup item (%s).", fo::func::critter_name(item));
 	return result;
 }
 
-static void __declspec(naked) pickup_item_fowrap() {
+static void __declspec(naked) pickup_item_() {
 	__asm {
 		push ecx
 		mov  ecx, eax;
@@ -277,7 +298,7 @@ static long __fastcall check_object_ap(fo::GameObject* source, fo::GameObject* t
 	return (source->critter.getAP() >= pickupCostAP && fo::func::obj_dist(source, target) <= 1) ? 0 : -1;
 }
 
-static void __declspec(naked) check_object_ap_fowrap() {
+static void __declspec(naked) check_object_ap_() {
 	__asm {
 		push ecx
 		mov  ecx, eax;
@@ -288,14 +309,13 @@ static void __declspec(naked) check_object_ap_fowrap() {
 }
 
 fo::GameObject* AIInventory::AIRetrieveCorpseItem(fo::GameObject* source, fo::GameObject* itemRetrive) {
-	if (itemRetrive) itemCorpse = itemRetrive;
-	fo::GameObject* object = itemCorpse->owner;
+	fo::GameObject* corpse = itemRetrive->owner;
 
-	DEV_PRINTF2("\n[AI] Try RetrieveCorpseItem: %s, Owner: %s", fo::func::critter_name(itemCorpse), fo::func::critter_name(object));
+	DEV_PRINTF2("\n[AI] Try RetrieveCorpseItem: %s, Owner: %s", fo::func::critter_name(itemRetrive), fo::func::critter_name(corpse));
 
 	fo::func::register_begin(fo::AnimCommand::RB_RESERVED);
-	fo::func::register_object_move_to_object(source, object, source->critter.getAP(), 0);
-	fo::func::register_object_call((long*)source, (long*)object, check_object_ap_fowrap, -1);
+	fo::func::register_object_move_to_object(source, corpse, source->critter.getAP(), 0);
+	fo::func::register_object_call((long*)source, (long*)corpse, check_object_ap_, -1);
 	fo::func::register_object_animate(source, fo::Animation::ANIM_magic_hands_ground, 0);
 
 	long artID = fo::func::art_id(fo::ObjType::OBJ_TYPE_CRITTER, source->artFid & 0xFFF, 10, (source->artFid & 0xF000) >> 12, source->frm + 1);
@@ -314,33 +334,30 @@ fo::GameObject* AIInventory::AIRetrieveCorpseItem(fo::GameObject* source, fo::Ga
 	}
 
 	char nameArt[16];
-	if (!fo::func::art_get_base_name(fo::ObjType::OBJ_TYPE_ITEM, itemCorpse->artFid & 0xFFF, nameArt)) {
+	if (!fo::func::art_get_base_name(fo::ObjType::OBJ_TYPE_ITEM, itemRetrive->artFid & 0xFFF, nameArt)) {
 		if (std::strlen(nameArt) >= 4) {
-			fo::func::register_object_play_sfx(itemCorpse, nameArt, delay);
+			fo::func::register_object_play_sfx(itemRetrive, nameArt, delay);
 			delay = 0;
 		}
 	}
 
-	fo::func::register_object_call((long*)source, (long*)itemCorpse, pickup_item_fowrap, delay);
+	fo::func::register_object_call((long*)source, (long*)itemRetrive, pickup_item_, delay);
 
 	if (!fo::func::register_end()) {
-		DEV_PRINTF("\n[AI] register_end OK");
-		fo::GameObject* item = itemCorpse;
+		DEV_PRINTF1("\n[AI] register_end OK (AP:%d)", source->critter.getAP());
 
 		__asm call fo::funcoffs::combat_turn_run_;
 
-		source->critter.movePoints -= pickupCostAP;
-		if (source->critter.getAP() < 0) source->critter.movePoints = 0;
+		if (fo::GetInventItem(source, itemRetrive->protoId) == itemRetrive) {
+			source->critter.movePoints -= pickupCostAP;
+			if (source->critter.getAP() < 0) source->critter.movePoints = 0;
 
-		if (fo::GetInventItem(source, item->protoId) == item) {
-			DEV_PRINTF1("\n[AI] OK RetrieveCorpseItem: %s", fo::func::critter_name(item));
+			DEV_PRINTF2("\n[AI] OK RetrieveCorpseItem: %s (AP:%d)", fo::func::critter_name(itemRetrive), source->critter.getAP());
 			//fo::func::combatAIInfoSetLastItem(source, corpse); // устанавливaем 0, если предмет был подобран (функция не работает и неиспользуется движком в должном виде)
-			itemCorpse = nullptr;
-			return item;
+			return itemRetrive;
 		}
 	}
-	DEV_PRINTF("\n[AI] Error RetrieveCorpseItem!");
-	itemCorpse = nullptr;
+	DEV_PRINTF1("\n[AI] Error RetrieveCorpseItem! (AP:%d)", source->critter.getAP());
 	return nullptr;
 }
 
@@ -366,7 +383,10 @@ fo::GameObject* AIInventory::ai_search_environ_ammo(fo::GameObject* critter, fo:
 			fo::GameObject* item = (fo::GameObject*)objectsList[i];
 
 			if (fo::func::obj_dist(critter, item) > maxDist) break;
+
 			if (fo::GetItemType(item) != fo::ItemType::item_type_ammo) continue;
+			// check block path
+			if (fo::func::make_path_func(critter, critter->tile, item->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_)) continue;
 
 			if (fo::func::item_w_can_reload(weapon, item)) {
 				ammo = item;
@@ -381,14 +401,23 @@ fo::GameObject* AIInventory::ai_search_environ_ammo(fo::GameObject* critter, fo:
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // Аналог функции ai_search_environ, только с той разницей, что ищет требуемый предмет в инвентаре убитых криттеров
-fo::GameObject* AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* itemGround, fo::GameObject* weapon) {
+long AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* &itemGround, fo::GameObject* weapon) {
 	if (!weapon && itemType == fo::ItemType::item_type_ammo) {
 		weapon = fo::func::inven_right_hand(source);
-		if (!weapon) return itemGround; // ERROR: не назначено или нет оружия для проверки
+		if (!weapon) return -1; // ERROR: не назначено или нет оружия для проверки
+	}
+
+	long distanceLen = -1;
+	if (itemGround) {
+		distanceLen = (source->tile != itemGround->tile)
+			        ? fo::func::make_path_func(source, source->tile, itemGround->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_)
+			        : 0;
 	}
 
 	long* objectsList = nullptr;
 	long numObjects = fo::func::obj_create_list(-1, source->elevation, fo::ObjType::OBJ_TYPE_CRITTER, &objectsList);
+
+	fo::GameObject* itemCorpse = nullptr;
 
 	if (numObjects > 0) {
 		fo::var::combat_obj = source;
@@ -403,36 +432,36 @@ fo::GameObject* AIInventory::ai_search_environ_corpse(fo::GameObject* source, lo
 
 			if (fo::func::obj_dist(source, object) > maxDist) break;
 
+			if (fo::GetProto(object->protoId)->critter.critterFlags & fo::CritterFlags::NoSteal) continue;
+
+			// check block path and distance
+			int toDist = 0;
+			if (source->tile != object->tile) {
+				toDist = fo::func::make_path_func(source, source->tile, object->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
+				if (toDist == 0 || (distanceLen > -1 && distanceLen < toDist)) continue;
+			}
+
 			fo::GameObject* item = AIInventory::SearchInventoryItemType(source, itemType, object, weapon);
-			itemCorpse = item;
 			if (item) {
 				DEV_PRINTF2("\n[AI] ai_search_environ_corpse: %s, Owner: %s", fo::func::critter_name(item), fo::func::critter_name(item->owner));
-				item->owner = object;
+				itemCorpse = item;
+				itemCorpse->owner = object;
+				distanceLen = toDist;
 				break;
 			}
 		}
 		fo::func::obj_delete_list(objectsList);
 	}
-	if (itemCorpse) {
-		if (itemGround) {
-			// check real path distance
-			int toDist1 = fo::func::make_path_func(source, source->tile, itemGround->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-			int toDist2 = fo::func::make_path_func(source, source->tile, itemCorpse->owner->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-			if (toDist1 < toDist2) {
-				itemCorpse = nullptr;
-				return itemGround;
-			}
-		}
-		return itemCorpse->owner; // critter
-	}
-	return itemGround;
+	if (itemCorpse) itemGround = itemCorpse;
+
+	return distanceLen;
 }
 
 static long __fastcall AISearchCorpseWeapon(fo::GameObject* target, fo::GameObject* source, fo::GameObject* &weapon, long &hitMode, fo::GameObject* itemEnv) {
-	fo::GameObject* object = AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_weapon, itemEnv, weapon);
-	if (!object || !itemCorpse) return 1; // default
+	fo::GameObject* outItem = itemEnv;
+	if (AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_weapon, outItem, weapon) < 0) return 1; // default
 
-	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, nullptr);
+	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, outItem);
 	if (item) {
 		fo::func::inven_wield(source, item, fo::InvenType::INVEN_TYPE_RIGHT_HAND);
 
@@ -471,10 +500,10 @@ default:
 }
 
 static long __fastcall AISearchCorpseAmmo(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* itemEnv) {
-	fo::GameObject* object = AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_ammo, itemEnv, weapon);
-	if (!object || !itemCorpse) return 0; // default
+	fo::GameObject* outItem = itemEnv;
+	if (AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_ammo, outItem, weapon) < 0) return 0; // default
 
-	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, nullptr);
+	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, outItem);
 	if (item) {
 		return (AIInventory::AITryReloadWeapon(source, weapon, item)) ? 1 : -1; // 1 - Ok
 	}
@@ -502,18 +531,26 @@ default:
 
 static long __fastcall AISearchCorpseDrug(fo::GameObject* source, long addrType, long noInvenItem, fo::GameObject* &itemEnv) {
 	fo::ItemType type = (addrType == 0x4287B2 + 5) ? fo::ItemType::item_type_drug : fo::ItemType::item_type_misc_item;
-	fo::GameObject* object = AIInventory::ai_search_environ_corpse(source, type, itemEnv, 0);
-	if (!object || !itemCorpse) return 0; // default (в itemEnv ref значение из ai_search_environ_)
+
+	fo::GameObject* outItem = itemEnv;
+	long length = AIInventory::ai_search_environ_corpse(source, type, outItem, nullptr);
+	if (length > 0 && noInvenItem != 2) {
+		if (length > source->critter.getAP() + pickupCostAP) {
+			itemEnv = outItem = nullptr; // no pickup
+		}
+	}
+	if (!outItem || length < 0) return 0; // default (в itemEnv ref значение из ai_search_environ_)
 
 	bool dontUse = false;
 	if (noInvenItem != 2) { // is set to 2 that healing is required
-		long pid = itemCorpse->protoId;
+		long pid = outItem->protoId;
 		if (pid == fo::ProtoID::PID_STIMPAK || pid == fo::ProtoID::PID_SUPER_STIMPAK || pid == fo::ProtoID::PID_HEALING_POWDER) {
 			dontUse = ((10 + source->critter.health) >= fo::func::stat_level(source, fo::Stat::STAT_max_hit_points));
 		}
 	}
 
-	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, nullptr);
+	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, outItem);
+
 	itemEnv = (!dontUse) ? item : nullptr;
 	return (item) ? 1 : -1;
 }
@@ -543,6 +580,8 @@ void AIInventory::CorpsesLootingHack() {
 	HookCall(0x42A5F6, ai_switch_weapons_hook_search);
 	HookCall(0x42AA25, ai_try_attack_hook_search_ammo);
 	HookCalls(ai_check_drugs_hook_search_drug, { 0x4287B2, 0x4287C8 });
+
+	bestWeaponFix = (IniReader::GetConfigInt("Misc", "AIBestWeaponFix", 1) > 0);
 }
 
 }

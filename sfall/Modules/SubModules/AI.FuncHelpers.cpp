@@ -187,7 +187,8 @@ long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax, lon
 	// рандомно смежные гексы
 	long r = (GetRandom(1, 2) == 2) ? 5 : 1;
 	long dirNear0 = (dir + r) % 6;
-	long dirNear1 = (dir + (r == 1) ? 5 : 1) % 6;
+	r = (r == 1) ? 5 : 1;
+	long dirNear1 = (dir + r) % 6;
 
 	long freeTile = -1;
 	long dist = 1;
@@ -195,17 +196,17 @@ long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax, lon
 	while (true)
 	{
 getTile:
-		long _tile = fo::func::tile_num_in_direction(tile, dir, 1);
-		if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
-			freeTile = _tile;
-			break;
-		}
-		_tile = fo::func::tile_num_in_direction(tile, dirNear0, 1);
+		long _tile = fo::func::tile_num_in_direction(tile, dirNear0, 1);
 		if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
 			freeTile = _tile;
 			break;
 		}
 		_tile = fo::func::tile_num_in_direction(tile, dirNear1, 1);
+		if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
+			freeTile = _tile;
+			break;
+		}
+		_tile = fo::func::tile_num_in_direction(tile, dir, 1);
 		if (!fo::func::obj_blocking_at(source, _tile, source->elevation)) {
 			freeTile = _tile;
 		}
@@ -220,7 +221,7 @@ getTile:
 	return freeTile;
 }
 
-long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax) {
+long AIHelpers::GetDirFreeTile(fo::GameObject* source, long tile, long distMax) {
 	long dist = 1;
 	do {
 		long dir = GetRandom(0, 5);
@@ -236,13 +237,33 @@ long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax) {
 	return -1;
 }
 
-long AIHelpers::GetRandomTile(fo::GameObject* source, long min, long max) {
-	long dist = GetRandom(min, max);
+long AIHelpers::GetRandomTile(long sourceTile, long minDist, long maxDist) {
+	long dist = (maxDist > minDist) ? GetRandom(minDist, maxDist) : minDist;
 	if (dist > 0) {
-		long tile = fo::func::tile_num_in_direction(source->tile, GetRandom(0, 5), dist);
-		fo::GameObject* object;
-		fo::func::make_straight_path_func(source, source->tile, tile, 0, (DWORD*)&object, 0, (void*)fo::funcoffs::obj_blocking_at_);
-		return (object) ? GetRandomTile(source, min, max) : tile;
+		long dx = GetRandom(-dist, dist) * 32;
+		long dy = GetRandom(-dist, dist) * 16;
+
+		long x, y;
+		fo::func::tile_coord(sourceTile, &x, &y);
+		x += dx + 16;
+		y += dy + 8;
+		long tile = fo::func::tile_num(x, y);
+		if (tile == sourceTile) tile++;
+		return tile;
+	}
+	return -1;
+}
+
+long AIHelpers::GetRandomTileToMove(fo::GameObject* source, long minDist, long maxDist) {
+	long iteration = (maxDist + minDist) * 10;
+	while (true)
+	{
+		if (--iteration < 0) break;
+		long tile = GetRandomTile(source->tile, minDist, maxDist);
+		if (tile == -1) break;
+		if (fo::func::make_path_func(source, source->tile, tile, 0, 1, (void*)fo::funcoffs::obj_blocking_at_)) {
+			return tile;
+		}
 	}
 	return -1;
 }
@@ -308,16 +329,9 @@ static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source
 			fo::GameObject* object = obj->object;
 			long flags = object->flags;
 			// не установлены флаги Mouse_3d, NoBlock и WalkThru
-			if (!(flags & (fo::ObjectFlag::Mouse_3d | fo::ObjectFlag::NoBlock | fo::ObjectFlag::WalkThru)) && source != object) {
-				char type = object->TypeFid();
-				if (type != fo::ObjType::OBJ_TYPE_CRITTER /*type == fo::ObjType::OBJ_TYPE_SCENERY || type == fo::ObjType::OBJ_TYPE_WALL*/) {
-					return object;
-				}
-				//if (type == fo::ObjType::OBJ_TYPE_CRITTER) {
-					//if (fo::var::moveBlockObj) return object;
-					fo::var::moveBlockObj = object;
-					return object;
-				//}
+			if (!(flags & fo::ObjectFlag::Mouse_3d) && !(flags & fo::ObjectFlag::NoBlock) && !(flags & fo::ObjectFlag::WalkThru) && source != object) {
+				if (object->TypeFid() == fo::ObjType::OBJ_TYPE_CRITTER) fo::var::moveBlockObj = object;
+				return object;
 			}
 		}
 		obj = obj->nextObject;
@@ -333,16 +347,9 @@ static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source
 				if (elev == obj->object->elevation) {
 					fo::GameObject* object = obj->object;
 					long flags = object->flags;
-					if (flags & fo::ObjectFlag::MultiHex && !(flags & (fo::ObjectFlag::Mouse_3d | fo::ObjectFlag::NoBlock | fo::ObjectFlag::WalkThru)) && source != object) { // не установлены Mouse_3d и NoBlock
-						char type = object->TypeFid();
-						if (type != fo::ObjType::OBJ_TYPE_CRITTER /*fo::ObjType::OBJ_TYPE_SCENERY || type == fo::ObjType::OBJ_TYPE_WALL*/) {
-							return object;
-						}
-						//if (type == fo::ObjType::OBJ_TYPE_CRITTER) {
-							//if (fo::var::moveBlockObj) return object;
-							fo::var::moveBlockObj = object;
-							return object;
-						//}
+					if (flags & fo::ObjectFlag::MultiHex && !(flags & fo::ObjectFlag::Mouse_3d) && !(flags & fo::ObjectFlag::NoBlock) && !(flags & fo::ObjectFlag::WalkThru) && source != object) {
+						if (object->TypeFid() == fo::ObjType::OBJ_TYPE_CRITTER) fo::var::moveBlockObj = object;
+						return object;
 					}
 				}
 				obj = obj->nextObject;
@@ -364,6 +371,7 @@ void __declspec(naked) AIHelpers::obj_ai_move_blocking_at_() {
 }
 
 // TODO: WIP
+/*
 fo::GameObject* obj_light_blocking_at(fo::GameObject* source, long tile, long elev) {
 	if (tile < 0 || tile >= 40000) return nullptr;
 
@@ -408,5 +416,5 @@ fo::GameObject* obj_light_blocking_at(fo::GameObject* source, long tile, long el
 	} while (++direction < 6);
 	return nullptr;
 }
-
+*/
 }

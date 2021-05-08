@@ -41,7 +41,7 @@ public:
 	static fo::GameObject* ai_search_environ_ammo(fo::GameObject* critter, fo::GameObject* weapon);
 
 	// Аналог функции ai_search_environ_, только с той разницей, что ищет требуемый предмет на карте в инвентаре убитых криттеров
-	static fo::GameObject* ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* itemGround, fo::GameObject* weapon);
+	static long ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* &itemGround, fo::GameObject* weapon);
 };
 
 }

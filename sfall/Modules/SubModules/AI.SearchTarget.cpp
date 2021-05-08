@@ -30,15 +30,6 @@ static bool reFindNewTargets = false;
 
 fo::GameObject* rememberTarget = nullptr;
 
-//static void __declspec(naked) ai_danger_source_hack() {
-//	__asm {
-//		mov  eax, esi;
-//		call fo::funcoffs::ai_get_attack_who_value_;
-//		mov  dword ptr [esp + 0x34 - 0x1C + 4], eax; // attack_who
-//		retn;
-//	}
-//}
-
 // Sets a target for the AI from whoHitMe if an alternative target was not found
 // or chooses a near target between the currently find target and rememberTarget
 fo::GameObject* __fastcall AISearchTarget::RevertTarget(fo::GameObject* source, fo::GameObject* target) {
@@ -82,7 +73,7 @@ static void __declspec(naked) combat_ai_hook_revert_target() {
 
 // Анализирует ситуацию для текущей цели атакующего, и если ситуация неблагоприятная для атакующего
 // то будет совершена попытка сменить текущую цель на альтернативную. Поиск целей осуществляется функцей движка.
-static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target, fo::AIcap* sourceCap) {
+static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) {
 	DEV_PRINTF1("\n[AI] Analyzing target: %s ", fo::func::critter_name(target));
 
 	int distance = fo::func::obj_dist(source, target); // возвращает дистанцию 1 если цель расположена вплотную
@@ -97,7 +88,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target, 
 		return true;                        // picking alternate target
 	}
 
-	fo::AIcap* cap = sourceCap; // fo::func::ai_cap(source);
+	fo::AIcap* cap = AICombat::AttackerAI();
 	if (shotIsBlock && pathToTarget >= 5) { // shot block to target, can move
 		long dist_disposition = distance;
 		switch (cap->disposition) {
@@ -183,8 +174,8 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target, 
 
 static const char* reTargetMsg = "\n[AI] I can't get at my target. Try picking alternate.";
 
-static bool AICheckCurrentAttackerTarget(fo::GameObject* source, fo::GameObject* target, fo::AIcap* sourceCap) {
-	bool result = CheckAttackerTarget(source, target, sourceCap);
+static bool AICheckCurrentAttackerTarget(fo::GameObject* source, fo::GameObject* target) {
+	bool result = CheckAttackerTarget(source, target);
 
 	#ifdef NDEBUG
 		if (result) fo::func::debug_printf(reTargetMsg);
@@ -250,7 +241,7 @@ static long AICombatCheckBadShot(fo::GameObject* source, fo::GameObject* target,
 				if (hit <= 30) return 1; // bad
 			}
 			else if (type & 8) { // for attack bad to hit
-				long minToHit = fo::func::ai_cap(source)->min_to_hit;
+				long minToHit = AICombat::AttackerAI()->min_to_hit;
 				long hit = fo::func::determine_to_hit_no_range(source, target, fo::BodyPart::Uncalled, AICombat::AttackerHitMode());
 				if (hit < minToHit) return 1; // bad
 			}
@@ -269,7 +260,7 @@ fo::GameObject* AISearchTarget::AIDangerSource(fo::GameObject* source, long type
 	bool isIgnoreFlee = false;
 	long isPartyMember = fo::func::isPartyMember(source);
 
-	fo::AIcap* cap = fo::func::ai_cap(source);
+	fo::AIcap* cap = AICombat::AttackerAI();
 	fo::AIpref::attack_who attack_who = (isPartyMember || npcAttackWhoFix) // [add ext] NPCAttackWhoFix option
 										? (fo::AIpref::attack_who)cap->attack_who
 										: fo::AIpref::attack_who::no_attack_mode;
@@ -337,7 +328,7 @@ ReFindNewTargets:
 			if (attack_who == fo::AIpref::attack_who::whomever || attack_who == fo::AIpref::attack_who::no_attack_mode) {
 				// NPCs (or PM with whomever) always attack the target that is set to who_hit_me
 				// [add ext] Additional function allows to analyze the current target (TryToFindTargets option)
-				if (reFindNewTargets && AICheckCurrentAttackerTarget(source, sourceTarget, cap)) {
+				if (reFindNewTargets && AICheckCurrentAttackerTarget(source, sourceTarget)) {
 					if (!(type & 8)) type |= 4;
 					goto ReFindNewTargets;
 				}
@@ -427,8 +418,7 @@ fo::GameObject* __fastcall AISearchTarget::AIDangerSource_Extended(fo::GameObjec
 }
 
 static void __declspec(naked) ai_danger_source_replacement() {
-	__asm {
-		//push edx;
+	__asm { // push edx;
 		push ecx;
 		xor  edx, edx; // type
 		cmp  dword ptr [esp + 8], 0x42B235 + 5; // called combat_ai_
@@ -461,7 +451,6 @@ void AISearchTarget::init(bool smartBehavior) {
 
 	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
 	if (IniReader::GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
-		//MakeCall(0x428F70, ai_danger_source_hack, 3);
 		npcAttackWhoFix = true;
 	}
 }
