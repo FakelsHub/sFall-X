@@ -74,7 +74,7 @@ DWORD __fastcall Inventory::item_weight(fo::GameObject* item) {
 	fo::Proto* proto;
 
 	if (fo::GetProto(item->protoId, &proto)) {
-		if ((proto->item.flagsExt & fo::ObjectFlag::HiddenItem) == 0) {
+		if (!(proto->item.flagsExt & fo::ObjectFlag::HiddenItem)) {
 			weight = proto->item.weight;
 		}
 
@@ -94,7 +94,7 @@ DWORD __fastcall Inventory::item_weight(fo::GameObject* item) {
 			if (charges > 0) {
 				long ammoPid = (fo::func::item_get_type(item) == fo::item_type_weapon) ? item->item.ammoPid : -1;
 				if (ammoPid != -1 && fo::GetProto(ammoPid, &proto)) { // replace to ammo proto
-					weight += proto->item.weight * (charges / proto->item.ammo.packSize);
+					weight += proto->item.weight * (((charges - 1) / proto->item.ammo.packSize) + 1);
 				}
 			}
 			break;

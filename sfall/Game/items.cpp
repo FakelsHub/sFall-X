@@ -33,13 +33,18 @@ long Items::item_weapon_range(fo::GameObject* source, fo::GameObject* weapon, lo
 	long type = fo::GetWeaponType(flagExt);
 
 	if (type == fo::AttackSubType::THROWING) {
-
-		// TODO: add perkHeaveHoModFix from perks.cpp
 		long heaveHoMod = Stats::perk_level(source, fo::Perk::PERK_heave_ho);
-		if (heaveHoMod > 0)	heaveHoMod *= 2;
+		long stRange = fo::func::stat_level(source, fo::Stat::STAT_st);
 
-		long stRange = (fo::func::stat_level(source, fo::Stat::STAT_st) + heaveHoMod);
-		if (stRange > 10) stRange = 10; // fix for heave_ho
+		if (sf::Perks::perkHeaveHoModTweak) {
+			stRange *= 3;
+			if (stRange > range) stRange = range;
+			return stRange + (heaveHoMod * 6);
+		}
+
+		// vanilla
+		stRange += (heaveHoMod * 2);
+		if (stRange > 10) stRange = 10; // fix for Heave Ho!
 		stRange *= 3;
 		if (stRange < range) range = stRange;
 	}
@@ -68,7 +73,7 @@ long __fastcall Items::item_weapon_mp_cost(fo::GameObject* source, fo::GameObjec
 		break;
 	case fo::AttackType::ATKTYPE_LWEAPON_RELOAD:
 	case fo::AttackType::ATKTYPE_RWEAPON_RELOAD:
-		if (weapon && weapon->protoId != fo::ProtoID::PID_SOLAR_SCORCHER) { // SOLAR_SCORCHER has a free reloading
+		if (weapon && weapon->protoId != fo::ProtoID::PID_SOLAR_SCORCHER) { // Solar Scorcher has no reload AP cost
 			cost = reloadCostAP;
 			if (fo::GetProto(weapon->protoId)->item.weapon.perk == fo::Perk::PERK_weapon_fast_reload) {
 				cost--;
@@ -118,25 +123,24 @@ static void __declspec(naked) ai_search_inven_weap_hook() {
 }
 
 long __fastcall Items::item_count(fo::GameObject* who, fo::GameObject* item) {
-	int count = 0;
-	for (int i = 0; i < who->invenSize; i++) {
+	for (int i = 0; i < who->invenSize; i++)
+	{
 		auto tableItem = &who->invenTable[i];
 		if (tableItem->object == item) {
-			count += tableItem->count;
+			return tableItem->count; // fix
 		} else if (fo::func::item_get_type(tableItem->object) == fo::item_type_container) {
-			count += item_count(tableItem->object, item);
+			int count = item_count(tableItem->object, item);
+			if (count > 0) return count;
 		}
 	}
-	return count;
+	return 0;
 }
 
 static void __declspec(naked) item_count_hack() {
 	__asm {
 		push ecx;               // save state
-		//push edx; ???
 		mov  ecx, eax;          // container-object
 		call Items::item_count; // edx - item
-		//pop  edx;
 		pop  ecx;               // restore
 		retn;
 	}
@@ -147,7 +151,7 @@ void Items::init() {
 	sf::HookCall(0x429A08, ai_search_inven_weap_hook);
 
 	// Replacing item_count_ function (fix item_count function returning incorrect value when there is a container-item inside)
-	sf::MakeJump(0x47808C, item_count_hack);
+	//sf::MakeJump(0x47808C, item_count_hack);
 
 	int fastShotFix = sf::IniReader::GetConfigInt("Misc", "FastShotFix", 0);
 	fastShotTweak = (fastShotFix > 0 && fastShotFix <= 3);

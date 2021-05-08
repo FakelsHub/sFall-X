@@ -140,22 +140,25 @@ static void __declspec(naked) ai_search_environ_hook_weapon() {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-// Проверки при попытке сменить оружие, если у NPC не хватает очков действия для совершения атаки
+// Проверки при попытке сменить оружие, если у NPC не хватает очков действия для атаки
+// Предотвращает не нужный поиск оружия на карте и перемещение к цели для совершения безоружной атаки (если не включена опция NPCsTryToSpendExtraAP)
 long __fastcall AIBehavior::AICheckBeforeWeaponSwitch(fo::GameObject* target, long &hitMode, fo::GameObject* source, fo::GameObject* weapon) {
-	DEV_PRINTF("\n[AI] ai_try_attack: Not Enough APs for shoot.");
+	DEV_PRINTF1("\n[AI] ai_try_attack: Not enough APs for shoot. (curr: %d)", source->critter.getAP());
 
-	if (weapon) {
-		long _hitMode = fo::func::ai_pick_hit_mode(source, weapon, target);
-		if (_hitMode != hitMode) {
+	if (!weapon) return 1; // no weapon in inventory or hand slot, continue to search weapons on the map (call ai_switch_weapons_)
+
+	long _hitMode = fo::func::ai_pick_hit_mode(source, weapon, target);
+	if (_hitMode != hitMode && _hitMode != fo::AttackType::ATKTYPE_PUNCH) {
+		if (game::Items::item_weapon_mp_cost(source, weapon, _hitMode, 0) <= source->critter.getAP()) {
+			DEV_PRINTF("\n[AI] -> weapon switch hit mode.");
 			hitMode = _hitMode;
-			DEV_PRINTF("\n[AI] -> switch hit mode.");
 			return 0; // change hit mode, continue attack cycle
 		}
 	}
 
 	// does the NPC have other weapons in inventory?
 	fo::GameObject* item = fo::func::ai_search_inven_weap(source, 1, target); // search based on AP
-	if (item && weapon) {
+	if (item) {
 		// is using a close range weapon?
 		long wType = fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
 		if (wType <= fo::AttackSubType::MELEE) { // unarmed and melee weapons, check the distance before switching
@@ -165,14 +168,11 @@ long __fastcall AIBehavior::AICheckBeforeWeaponSwitch(fo::GameObject* target, lo
 	}
 
 	// no other weapon in inventory
-	if (weapon) {
-		if (fo::func::item_w_range(source, fo::AttackType::ATKTYPE_PUNCH) >= fo::func::obj_dist(source, target)) {
-			hitMode = fo::AttackType::ATKTYPE_PUNCH;
-			return 0; // change hit mode, continue attack cycle
-		}
+	if (fo::func::item_w_range(source, fo::AttackType::ATKTYPE_PUNCH) >= fo::func::obj_dist(source, target)) {
+		hitMode = fo::AttackType::ATKTYPE_PUNCH;
+		return 0; // change hit mode, continue attack cycle
 	}
-	return (weapon) ? -1  // exit, NPC has a weapon in hand slot, so we are not find another weapon on the map
-	                :  1; // no weapon in inventory or hand slot, continue to search weapons on the map (call ai_switch_weapons_)
+	return -1; // exit, NPC has a weapon in hand slot, so we are no search another weapon on the map
 }
 
 static void __declspec(naked) ai_try_attack_hook_switch_weapon() {
@@ -814,7 +814,7 @@ default:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-// Событие после совершенной атаки, когда больше не хватает AP для продолжения атаки
+// Событие после совершенной атаки, когда больше не хватает AP для продолжения текущей атаки
 static AIBehavior::AttackResult __fastcall AICheckResultAfterAttack(fo::GameObject* source, fo::GameObject* target, fo::GameObject* &weapon, fo::AttackType &hitMode) {
 
 	if (source->critter.getAP() <= 0) return AIBehavior::AttackResult::NoMovePoints;
@@ -1159,11 +1159,11 @@ void AIBehavior::init(bool smartBehavior) {
 		HookCall(0x42ABD7, ai_try_attack_hook_out_of_range);
 
 		// Точка: плохой шанс поразить цель (вызывается ai_run_away_) [переопределяется в AI.cpp]
-		// Поведение попробовать сменить оружие или цель, если другой цели нет продолжить атаку текушей
+		// Поведение попробовать сменить оружие или цель, если другой цели нет продолжить текущию атаку
 		HookCalls(ai_try_attack_hook_bad_tohit, { 0x42ACE5, 0x42ABA8 });
 
 		// Мove away from the target if the target is near
-		MakeCalls(ai_try_attack_hack_after_attack, { 0x42AE40, 0x42AE7F }); // old ai_try_attack_hack_move
+		MakeCalls(ai_try_attack_hack_after_attack, { 0x42AE40, 0x42AE7F });
 
 		/***** Misc *****/
 

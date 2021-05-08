@@ -435,58 +435,48 @@ static void MoveAwayFromTarget(fo::GameObject* source, fo::GameObject* target, l
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-static long GetRetargetTileSub(fo::GameObject* source, long shotDir, long roll, long range) {
-	roll = (roll == 5) ? 1 : 5;
-	long dir = (shotDir + roll) % 6;
-	long tile = fo::func::tile_num_in_direction(source->tile, dir, range);
-	if (fo::func::obj_blocking_at(nullptr, tile, source->elevation)) {
-		tile = -1;
-	}
-	return tile;
-}
-
-// Проверяет наличие дружественных NPC на линии перед атакой для отхода в сторону на 1(2) гекса
+// Проверяет наличие дружественных NPC на линии перед атакой для отхода в сторону на 1-3 гекса
 // Имеет в себе функцию cai_retargetTileFromFriendlyFire для ретаргетинга гекса
 static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject* target) {
 	long reTargetTile = source->tile;
 
-	DEV_PRINTF("\n[AI] ReTarget tile before attack");
+	DEV_PRINTF("\n[AI] ReTarget tile before attack.");
 
-	if (fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 1) {
+	if (fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) >= 2) {
+
+		long cost = AIHelpers::GetCurrenShootAPCost(source, target);
+		if (cost > (source->critter.getAP() - 1)) return;
+
 		fo::GameObject* friendNPC = AI::CheckFriendlyFire(target, source);
 		if (friendNPC) {
 			long distToTarget = fo::func::obj_dist(friendNPC, target);
-			if (distToTarget > 3 || fo::func::obj_dist(friendNPC, source) < 3) {
+			if (distToTarget >= 2 || fo::func::obj_dist(friendNPC, source) <= 2) {
+
 				long shotDir = fo::func::tile_dir(source->tile, target->tile);
-				long tile = -1;
-				long range = 0;
+				long range = 1;
 				char check = 0;
-incDistance:
-				range++;
-				long roll = GetRandom(1, 2);
-				if (roll > 1) roll = 5;
 
-				long dir = (shotDir + roll) % 6;
-				long _tile = fo::func::tile_num_in_direction(source->tile, dir, range);
+				long r = GetRandom(1, 2);
+				if (r > 1) r = 5;
 
-				if (fo::func::obj_blocking_at(nullptr, _tile, source->elevation)) {
-					tile = GetRetargetTileSub(source, shotDir, roll, range);
-				} else {
-					tile = _tile;
-				}
-reCheck:
-				if (tile > -1) {
-					if (!AIHelpers::CheckFriendlyFire(target, source, tile)) {
-						reTargetTile = tile;
-					} else if (!check) {
-						tile = GetRetargetTileSub(source, shotDir, roll, range);
-						check++;
-						goto reCheck;
-					} else if (range == 1) { // max range distance 2
-						check = 0;
-						long cost = AIHelpers::GetCurrenShootAPCost(source, target);
-						if ((source->critter.getAP() - 2) >= cost) goto incDistance;
+				while (true)
+				{
+					long dir = (shotDir + r) % 6;
+					long tile = fo::func::tile_num_in_direction(source->tile, dir, range);
+					if (!fo::func::obj_blocking_at(nullptr, tile, source->elevation)) {
+						if (!AIHelpers::CheckFriendlyFire(target, source, tile)) {
+							reTargetTile = tile;
+							DEV_PRINTF("\n[AI] -> pick tile to retarget.");
+							break;
+						}
 					}
+					if (++check == 2) {
+						if (++range > 3) break; // max range distance 3
+						if (cost > (source->critter.getAP() - range)) break;
+						check = 0;
+					}
+					// меняем направление
+					r = (r == 5) ? 1 : 5;
 				}
 			}
 		}
@@ -494,10 +484,10 @@ reCheck:
 	// cai_retargetTileFromFriendlyFire здесь не имеет приоритет т.к. проверяет линию огня для других атакующих NPC
 	if (reTargetTile == source->tile) {
 		if (fo::func::cai_retargetTileFromFriendlyFire(source, target, &reTargetTile) == -1) return;
-		if (reTargetTile != source->tile) DEV_PRINTF("\n[AI] cai_retargetTileFromFriendlyFire");
+		if (reTargetTile != source->tile) DEV_PRINTF("\n[AI] -> cai_retargetTileFromFriendlyFire");
 	}
 	if (reTargetTile != source->tile) {
-		DEV_PRINTF("\n[AI] Move tile before attack");
+		DEV_PRINTF("\n[AI] -> move tile before attack");
 		AIHelpers::CombatMoveToTile(source, reTargetTile, source->critter.getAP());
 	}
 }
