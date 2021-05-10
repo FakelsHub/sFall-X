@@ -847,7 +847,7 @@ int     ret0 - override the roll result
 
 #### `HOOK_BESTWEAPON (hs_bestweapon.int)`
 
-Runs when the game (AI) decides which weapon is the best while searching the inventory for a weapon to equip in combat.
+Runs when the AI decides which weapon is the best while searching the inventory for a weapon to equip in combat.
 This is also runs when the player presses the "Use Best Weapon" button on the party member control panel.
 
 ```
@@ -863,14 +863,14 @@ Item    ret0 - overrides the chosen best weapon
 
 #### `HOOK_CANUSEWEAPON (hs_canuseweapon.int)`
 
-It starts when the game (AI) checks whether the NPC can use weapons.
-This mostly happens when NPCs try to find weapons on the map or in their inventory.
+Run when the AI checks whether it can use a weapon.
+This mostly happens when NPCs try to find weapons in their inventory or on the map.
 
 ```
-Critter arg0 - the NPC for which it is checked
-Item    arg1 - checked weapons
-int     arg2 - the hit mode
-int     arg3 - original engine value: 1 - can use, 0 - can't use
+Critter arg0 - the critter doing the check
+Item    arg1 - the weapon being checked
+int     arg2 - attack type (see ATKTYPE_* constants)
+int     arg3 - original result of engine function: 1 - can use, 0 - can't use
 
-int     ret0 - overrides the value of the engine, any non-zero value allows use weapon
+int     ret0 - overrides the result of engine function. Any non-zero value allows using the weapon
 ```

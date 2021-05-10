@@ -18,8 +18,8 @@
 #include "main.h"
 #include "..\scripting\headers\command_lite.h"
 
-#define IS_ARMOR(item)   (obj_type(item) == OBJ_TYPE_ITEM and obj_item_subtype(item) == item_type_armor)
-#define IS_WEAPON(item)  (obj_type(item) == OBJ_TYPE_ITEM and obj_item_subtype(item) == item_type_weapon)
+#define IS_ARMOR(item)   (obj_type(item) == OBJ_TYPE_ITEM andAlso obj_item_subtype(item) == item_type_armor)
+#define IS_WEAPON(item)  (obj_type(item) == OBJ_TYPE_ITEM andAlso obj_item_subtype(item) == item_type_weapon)
 #define IS_FEMALE(who)   (get_critter_stat(who, STAT_gender) == GENDER_FEMALE)
 
 #define FID_OBJ_CRITTER  (0x01000000)
@@ -50,8 +50,8 @@ procedure check_armor_change(variable critter, variable armor, variable isWield)
       end
       else if (armor) then begin
          armorType := armorPidMap[obj_pid(armor)];
-         fid := npc[armorType] or defaultFids[armorType];
-         if (fid == 0 or fid == -1) then fid := npc["Default"];
+         fid := npc[armorType] orElse defaultFids[armorType];
+         if (fid == 0 orElse fid == -1) then fid := npc["Default"];
          // display_msg("Change fid: " + fid + ", npc: " + npc[armorType] + ", default:" + defaultFids[armorType]);
          return fid;
       end
@@ -93,7 +93,7 @@ procedure search_alt_weapon(variable critter) begin
    obj := inven_ptr(critter, 0);
    while (obj) do begin
       if (obj_item_subtype(obj) == item_type_weapon) then begin
-         if (unWieldWeapon == 0 or unWieldWeapon != obj_pid(obj)) then begin
+         if (unWieldWeapon == 0 orElse unWieldWeapon != obj_pid(obj)) then begin
             res := check_weapon_change(critter, obj, 1);
             if (res == -1) then begin
                altWeapon := obj;
@@ -114,7 +114,7 @@ procedure check_active_slot(variable critter, variable fid) begin
    variable activeSlot := INVEN_TYPE_RIGHT_HAND if active_hand else INVEN_TYPE_LEFT_HAND;
    variable item := critter_inven_obj(critter, activeSlot);
 
-   if (item and obj_item_subtype(item) == item_type_weapon) then begin
+   if (item andAlso obj_item_subtype(item) == item_type_weapon) then begin
       weaponAnim := get_proto_data(obj_pid(item), PROTO_WP_ANIM);
       if weaponAnim == 0 then return false;
 
@@ -136,7 +136,7 @@ procedure invenwield_handler begin
    slot    := get_sfall_arg;
    isWield := get_sfall_arg;
 
-   if (/*critter and*/ item and slot == INVEN_TYPE_WORN) then begin
+   if (/*critter andAlso*/ item andAlso slot == INVEN_TYPE_WORN) then begin
       if (simpleMode) then begin
          if (isWield) then begin
             if IS_FEMALE(critter) then begin
@@ -172,7 +172,7 @@ procedure invenwield_handler begin
          end
       end
    end
-   else if (/*critter and*/ item and slot == INVEN_TYPE_RIGHT_HAND) then begin
+   else if (/*critter andAlso*/ item andAlso slot == INVEN_TYPE_RIGHT_HAND) then begin
       if (altWeapon == item) then return;
       canWield := check_weapon_change(critter, item, isWield);
       set_sfall_return(canWield);
@@ -236,7 +236,7 @@ procedure inventorymove_handler begin
    slot := get_sfall_arg;
    item := get_sfall_arg;
    if (dude_obj != real_dude_obj) then begin
-      if ((slot == INVEN_TYPE_RIGHT_HAND or slot == INVEN_TYPE_LEFT_HAND) and IS_WEAPON(item)) then begin
+      if ((slot == INVEN_TYPE_RIGHT_HAND orElse slot == INVEN_TYPE_LEFT_HAND) andAlso IS_WEAPON(item)) then begin
          canWield := check_weapon_change(dude_obj, item, item != 0);
          set_sfall_return(canWield);
       end
@@ -245,13 +245,13 @@ end
 
 procedure start begin
    variable sect, sects, armorTypes, armorType, npc, pid, pids, i;
-   if game_loaded and (sfall_ver_major >= 4) then begin
-      if (sfall_ver_major >= 4 and sfall_ver_minor >= 2 and sfall_ver_build >= 1) then begin
+   if game_loaded andAlso (sfall_ver_major >= 4) then begin
+      if (sfall_ver_major >= 4 andAlso sfall_ver_minor >= 2 andAlso sfall_ver_build >= 1) then begin
          simpleMode := GetIniConfig("Options", "SimpleMode", false, modIni);
       end
 
       armorTypes := get_ini_section(modIni, "ArmorTypes");
-      if (simpleMode == false and len_array(armorTypes) == 0) then begin
+      if (simpleMode == false andAlso len_array(armorTypes) == 0) then begin
          modIni := "npcArmorRP.ini";
          armorTypes := get_ini_section(modIni, "ArmorTypes");
          if (len_array(armorTypes) == 0) then return;
@@ -317,7 +317,7 @@ procedure update_armor_apperance begin
          end
          else begin
             fid := check_armor_change(npc, arItem, true);
-            if (fid == -1 or art_exists(fid) == false) then continue;
+            if (fid == -1 orElse art_exists(fid) == false) then continue;
          end
          art_change_fid_num(npc, fid);
       end
@@ -326,10 +326,10 @@ end
 
 procedure canuseweapon_handler begin
    variable critter = get_sfall_arg;
-   if (critter) then begin
+   //if (critter) then begin
       variable canWield = check_weapon_change(critter, get_sfall_arg, true);
-      //if (canWield != 0) then canWield = 1;
-      set_sfall_arg(3, canWield); // override result
+      // override result
+      set_sfall_arg(3, canWield);
       set_sfall_return(canWield);
-   end
+   //end
 end
