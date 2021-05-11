@@ -735,7 +735,7 @@ void mf_interface_print(OpcodeContext& ctx) { // same as vanilla PrintRect
 	}
 
 	BYTE* surface;
-	if (win->randY) { // если была создана поверхность то рисование движком будет произведено в нее
+	if (win->randY) { // if a surface was created, the engine will draw on it
 		surface = win->surface;
 		win->surface = WindowRender::GetOverlaySurface(win); // replace the surface for the windowWrapLineWithSpacing_ function
 	}
@@ -753,7 +753,7 @@ void mf_interface_print(OpcodeContext& ctx) { // same as vanilla PrintRect
 }
 
 void mf_win_fill_color(OpcodeContext& ctx) {
-	long result = fo::func::selectWindowID(ctx.program()->currentScriptWin);
+	long result = fo::func::selectWindowID(ctx.program()->currentScriptWin); // TODO: examine the issue of restore program->currentScriptWin of the current window in op_pop_flags_
 	long iWin = *(DWORD*)FO_VAR_currentWindow;
 	if (!result || iWin == -1) {
 		ctx.printOpcodeError("%s() - no created or selected window.", ctx.getMetaruleName());
@@ -761,7 +761,9 @@ void mf_win_fill_color(OpcodeContext& ctx) {
 		return;
 	}
 	if (ctx.numArgs() > 0) {
-		fo::WinFillRect(fo::var::sWindows[iWin].wID, ctx.arg(0).rawValue(), ctx.arg(1).rawValue(), ctx.arg(2).rawValue(), ctx.arg(3).rawValue(), (BYTE)ctx.arg(4).rawValue());
+		if (fo::WinFillRect(fo::var::sWindows[iWin].wID, ctx.arg(0).rawValue(), ctx.arg(1).rawValue(), ctx.arg(2).rawValue(), ctx.arg(3).rawValue(), (BYTE)ctx.arg(4).rawValue())) {
+			ctx.printOpcodeError("%s() - failed to fill the window, the area size is larger than the current window.", ctx.getMetaruleName());
+		}
 	} else {
 		fo::ClearWindow(fo::var::sWindows[iWin].wID, false); // full clear
 	}
