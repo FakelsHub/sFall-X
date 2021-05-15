@@ -402,7 +402,7 @@ int     ret0 - The new amount of ammo, or ammo cost value for hook type 2 (set t
 #### `HOOK_KEYPRESS (hs_keypress.int)`
 
 Runs once every time when any key was pressed or released.
-- DX codes: (see __dik.h__ header)
+- DX codes: see __dik.h__ header or https://kippykip.com/b3ddocs/commands/scancodes.htm
 - VK codes: http://msdn.microsoft.com/en-us/library/windows/desktop/dd375731%28v=vs.85%29.aspx
 
 **NOTE:** if you want to override a key, the new key DX scancode should be the same for both pressed and released events.
