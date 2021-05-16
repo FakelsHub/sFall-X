@@ -213,10 +213,10 @@ static void CompatModeCheck(HKEY root, const char* filepath, int extra) {
 inline void SfallInit() {
 	// enabling debugging features
 	isDebug = (IniReader::GetIntDefaultConfig("Debugging", "Enable", 0) != 0);
-	if (isDebug) {
+	//if (isDebug) {
 		LoggingInit();
 		if (!ddraw.dll) dlog("Error: Cannot load the original ddraw.dll library.\n", DL_MAIN);
-	}
+	//}
 
 	char filepath[MAX_PATH];
 	GetModuleFileName(0, filepath, MAX_PATH);
