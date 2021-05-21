@@ -164,7 +164,7 @@ static void __declspec(naked) op_obj_can_see_obj_hook() {
 	using namespace fo;
 	using namespace Fields;
 	__asm {
-		mov  edi, [esp + 4]; // buf **ret_objStruct
+		mov  edi, [esp + 4]; // buf **outObject
 		test ebp, ebp; // check only once
 		jz   checkSee;
 		xor  ebp, ebp; // for only once
@@ -184,10 +184,12 @@ static void __declspec(naked) op_obj_can_see_obj_hook() {
 		call fo::funcoffs::make_straight_path_;
 		retn 8;
 checkSee:
+		push eax;                                  // keep source
 		push fo::funcoffs::obj_shoot_blocking_at_; // check hex objects func pointer
 		push 0x20;                                 // flags, 0x20 = check ShootThru
 		push edi;
-		call fo::funcoffs::make_straight_path_func_;
+		call fo::funcoffs::make_straight_path_func_; // overlapping if len(eax) == 0 
+		pop  ecx;            // source
 		mov  edx, [edi - 8]; // target
 		mov  ebx, [edi];     // blocking object
 		test ebx, ebx;
@@ -205,6 +207,7 @@ checkObj:
 		je   continue; // see through critter
 		retn 8;
 continue:
+		mov  [edi], ecx;                // outObject - ignore source (for cases of overlapping tiles by MultiHex critters)
 		mov  [edi - 4], ebx;            // replace source with blocking object
 		mov  dword ptr [esp], 0x456BAB; // repeat from the blocking object
 		retn 8;
@@ -457,7 +460,7 @@ palColor:
 static void __fastcall RemoveAllFloatTextObjects() {
 	long textCount = fo::var::text_object_index;
 	if (textCount > 0) {
-		for (size_t i = 0; i < textCount; i++)
+		for (long i = 0; i < textCount; i++)
 		{
 			fo::func::mem_free(fo::var::text_object_list[i]->unknown10);
 			fo::func::mem_free(fo::var::text_object_list[i]);
