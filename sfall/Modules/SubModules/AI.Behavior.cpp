@@ -81,10 +81,9 @@ badDistance:
 // Это предотвратит в начале атаки попытку поднять оружие при недостаточном количестве AP.
 static long  __fastcall AIPickupWeaponFix(fo::GameObject* critter, long distance) {
 	long maxAP = fo::func::stat_level(critter, fo::STAT_max_move_points);
-	long currAP = critter->critter.getAP();
-	if (currAP != (maxAP + AICombat::AttackerBonusAP())) return 1; // NPC already used their AP?
+	if (critter->critter.getAP() != (maxAP + AICombat::AttackerBonusAP())) return 1; // NPC already used their AP?
 
-	bool allowPickUp = ((currAP - pickupCostAP) >= distance); // distance & AP check
+	bool allowPickUp = ((critter->critter.getAP(distance) - pickupCostAP) >= 0); // distance & AP check
 	if (!allowPickUp) {
 		// если NPC имеет стрелковое или метательное оружие, тогда позволено подойти к предмету
 		fo::GameObject* item = fo::func::inven_right_hand(critter);
@@ -211,7 +210,7 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 	}
 
 	long shotCost = game::Items::item_w_mp_cost(source, hitMode, 0);
-	long moveAP = source->critter.getAP() - shotCost; // left ap for distance move
+	long moveAP = source->critter.getMoveAP() - shotCost; // left ap for distance move
 	if (moveAP <= 0) return 0;
 
 	DEV_PRINTF1("\n[AI] Search tile for shoot: max AP distance %d", moveAP);
@@ -341,7 +340,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 	fo::GameObject* item = nullptr;
 	long dist = 0;
 
-	DEV_PRINTF("\n[AI] Try SearchBestWeaponInCorpses.");
+	DEV_PRINTF("\n[AI] Try SearchBestWeaponInCorpses:");
 
 	long numObjects = fo::func::obj_create_list(-1, source->elevation, fo::ObjType::OBJ_TYPE_CRITTER, &objectsList);
 	if (numObjects > 0) {
@@ -353,16 +352,18 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 			fo::GameObject* object = (fo::GameObject*)objectsList[i];
 			if (object->critter.IsNotDead() || object->invenSize <= 0) continue;
 
-			DEV_PRINTF1("\n[AI] SearchBestWeaponInCorpses Find corpse: %s", fo::func::critter_name(object));
+			DEV_PRINTF1("\n[AI] Find corpse: %s", fo::func::critter_name(object));
 
 			if (fo::func::obj_dist(source, object) > source->critter.getAP() + 1) break;
 
 			if (fo::GetProto(object->protoId)->critter.critterFlags & fo::CritterFlags::NoSteal) continue;
 
 			// check block and distance path
-			int toDistObject = fo::func::make_path_func(source, source->tile, object->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-			if (toDistObject == 0 || toDistObject > source->critter.getAP() + 1) continue;
-
+			int toDistObject = 0;
+			if (source->tile != object->tile) {
+				toDistObject = fo::func::make_path_func(source, source->tile, object->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
+				if (toDistObject == 0 || toDistObject > source->critter.getMoveAP() + 1) continue;
+			}
 			DWORD slot = -1;
 			while (true)
 			{
@@ -383,7 +384,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 					continue;
 				}
 
-				DEV_PRINTF1("\n[AI] SearchBestWeaponInCorpses Find pid: %d", itemGround->protoId);
+				DEV_PRINTF1("\n[AI] Find pid: %d", itemGround->protoId);
 
 				if (AIInventory::BestWeapon(source, item, itemGround, target) == itemGround) {
 					item = itemGround;
@@ -398,7 +399,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 	if (owner) {
 		if (itemEnv && AIInventory::BestWeapon(source, itemEnv, item, target) == itemEnv) return itemEnv;
 
-		DEV_PRINTF2("\n[AI] SearchBestWeaponInCorpses: %s, Owner: %s", fo::func::critter_name(item), fo::func::critter_name(item->owner));
+		DEV_PRINTF3("\n[AI] SearchBestWeaponInCorpses: %d (%s), Owner: %s", item->protoId, fo::func::critter_name(item), fo::func::critter_name(item->owner));
 		item->owner = owner;
 		inCorpse = 1;
 		distToObject = dist;
@@ -411,6 +412,8 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::GameObject* item, fo::GameObject* target, long &inCorpse, long &distToObject) {
 	long* objectsList = nullptr;
 
+	DEV_PRINTF("\n[AI] Try SearchBestWeaponOnGround:");
+
 	long numObjects = fo::func::obj_create_list(-1, source->elevation, fo::ObjType::OBJ_TYPE_ITEM, &objectsList);
 	if (numObjects > 0) {
 		fo::var::combat_obj = source;
@@ -422,18 +425,23 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 			if (item && item->protoId == itemGround->protoId) continue;
 
 			if (fo::func::item_get_type(itemGround) == fo::item_type_weapon) {
-				if (fo::func::obj_dist(source, itemGround) > source->critter.getAP() + 1) break;
+				if (fo::func::obj_dist(source, itemGround) > source->critter.getMoveAP() + 1) break;
+
+				DEV_PRINTF2("\n[AI] Find item: %d (%s)", itemGround->protoId, fo::func::critter_name(itemGround));
 
 				// check block and distance path
-				int toDistObject = fo::func::make_path_func(source, source->tile, itemGround->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-				if (toDistObject == 0 || toDistObject > source->critter.getAP() + 1) continue;
+				int toDistObject = 0;
+				if (source->tile != itemGround->tile) {
+					toDistObject = fo::func::make_path_func(source, source->tile, itemGround->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
+					if (toDistObject == 0 || toDistObject > source->critter.getMoveAP() + 1) continue;
+				}
 
 				if (game::CombatAI::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) &&
 					// проверяем наличее и количество имеющихся патронов
 					AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 0)
 				{
 					if (AIInventory::BestWeapon(source, item, itemGround, target) == itemGround) {
-						DEV_PRINTF2("\n[AI] SearchBestWeaponOnGround: %s (%d)", fo::func::critter_name(itemGround), itemGround->protoId);
+						DEV_PRINTF2("\n[AI] SearchBestWeaponOnGround: %d (%s)", itemGround->protoId, fo::func::critter_name(itemGround));
 						item = itemGround;
 						distToObject = toDistObject;
 					}
@@ -469,7 +477,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 	fo::GameObject* itemHand   = weapon; // current item
 	fo::GameObject* bestWeapon = weapon;
 
-	DEV_PRINTF1("\n[AI] HandPid: %d", (itemHand) ? itemHand->protoId : -1);
+	DEV_PRINTF2("\n[AI] HandPid: %d (%s)", ((itemHand) ? itemHand->protoId : -1), ((itemHand) ? fo::func::critter_name(itemHand) : "-"));
 
 	DWORD slotNum = -1;
 	while (true)
@@ -493,10 +501,12 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 	}
 
 	if (itemHand != bestWeapon)	{
-		DEV_PRINTF1("\n[AI] Find best weapon Pid: %d", (bestWeapon) ? bestWeapon->protoId : -1);
+		DEV_PRINTF2("\n[AI] Find best weapon Pid: %d (%s)", (bestWeapon) ? bestWeapon->protoId : -1, (bestWeapon) ? fo::func::critter_name(bestWeapon) : "");
 		bestWeapon = AIHelpers::AICheckWeaponSkill(source, itemHand, bestWeapon); // выбрать лучшее на основе навыка
+		DEV_PRINTF1("\n[AI] Skill best weapon pid: %d", (bestWeapon) ? bestWeapon->protoId : -1);
 		// проверить сможет ли атакующий сразу атаковать свою цель
 		if (itemHand && (itemHand != bestWeapon) && CheckCanAttackTarget(bestWeapon, itemHand, source, target) == false) bestWeapon = itemHand; // оружие неподходит в текущей ситуации
+		DEV_PRINTF1("\n[AI] Select best weapon pid: %d", (bestWeapon) ? bestWeapon->protoId : -1);
 	}
 
 	if (source->critter.getAP() >= pickupCostAP && fo::func::critter_body_type(source) == fo::BodyType::Biped && !fo::func::critterIsOverloaded(source)) {
@@ -507,23 +517,23 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 		if (itemHand && itemHandType <= fo::AttackSubType::MELEE) {
 			int toDistTarget = fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
 			// не поднимать, если у атакующего хватает очков сделать атаку по цели
-			if (toDistTarget && (source->critter.getAP() - game::Items::item_w_mp_cost(source, hitMode, 0)) >= toDistTarget) goto notRetrieve;
+			if (toDistTarget && source->critter.getAP(toDistTarget) >= game::Items::item_w_mp_cost(source, hitMode, 0)) goto notRetrieve;
 		}
 
 		long inCorpse, distToObject = -1;
 		fo::GameObject* itemGround = AISearchBestWeaponOnGround(source, bestWeapon, target, inCorpse, distToObject);
 
 		if (itemGround != bestWeapon) {
+			DEV_PRINTF3("\n[AI] BestWeapon find on ground. Pid: %d (%s), dist: %d", ((itemGround) ? itemGround->protoId : -1), ((itemGround) ? fo::func::critter_name(itemGround) : ""), distToObject);
+
 			if (LookupOnGround == false && distToObject > 1) goto notRetrieve;
 
-			DEV_PRINTF2("\n[AI] BestWeapon find on ground. Pid: %d (dist: %d)", (itemGround) ? itemGround->protoId : -1, distToObject);
-
 			if (itemGround && (!bestWeapon || itemGround->protoId != bestWeapon->protoId)) {
+				DEV_PRINTF("\n[AI] Evaluation weapon...");
 
 				// не поднимать если у атакующего стреляющее оружие и нехватате очков подобрать оружие и сделать выстрел
 				if (itemHandType == fo::AttackSubType::GUNS) {
-					long needAp = pickupCostAP + distToObject;
-					long leftAp = source->critter.getAP() - needAp;
+					long leftAp = source->critter.getAP(distToObject) - pickupCostAP;
 					if (leftAp <= 0) goto notRetrieve;
 
 					long apShoot = game::Items::item_weapon_mp_cost(source, itemHand, hitMode, 0);
@@ -531,9 +541,10 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 				}
 
 				fo::GameObject* item = AIHelpers::AICheckWeaponSkill(source, bestWeapon, itemGround);
+				DEV_PRINTF1("\n[AI] Skill best weapon pid: %d", (item) ? item->protoId : -1);
 				if (item != itemGround) goto notRetrieve;
 
-				fo::func::dev_printf("\n[AI] Try retrieve item pid: %d AP: %d", itemGround->protoId, source->critter.getAP());
+				fo::func::dev_printf("\n[AI] Try pickup item pid: %d AP: %d", itemGround->protoId, source->critter.getAP());
 
 				// pickup item
 				fo::GameObject* itemRetrieve = (inCorpse)
@@ -630,7 +641,7 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 				if (statIQ > 5 && dist > 0 && dist <= 5 && AICombat::AttackerAI()->distance != fo::AIpref::distance::snipe) {
 					if (fo::func::item_w_anim_weap(weapon, hitMode) == fo::Animation::ANIM_fire_burst) {
 						long costAP = game::Items::item_weapon_mp_cost(source, weapon, hitMode, 0);
-						long moveDist = source->critter.getAP() - costAP;
+						long moveDist = source->critter.getMoveAP() - costAP;
 						if (moveDist > 0) {
 							if (moveDist >= costAP && fo::func::determine_to_hit(source, target, fo::BodyPart::Uncalled, hitMode) >= 70) {
 								// если процент попадания по цели достаточно высокий, уменьшить дистанцию передвижения, чтобы хватило на несколько атак
@@ -705,9 +716,9 @@ static long __fastcall AIMoveStepToAttackTile(fo::GameObject* source, fo::GameOb
 
 	DEV_PRINTF1("\n[AI] MoveStepToAttackTile: dist to target: %d", dist);
 
-	long distToMove = dist - weaponRange;           // required approach distance
-	long ap = source->critter.getAP() - distToMove; // subtract the number of action points to the move, leaving the number for the shot
-	long remainingAP = ap % cost;                   // оставшиеся очки действия после атаки
+	long distToMove = dist - weaponRange;        // required approach distance
+	long ap = source->critter.getAP(distToMove); // subtract the number of action points to the move, leaving the number for the shot
+	long remainingAP = ap % cost;                // оставшиеся очки действия после атаки
 
 	bool notEnoughAP = (cost > ap); // check whether the critter has enough AP to perform the attack
 	if (notEnoughAP) return 1;      // нехватает очков действия для совершения атаки
@@ -840,7 +851,7 @@ static AIBehavior::AttackResult __fastcall AICheckResultAfterAttack(fo::GameObje
 		DEV_PRINTF("\n[AI] Attack result: LOST WEAPON\n");
 		// проверить дистанцию до цели, если дистанция позволяет то использовать рукопашную атаку
 		// иначе подобрать оружие или достать другое из инвентаря (при этом необходимо вычесть 3 AP)
-		if (dist >= 3 || ((dist + costAP) > source->critter.getAP())) return AIBehavior::AttackResult::LostWeapon;
+		if (dist >= 3 || (costAP > source->critter.getAP(dist))) return AIBehavior::AttackResult::LostWeapon;
 
 		// ????
 		DEV_PRINTF("[AI] Attack result: LOST WEAPON > Try ATTACK\n");
@@ -872,7 +883,7 @@ static AIBehavior::AttackResult __fastcall AICheckResultAfterAttack(fo::GameObje
 
 	// не было найдено другого оружия для продолжения атаки, использовать рукопашную атаку если цель расположена достаточно близко
 	if (dist > 0 && dist <= 2) {
-		if (source->critter.getAP() >= (dist + costAP)) { // очков действия хватает чтобы сделать удар
+		if (source->critter.getAP(dist) >= costAP) { // очков действия хватает чтобы сделать удар
 			DEV_PRINTF("\n[AI] Attack result: UNARMED ATTACK\n");
 
 			// проверить веротность удара и очки жизней прежде чем подходить
@@ -998,7 +1009,7 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 		//	BREAKPOINT;
 		return AIClearMovePath(source, target);
 	}
-
+	#ifndef NDEBUG
 	if (fo::var::moveBlockObj) {
 		fo::var::moveBlockObj->outline = 10 << 8; // grey
 		fo::BoundRect rect;
@@ -1009,7 +1020,7 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 		rect.offy += 2;
 		fo::func::tile_refresh_rect(&rect, fo::var::map_elevation);
 	}
-
+	#endif
 	if (fo::var::moveBlockObj) {
 		fo::GameObject* blockCritter = fo::var::moveBlockObj;
 		DEV_PRINTF1("\n[AI] AIClearMovePath: Blocked: %s", fo::func::critter_name(blockCritter));
@@ -1035,7 +1046,7 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 					DEV_PRINTF("\n[AI] AIClearMovePath: don't make path from source to block critter.");
 					return nullptr; // нельзя!!!
 				}
-				if (len > source->critter.getAP()) return blockCritter;
+				if (len > source->critter.getMoveAP()) return blockCritter;
 
 				dir = rotation[len - 1] + 3;
 				if (dir > 5) dir -= 6; // направление движение к source

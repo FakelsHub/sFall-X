@@ -28,7 +28,7 @@ fo::GameObject* AIInventory::BestWeapon(fo::GameObject* source, fo::GameObject* 
 	return BestWeaponHook_Invoke(bestWeapon, source, weapon1, weapon2, target);
 }
 
-// Проверяет наличие патронов к оружию на карте или в инвентере криттеров
+// Проверяет наличие патронов к оружию на карте или в инвентаре криттеров
 long AIInventory::AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
 	if (weapon->item.charges > 0 || weapon->item.ammoPid == -1) return 1;
 	if (AIInventory::CritterHaveAmmo(critter, weapon)) return 1;
@@ -229,19 +229,19 @@ bool AIInventory::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* wea
 	long reloadCost = game::Items::item_weapon_mp_cost(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
 	if (reloadCost > critter->critter.getAP()) return false;
 
-	bool reload = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER);;
+	bool reloadFree = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER);
 
-	if (!ammo && weapon->item.ammoPid != -1 || reload) {
+	if (!ammo && weapon->item.ammoPid != -1 || reloadFree) {
 		fo::Proto* proto = fo::GetProto(weapon->protoId);
 		if (proto->item.type == fo::ItemType::item_type_weapon) {
 			if (weapon->item.charges <= 0 || weapon->item.charges < (proto->item.weapon.maxAmmo / 2)) {
-				if (!reload) ammo = GetInventAmmo(critter, weapon);
+				if (!reloadFree) ammo = GetInventAmmo(critter, weapon);
 			} else {
-				reload = false;
+				reloadFree = false;
 			}
 		}
 	}
-	if (reload || ammo) {
+	if (reloadFree || ammo) {
 		long result = fo::func::item_w_reload(weapon, ammo);
 		if (result != -1) {
 			if (!result && ammo) fo::func::obj_destroy(ammo);
@@ -418,9 +418,9 @@ long AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType
 	long* objectsList = nullptr;
 	long numObjects = fo::func::obj_create_list(-1, source->elevation, fo::ObjType::OBJ_TYPE_CRITTER, &objectsList);
 
-	fo::GameObject* itemCorpse = nullptr;
-
 	if (numObjects > 0) {
+		fo::GameObject* itemCorpse = nullptr;
+
 		fo::var::combat_obj = source;
 		fo::func::qsort(objectsList, numObjects, 4, fo::funcoffs::compare_nearer_);
 
@@ -452,15 +452,17 @@ long AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType
 			}
 		}
 		fo::func::obj_delete_list(objectsList);
-	}
-	if (itemCorpse) itemGround = itemCorpse;
 
+		if (itemCorpse) itemGround = itemCorpse;
+	}
 	return distanceLen;
 }
 
 static long __fastcall AISearchCorpseWeapon(fo::GameObject* target, fo::GameObject* source, fo::GameObject* &weapon, long &hitMode, fo::GameObject* itemEnv) {
+	if (itemEnv) DEV_PRINTF1("\n[AI] ai_search_environ: weapon: %s", fo::func::critter_name(itemEnv));
+
 	fo::GameObject* outItem = itemEnv;
-	if (AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_weapon, outItem, weapon) < 0) return 1; // default
+	if (AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_weapon, outItem, weapon) < 0 || outItem == itemEnv) return 1; // default
 
 	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, outItem);
 	if (item) {
@@ -502,7 +504,7 @@ default:
 
 static long __fastcall AISearchCorpseAmmo(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* itemEnv) {
 	fo::GameObject* outItem = itemEnv;
-	if (AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_ammo, outItem, weapon) < 0) return 0; // default
+	if (AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_ammo, outItem, weapon) < 0 || outItem == itemEnv) return 0; // default
 
 	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, outItem);
 	if (item) {
@@ -534,13 +536,13 @@ static long __fastcall AISearchCorpseDrug(fo::GameObject* source, long addrType,
 	fo::ItemType type = (addrType == 0x4287B2 + 5) ? fo::ItemType::item_type_drug : fo::ItemType::item_type_misc_item;
 
 	fo::GameObject* outItem = itemEnv;
-	long length = AIInventory::ai_search_environ_corpse(source, type, outItem, nullptr);
-	if (length > 0 && noInvenItem != 2) {
-		if (length > source->critter.getAP() + pickupCostAP) {
+	long lengthPath = AIInventory::ai_search_environ_corpse(source, type, outItem, nullptr);
+	if (lengthPath > 0 && noInvenItem != 2) {
+		if ((source->critter.getMoveAP() - pickupCostAP) < lengthPath) {
 			itemEnv = outItem = nullptr; // no pickup
 		}
 	}
-	if (!outItem || length < 0) return 0; // default (в itemEnv ref значение из ai_search_environ_)
+	if (!outItem || outItem == itemEnv || lengthPath < 0) return 0; // default (в itemEnv ref значение из ai_search_environ_)
 
 	bool dontUse = false;
 	if (noInvenItem != 2) { // is set to 2 that healing is required

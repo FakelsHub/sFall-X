@@ -141,7 +141,7 @@ struct RectList {
 	RectList* nextRect;
 };
 
-// Game objects (items, critters, etc.), including those stored in inventories.
+// Game objects class (items, critters, etc.), including those stored in inventories.
 struct GameObject {
 	long id;
 	long tile;
@@ -211,7 +211,28 @@ struct GameObject {
 			inline GameObject* getHitTarget() {
 				return whoHitMe;
 			}
+
 			inline long getAP() {
+				return movePoints;
+			}
+			// Returns the remaining number of APs calculated for the distance with crippled legs
+			long getAP(long dist) {
+				if (dist <= 0) return movePoints;
+				if ((damageFlags & DamageFlag::DAM_CRIP_LEG_LEFT) && (damageFlags & DamageFlag::DAM_CRIP_LEG_RIGHT)) {
+					dist *= 8;
+				} else if (damageFlags & (DamageFlag::DAM_CRIP_LEG_LEFT | DamageFlag::DAM_CRIP_LEG_RIGHT)) {
+					dist *= 4;
+				}
+				dist = movePoints - dist;
+				return (dist > 0) ? dist : 0;
+			}
+			// Returns the current action points for movement, taking into account the cost of movement with crippled legs
+			long getMoveAP() {
+				if ((damageFlags & DamageFlag::DAM_CRIP_LEG_LEFT) && (damageFlags & DamageFlag::DAM_CRIP_LEG_RIGHT)) {
+					return movePoints / 8;
+				} else if (damageFlags & (DamageFlag::DAM_CRIP_LEG_LEFT | DamageFlag::DAM_CRIP_LEG_RIGHT)) {
+					return movePoints / 4;
+				}
 				return movePoints;
 			}
 		} critter;

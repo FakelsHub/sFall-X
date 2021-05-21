@@ -55,7 +55,9 @@ WRAP_WATCOM_FFUNC3(long, item_add_force, fo::GameObject*, critter, fo::GameObjec
 WRAP_WATCOM_FFUNC4(long, item_move, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC4(long, item_move_force, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC3(long, item_w_mp_cost, fo::GameObject*, source, long, hitMode, long, isCalled)
-WRAP_WATCOM_FFUNC7(long, make_straight_path_func, fo::GameObject*, objFrom, DWORD, tileFrom, DWORD, tileTo, void*, arrayPtr, DWORD*, outObject, long, flags, void*, func)
+// Calculates path and returns it's length
+WRAP_WATCOM_FFUNC6(long, make_path_func, fo::GameObject*, objectFrom, long, tileFrom, long, tileTo, char*, pathDataBuffer, long, checkTileTo, void*, blockingFunc)
+WRAP_WATCOM_FFUNC7(long, make_straight_path_func, fo::GameObject*, objFrom, DWORD, tileFrom, DWORD, tileTo, void*, arrayPtr, DWORD*, outObject, long, flags, void*, blockingFunc)
 WRAP_WATCOM_FFUNC3(long, message_find, DWORD*, msgFile, long, msgNumber, DWORD*, outBuf)
 WRAP_WATCOM_FFUNC4(long, mouse_click_in, long, x, long, y, long, x_offs, long, y_offs)
 WRAP_WATCOM_FFUNC4(long, mouse_in, long, x, long, y, long, x_offs, long, y_offs)
@@ -123,6 +125,7 @@ WRAP_WATCOM_FUNC1(void, display_print, const char*, msg) // Displays message in 
 WRAP_WATCOM_FUNC0(void, display_stats)
 WRAP_WATCOM_FUNC2(long, combat_turn, fo::GameObject*, critter, long, isDudeTurn) // Perform combat turn for a given critter
 WRAP_WATCOM_FUNC1(long, critter_body_type, fo::GameObject*, critter)
+WRAP_WATCOM_FUNC2(long, critter_compute_ap_from_distance, fo::GameObject*, critter, long, distance)
 WRAP_WATCOM_FUNC1(long, critter_is_dead, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC1(long, critterIsOverloaded, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC1(void, EndLoad, fo::DbFile*, file)
@@ -210,8 +213,6 @@ WRAP_WATCOM_FUNC2(long, message_search, const fo::MessageList*, file, fo::Messag
 WRAP_WATCOM_FUNC2(void, mouse_get_position, long*, outX, long*, outY)
 WRAP_WATCOM_FUNC0(void, mouse_show)
 WRAP_WATCOM_FUNC0(void, mouse_hide)
-// Calculates path and returns it's length
-WRAP_WATCOM_FUNC6(long, make_path_func, fo::GameObject*, objectFrom, long, tileFrom, long, tileTo, char*, pathDataBuffer, long, arg5, void*, blockingFunc)
 WRAP_WATCOM_FUNC0(long, new_obj_id)
 WRAP_WATCOM_FUNC2(void, obj_bound, fo::GameObject*, object, fo::BoundRect*, boundRect) // Calculates bounding box (rectangle) for a given object
 WRAP_WATCOM_FUNC1(long, obj_destroy, fo::GameObject*, object)

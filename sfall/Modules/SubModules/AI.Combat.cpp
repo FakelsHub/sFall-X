@@ -31,7 +31,7 @@ namespace sfall
 // В данной реализаци изменен порядок проверки результатов:
 //	"NoAmmo" проверяется перед "NotEnoughAPs" и "OutOfRange"
 //	проверка "OutOfRange" помещена перед "NotEnoughAPs"
-// дополнительно добавлен результат "NoActionPoint", когда когда у атакующего нет очков действий
+//	дополнительно добавлен результат "NoActionPoint", когда когда у атакующего нет очков действий
 CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode, long isCalled) {
 	if (source->critter.getAP() <= 0) return CombatShootResult::NoActionPoint;
 	if (target && target->critter.damageFlags & fo::DAM_DEAD) return CombatShootResult::TargetDead; // target is dead
@@ -326,7 +326,7 @@ static long CheckCoverConditionAndGetTile(fo::GameObject* source, fo::GameObject
 	}
 	if (isRangeAttack && fo::func::combat_is_shot_blocked(target, target->tile, source->tile, source, 0)) return -1; // может ли цель стрелять по цели
 
-	return GetCoverBehindObjectTile(source, target, source->critter.getAP() + 1, source->critter.getAP());
+	return GetCoverBehindObjectTile(source, target, source->critter.getAP() + 1, source->critter.getMoveAP());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -445,7 +445,7 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 	if (fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) >= 2) {
 
 		long cost = AIHelpers::GetCurrenShootAPCost(source, target);
-		if (cost > (source->critter.getAP() - 1)) return;
+		if (cost > (source->critter.getAP() - 1)) return; // предварительная проверка
 
 		fo::GameObject* friendNPC = AI::CheckFriendlyFire(target, source);
 		if (friendNPC) {
@@ -463,7 +463,8 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 				{
 					long dir = (shotDir + r) % 6;
 					long tile = fo::func::tile_num_in_direction(source->tile, dir, range);
-					if (!fo::func::obj_blocking_at(nullptr, tile, source->elevation)) {
+					long pathLen = fo::func::make_path_func(source, source->tile, tile, 0, 1, (void*)fo::funcoffs::obj_blocking_at_);
+					if (pathLen > 0 && pathLen < (source->critter.getMoveAP() - cost)) {
 						if (!AIHelpers::CheckFriendlyFire(target, source, tile)) {
 							reTargetTile = tile;
 							DEV_PRINTF("\n[AI] -> pick tile to retarget.");
@@ -472,7 +473,7 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 					}
 					if (++check == 2) {
 						if (++range > 3) break; // max range distance 3
-						if (cost > (source->critter.getAP() - range)) break;
+						if (cost > (source->critter.getMoveAP() - range)) break;
 						check = 0;
 					}
 					// меняем направление
@@ -502,6 +503,7 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 		distance = source->critter.getAP();
 		long cost = AIHelpers::GetCurrenShootAPCost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
 		if (cost != -1 && distance > cost) distance -= cost;
+		if (source->critter.getAP(distance) < cost) return;
 		fo::func::ai_move_steps_closer(source, target, distance, 1);
 	}
 	/* Distance: Snipe behavior */
@@ -536,7 +538,7 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 	ReTargetTileFromFriendlyFire(source, target);
 }
 
-static bool CheckExistEnemyCritters(fo::GameObject* source) {
+static bool CheckEnemyCritters(fo::GameObject* source) {
 	for (size_t i = 0; i < fo::var::list_com; i++)
 	{
 		fo::GameObject* obj = fo::var::combat_list[i];
@@ -602,7 +604,7 @@ TrySpendExtraAP:
 	/**************************************************************************
 		Фаза лечения если атакующий ранен или использования каких-либо наркотических средств перед атакой
 	**************************************************************************/
-	if (fo::var::combatNumTurns == 0 || CheckExistEnemyCritters(source)) { // Проверяет имеются ли враждебные криттеры перед употреблением (NPC может в конце боя принять)
+	if (fo::var::combatNumTurns == 0 || CheckEnemyCritters(source)) { // Проверяет имеются ли враждебные криттеры перед употреблением (NPC может в конце боя принять)
 		DEV_PRINTF("\n[AI] Check drugs...");
 		fo::func::ai_check_drugs(source);
 	}
@@ -704,8 +706,9 @@ ReFindNewTarget:
 		moveAwayDistance = GetMoveAwayDistaceFromTarget(source, moveAwayTarget);
 
 		DEV_PRINTF1("\n[AI] Try move away distance: %d", moveAwayDistance);
-		if (target != moveAwayTarget) DEV_PRINTF("\n[AI] (target in not moveAwayTarget)");
-
+		if (target != moveAwayTarget) {
+			DEV_PRINTF("\n[AI] (target in not moveAwayTarget)");
+		}
 		// выполняется только в том случае если изначально цель не была найдена
 		// т.е. отход происходит от другого NPC который атаковал source
 		if (!target && moveAwayTarget && moveAwayDistance) MoveAwayFromTarget(source, moveAwayTarget, moveAwayDistance);
@@ -754,6 +757,10 @@ ReFindNewTarget:
 		   у которого есть цель и двигаться к нему.
 	************************************************************************************/
 	if (!target) {
+		if (!CheckEnemyCritters(source)) {
+			DEV_PRINTF1("\n[AI] %s: No enemy critters...", attacker.name);
+			return;
+		}
 		DEV_PRINTF1("\n[AI] %s: I no have target! Try find ally critters.", attacker.name);
 
 		// найти ближайшего со-комадника у которого есть цель (проверить цели)
@@ -805,7 +812,7 @@ ReFindNewTarget:
 				} else {
 					fo::func::debug_printf("\n[AI] %s: FLEEING: Somebody is shooting at me that I can't see!", attacker.name); // Бегство: кто-то стреляет в меня, но я этого не вижу!
 					// рандомное перемещение
-					long max = source->critter.getAP();
+					long max = source->critter.getMoveAP();
 					long tile = AIHelpers::GetRandomTileToMove(source, max, max);
 					if (tile != -1) AIHelpers::CombatRunToTile(source, tile, max);
 				}
@@ -833,10 +840,10 @@ ReFindNewTarget:
 			}
 		} else if (attacker.InDudeParty == false) {
 			// рандомное перемещение
-			long max = source->critter.getAP();
+			long max = source->critter.getMoveAP();
 			long tile = AIHelpers::GetRandomTileToMove(source, max / 2, max);
 			if (tile != -1) AIHelpers::CombatMoveToTile(source, tile, max);
-			DEV_PRINTF("\n[AI] Random move tile.");
+			DEV_PRINTF("\n[AI] End Random move tile.");
 		}
 	}
 

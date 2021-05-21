@@ -47,14 +47,15 @@ static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCall
 	long distance = fo::func::make_path_func(fo::var::obj_dude, fo::var::obj_dude->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
 	if (distance == 0) return -1;
 
-	// unarmed and melee weapon, check the distance and cost AP
-	long dudeAP = fo::var::obj_dude->critter.movePoints + fo::var::combat_free_move;
-	if (distance > dudeAP) return -1;
-	long cost = game::Items::item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
 	distance -= fo::func::item_w_range(fo::var::obj_dude, hitMode);
 
-	bool result = ((distance + cost) > dudeAP);
-	return (result) ? -1 : distance;
+	// unarmed and melee weapon, check the distance and cost AP
+	long dudeAP = fo::var::obj_dude->critter.getAP() + fo::var::combat_free_move;
+	long needAP = fo::func::critter_compute_ap_from_distance(fo::var::obj_dude, distance);
+	if (needAP > dudeAP) return -1;
+	needAP += game::Items::item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
+
+	return (needAP <= dudeAP) ? distance : -1;
 }
 
 static long __fastcall DudeMoveToAttackTarget(fo::GameObject* target, fo::AttackType hitMode, long isCalledShot) {

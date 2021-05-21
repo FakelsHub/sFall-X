@@ -123,7 +123,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 		// pathToTarget=6 8*2=16
 		// 10 >= 8 && 6 >= 16
 		// если дистанция до цели превышает 9 гексов, а реальный путь до нее больше чем имеющихся очков действий в два раза, тогда берем новую цель
-		if (dist_disposition >= 10 && pathToTarget >= (source->critter.getAP() * 2)) {
+		if (dist_disposition >= 10 && pathToTarget >= (source->critter.getMoveAP() * 2)) {
 			DEV_PRINTF("-> is far located!");
 			return true; // target is far -> picking alternate target
 		}
@@ -158,7 +158,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 				}
 
 				long cost = game::Items::item_w_mp_cost(source, hitMode, 0);
-				if (diff > (source->critter.getAP() - cost)) {
+				if (source->critter.getAP(diff) < cost) {
 					DEV_PRINTF("-> I don't have enough AP to move to target and make shot!");
 					return true; // не хватит очков действия для подхода и выстрела -> picking alternate target
 				}
