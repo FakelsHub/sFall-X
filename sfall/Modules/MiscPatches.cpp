@@ -188,7 +188,7 @@ checkSee:
 		push fo::funcoffs::obj_shoot_blocking_at_; // check hex objects func pointer
 		push 0x20;                                 // flags, 0x20 = check ShootThru
 		push edi;
-		call fo::funcoffs::make_straight_path_func_; // overlapping if len(eax) == 0 
+		call fo::funcoffs::make_straight_path_func_; // overlapping if len(eax) == 0
 		pop  ecx;            // source
 		mov  edx, [edi - 8]; // target
 		mov  ebx, [edi];     // blocking object
@@ -207,7 +207,7 @@ checkObj:
 		je   continue; // see through critter
 		retn 8;
 continue:
-		mov  [edi], ecx;                // outObject - ignore source (for cases of overlapping tiles by MultiHex critters)
+		mov  [edi], ecx;                // outObject - ignore source (for cases of overlapping tiles from MultiHex critters)
 		mov  [edi - 4], ebx;            // replace source with blocking object
 		mov  dword ptr [esp], 0x456BAB; // repeat from the blocking object
 		retn 8;
