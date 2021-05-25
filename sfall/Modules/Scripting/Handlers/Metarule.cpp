@@ -72,7 +72,6 @@ static const SfallMetarule metarules[] = {
 	{"art_cache_clear",         mf_art_cache_flush,         0, 0},
 	{"attack_is_aimed",         mf_attack_is_aimed,         0, 0},
 	{"car_gas_amount",          mf_car_gas_amount,          0, 0},
-	{"check_prototype",         mf_check_prototype,         1, 1,  0, {ARG_INT}},
 	{"combat_data",             mf_combat_data,             0, 0},
 	{"create_win",              mf_create_win,              5, 6, -1, {ARG_STRING, ARG_INT, ARG_INT, ARG_INT, ARG_INT, ARG_INT}},
 	{"critter_inven_obj2",      mf_critter_inven_obj2,      2, 2,  0, {ARG_OBJECT, ARG_INT}},

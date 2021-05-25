@@ -89,8 +89,6 @@ void mf_obj_under_cursor(OpcodeContext&);
 
 void mf_get_loot_object(OpcodeContext&);
 
-void mf_check_prototype(OpcodeContext&);
-
 void op_get_proto_data(OpcodeContext&);
 
 void op_set_proto_data(OpcodeContext&);

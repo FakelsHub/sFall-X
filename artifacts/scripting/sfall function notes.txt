@@ -800,10 +800,6 @@ optional arguments:
 - gvarNumber: the number of the global variable controlling the quest
 - thresholdValue: the value of the global variable at which the quest is counted as a failure
 
-> bool sfall_func1("check_prototype", int pid)
-- the function checks the specified PID number in the list of registered prototypes
-- returns True if the prototype exists, otherwise False
-
 ------------------------
 ------ MORE INFO -------
 ------------------------

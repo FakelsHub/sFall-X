@@ -103,8 +103,7 @@ bool CheckProtoID(unsigned long pid) {
 	if (pid == 0) return false;
 	long type = pid >> 24;
 	if (type > fo::ObjType::OBJ_TYPE_MISC) return false;
-
-	return ((pid & 0xFFFF) < fo::var::protoLists[type].totalCount);
+	return (static_cast<long>(pid & 0xFFFF) < fo::var::protoLists[type].totalCount);
 }
 
 bool GetProto(long pid, fo::Proto** outProto) {

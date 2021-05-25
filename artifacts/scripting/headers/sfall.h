@@ -290,6 +290,8 @@
 /// clears the keyboard input buffer, use it in the HOOK_KEYPRESS hook to clear keyboard events before calling script input functions
 #define clear_keyboard_buffer                           metarule3(201, 0, 0, 0)
 
+// checks the specified PID number exists in the list of registered prototypes
+#define check_pid(pid)                                  (get_proto_data(pid, 0) != -1)
 
 /* sfall_funcX macros */
 #define add_extra_msg_file(name)                                sfall_func1("add_extra_msg_file", name)
@@ -299,7 +301,6 @@
 #define art_cache_clear                                         sfall_func0("art_cache_clear")
 #define attack_is_aimed                                         sfall_func0("attack_is_aimed")
 #define car_gas_amount                                          sfall_func0("car_gas_amount")
-#define check_prototype(pid)                                    sfall_func1("check_prototype", pid)
 #define clear_window                                            sfall_func0("win_fill_color")
 #define combat_data                                             sfall_func0("combat_data")
 #define create_win(winName, x, y, w, h)                         sfall_func5("create_win", winName, x, y, w, h)
