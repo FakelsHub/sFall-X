@@ -99,6 +99,14 @@ long AnimCodeByWeapon(fo::GameObject* weapon) {
 	return 0;
 }
 
+bool CheckProtoID(unsigned long pid) {
+	if (pid == 0) return false;
+	long type = pid >> 24;
+	if (type > fo::ObjType::OBJ_TYPE_MISC) return false;
+
+	return ((pid & 0xFFFF) < fo::var::protoLists[type].totalCount);
+}
+
 bool GetProto(long pid, fo::Proto** outProto) {
 	return (fo::func::proto_ptr(pid, outProto) != -1);
 }
@@ -730,4 +738,54 @@ fo::UnlistedFrm *LoadUnlistedFrm(char *frmName, unsigned int folderRef) {
 	return frm;
 }
 
+/* DONE
+bool IsExistProto(long pid) {
+	long type = pid >> 24;
+	if (type > fo::ObjType::OBJ_TYPE_MISC) return false;
+
+	ProtoListBlock* listBlock = fo::var::protoLists[type].block;
+	while (listBlock)
+	{
+		for (long i = 0; i < listBlock->count; i++) {
+			if (*listBlock->protoMem[i] == pid) return true;
+		}
+		listBlock = listBlock->next;
+	}
+
+	char pathProFile[MAX_PATH];
+	fo::func::proto_make_path(pathProFile, pid);
+
+	long endPos = std::strlen(pathProFile);
+	char* d_pathProFile = &pathProFile[endPos + 1];
+	char* s_pathProFile = &pathProFile[endPos - 2];
+
+	while (*s_pathProFile != '\\') s_pathProFile--;
+	while (*++s_pathProFile) *d_pathProFile++ = *s_pathProFile;
+
+	pathProFile[endPos] = '\\';
+	std::strcpy(d_pathProFile, ".lst");
+
+	fo::DbFile* file = fo::func::db_fopen(pathProFile, "rt"); // open <type>.lst file
+	if (!file) return false;
+
+	char getLine[16];
+	long i, pidLine = 1;
+	for (i = pid & 0xFFFFFF; pidLine <= i; ++pidLine) {
+		if (!fo::func::db_fgets(getLine, 16, file)) break;
+	}
+	if (pidLine - 1 != i) return false;
+
+	char* _getLine = getLine;
+	char chr = *getLine;
+	while(chr) {
+		if (chr == '\n'|| chr == ' ') {
+			*_getLine = '\0';
+			break;
+		}
+		chr = *++_getLine;
+	}
+	std::strcpy(&pathProFile[endPos + 1], getLine);
+	return fo::func::db_access(pathProFile);
+}
+*/
 }

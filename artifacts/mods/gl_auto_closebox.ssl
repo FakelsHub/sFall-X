@@ -20,7 +20,9 @@ variable  closeObject;
 
 procedure start begin
    if (game_loaded) then begin
-      if (GetConfig("Inventory", "AutoCloseContainers", 0)) then register_hook_proc_spec(HOOK_GAMEMODECHANGE, start);
+      if (GetConfig("Inventory", "AutoCloseContainers", 0)) then begin
+         register_hook_proc_spec(HOOK_GAMEMODECHANGE, start);
+      end
    end
    else begin
       variable mode = get_game_mode;
@@ -30,8 +32,10 @@ procedure start begin
          if (obj_type(lootObject) != OBJ_TYPE_ITEM) then lootObject = 0;
       end
       else if (lootObject andAlso get_sfall_arg_at(1) == INTFACELOOT) then begin
-         if (get_object_data(lootObject, OBJ_DATA_CUR_FRM) > 1) then call close in 1;
-         closeObject = lootObject;
+         if (get_object_data(lootObject, OBJ_DATA_CUR_FRM) > 1) then begin
+            closeObject = lootObject;
+            call close in 0;
+         end
          lootObject = 0;
       end
    end
