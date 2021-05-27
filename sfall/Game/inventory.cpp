@@ -48,7 +48,7 @@ DWORD __stdcall Inventory::item_total_size(fo::GameObject* critter) {
 	return totalSize;
 }
 
-// WIP
+/* WIP
 float containerBonus = 0.1;
 bool disableHalfBonus = false; // disable halving the weight for armor items
 
@@ -114,7 +114,7 @@ static void __declspec(naked) item_weight_hack() {
 		retn;
 	}
 }
-
+*/
 // Reimplementation of adjust_fid engine function
 // Differences from vanilla:
 // - doesn't use art_vault_guy_num as default art, uses current critter FID instead

@@ -439,12 +439,14 @@ void CritterStats::SaveStatData(HANDLE file) {
 	for (size_t i = 0; i < count; i++) {
 		WriteFile(file, &s_baseStatProto[i], 20, &sizeWrite, 0);
 	}
+	fo::func::debug_printf("LOADSAVE: Critters save base stats: total %d\n", count);
 
 	count = s_bonusStatProto.size();
 	WriteFile(file, &count, 4, &sizeWrite, 0);
 	for (size_t i = 0; i < count; i++) {
 		WriteFile(file, &s_bonusStatProto[i], 20, &sizeWrite, 0);
 	}
+	fo::func::debug_printf("LOADSAVE: Critters save bonus stats: total %d\n", count);
 }
 
 bool CritterStats::LoadStatData(HANDLE file) {
