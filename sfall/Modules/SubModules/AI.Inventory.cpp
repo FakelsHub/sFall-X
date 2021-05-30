@@ -52,7 +52,7 @@ fo::GameObject* AIInventory::SearchInventoryItemType(fo::GameObject* source, lon
 			case fo::ItemType::item_type_weapon:
 				if (!game::CombatAI::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
 				// проверяем наличее и количество имеющихся патронов
-				if (!AICheckAmmo(item, source) && Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) continue;
+				if (item->item.ammoPid != -1 && !AICheckAmmo(item, source) && Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) continue;
 				break;
 			case fo::ItemType::item_type_ammo:
 				if (!fo::func::item_w_can_reload(weapon, item)) continue;
@@ -459,7 +459,9 @@ long AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType
 }
 
 static long __fastcall AISearchCorpseWeapon(fo::GameObject* target, fo::GameObject* source, fo::GameObject* &weapon, long &hitMode, fo::GameObject* itemEnv) {
-	if (itemEnv) DEV_PRINTF1("\n[AI] ai_search_environ: weapon: %s", fo::func::critter_name(itemEnv));
+	if (itemEnv) {
+		DEV_PRINTF1("\n[AI] ai_search_environ: weapon: %s", fo::func::critter_name(itemEnv));
+	}
 
 	fo::GameObject* outItem = itemEnv;
 	if (AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_weapon, outItem, weapon) < 0 || outItem == itemEnv) return 1; // default

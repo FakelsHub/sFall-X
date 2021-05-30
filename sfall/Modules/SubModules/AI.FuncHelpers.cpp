@@ -127,9 +127,16 @@ fo::GameObject* AIHelpers::AICheckWeaponSkill(fo::GameObject* source, fo::GameOb
 	if (hSkill == sSkill) return sWeapon;
 
 	int hLevel = fo::func::skill_level(source, hSkill);
-	int sLevel = fo::func::skill_level(source, sSkill) + 10;
+	int sLevel = fo::func::skill_level(source, sSkill);
 
-	return (hLevel > sLevel) ? hWeapon : sWeapon;
+	fo::func::dev_printf("\n[AI] Check weapon skill: %d vs %d", hLevel, sLevel);
+
+	// если разница в навыках не большая то отдаем предпочитение стрелковому оружию
+	if (std::abs(hLevel - sLevel) <= 10) {
+		if (sSkill >= fo::Skill::SKILL_SMALL_GUNS && sSkill <= fo::Skill::SKILL_ENERGY_WEAPONS) return sWeapon;
+		if (hSkill >= fo::Skill::SKILL_SMALL_GUNS && hSkill <= fo::Skill::SKILL_ENERGY_WEAPONS) return hWeapon;
+	}
+	return (hLevel > (sLevel + 10)) ? hWeapon : sWeapon;
 }
 
 long AIHelpers::GetCurrenShootAPCost(fo::GameObject* source, long modeHit, long isCalled) {

@@ -26,7 +26,7 @@ namespace sfall
 {
 
 static bool npcAttackWhoFix = false;
-static bool reFindNewTargets = false;
+static long reFindNewTargets = 0;
 
 fo::GameObject* rememberTarget = nullptr;
 
@@ -328,6 +328,7 @@ ReFindNewTargets:
 			if (attack_who == fo::AIpref::attack_who::whomever || attack_who == fo::AIpref::attack_who::no_attack_mode) {
 				// NPCs (or PM with whomever) always attack the target that is set to who_hit_me
 				// [add ext] Additional function allows to analyze the current target (TryToFindTargets option)
+				if (reFindNewTargets > 1) goto ReFindNewTargets;
 				if (reFindNewTargets && AICheckCurrentAttackerTarget(source, sourceTarget)) {
 					if (!(type & 8)) type |= 4;
 					goto ReFindNewTargets;
@@ -431,27 +432,35 @@ static void __declspec(naked) ai_danger_source_replacement() {
 	}
 }
 
+static void __declspec(naked) ai_danger_source_hack() {
+	__asm {
+		mov  eax, esi;
+		call fo::funcoffs::ai_get_attack_who_value_;
+		mov  dword ptr [esp + 0x34 - 0x1C + 4], eax; // attack_who
+		retn;
+	}
+}
+
 void AISearchTarget::init(bool smartBehavior) {
+	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
+	npcAttackWhoFix = (IniReader::GetConfigInt("CombatAI", "NPCAttackWhoFix", 0) > 0);
 
 	if (smartBehavior) {
 		MakeJump(fo::funcoffs::ai_danger_source_ + 1, ai_danger_source_replacement); // 0x428F4C
 		SafeWrite8(0x428F4C, 0x52); // push edx
 
-		reFindNewTargets = (IniReader::GetConfigInt("CombatAI", "TryToFindTargets", 1) > 0);
-
-		///for TryToFindTargets=2 w/o logic
-		///SafeWrite16(0x4290B3, 0xDFEB); // jmp 0x429094
-		///SafeWrite8(0x4290B5, 0x90);
+		if (IniReader::GetConfigInt("CombatAI", "TryToFindTargets", 1) > 0) {
+			reFindNewTargets = 1;
+		} else if (IniReader::GetConfigInt("CombatAI", "ReFindTargets", 0)) {
+			reFindNewTargets = 2; // w/o logic
+		}
 	} else {
 		/// Changes the behavior of the AI so that the AI moves to its target to perform an attack/shot when the range of its weapon is less than
 		/// the distance to the target or the AI will choose the nearest target if any other targets are available
 
 		HookCall(0x42B240, combat_ai_hook_revert_target); // also need for TryToFindTargets option
-	}
 
-	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
-	if (IniReader::GetConfigInt("CombatAI", "NPCAttackWhoFix", 0)) {
-		npcAttackWhoFix = true;
+		if (npcAttackWhoFix) MakeCall(0x428F70, ai_danger_source_hack, 3);
 	}
 }
 

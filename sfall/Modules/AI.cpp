@@ -56,7 +56,7 @@ fo::GameObject* AI::CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object,
 		object = CheckShootAndTeamCritterOnLineOfFire(obj, targetTile, team);
 	}
 	if (object) {
-		DEV_PRINTF3("\n[AI] TeamCritterOnLineOfFire: %s (team: %d==%d)", fo::func::critter_name(object), object->critter.teamNum, team);
+		fo::func::dev_printf("\n[AI] TeamCritterOnLineOfFire: %s (team: %d==%d)", fo::func::critter_name(object), object->critter.teamNum, team);
 	}
 	return object; // friendly critter, any object or null
 }
@@ -654,6 +654,12 @@ void AI::init() {
 			dlogr(" Done", DL_INIT);
 		}
 
+		// Allows the for all critters or party members with "whomever" to search for a new target each turn of the combat
+		if (IniReader::GetConfigInt("CombatAI", "ReFindTargets", 0) > 0) {
+			SafeWrite16(0x4290B3, 0xDFEB); // jmp 0x429094
+			SafeWrite8(0x4290B5, CodeType::Nop);
+		}
+
 		// Fix AI weapon switching when not having enough AP to make an attack
 		// AI will try to change attack mode before deciding to switch weapon
 		if (IniReader::GetConfigInt("CombatAI", "NPCSwitchingWeaponFix", 1)) {
@@ -679,7 +685,7 @@ void AI::init() {
 
 	/////////////////////// Combat behavior AI fixes ///////////////////////
 	#ifndef NDEBUG
-	if (IniReader::GetConfigInt("Debugging", "AIBugFixes", 1) == 0) return;
+	if (IniReader::GetConfigInt("Debugging", "AIFixes", 1) == 0) return;
 	#endif
 
 	// Fix for NPCs not fully reloading a weapon if it has more ammo capacity than a box of ammo

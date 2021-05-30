@@ -588,8 +588,12 @@ static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
 		{
 			fo::func::debug_printf("\n[AI] %s FLEEING: I'm Hurt!", attacker.name);
 
-			if (!target) target = AIHelpers::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
-			fo::func::ai_run_away(source, target);                           // убегаем от цели или от игрока если цель не была назначена
+			if (!target) {
+				target = AIHelpers::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
+			}
+			if (fo::func::obj_dist(source, fo::var::obj_dude) <= attacker.cap->max_dist * 2) {
+				fo::func::ai_run_away(source, target);              // убегаем от цели или от игрока если цель не была назначена
+			}
 			return;
 		}
 
@@ -618,8 +622,11 @@ TrySpendExtraAP:
 			fo::func::ai_move_steps_closer(source, fo::var::obj_dude, source->critter.getAP(), 0); // !!! здесь диспозиция stay не позволяет бежать к игроку !!!
 		} else {
 			if (!lastTarget) lastTarget = AIHelpers::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
+
+			if (fo::func::obj_dist(source, lastTarget) <= 1) fo::func::ai_try_attack(source, lastTarget);
+
 			fo::func::ai_run_away(source, lastTarget);                               // убегаем от потенцеально опасного криттера
-			source->critter.combatState ^= (fo::CombatStateFlag::EnemyOutOfRange | fo::CombatStateFlag::InFlee); // снять флаги после ai_run_away
+			source->critter.combatState &= ~(fo::CombatStateFlag::EnemyOutOfRange | fo::CombatStateFlag::InFlee); // снять флаги после ai_run_away
 		}
 		return;
 	}

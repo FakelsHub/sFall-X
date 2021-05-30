@@ -89,7 +89,8 @@ static long  __fastcall AIPickupWeaponFix(fo::GameObject* critter, long distance
 		fo::GameObject* item = fo::func::inven_right_hand(critter);
 		if (item && AIHelpers::IsGunOrThrowingWeapon(item)) return 1; // allow pickup
 	}
-	return (allowPickUp) ? 1 : 0; // false - next item
+	DEV_PRINTF1("\nai_search_environ: ItemPickUpFix is allow: %d\n", allowPickUp);
+	return 0 | allowPickUp; // false - next item
 }
 
 static void __declspec(naked) ai_search_environ_hook() {
@@ -380,7 +381,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 				if (!game::CombatAI::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
 
 				// проверяем наличее и количество имеющихся патронов
-				if (!AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) {
+				if (itemGround->item.ammoPid != -1 && !AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) {
 					continue;
 				}
 
@@ -438,7 +439,7 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 
 				if (game::CombatAI::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) &&
 					// проверяем наличее и количество имеющихся патронов
-					AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 0)
+					itemGround->item.ammoPid == -1 || AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 0)
 				{
 					if (AIInventory::BestWeapon(source, item, itemGround, target) == itemGround) {
 						DEV_PRINTF2("\n[AI] SearchBestWeaponOnGround: %d (%s)", itemGround->protoId, fo::func::critter_name(itemGround));
@@ -935,23 +936,24 @@ reTryAttack:
 
 // Событие перед атакой, когда шанс поразить цель является минимальным установленному значению 'min_to_hit' в AI.txt
 static fo::GameObject* __fastcall AIBadToHit(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode) {
-	DEV_PRINTF2("\n[AI] AIBadToHit: %s attack bad to hit my target (%s)\n", fo::func::critter_name(source), fo::func::critter_name(target));
+	DEV_PRINTF2("\n[AI] BadToHit: %s attack bad to hit my (%s) target.\n", fo::func::critter_name(source), fo::func::critter_name(target));
 
-	//TODO: попробовать сменить оружие?
+	//TODO: попробовать сменить оружие
 
 	AICombat::AttackerSetHitMode(hitMode);
 
 	fo::GameObject* newTarget = AISearchTarget::AIDangerSource(source, 8); // попробовать найти другую цель со значеннием шанса выше 'min_to_hit'
 	if (!newTarget || newTarget == target) {
 		// новая цель не была найдена, проверяем боевой рейтинг цели
-		if (fo::func::combatai_rating(target) > (fo::func::combatai_rating(source) * 2)) {
+		fo::GameObject* lastTarget = fo::func::combatAIInfoGetLastTarget(target);
+		if (lastTarget == source && fo::func::combatai_rating(target) > (fo::func::combatai_rating(source) * 2)) {
 			source->critter.combatState |= fo::CombatStateFlag::ReTarget;
 			return nullptr; // цель сильна - убегаем
 		}
-		DEV_PRINTF("\n[AI] AIBadToHit: No alternative target. Attack my target with bad to hit.\n");
+		DEV_PRINTF("\n[AI] BadToHit: No alternative target. Attack my target with bad to hit.\n");
 		return (fo::GameObject*)-1; // продолжаем атаковать цель несмотря на низкий шанс
 	}
-	DEV_PRINTF1("\n[AI] AIBadToHit: Found alternative (%s) target.\n", fo::func::critter_name(newTarget));
+	DEV_PRINTF1("\n[AI] BadToHit: Found alternative (%s) target.\n", fo::func::critter_name(newTarget));
 	return newTarget;
 }
 
@@ -995,16 +997,18 @@ static void ClearWalkThru() {
 static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* target) {
 	fo::var::moveBlockObj = 0; // всегда содержит криттер или null
 
+	__asm call fo::funcoffs::gmouse_bk_process_;
+
 	// check the path is clear
 	if (fo::func::make_path_func(source, source->tile, target->tile, 0, 0, AIHelpers::obj_ai_move_blocking_at_) > 0) {
-		DEV_PRINTF("\n[AI] AIClearMovePath: free.");
+		DEV_PRINTF("\n[AI] ClearMovePath: free.");
 		// TODO: найти причину по которой путь строится для obj_ai_move_blocking_at_ но для obj_blocking_at_ это блокировано
 		if (fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
 			return target;
 		}
 		if (++recursiveDepth > 10) return nullptr;
 
-		DEV_PRINTF("\n[AI] AIClearMovePath: ClearWalkThru.");
+		DEV_PRINTF("\n[AI] ClearMovePath: ClearWalkThru.");
 		ClearWalkThru();
 		//	BREAKPOINT;
 		return AIClearMovePath(source, target);
@@ -1023,7 +1027,7 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 	#endif
 	if (fo::var::moveBlockObj) {
 		fo::GameObject* blockCritter = fo::var::moveBlockObj;
-		DEV_PRINTF1("\n[AI] AIClearMovePath: Blocked: %s", fo::func::critter_name(blockCritter));
+		DEV_PRINTF2("\n[AI] ClearMovePath: Blocked: %s ID: %d", fo::func::critter_name(blockCritter), blockCritter->id);
 
 		if (!(blockCritter->flags & fo::ObjectFlag::WalkThru)) {
 			blockCritter->flags |= fo::ObjectFlag::WalkThru; // устанавливаем флаг для obj_ai_move_blocking_at_
@@ -1043,7 +1047,7 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 				char rotation[800];
 				len = fo::func::make_path_func(source, source->tile, blockCritter->tile, rotation, 0, (void*)fo::funcoffs::obj_blocking_at_);
 				if (len == 0) {
-					DEV_PRINTF("\n[AI] AIClearMovePath: don't make path from source to block critter.");
+					DEV_PRINTF("\n[AI] ClearMovePath: don't make path from source to block critter.");
 					return nullptr; // нельзя!!!
 				}
 				if (len > source->critter.getMoveAP()) return blockCritter;
@@ -1065,11 +1069,13 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 		// recursively calling functions until the path is freed or completely blocked
 		return AIClearMovePath(source, target);
 	}
-	DEV_PRINTF("\n[AI] AIClearMovePath: null.");
+	DEV_PRINTF("\n[AI] ClearMovePath: null.");
 	return nullptr;
 }
 
-static void __fastcall GetMoveObject(fo::GameObject* source, fo::GameObject* target, fo::GameObject* nearCritter) {
+static void __fastcall GetMoveObject(fo::GameObject* source, fo::GameObject* target, fo::GameObject* nearCritter, long isMouse3d) {
+	if (isMouse3d) target->flags &= ~fo::ObjectFlag::Mouse_3d;
+
 	recursiveDepth = 0;
 	DEV_PRINTF2("\n[AI] TargetСritter: %s / NearСritter: %s", fo::func::critter_name(target), fo::func::critter_name(nearCritter));
 	fo::GameObject* blockObject = AIClearMovePath(source, target);
@@ -1082,13 +1088,14 @@ static void __fastcall GetMoveObject(fo::GameObject* source, fo::GameObject* tar
 	                      ? blockObject
 	                      : nearCritter;
 
-	DEV_PRINTF1("\n[AI] MoveToСritter: %s\n", fo::func::critter_name(fo::var::moveBlockObj));
+	DEV_PRINTF2("\n[AI] MoveToСritter: %s ID:%d\n", fo::func::critter_name(fo::var::moveBlockObj), fo::var::moveBlockObj->id);
 
 	fo::func::register_begin(fo::RB_RESERVED);
 }
 
 static void __declspec(naked) ai_move_steps_closer_hack() {
 	__asm {
+		push [esp + 0x1C - 0x10 + 4]; // multiHexIsMouse3d
 		push edx;      // block critter to move
 		mov  ecx, esi; // source
 		mov  edx, edi; // target
@@ -1124,7 +1131,7 @@ void AIBehavior::init(bool smartBehavior) {
 
 	// Реализация функции освобождения пути криттера блокирующего путь к цели
 	MakeCall(0x42A0D6, ai_move_steps_closer_hack, 5);
-	BlockCall(0x42A06A); // unused code
+	SafeWrite16(0x42A0BF, 0x9090);
 
 	//////////////////// Combat AI improved behavior //////////////////////////
 
@@ -1133,7 +1140,7 @@ void AIBehavior::init(bool smartBehavior) {
 
 	if (smartBehavior) {
 		// Before starting his turn npc will always check if it has better weapons in inventory, than there is a current weapon
-		LookupOnGround = (IniReader::GetConfigInt("CombatAI", "TakeBetterWeapons", 1) > 1); // always check the items available on the ground
+		LookupOnGround = (IniReader::GetConfigInt("CombatAI", "TakeBetterWeapons", 0) > 0); // always check the items available on the ground
 
 		HookCall(0x42A6BF, ai_called_shot_hook);
 
