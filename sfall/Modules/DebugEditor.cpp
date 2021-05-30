@@ -386,6 +386,18 @@ static void __declspec(naked) debugMsg() {
 	}
 }
 
+const char* msgCombat = "LOADSAVE: The object ID was not found while loading the combat data.\n";
+
+static void __declspec(naked) combat_load_hack() {
+	__asm {
+		push msgCombat;
+		call fo::funcoffs::debug_printf_;
+		add  esp, 4;
+		mov  eax, -1;
+		retn;
+	}
+}
+
 // Shifts the string one character to the right and puts a new line control character at the beginning
 static void MoveDebugString(char* messageAddr) {
 	int i = 0;
@@ -507,6 +519,10 @@ void DebugEditor::init() {
 	// Notifies and prints a debug message about a corrupted proto file to debug.log
 	MakeCall(0x4A1D73, proto_load_pid_hack, 6);
 
+	// Prints a debug message about a missing combat object
+	MakeCalls(combat_load_hack, { 0x421146, 0x421189, 0x4211CC });
+	if (!isDebug) SafeWriteBatch<DWORD>(0x909008EB, { 0x42114B, 0x42118E, 0x4211D1 }); // jmp $+8
+	
 	if (!isDebug) return;
 	DontDeleteProtosPatch();
 	AlwaysReloadMsgs();

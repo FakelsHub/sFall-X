@@ -1230,15 +1230,16 @@ end:
 
 static void __declspec(naked) obj_save_hack() {
 	__asm { // edx - combat_data
-		mov  eax, [eax + cid];                     // pobj.who_hit_me.cid
 		test byte ptr ds:[FO_VAR_combat_state], 1; // in combat?
-		jz   clear;                                // No
-		cmp  dword ptr [edx], 0;                   // in combat?
-		jne  skip;                                 // Yes
+		jnz  inCombat;                             // Yes
 clear:
-		xor  eax, eax;
-		dec  eax; // -1
-skip:
+		mov  [edx + 0x18], -1;                     // combat_data.who_hit_me
+		retn;
+inCombat:
+		cmp  dword ptr [edx], 0;                   // critter in combat?
+		je   clear;                                // No
+		// default
+		mov  eax, [eax + cid];                     // pobj.who_hit_me.cid
 		mov  [edx + 0x18], eax;                    // combat_data.who_hit_me
 		retn;
 	}
@@ -3481,7 +3482,7 @@ void BugFixes::init()
 	// Fix for Sequence stat value not being printed correctly when using "print to file" option
 	MakeCall(0x4396F5, Save_as_ASCII_hack, 2);
 
-	// Fix a potential bug of incorrect object type search when loading the game in combat
+	// Fix a potential bug of incorrect object type search when loading a game saved in combat mode
 	HookCalls(combat_load_hook_critter, { 0x42113B, 0x42117D });
 	HookCall(0x4211C0, combat_load_hook_item);
 

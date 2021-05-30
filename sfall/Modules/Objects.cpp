@@ -99,7 +99,7 @@ pickNewID: // skip PM range (18000 - 83535)
 // Reassigns object IDs to all critters upon first loading a map and update HP stats
 // TODO: for items?
 static void map_fix_critter_id() {
-	long npcStartID = 4096;
+	long npcStartID = 4096; // 0x1000
 	fo::GameObject* obj = fo::func::obj_find_first();
 	while (obj) {
 		if (obj->IsCritter()) {
@@ -113,22 +113,10 @@ static void map_fix_critter_id() {
 	}
 }
 
-static void __declspec(naked) map_load_file_hack() {
+static void __declspec(naked) map_load_file_hook() {
 	__asm {
-		jz   mapVirgin;
-		retn;
-mapVirgin:
-		test eax, eax;
-		jl   skip; // check map index > -1
-		call fo::funcoffs::wmMapIsSaveable_;
-		test eax, eax;
-		jnz  saveable;
-		retn;
-saveable:
 		call map_fix_critter_id;
-skip:
-		xor  eax, eax; // set ZF
-		retn;
+		jmp  fo::funcoffs::map_fix_critter_combat_data_;
 	}
 }
 
@@ -347,7 +335,7 @@ skip:
 void Objects::init() {
 	LoadGameHook::OnGameReset() += []() {
 		RestoreObjUnjamAllLocks();
-		fo::var::cur_id = 4;
+		//fo::var::cur_id = 4;
 		sfallProcessSeenState = 0;
 	};
 
@@ -372,8 +360,7 @@ void Objects::init() {
 	MakeCall(0x477A0E, item_identical_hack); // don't put item with unique ID to items stack
 
 	// Fix mapper bug by reassigning object IDs to critters (for unvisited maps)
-	MakeCall(0x482E6B, map_load_file_hack);
-	SafeWrite8(0x482E71, 0x85); // jz > jnz
+	HookCall(0x482DE2, map_load_file_hook);
 	// Additionally fix object IDs for queued events
 	MakeCall(0x4A25BA, queue_add_hack);
 
