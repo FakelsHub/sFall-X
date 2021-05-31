@@ -105,8 +105,8 @@ Runs after the hit chance is fully calculated normally, including applying the 9
 
 ```
 int     arg0 - The hit chance (capped)
-critter arg1 - The attacker
-critter arg2 - The target of the attack
+Critter arg1 - The attacker
+Critter arg2 - The target of the attack
 int     arg3 - The targeted bodypart
 int     arg4 - Source tile (may differ from attacker's tile, when AI is considering potential fire position)
 int     arg5 - Attack Type (one of ATKTYPE_*)
@@ -123,14 +123,14 @@ Runs after Fallout has decided if an attack will hit or miss
 
 ```
 int     arg0 - If the attack will hit: 0 - critical miss, 1 - miss, 2 - hit, 3 - critical hit
-critter arg1 - The attacker
-critter arg2 - The target of the attack
+Critter arg1 - The attacker
+Critter arg2 - The target of the attack
 int     arg3 - The bodypart
 int     arg4 - The hit chance
 
 int     ret0 - Override the hit/miss
 int     ret1 - Override the targeted bodypart
-critter ret2 - Override the target of the attack
+Critter ret2 - Override the target of the attack
 ```
 -------------------------------------------
 
@@ -141,7 +141,7 @@ Note that the first time a game is loaded, this script doesn't run before the in
 You can get the weapon object by checking item slot based on attack type (`ATKTYPE_LWEP1`, `ATKTYPE_LWEP2`, etc) and then calling `critter_inven_obj`.
 
 ```
-critter arg0 - The critter performing the action
+Critter arg0 - The critter performing the action
 int     arg1 - Attack Type (see ATKTYPE_* constants)
 int     arg2 - Is aimed attack (1 or 0)
 int     arg3 - The normal AP cost (default)
@@ -158,8 +158,8 @@ Does not run for critters in the knockdown/out state.
 
 ```
 int     arg0 - The pid of the weapon performing the attack. (May be -1 if the attack is unarmed)
-critter arg1 - The attacker
-critter arg2 - The target
+Critter arg1 - The attacker
+Critter arg2 - The target
 int     arg3 - The amount of damage
 int     arg4 - Unused, always -1. Use this if you are using the same procedure for HOOK_DEATHANIM1 and HOOK_DEATHANIM2 (since sfall 4.1/3.8.24)
 
@@ -175,8 +175,8 @@ Does not run for critters in the knockdown/out state.
 
 ```
 Item    arg0 - The pid of the weapon performing the attack. (May be -1 if the attack is unarmed)
-critter arg1 - The attacker
-critter arg2 - The target
+Critter arg1 - The attacker
+Critter arg2 - The target
 int     arg3 - The amount of damage
 int     arg4 - The death anim id calculated by Fallout
 
@@ -192,8 +192,8 @@ Runs when:
 Does not run for misses, or non-combat damage like dynamite explosions.
 
 ```
-critter arg0  - The target
-critter arg1  - The attacker
+Critter arg0  - The target
+Critter arg1  - The attacker
 int     arg2  - The amount of damage to the target
 int     arg3  - The amount of damage to the attacker
 int     arg4  - The special effect flags for the target (use bwand DAM_* to check specific flags)
@@ -229,38 +229,38 @@ Runs when the AI is trying to pick a target in combat. Fallout first chooses a l
 This hook replaces that sorting function, allowing you to sort the targets in some arbitrary way.
 
 The return values can include critters that weren't in the list of possible targets, but the additional targets may still be discarded later on in the combat turn if they are out of the attackers perception or the chance of a successful hit is too low. The list of possible targets often includes duplicated entries, but this is fixed in sfall 4.2.3/3.8.23.
-Use sfall_return to give the 4 targets, in order of preference. If you want to specify less than 4 targets, fill in the extra spaces with 0's or pass -1 to skip the return value.
+Use `set_sfall_return` to give the 4 targets, in order of preference. If you want to specify less than 4 targets, fill in the extra spaces with 0's or pass -1 to skip the return value.
 
-**NOTE:** The engine can choose targets by the following criteria:
+__NOTE:__ The engine can choose targets by the following criteria:
 1) The nearest enemy to the attacker.
 2) The enemy that attacked the attacker.
 3) The enemy that attacked an NPC from the same team as the attacker.
 4) The enemy that is attacked by an NPC from the same team as the attacker.
 
 ```
-critter arg0 - The attacker
-critter arg1 - A possible target
-critter arg2 - A possible target
-critter arg3 - A possible target
-critter arg4 - A possible target
+Critter arg0 - The attacker
+Critter arg1 - A possible target
+Critter arg2 - A possible target
+Critter arg3 - A possible target
+Critter arg4 - A possible target
 
-critter ret0 - The first choice of target
-critter ret1 - The second choice of target
-critter ret2 - The third choice of target
-critter ret3 - The fourth choice of target
+Critter ret0 - The first choice of target
+Critter ret1 - The second choice of target
+Critter ret2 - The third choice of target
+Critter ret3 - The fourth choice of target
 ```
 -------------------------------------------
 
 #### `HOOK_USEOBJON (hs_useobjon.int)`
 
 Runs when:
-1) a critter uses an object on another critter. (Or themselves)
+1) a critter uses an object on another critter (or themselves).
 2) a critter uses an object from inventory screen AND this object does not have "Use" action flag set and it's not active flare or explosive.
 3) player or AI uses any drug
 
 This is fired before the object is used, and the relevant `use_obj_on` script procedures are run. You can disable default item behavior.
 
-**NOTE:** you can't remove and/or destroy this object during the hookscript (game will crash otherwise). To remove it, return 1.
+__NOTE:__ You can't remove and/or destroy this object during the hookscript (game will crash otherwise). To remove it, return 1.
 
 ```
 Critter arg0 - The target
@@ -279,13 +279,13 @@ Runs when:
 
 This is fired before the object is used, and the relevant `use_obj` script procedures are run. You can disable default item behavior.
 
-**NOTE:** you can't remove and/or destroy this object during the hookscript (game will crash otherwise). To remove it, return 1.
+__NOTE:__ You can't remove and/or destroy this object during the hookscript (game will crash otherwise). To remove it, return 1.
 
 ```
 Critter arg0 - The user
 Obj     arg1 - The object used
 
-int     ret0 - overrides hard-coded handler and selects what should happen with the item (0 - place * it back, 1 - remove it, -1 - use engine handler)
+int     ret0 - overrides hard-coded handler and selects what should happen with the item (0 - place it back, 1 - remove it, -1 - use engine handler)
 ```
 -------------------------------------------
 
@@ -306,16 +306,16 @@ Obj     arg4 - The destination object when the item is moved to another object, 
 
 Runs whenever the value of goods being purchased is calculated.
 
-**NOTE**: the hook is executed twice when entering the barter screen or after transaction: the first time is for the player and the second time is for NPC.
+__NOTE:__ The hook is executed twice when entering the barter screen or after transaction: the first time is for the player and the second time is for NPC.
 
 ```
-critter arg0 - the critter doing the bartering (either `dude_obj` or `inven_dude`)
-critter arg1 - the critter being bartered with
+Critter arg0 - the critter doing the bartering (either `dude_obj` or `inven_dude`)
+Critter arg1 - the critter being bartered with
 int     arg2 - the default value of the goods
-critter arg3 - table of requested goods (being bought from NPC)
+Critter arg3 - table of requested goods (being bought from NPC)
 int     arg4 - the amount of actual caps in the barter stack (as opposed to goods)
 int     arg5 - the value of all goods being traded before skill modifications
-critter arg6 - table of offered goods (being sold to NPC)
+Critter arg6 - table of offered goods (being sold to NPC)
 int     arg7 - the total cost of the goods offered by the player
 int     arg8 - 1 if the "offers" button was pressed (not for a party member), 0 otherwise
 int     arg9 - 1 if trading with a party member, 0 otherwise
@@ -346,9 +346,9 @@ __DEPRECATED HOOKS:__
 
 Runs when checking to see if a hex blocks movement or shooting. (or ai-ing, presumably...)
 
-**NOTE:** these hook scripts can become very CPU-intensive and you should avoid using them.
-For this reason, they may be removed in future versions.
-If you want to check if some tile or path is blocked, use functions: `obj_blocking_tile`, `obj_blocking_line`, `path_find_to`.
+__NOTE:__ These hook scripts can become very CPU-intensive and you should avoid using them.
+For this reason, these hooks are not properly supported in sfall, and may be removed in future versions.  
+If you want to check if some tile or path is blocked, use functions: `obj_blocking_tile`, `obj_blocking_line`, `path_find_to`.  
 If you want script to be called every time NPC moves by hex in combat, use `HOOK_MOVECOST` hook.
 
 ```
@@ -373,7 +373,7 @@ Critter arg3 - The critter doing the attacking
 int     arg4 - The type of attack
 int     arg5 - non-zero if this is an attack using a melee weapon
 
-int     ret0 - Either the damage to be used, if ret2 isn't given, or the new minimum damage if it is
+int     ret0 - Either the damage to be used, if 'ret1' isn't given, or the new minimum damage if it is
 int     ret1 - The new maximum damage
 ```
 -------------------------------------------
@@ -382,7 +382,7 @@ int     ret1 - The new maximum damage
 
 Runs when calculating ammo cost for a weapon. Doesn't affect damage, only how much ammo is spent.
 By default, weapon will shoot when at least 1 round is left, regardless of ammo cost calculations.
-To add proper check for ammo before shooting and proper calculation of number of burst rounds (hook type 1 and 2 in arg4), set **Misc**, **CheckWeaponAmmoCost=1** in ddraw.ini
+To add proper check for ammo before shooting and proper calculation of number of burst rounds (hook type 1 and 2 in `arg3`), set **Misc**, **CheckWeaponAmmoCost=1** in ddraw.ini
 
 ```
 Item    arg0 - The weapon
@@ -405,7 +405,7 @@ Runs once every time when any key was pressed or released.
 - DX codes: see __dik.h__ header or https://kippykip.com/b3ddocs/commands/scancodes.htm
 - VK codes: http://msdn.microsoft.com/en-us/library/windows/desktop/dd375731%28v=vs.85%29.aspx
 
-**NOTE:** if you want to override a key, the new key DX scancode should be the same for both pressed and released events.
+__NOTE:__ If you want to override a key, the new key DX scancode should be the same for both pressed and released events.
 
 ```
 int     arg0 - event type: 1 - pressed, 0 - released
@@ -451,7 +451,7 @@ Runs when checking an attempt to steal or plant an item in other inventory using
 This is fired before the default handlers are called, which you can override. In this case you MUST provide message of the result to player (**"You steal the %s", "You are caught planting the %s"**, etc.).
 
 Example message (vanilla behavior):
-`display_msg(sprintf(mstr_skill(570 + (isSuccess != false) + arg4*2), obj_name(arg3)));`
+`display_msg(sprintf(mstr_skill(570 + (isSuccess != false) + arg3 * 2), obj_name(arg2)));`
 
 ```
 Critter arg0 - Thief
@@ -467,7 +467,11 @@ int     ret0 - overrides hard-coded handler (1 - force success, 0 - force fail, 
 
 Runs when checking if one critter sees another critter. This is used in different situations like combat AI. You can override the result.
 
-**NOTE:** `obj_can_see_obj` calls this first when deciding if critter can possibly see another critter with regard to perception, lighting, sneak factors. If check fails, the end result is false. If check succeeds (e.g. critter is within perception range), another check is made if there is any blocking tile between two critters (which includes stuff like windows, large bushes, barrels, etc.) and if there is - check still fails. You can override "within perception" check by returning 0 or 1, OR, as a convenience, you can also override blocking check after the perception check by returning 2 instead. In this case you should add "line of sight" check inside your hook script, otherwise critters will detect you through walls.
+__NOTE:__ `obj_can_see_obj` calls this first when deciding if critter can possibly see another critter with regard to perception, lighting, sneak factors.  
+If check fails, the end result is false. If check succeeds (e.g. critter is within perception range), another check is made if there is any blocking tile between  
+two critters (which includes stuff like windows, large bushes, barrels, etc.) and if there is - check still fails.  
+You can override "within perception" check by returning 0 or 1, OR, as a convenience, you can also override blocking check after the perception check by returning 2 instead.  
+In this case you should add "line of sight" check inside your hook script, otherwise critters will detect you through walls.
 
 This is fired after the default calculation is made.
 
@@ -522,7 +526,7 @@ int     ret0 - Override setting (-1 - use engine handler, any other value - prev
 Runs before causing a critter or the player to wield/unwield an armor or a weapon (except when using the inventory by PC).
 An example usage would be to change critter art depending on armor being used or to dynamically customize weapon animations.
 
-**NOTE:** when replacing a previously wielded armor or weapon, the unwielding hook will not be executed.
+__NOTE:__ When replacing a previously wielded armor or weapon, the unwielding hook will not be executed.
 If you need to rely on this, try checking if armor/weapon is already equipped when wielding hook is executed.
 
 ```
@@ -541,7 +545,7 @@ int     ret0 - overrides hard-coded handler (-1 - use engine handler, any other 
 Runs after calculating character figure FID on the inventory screen, whenever the game decides that character appearance might change.
 Also happens on other screens, like barter.
 
-**NOTE:** FID has following format: `0x0ABBCDDD`, where: `A` - is object type, `BB` - animation code (always 0 in this case), `C` - weapon code, `DDD` - FRM index in LST file.
+__NOTE:__ FID has following format: `0x0ABBCDDD`, where: `A` - is object type, `BB` - animation code (always 0 in this case), `C` - weapon code, `DDD` - FRM index in LST file.
 
 ```
 int     arg0 - the vanilla FID calculated by the engine according to critter base FID and armor/weapon being used
@@ -649,7 +653,7 @@ int     ret1 - overrides the result of engine calculation: 0/1 - failure, 2/3 - 
 Runs when using the examine action icon to display object description. You can override the description of the object.
 An example usage would be to add an additional description to the item based on player's stats/skills.
 
-**Note:** Not runs if the script of the object overrides the description.
+__NOTE:__ Not runs if the script of the object overrides the description.
 
 ```
 Obj     arg0 - the object
@@ -662,7 +666,7 @@ int     ret0 - a pointer to the new text received by using get_string_pointer fu
 
 Runs before using any skill on any object. Lets you override the critter that uses the skill.
 
-**NOTE:** the user critter can't be overridden when using Steal skill.
+__NOTE:__ The user critter can't be overridden when using Steal skill.
 
 ```
 Critter arg0 - the user critter (usually dude_obj)
@@ -753,7 +757,7 @@ int     ret1 - overrides the duration time for the current result
 
 Runs before or after Fallout engine executes a standard procedure (handler) in script of objects.
 
-**NOTE:** this hook will not be executed for `start`, `critter_p_proc`, `timed_event_p_proc`, and `map_update_p_proc` procedures.
+__NOTE:__ This hook will not be executed for `start`, `critter_p_proc`, `timed_event_p_proc`, and `map_update_p_proc` procedures.
 
 ```
 int     arg0 - the number of the standard script handler (see define.h)
@@ -790,7 +794,7 @@ int     arg1 - the map ID that the encounter will load (see MAPS.h or Maps.txt)
 int     arg2 - 1 when the encounter occurs is a special encounter, 0 otherwise
 
 int     ret0 - overrides the map ID, or pass -1 for event type 0 to cancel the encounter and continue traveling
-int     ret1 - pass 1 to cancel the encounter and load the specified map from the ret1 (only for event type 0)
+int     ret1 - pass 1 to cancel the encounter and load the specified map from the 'ret0' (only for event type 0)
 ```
 -------------------------------------------
 

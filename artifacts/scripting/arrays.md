@@ -10,8 +10,6 @@ Arrays can be extremely useful for some more advanced scripting, in conjunction 
 
 Arrays are created and manipulated with the array functions. An array must first be created with `create_array` or `temp_array`, specifying how many data elements the array can hold. You can store any of ints, floats and strings in an array, and can mix all 3 in a single array. The id returned by `create/temp_array` can then be used with the other array functions. Arrays are shared between all scripts. (i.e. you can call `create_array` from one script, and then use the returned id from another script.) They are also saved across savegames.
 
-*You must remember to free any arrays you create with `create_array` when you are done with them, or you will leak memory.*
-
 Arrays created with `temp_array` will be automatically freed at the end of the frame. These functions are safe, in that supplying a bad id or trying to access out of range elements will not crash the script. `create_array` is the only function that returns a permanent array, all other functions which return arrays (`string_split`, `list_as_array` etc,) all return temp arrays. You can use `fix_array` to make a temp array permanent.
 
 Array elements are accessed by index or key. _For example:_
@@ -227,15 +225,15 @@ use macros `sort_array`, `sort_array_reverse`, `reverse_array`, `shuffle_array` 
 
 #### `void save_array(mixed key, int arrayID)`
 - makes the array saveable; it will be saved in *sfallgv.sav* file when saving the game
-- **arrayID** is associated with given "key"
+- `arrayID` is associated with given "key"
 - array becomes permanent (if it was temporary) and "saved"
 - key can be of any type (int, float or string)
-- if you specify 0 as the key for the **array ID**, it will make the array "unsaved"
+- if you specify 0 as the key for the `arrayID`, it will make the array "unsaved"
 
 
 #### `int load_array(mixed key)`
 - load array from savegame data by the same key provided in `save_array`
-- **arrayID** is returned or zero (0) if none found
+- `arrayID` is returned or zero (0) if none found
 
 
 _*mixed - means any type_

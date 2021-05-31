@@ -27,7 +27,7 @@ The input functions are only available if the user has the input hook turned on 
 
 The graphics functions are only available if the user is using graphics mode 4 or 5. Use `graphics_funcs_available` to check, it returns 1 if you can use them or 0 if you can't. Calling graphics functions when `graphics_funcs_available` returns 0 will do nothing.
 
-The `load_shader` takes a path relative to the `"<GameRoot>\<master_patches>\shaders\"` directory as an argument and returns a shader ID. That ID should be passed as the first argument to all other shader functions, and is valid until `free_shader` is called on the ID, the player loads a saved game or the player quits to the main menu.
+The `load_shader` takes a path relative to the `<GameRoot>\<master_patches>\shaders\` directory as an argument and returns a shader ID. That ID should be passed as the first argument to all other shader functions, and is valid until `free_shader` is called on the ID, the player loads a saved game or the player quits to the main menu.
 
 The `get_shader_version` gives you the highest shader version supported by the player's graphics cards. Possible return values are 11, 12, 13, 14, 20, 21 and 30.
 
@@ -214,8 +214,8 @@ Data types mentioned in this document:
 -----
 ##### `void set_base_pickpocket_mod(int max, int mod)`
 - Changes maximum chance of success and chance mod for each steal attempt
-- `max` will replace 95% success chance cap (so you can set 100% maximum chance, for instance)
-- `mod` will add this much percent to each success chance. for example if your chance is 50% and `mod` is 20, you will get 70% actual success rate
+- `max`: will replace 95% success chance cap (so you can set 100% maximum chance, for instance)
+- `mod`: will add this much percent to each success chance. for example if your chance is 50% and `mod` is 20, you will get 70% actual success rate
 
 -----
 ##### `void set_critter_pickpocket_mod(object, int max, int mod)`
@@ -366,9 +366,11 @@ Data types mentioned in this document:
 
 -----
 ##### `float sin(float x)`
+- Sine of `x`
 
 -----
 ##### `float cos(float x)`
+- Cosine of `x`
 
 -----
 ##### `float tan(float x)`
@@ -381,7 +383,7 @@ Data types mentioned in this document:
 
 -----
 ##### `void register_hook_proc(int hook, procedure proc)`
-- Works just like "register_hook", but allows to specify which procedure to use for given hook script (instead of "start")
+- Works just like `register_hook`, but allows to specify which procedure to use for given hook script (instead of `start`)
 - use zero (0) as second argument to unregister hook script from current global script
 - only use in global scripts
 - second argument should be passed just like you pass procedures to functions like `gsay_option`, `giq_option`, etc (name without quotes)
@@ -1023,7 +1025,7 @@ Data types mentioned in this document:
 `int sfall_func2("interface_overlay", int winType, int mode)`  
 `int sfall_func6("interface_overlay", int winType, 2, int x, int y, int w, int h)`
 - Creates an additional drawing surface for the specified interface window, which will be located above the graphic layer of the interface window
-- `winType`: the type number of the interface window (see WINTYPE_* constants in sfall.h)
+- `winType`: the type number of the interface window (see `WINTYPE_*` constants in **sfall.h**)
 - `mode`:  
     1 - creates a new overlay surface  
     2 - clears the overlay area or the specified rectangle defined by the x, y, w, h arguments  
