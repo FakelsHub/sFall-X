@@ -622,7 +622,7 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 	}
 
 	// проверить достаточно ли имеется запасов патронов для выстрела очередью
-	if (!forceBurst && hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY && dist > 10 && statIQ > 5 && fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst &&
+	if (!forceBurst && hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY && dist >= 10 && statIQ > 5 && fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst &&
 		(weapon->item.charges - fo::func::item_w_rounds(weapon) <= 5 || AIInventory::CritterHaveAmmo(source, weapon) <= 5)) {
 		hitMode = fo::AttackType::ATKTYPE_RWEAPON_PRIMARY; // сохраняем количество патронов
 	}

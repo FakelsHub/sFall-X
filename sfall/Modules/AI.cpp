@@ -600,6 +600,28 @@ startLoop:
 	}
 }
 
+static long __fastcall CheckFireBurst(fo::GameObject* attacker, fo::GameObject* target, fo::GameObject* weapon) {
+	if (fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst) {
+		return !fo::func::combat_safety_invalidate_weapon_func(attacker, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY, target, 0, 0);
+	}
+	return 1; // allow
+}
+
+static void __declspec(naked) ai_pick_hit_mode_hack() {
+	__asm {
+		cmp  eax, 1;
+		je   isAllowed;
+		xor  eax, eax;
+		retn;
+isAllowed:
+		push ebp;      // item
+		mov  edx, edi; // target
+		mov  ecx, esi; // source
+		call CheckFireBurst;
+		retn;
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
 static void __declspec(naked) ai_try_attack_hack_check_safe_weapon() {
@@ -681,6 +703,12 @@ void AI::init() {
 		HookCall(0X4216A0, combat_safety_invalidate_weapon_func_hook);
 		HookCall(0x4216F7, combat_safety_invalidate_weapon_func_hack1); // jle combat_safety_invalidate_weapon_func_hack1
 		MakeCall(0x4217A0, combat_safety_invalidate_weapon_func_hack2);
+	}
+	if (checkBurstFriendlyFireMode >= 0) {
+		MakeCall(0x429F56, ai_pick_hit_mode_hack);
+		SafeWrite32(0x429F29, 0x01B8);     // mov eax, 1;
+		SafeWrite32(0x429F2D, 0x9026EB00); // jmp short 0x429F56
+		SafeWrite8(0x429E7D, 0xD5);        // jmp 0x429F56
 	}
 
 	/////////////////////// Combat behavior AI fixes ///////////////////////

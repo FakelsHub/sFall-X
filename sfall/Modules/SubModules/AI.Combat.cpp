@@ -622,10 +622,9 @@ TrySpendExtraAP:
 			fo::func::ai_move_steps_closer(source, fo::var::obj_dude, source->critter.getAP(), 0); // !!! здесь диспозиция stay не позволяет бежать к игроку !!!
 		} else {
 			if (!lastTarget) lastTarget = AIHelpers::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
+			if (lastTarget && fo::func::obj_dist(source, lastTarget) <= 1) fo::func::ai_try_attack(source, lastTarget);
 
-			if (fo::func::obj_dist(source, lastTarget) <= 1) fo::func::ai_try_attack(source, lastTarget);
-
-			fo::func::ai_run_away(source, lastTarget);                               // убегаем от потенцеально опасного криттера
+			fo::func::ai_run_away(source, lastTarget);                               // убегаем от потенцеально опасного криттера (или от игрока)
 			source->critter.combatState &= ~(fo::CombatStateFlag::EnemyOutOfRange | fo::CombatStateFlag::InFlee); // снять флаги после ai_run_away
 		}
 		return;
