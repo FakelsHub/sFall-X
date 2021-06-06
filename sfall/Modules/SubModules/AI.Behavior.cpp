@@ -1106,19 +1106,27 @@ static void __declspec(naked) ai_move_steps_closer_hack() {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-// Принудительно попробовать использовать прицельный выстрел вместо шанса 1/N, если цель атакующего находится в пределах 5-ти гексов
+// Принудительно использовать прицельную атаку c шансом 50% вместо 1/N, если цель атакующего находится в пределах 5-ти гексов
+// TODO: переписать алгоритм без использование вторичного шанса
 static void __declspec(naked) ai_called_shot_hook() {
 	__asm {
+		mov  ecx, edx;
 		call fo::funcoffs::roll_random_;
 		cmp  eax, 1;
 		jne  distCheck;
 		retn;
 distCheck:
+		cmp  ecx, 100; // cap.called_freq
+		jg   skip;
 		mov  edx, [esp + 0x1C - 0x14 + 4]; // target
 		mov  eax, esi; // source
 		call fo::funcoffs::obj_dist_;
 		cmp  eax, 5;
-		setbe al;
+		jg   skip; //setbe al;
+		mov  eax, 1;
+		lea  edx, [eax + 1];
+		call fo::funcoffs::roll_random_; // 50%
+skip:
 		retn;
 	}
 }
