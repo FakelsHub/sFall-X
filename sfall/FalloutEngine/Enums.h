@@ -339,6 +339,8 @@ enum ProtoID : unsigned long
 	PID_GORIS						= 0x01000098,
 
 	// scenery
+	PID_RAD_GOO_1                   = 0x020003D9,
+	PID_RAD_GOO_4                   = 0x020003DC,
 	PID_DRIVABLE_CAR				= 0x020003F1, // index 1009
 
 	// misc type

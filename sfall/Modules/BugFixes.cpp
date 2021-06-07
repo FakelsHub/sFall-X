@@ -84,6 +84,22 @@ static void Initialization() {
 	SafeWriteBytes(0x4CA9DC, (BYTE*)&data, 5); // mouse_get_position_
 }
 
+static std::vector<fo::AIcap> aiCapsBackup;
+
+static void combat_ai_init_backup() {
+	long num_caps = *(DWORD*)0x518060;
+	fo::AIcap* caps = *(fo::AIcap**)0x518064;
+
+	aiCapsBackup.resize(num_caps);
+	std::memcpy(&aiCapsBackup[0], caps, num_caps * sizeof(fo::AIcap));
+}
+
+static void combat_ai_reset() {
+	long num_caps = *(DWORD*)0x518060;
+	fo::AIcap* caps = *(fo::AIcap**)0x518064;
+	std::memcpy(caps, &aiCapsBackup[0], num_caps * sizeof(fo::AIcap));
+}
+
 // fix for vanilla negate operator not working on floats
 static void __declspec(naked) NegateFixHack() {
 	static const DWORD NegateFixHack_Back = 0x46AB77;
@@ -2079,6 +2095,14 @@ skip:
 	}
 }
 
+static void __declspec(naked) cai_cap_save_hook() {
+	__asm {
+		add  esi, 4;
+		mov  edx, [edx];
+		jmp  fo::funcoffs::db_fwriteInt_;
+	}
+}
+
 static void __declspec(naked) config_get_values_hack() {
 	static const DWORD config_get_values_hack_Get = 0x42C13F;
 	static const DWORD config_get_values_hack_OK = 0x42C14D;
@@ -3146,7 +3170,11 @@ void BugFixes::init()
 
 	// Missing game initialization
 	LoadGameHook::OnBeforeGameInit() += Initialization;
-	LoadGameHook::OnGameReset() += []() { dudeIsAnimDeath = false; };
+	LoadGameHook::OnAfterGameInit() += combat_ai_init_backup;
+	LoadGameHook::OnGameReset() += []() {
+		dudeIsAnimDeath = false;
+		combat_ai_reset();
+	};
 
 	// Fix vanilla negate operator for float values
 	MakeCall(0x46AB68, NegateFixHack);
@@ -3654,6 +3682,9 @@ void BugFixes::init()
 		SafeWrite8(0x4286C5, CodeType::JumpNZ); // jz > jnz (ai_check_drugs_)
 		dlogr(" Done", DL_FIX);
 	}
+
+	// Fix incorrect saving of chem_primary_desire values for party members AI-packet
+	HookCall(0x42803E, cai_cap_save_hook);
 
 	// Fix for config_get_values_ engine function not getting the last value in a list if the list has less than the requested
 	// number of values (for chem_primary_desire)

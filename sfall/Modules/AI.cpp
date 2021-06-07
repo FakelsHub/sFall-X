@@ -615,7 +615,7 @@ static void __declspec(naked) ai_pick_hit_mode_hack() {
 		retn;
 isAllowed:
 		cmp  ecx, 3;   // source IQ (no check for low IQ)
-		jle  skip;
+		jl   skip;
 		push ebp;      // item
 		mov  edx, edi; // target
 		mov  ecx, esi; // source

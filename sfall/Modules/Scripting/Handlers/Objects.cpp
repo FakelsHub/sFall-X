@@ -502,9 +502,9 @@ void mf_get_object_ai_data(OpcodeContext& ctx) {
 		case 13: value = cap->called_freq;      break;
 		case 14:
 			arrayId = CreateTempArray(3, 0);
-			arrays[arrayId].val[0].set(cap->chem_primary_desire);
-			arrays[arrayId].val[1].set(cap->chem_primary_desire1);
-			arrays[arrayId].val[2].set(cap->chem_primary_desire2);
+			arrays[arrayId].val[0].set(cap->chem_primary_desire[0]);
+			arrays[arrayId].val[1].set(cap->chem_primary_desire[1]);
+			arrays[arrayId].val[2].set(cap->chem_primary_desire[2]);
 			value = arrayId;
 			break;
 		default: ctx.printOpcodeError("%s() - invalid value for AI argument.", ctx.getMetaruleName());
