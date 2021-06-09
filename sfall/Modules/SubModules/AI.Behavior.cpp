@@ -1000,13 +1000,13 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 	__asm call fo::funcoffs::gmouse_bk_process_;
 
 	// check the path is clear
-	if (fo::func::make_path_func(source, source->tile, target->tile, 0, 0, AIHelpers::obj_ai_move_blocking_at_) > 0) {
+	if (game::Tilemap::make_path_func(source, source->tile, target->tile, 0, 0, AIHelpers::obj_ai_move_blocking_at_) > 0) {
 		DEV_PRINTF("\n[AI] ClearMovePath: free.");
 		// TODO: найти причину по которой путь строится для obj_ai_move_blocking_at_ но для obj_blocking_at_ это блокировано
-		if (fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
+		if (game::Tilemap::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
 			return target;
 		}
-		if (++recursiveDepth > 10) return nullptr;
+		if (++recursiveDepth > 5) return nullptr;
 
 		DEV_PRINTF("\n[AI] ClearMovePath: ClearWalkThru.");
 		ClearWalkThru();
@@ -1034,7 +1034,7 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 			moveBlockObjs.push_back(blockCritter);
 		}
 
-		long len = fo::func::make_path_func(blockCritter, blockCritter->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
+		long len = game::Tilemap::make_path_func(blockCritter, blockCritter->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
 		if (len) { // путь свободен от блокирующего криттера до цели
 			if (blockCritter->critter.teamNum != source->critter.teamNum || blockCritter->critter.IsNotActive()) return blockCritter;
 
@@ -1044,8 +1044,8 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 				dir = fo::func::tile_dir(blockCritter->tile, source->tile);
 			} else {
 				// проверить можно ли построить путь от source к блокирующему криттеру
-				char rotation[800];
-				len = fo::func::make_path_func(source, source->tile, blockCritter->tile, rotation, 0, (void*)fo::funcoffs::obj_blocking_at_);
+				uint8_t rotation[800];
+				len = game::Tilemap::make_path_func(source, source->tile, blockCritter->tile, rotation, 0, (void*)fo::funcoffs::obj_blocking_at_);
 				if (len == 0) {
 					DEV_PRINTF("\n[AI] ClearMovePath: don't make path from source to block critter.");
 					return nullptr; // нельзя!!!
@@ -1084,7 +1084,7 @@ static void __fastcall GetMoveObject(fo::GameObject* source, fo::GameObject* tar
 
 	ClearWalkThru();
 
-	fo::var::moveBlockObj = (blockObject && fo::func::make_path_func(source, source->tile, blockObject->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0)
+	fo::var::moveBlockObj = (blockObject && game::Tilemap::make_path_func(source, source->tile, blockObject->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0)
 	                      ? blockObject
 	                      : nearCritter;
 

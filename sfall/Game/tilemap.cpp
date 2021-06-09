@@ -4,6 +4,8 @@
  *
  */
 
+#include <array>
+
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\main.h"
 
@@ -114,13 +116,13 @@ long __fastcall Tilemap::tile_num_beyond(long sourceTile, long targetTile, long 
 	long diffY_x2 = 2 * std::abs(diffY);
 
 	const int step = 4;
-	long stepCounter = step - 1;
+	long stepCounter = 1;
 
 	if (diffX_x2 > diffY_x2) {
 		long stepY = diffY_x2 - (diffX_x2 >> 1);
 		while (true)
 		{
-			if (++stepCounter == step) {
+			if (!--stepCounter) {
 				long tile = fo::func::tile_num(target_X, target_Y);
 				//fo::func::debug_printf("\ntile_num: %d [x:%d y:%d]", tile, target_X, target_Y);
 				if (tile != lastTile) {
@@ -131,7 +133,7 @@ long __fastcall Tilemap::tile_num_beyond(long sourceTile, long targetTile, long 
 					//}
 					lastTile = tile;
 				}
-				stepCounter = 0;
+				stepCounter = step;
 			}
 			if (stepY >= 0) {
 				stepY -= diffX_x2;
@@ -155,7 +157,7 @@ long __fastcall Tilemap::tile_num_beyond(long sourceTile, long targetTile, long 
 		long stepX = diffX_x2 - (diffY_x2 >> 1);
 		while (true)
 		{
-			if (++stepCounter == step) {
+			if (!--stepCounter) {
 				long tile = fo::func::tile_num(target_X, target_Y);
 				//fo::func::debug_printf("\ntile_num: %d [x:%d y:%d]", tile, target_X, target_Y);
 				if (tile != lastTile) {
@@ -166,7 +168,7 @@ long __fastcall Tilemap::tile_num_beyond(long sourceTile, long targetTile, long 
 					//}
 					lastTile = tile;
 				}
-				stepCounter = 0;
+				stepCounter = step;
 			}
 			if (stepX >= 0) {
 				stepX -= diffY_x2;
@@ -188,8 +190,192 @@ static void __declspec(naked) tile_num_beyond_hack() {
 	}
 }
 
+struct sfChild {
+	long tile;
+	long from_tile;
+	long distance;
+	uint16_t accumulator; // the higher the value, the less likely it is to use this tile to build a path
+	char rotation;
+};
+
+static std::array<sfChild, 2000> m_pathData;
+static std::array<sfChild, 2000> m_dadData;
+static std::array<uint8_t, 5000> seenTile;
+
+static __forceinline fo::GameObject* CheckTileBlocking(void* blockFunc, long tile, fo::GameObject* object) {
+	using namespace fo::Fields;
+	__asm {
+		mov  eax, object;
+		mov  edx, tile;
+		mov  ebx, [eax + elevation];
+		call blockFunc;
+		//mov  object, eax;
+	}
+	//return object;
+}
+
+// idist_
+static __inline long DistanceFromPositions(long sX, long sY, long tX, long tY) {
+	long diffX = std::abs(tX - sX);
+	long diffY = std::abs(tY - sY);
+	long minDiff = (diffX <= diffY) ? diffX : diffY;
+	return (diffX + diffY) - (minDiff >> 1);
+}
+
+// optimized version
+long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTile, long targetTile, uint8_t* arrayRotation, long checkTargetTile, void* blockFunc) {
+
+	if (checkTargetTile && fo::func::obj_blocking_at_wrapper(srcObject, targetTile, srcObject->elevation, blockFunc)) return 0;
+
+	bool inCombat = fo::var::combat_state & fo::CombatStateFlag::InCombat;
+	char critterType = fo::KillType::KILL_TYPE_men;
+
+	bool isCritter = srcObject->IsCritter();
+	if (isCritter) {
+		critterType = fo::func::critter_kill_count_type(srcObject);
+	}
+
+	seenTile.fill(0);
+	seenTile[sourceTile >> 3] = 1 << (sourceTile & 7);
+
+	auto& it = m_pathData.begin();
+	it->tile = sourceTile;
+	it->from_tile = -1;
+	it->distance = fo::func::tile_idistance(sourceTile, targetTile); // maximum distance
+	it->rotation = 0;
+	it->accumulator = 0;
+	while (++it != m_pathData.end()) it->tile = -1;
+
+	long targetX, targetY;
+	fo::func::tile_coord(targetTile, &targetX, &targetY);
+
+	auto& dadData = m_dadData.begin();
+	size_t pathCounter = 1;
+	sfChild childData;
+
+	// search path tiles
+	while (true)
+	{
+		auto& pathData = m_pathData.begin();
+		if (pathCounter > 0) {
+			size_t counter = 0;
+			long prevDistance;
+
+			// search for the element with the smallest distance
+			for (auto currData = pathData; currData != m_pathData.end(); ++currData)
+			{
+				if (currData->tile != -1) {
+					long currDistance = currData->distance + currData->accumulator;
+					if (counter == 0 || currDistance < prevDistance) {
+						prevDistance = currDistance;
+						pathData = currData;
+					}
+					if (++counter >= pathCounter) break;
+				}
+			}
+		}
+		childData = *pathData; // copy element data
+		pathData->tile = -1;   // set a free element
+		pathCounter--;
+
+		if (childData.tile == targetTile) break; // exit the loop path is built
+
+		*dadData = childData;
+		if (++dadData == m_dadData.end()) return 0; // path can't be built reached the end of the array (limit the maximum path length)
+
+		char rotation = 0;
+		do {
+			long tile = fo::func::tile_num_in_direction(childData.tile, rotation, 1);
+
+			long seenIndex = tile >> 3;
+			uint8_t seenMask = 1 << (tile & 7);
+			if (!(seenTile[seenIndex] & seenMask)) {
+				seenTile[seenIndex] |= seenMask;
+
+				if (tile != targetTile) {
+					fo::GameObject* objBlock = CheckTileBlocking(blockFunc, tile, srcObject);
+					if (objBlock) {
+						// Fix for building the path to the central hex of a multihex object (from BugFixes.cpp)
+						if (objBlock->tile != targetTile) {
+							if (!fo::func::anim_can_use_door(srcObject, objBlock)) continue; // block - next rotation
+						} else {
+							targetTile = tile; // replace the target tile (where the multihex object is located) with the current tile
+						}
+					}
+				}
+				if (++pathCounter >= 2000) {
+					//BREAKPOINT
+					return 0; // ограничение максимальной длины пути?
+				}
+
+				pathData = m_pathData.begin();
+				while (pathData->tile != -1) ++pathData; // search the first free element
+
+				pathData->tile = tile;
+				pathData->from_tile = childData.tile;
+				pathData->rotation = rotation;
+				pathData->accumulator = childData.accumulator + 50; // here childData.accumulator has the value
+
+				if (!inCombat && rotation != childData.rotation) pathData->accumulator += 10;
+
+				long x, y;
+				fo::func::tile_coord(tile, &x, &y);
+				pathData->distance = DistanceFromPositions(x, y, targetX, targetY);
+
+				if (isCritter) {
+					fo::GameObject* object = fo::func::obj_find_first_at_tile(srcObject->elevation, tile);
+					while (object) {
+						// TODO: add check other PIDs
+						if (object->protoId >= fo::ProtoID::PID_RAD_GOO_1 && object->protoId <= fo::ProtoID::PID_RAD_GOO_4) {
+							pathData->accumulator += (critterType == fo::KillType::KILL_TYPE_gecko) ? 100 : 400;
+							break;
+						}
+						object = fo::func::obj_find_next_at_tile();
+					}
+				}
+			}
+		} while (++rotation < 6);
+		if (!pathCounter) return 0; // the path can't be built
+	}
+
+	size_t pathLen = 0;
+	uint8_t* array = arrayRotation;
+	// building and calculating the path length
+	do {
+		if (childData.tile == sourceTile) break; // reached the source tile
+		if (array) *array++ = childData.rotation;
+
+		while (childData.from_tile != dadData->tile) --dadData; // search a linked tile 'from -> tile'
+		childData = *dadData;
+	} while (++pathLen < 800);
+
+	if (arrayRotation && pathLen > 1) {
+		// reverse the array values
+		size_t count = pathLen >> 1;
+		do {
+			uint8_t last = *--array;
+			*array = *arrayRotation; // last < front
+			*arrayRotation++ = last;
+		} while (--count);
+	}
+	return pathLen;
+}
+
+//static void __declspec(naked) make_path_func_hack() {
+//	__asm {
+//		xchg [esp], ecx; // ret addr <> array
+//		push ebx;        // target tile
+//		push ecx;        // ret addr
+//		mov  ecx, eax;
+//		jmp  Tilemap::make_path_func;
+//	}
+//}
+
 void Tilemap::init() {
 	sf::MakeJump(fo::funcoffs::tile_num_beyond_ + 1, tile_num_beyond_hack); // 0x4B1B84
+
+	// test
+	//sf::MakeJump(fo::funcoffs::make_path_func_, make_path_func_hack); // 0x415EFC
 }
 
 }

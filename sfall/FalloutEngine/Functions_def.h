@@ -19,7 +19,6 @@
 	because the compiler builds the better/optimized code when calling the engine functions
 */
 WRAP_WATCOM_FFUNC4(long, _word_wrap, const char*, text, int, maxWidth, DWORD*, buf, BYTE*, count)
-WRAP_WATCOM_FFUNC4(long, queue_add, long, time, fo::GameObject*, object, void*, data, long, qType)
 WRAP_WATCOM_FFUNC4(fo::GameObject*, ai_best_weapon, fo::GameObject*, source, fo::GameObject*, prevItem, fo::GameObject*, checkItem, fo::GameObject*, target)
 WRAP_WATCOM_FFUNC3(bool, ai_can_use_weapon, fo::GameObject*, critter, fo::GameObject*, item, DWORD, hitMode)
 WRAP_WATCOM_FFUNC4(long, ai_find_attackers, fo::GameObject*, source, fo::GameObject**, outTarget1, fo::GameObject**, outTarget2, fo::GameObject**, outTarget3)
@@ -69,6 +68,7 @@ WRAP_WATCOM_FFUNC4(long, obj_move_to_tile, fo::GameObject*, object, long, tile, 
 WRAP_WATCOM_FFUNC3(long, obj_new_sid_inst, fo::GameObject*, object, long, sType, long, scriptIndex)
 WRAP_WATCOM_FFUNC3(fo::GameObject*, object_under_mouse, long, crSwitch, long, inclDude, long, elevation)
 WRAP_WATCOM_FFUNC4(void, qsort, void*, base, long, number, long, elSize, DWORD, comp)
+WRAP_WATCOM_FFUNC4(long, queue_add, long, time, fo::GameObject*, object, void*, data, long, qType)
 WRAP_WATCOM_FFUNC4(void, register_object_call, long*, target, long*, source, void*, func, long, delay)
 WRAP_WATCOM_FFUNC4(long, register_object_move_to_object, fo::GameObject*, source, fo::GameObject*, target, long, distance, long, delay)
 WRAP_WATCOM_FFUNC5(long, register_object_move_to_tile, fo::GameObject*, source, long, tile, long, elev, long, distance, long, delay)
@@ -99,6 +99,7 @@ WRAP_WATCOM_FUNC2(fo::GameObject*, ai_search_environ, fo::GameObject*, critter, 
 WRAP_WATCOM_FUNC1(fo::GameObject*, ai_search_inven_armor, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC2(long, ai_try_attack, fo::GameObject*, source, fo::GameObject*, target)
 WRAP_WATCOM_FUNC1(fo::Program*, allocateProgram, const char*, filePath)
+WRAP_WATCOM_FUNC2(long, anim_can_use_door, fo::GameObject*, source, fo::GameObject*, object)
 WRAP_WATCOM_FUNC1(bool, art_exists, long, artFid)
 WRAP_WATCOM_FUNC0(void, art_flush)
 WRAP_WATCOM_FUNC1(const char*, art_get_name, long, artFID)
@@ -127,6 +128,7 @@ WRAP_WATCOM_FUNC2(long, combat_turn, fo::GameObject*, critter, long, isDudeTurn)
 WRAP_WATCOM_FUNC1(long, critter_body_type, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC2(long, critter_compute_ap_from_distance, fo::GameObject*, critter, long, distance)
 WRAP_WATCOM_FUNC1(long, critter_is_dead, fo::GameObject*, critter)
+WRAP_WATCOM_FUNC1(long, critter_kill_count_type, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC1(long, critterIsOverloaded, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC1(void, EndLoad, fo::DbFile*, file)
 // Execute script proc by internal proc number (from script's proc table, basically a sequential number of a procedure as defined in code, starting from 1)
@@ -289,6 +291,7 @@ WRAP_WATCOM_FUNC1(void, stat_pc_add_experience, long, amount) // Adds experience
 WRAP_WATCOM_FUNC1(long, text_font, long, fontNum)
 WRAP_WATCOM_FUNC2(long, tile_dist, long, scrTile, long, dstTile)
 WRAP_WATCOM_FUNC2(long, tile_dir, long, scrTile, long, dstTile)
+WRAP_WATCOM_FUNC2(long, tile_idistance, long, sourceTile, long, targetTile)
 WRAP_WATCOM_FUNC1(long, tile_on_edge, long, tile)
 WRAP_WATCOM_FUNC0(void, tile_refresh_display) // Redraws the whole screen
 WRAP_WATCOM_FUNC2(void, tile_refresh_rect, fo::BoundRect*, boundRect, long, elevation) // Redraws the given rectangle on screen
