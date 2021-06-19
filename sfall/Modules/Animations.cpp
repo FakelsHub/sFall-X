@@ -320,7 +320,7 @@ static BYTE __fastcall CheckLockAnimSlot(long, long slot) {
 }
 
 static long __fastcall LockAnimSlot(long slot) {
-	if (animSet[slot].counter != animSet[slot].totalAnimCount) {
+	if (slot < animationLimit && animSet[slot].counter != animSet[slot].totalAnimCount) {
 		lockAnimSet[slot] = 8;
 	}
 	return slot;
@@ -561,6 +561,7 @@ void Animations::init() {
 
 		lockAnimSet.resize(animationLimit);
 		lockLimit = animationLimit / 2;
+		animationLimit -= 1; // this is necessary so as not to block the last slot
 
 		LoadGameHook::OnGameReset() += ClearAllLock;
 	}

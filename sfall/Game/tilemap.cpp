@@ -228,11 +228,11 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 	if (checkTargetTile && fo::func::obj_blocking_at_wrapper(srcObject, targetTile, srcObject->elevation, blockFunc)) return 0;
 
 	bool inCombat = fo::var::combat_state & fo::CombatStateFlag::InCombat;
-	char critterType = fo::KillType::KILL_TYPE_men;
+	int8_t critterType = fo::KillType::KILL_TYPE_men;
 
 	bool isCritter = srcObject->IsCritter();
 	if (isCritter) {
-		critterType = fo::func::critter_kill_count_type(srcObject);
+		critterType = static_cast<int8_t>(fo::func::critter_kill_count_type(srcObject));
 	}
 
 	seenTile.fill(0);
