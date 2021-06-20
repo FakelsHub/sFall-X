@@ -448,16 +448,24 @@ static void __fastcall QuestListSort(fo::QuestData* questList, size_t numElemets
 	fo::QuestData* tmpList = new fo::QuestData[numElemets];;
 	std::memcpy(tmpList, questList, numElemets * sizeof(fo::QuestData));
 
-	long locStart = 1500; // number from which the locations starting
+	long locStart = 1500; // number message from which the locations starting
 	size_t leftStart = 0;
+	long locLast = 0;
+
+	for (size_t i = 0; i < numElemets; i++)
+	{
+		long loc = tmpList[i].location;
+		if (locStart > loc) locStart = loc;
+		if (loc > locLast) locLast = loc;
+	}
 
 	for (size_t i = 0; i < numElemets;)
 	{
 		for (size_t j = leftStart; j < numElemets; j++)
 		{
 			if (!tmpList[j].location) {
-			    if ((j - leftStart) == 1) leftStart = j;
-			    continue;
+				if ((j - leftStart) == 1) leftStart = j;
+				continue;
 			}
 			if (tmpList[j].location == locStart) {
 				// unsorted?
@@ -466,7 +474,7 @@ static void __fastcall QuestListSort(fo::QuestData* questList, size_t numElemets
 				tmpList[j].location = 0;
 			}
 		}
-		locStart++;
+		if (++locStart > locLast) break;
 	}
 	delete[] tmpList;
 }
