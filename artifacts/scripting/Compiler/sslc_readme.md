@@ -6,11 +6,11 @@ Unlike the original script compiler, this has not been compiled as a dos program
 
 If you use fallout script editor, you can extract `compile.exe` and `dos4gw.exe` to its `\binary` folder, or extract them somewhere else and change your preferences in FSE to point there. FSE doesn't seem to be able to tell when errors occur when using this compiler though, so I'd recommend either using sfall's script editor instead or compiling by hand if possible.
 
-When compiling global or hook scripts for sfall 3.4 or below, you _must_ include the line `procedure start;` before any `#include`s that define procedures to avoid a few weird problems. (this is no longer required starting from 3.5)
+When compiling global or hook scripts for sfall 3.4 or below, you _must_ include the line `procedure start;` before any `#includes` that define procedures to avoid a few weird problems. (this is no longer required starting from 3.5)
 
 This version of compiler was designed primarily for new sfall functions, but it can safely (and is recommended) to be used with non-sfall scripts as well, as long as you don't use any of the arrays syntax and any sfall scripting functions.
 
-The original unmodified sslc source is over here: [http://www.teamx.ru/eng/files/srcs/index.shtml](http://www.teamx.ru/eng/files/srcs/index.shtml).
+The original unmodified sslc source is over here: [http://www.teamx.ru/site_arc/utils/index.html](http://www.teamx.ru/site_arc/utils/index.html).
 
 ## Command line options
 
@@ -19,8 +19,8 @@ The original unmodified sslc source is over here: [http://www.teamx.ru/eng/files
 -n  no warnings
 -b  backward compatibility mode
 -l  no logo
--p  preprocess source
--O  optimize code (full, see optimization.txt)
+-p  preprocess source (don't generate .int)
+-O  optimize code (full by default, see optimization.md)
 -O<N> set specific level of optimization (0 - off, 1 - basic, 2 - full, 3 - experimental)
 -d  print debug messages
 -D  output an abstract syntax tree of the program
@@ -34,7 +34,7 @@ The original command line option `-w` to turn on warnings no longer has an effec
 
 ## Additional supported syntax
 
-Syntax which requires sfall for compiled scripts to be interpreted, is marked by asterix (*).
+Syntax which requires sfall for compiled scripts to be interpreted, is marked by asterix [*].
 
 - Optional arguments in user-defined procedures. You can only use constants for default values. It basically puts those constants in place of omitted arguments.
 
@@ -71,6 +71,7 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
 
   __NOTE:__ Be aware that it may break some old scripts because operators behavior is changed slightly.
 
+
 - Conditional expressions (Python-inspired), also known as ternary operator:
   - new:
     ```
@@ -94,7 +95,7 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     x := 5;
     ```
 
--  Multiple variable declaration: Multiple variables can be declared on one line, seperated by commas. This is an alterative to the ugly begin/end block, or the bulky single variable per line style.
+- Multiple variable declaration: Multiple variables can be declared on one line, seperated by commas. This is an alterative to the ugly begin/end block, or the bulky single variable per line style.
   - new:
     ```
     variable a, b, c;
@@ -116,6 +117,7 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     ```
   __NOTE:__ if your expression starts with a constant (eg. `2 + 2`), enclose it in parentheses, otherwise compiler will be confused and give you errors.
 
+
 - Hexadecimal numerical constants: Simply prefix a number with `0x` to create a hexadecimal. The numbers `0` to `9` and `A-F` are allowed in the number. The number may not have a decimal point.
   - new:
     ```
@@ -136,7 +138,7 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     a += 1;
     ```
 
-- `break` & `continue` statements: they work just like in most high-level languages. `break` jumps out of the loop. `continue` jumps right to the beginning of the next iteration (see `for` and `foreach` sections for additional details).
+- `break` & `continue` statements: They work just like in most high-level languages. `break` jumps out of the loop. `continue` jumps right to the beginning of the next iteration (see `for` and `foreach` sections for additional details).
   - new:
     ```
     while (i < N) begin
@@ -193,6 +195,7 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     ```
   __NOTE:__ `continue` statement in a `for` loop will recognize increment statement (third statement in parentheses) and will execute it before jumping back to the beginning of loop. This way you will not get an endless loop.
 
+
 - `switch` statements: A shorthand way of writing big `if then else if...` blocks
   - new:
     ```
@@ -215,7 +218,7 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     end
     ```
 
-- empty statements in blocks are allowed: This is just a convenience to save scripters a bit of memory. Some of the macros in the fallout headers include their own semicolons while others do not. With the original compiler you had to remember which was which, and if you got it wrong the script would not compile. Now it's always safe to include your own semicolon, even if the macro already had its own. For example, this would not compile with the original sslc, but will with the sfall edition:
+- Empty statements in blocks are allowed: This is just a convenience to save scripters a bit of memory. Some of the macros in the fallout headers include their own semicolons while others do not. With the original compiler you had to remember which was which, and if you got it wrong the script would not compile. Now it's always safe to include your own semicolon, even if the macro already had its own. For example, this would not compile with the original sslc, but will with the sfall edition:
   ```
   #define my_macro diplay_msg("foo");
 
@@ -223,12 +226,10 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     my_macro;
   end
   ```
+  __NOTE:__ **Does not work currently!**
+
 
 - Procedure stringify operator `@`: designed to make callback-procedures a better option and allow for basic functional programming. Basically it replaces procedure names preceeded by `@` by a string constant.
-  Not many people know that since vanilla Fallout you can call procedures by "calling a variable" containing it's name as a string value. There was a couple of problems using this:
-  - optimizer wasn't aware that you are referencing a procedure, and could remove it, if you don't call it explicitly (can be solved by adding making procedure "critical")
-  - you couldn't see all references of a procedure from a Script Editor
-  - it was completely not obvious that you could do such a thing, it was a confusing syntax
   - old:
     ```
     callbackVar := "Node000";
@@ -239,8 +240,13 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     callbackVar := @Node000;
     callbackVar();
     ```
+  Not many people know that since vanilla Fallout you can call procedures by "calling a variable" containing it's name as a string value. There was a couple of problems using this:
+  - optimizer wasn't aware that you are referencing a procedure, and could remove it, if you don't call it explicitly (can be solved by adding making procedure `critical`)
+  - you couldn't see all references of a procedure from a Script Editor
+  - it was completely not obvious that you could do such a thing, it was a confusing syntax
 
-- **Arrays**: In vanilla fallout arrays had to be constructed by reserving a block of global/map variables. Since sfall 2.7, specific array targeted functions have been available, but they are fairly messy and long winded to use. The compiler provides additional syntactic shorthand for accessing and setting array variables, as well as for array creation. When declaring an array variable, put a constant integer in []'s to give the number of elements in the array. (before sfall 3.4 you had to specify size in bytes for array elements, now it's not required, see **arrays.md** for more information)
+
+- [*] **Arrays**: In vanilla fallout arrays had to be constructed by reserving a block of global/map variables. Since sfall 2.7, specific array targeted functions have been available, but they are fairly messy and long winded to use. The compiler provides additional syntactic shorthand for accessing and setting array variables, as well as for array creation. When declaring an array variable, put a constant integer in `[]` to give the number of elements in the array. (before sfall 3.4 you had to specify size in bytes for array elements, now it's not required, see **arrays.md** for more information)
   - new:
     ```
     procedure bingle begin
@@ -261,7 +267,7 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     end
     ```
 
-- **Array expressions**: sometimes you need to construct an array of elements and you will probably want to do it in just one expression. This is now possible:
+- [*] **Array expressions**: sometimes you need to construct an array of elements and you will probably want to do it in just one expression. This is now possible:
   - new:
     ```
     list := ["A", "B", "C", "D"];
@@ -276,12 +282,13 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     ```
   Syntax specific for associative arrays is also available. (see **arrays.md** for full introduction to this type of arrays).
 
-- **Map array expressions:**
+
+- [*] **Map array expressions:**
   ```
   map := {5: "five", 10: "ten", 15: "fifteen", 20: "twelve"};
   ```
 
-- "dot" syntax to access elements of associative arrays. "dot" syntax allows to work with arrays like objects:
+- [*] The dot `.` syntax to access elements of associative arrays and allows to work with arrays like objects:
   ```
   trap.radius := 3;
   trap.tile := tile_num(dude_obj);
@@ -290,10 +297,10 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
   ```
   collectionList[5].objectList[5].name += " foo";
   ```
+  __NOTE:__ when using incremental operators like `+=`, `*=`, `++`, `--` compiler will use additional temp variable to get an array at penultimate level in order to avoid making the same chain of `get_array` calls twice.
 
-  __NOTE:__ when using incremental operators like `+=`, `*=`, `++`, `--` compiler will use additional temp variable to get an array at penultimate level in order to avoid making the same chain of "get_array" calls twice.
 
-- `foreach` loops: A shorthand method of looping over all elements in an array. Syntax is `foreach (<symbol> in <expression>)`.
+- [*] `foreach` loops: A shorthand method of looping over all elements in an array. Syntax is `foreach (<symbol> in <expression>)`.
   - new:
     ```
     procedure bingle begin
@@ -318,16 +325,16 @@ Syntax which requires sfall for compiled scripts to be interpreted, is marked by
     ```
 	
     If you want an index array element (or key for "maps") at each iteration, use syntax: `foreach (<symbol>: <symbol> in <expression>)`
-  ```
-  foreach (pid: price in itemPriceMap) begin
-    if (itemPid == pid) then
-      itemPrice := price;
-  end
-  ```
+    ```
+    foreach (pid: price in itemPriceMap) begin
+      if (itemPid == pid) then
+        itemPrice := price;
+    end
+    ```
   
-   If you want to add additional condition for continuing the loop, use syntax: `foreach (<symbol> in <expression> while <expression>)`. In this case loop will iterate over elements of an array until last element or until "while" expression is true (whatever comes first).
+    If you want to add additional condition for continuing the loop, use syntax: `foreach (<symbol> in <expression> while <expression>)`. In this case loop will iterate over elements of an array until last element or until "while" expression is true (whatever comes first).
 
-   __NOTE:__ just like `for` loop, "continue" statement will respect increments of a hidden counter variable, so you can safely use it inside `foreach`.
+    __NOTE:__ just like `for` loop, `continue` statement will respect increments of a hidden counter variable, so you can safely use it inside `foreach`.
 
 ---
 ## int2ssl note
@@ -350,68 +357,71 @@ There are several changes in this version of sslc which may result in problems f
 ---
 ## Changelog
 
-> sslc v1.2.3:
-- added additional opcodes sfall_func7 and sfall_func8 for sfall 4.2.9/3.8.29
+> **sslc v1.2.3:**
+- added additional opcodes `sfall_func7` and `sfall_func8` for sfall 4.2.9/3.8.29
 - fixed a script compilation error when there is a BOM UTF-8 encoding marker
 
-> sslc v1.2.2:
+> **sslc v1.2.2:**
 - added ability to declare a local variable procedures anywhere in the procedure body
 
-> sslc v1.2:
-- added new "div" operator for unsigned integer division for sfall 4.2.3/3.8.23
-- added new logical operators "andAlso", "orElse" for short-circuit evaluation of logical expressions
+> **sslc v1.2:**
+- added new `div` operator for unsigned integer division for sfall 4.2.3/3.8.23
+- added new logical operators `andAlso`, `orElse` for short-circuit evaluation of logical expressions
 - added an alternative (C/Java-style) assignment operator
 - fixed compiler giving "assignment operator expected" error when a variable-like macro is not being defined properly
 
-> sslc v1.1:
-- added new opcode reg_anim_callback for sfall 4.2.2/3.8.22
+> **sslc v1.1:**
+- added new opcode `reg_anim_callback` for sfall 4.2.2/3.8.22
 - the basic optimization is now enabled by default when not specifying any optimization options
-- unreferenced "critical" procedures and procedures with the names "Node998" and "Node999" are now removed by the optimizer
+- unreferenced `critical` procedures and procedures with the names `Node998` and `Node999` are now removed by the optimizer
 
-> sslc v1.0:
-- added new opcode register_hook_proc_spec for sfall 4.2/3.8.20
-- added -m<macro[=val]> option to define a macro named "macro" for conditional compilation
-- added -I<path> option to specify an additional directory to search for include files
+> **sslc v1.0:**
+- added new opcode `register_hook_proc_spec` for sfall 4.2/3.8.20
+- added `-m<macro[=val]>` option to define a macro named "macro" for conditional compilation
+- added `-I<path>` option to specify an additional directory to search for include files
 - now it is possible to run preprocess or optimization passes in backward compatibility mode
 
-> sfall 4.0:
-- enabled code for "ceil" math function
-- fixed missing argument for "how_much" function
-- added "desc_p_proc" (from Fallout 1) to protected procedures that should not be removed by the optimizer
+> **sfall 4.0:**
+- enabled code for `ceil` math function
+- fixed missing argument for `how_much` function
+- added `desc_p_proc` (from Fallout 1) to protected procedures that should not be removed by the optimizer
 - fixed compiler giving "division by zero" error when using zero as the second factor in multiplication
 
-> sfall 3.6:
+> **sfall 3.8:**
+- added support for new universal opcodes `sfall_funcX`
+
+> **sfall 3.6:**
 - added python-style ternary operator (conditional expression)
-- added -s short-circuit evalution option for AND, OR expressions
-- int2ssl will detect and decompile conditional expressions and short-circuit logical operators
-- added -F option to include full file paths in "#line" directives after preprocessing
-- added -D option to write abstract syntax tree into .txt file
+- added `-s` short-circuit evalution option for `AND`, `OR` expressions
+- **int2ssl** will detect and decompile conditional expressions and short-circuit logical operators
+- added `-F` option to include full file paths in `#line` directives after preprocessing
+- added `-D` option to write abstract syntax tree into `.txt` file
 - fixed compiler crash when number of arguments in procedure declaration does not match definition
-- fixed incorrect constant folding of "bwnot" operator
+- fixed incorrect constant folding of `bwnot` operator
 - fixed more invalid results in constant folding
 - implemented optional arguments for user-defined procedures
-- implemented stringify procedure names using @ operator, which is helpful to pass procedures around to call them from variables (it will properly handle references)
+- implemented stringify procedure names using `@` operator, which is helpful to pass procedures around to call them from variables (it will properly handle references)
 - logic for procedures passed as arguments to scripting functions was moved from code generation to parsing stage
 - now it is possible to call user-defined procedures inside argument list of scripting functions, without compiler attempting to treat them as procedure references and probably fail (procedures will still be passed, but only to appropriate scripting functions at appropriate argument positions)
-- int2ssl will now place empty parantheses after a call to user-defined procedure - this will distinct calls from passing procedures to some scripting functions (like giq_option)
-- fixed inline procedure "calls" not working when optimization is enabled
+- **int2ssl** will now place empty parantheses after a call to user-defined procedure - this will distinct calls from passing procedures to some scripting functions (like giq_option)
+- fixed `inline` procedure "calls" not working when optimization is enabled
 - added column numbers to error/warning output
 - added code to simplify adding sfall opcodes into compiler (need to add code in 3 places, instead of 7 places for each opcode)
 - fixed bug when initializing variable with expression starting from a symbol
 - added division by zero constant check
 
-> sfall 3.5:
+> **sfall 3.5:**
 - completed namespace compression optimization with respect to imported/exported variables
-- changed 'for' and 'foreach' syntax to allow parentheses which are easier to read IMHO
+- changed `for` and `foreach` syntax to allow parentheses which are easier to read IMHO
 - heavy code refactoring - split "parse.c" into several files, replaced all dirty workaround code in "lex()" (some syntax features) with parser-level equivalents
-- added syntax to reference elements in multi-dimensional arrays (unlimited sequence of brackets [] and dots . )
-- added fully featured "break" and "continue" statements for loops
+- added syntax to reference elements in multi-dimensional arrays (unlimited sequence of brackets `[]` and dots `.`)
+- added fully featured `break` and `continue` statements for loops
 - moved some optimizations (namely constant propagation and variable reuse) to "experimental" because they were breaking my scripts
 - added ability to initialize variables with expressions
 
-> sfall 3.4:
-- added "foreach .. while .." syntax
+> **sfall 3.4:**
+- added `foreach .. while ..` syntax
 - added array expressions for lists and maps
-- added "foreach (key: value in ...)" syntax for convenience
-- fixed crash bug in "for" loop parsing function
-- added ability to access array elements with string keys using OOP-like dot (".") syntax
+- added `foreach (key: value in ...)` syntax for convenience
+- fixed crash bug in `for` loop parsing function
+- added ability to access array elements with string keys using OOP-like dot `.` syntax

@@ -2,7 +2,7 @@
 
 The executation speed of scripts is not typically important in an unmodded game, given the difference in performance between a modern computer and what Fallout was designed for. When you start adding mods to the mix there's the potential for problems again, since sfall's global script system means that you can have a large amount of scripts being run every single frame.
 
-#### SSLC: -O option
+### SSLC: -O option
 The sfall build of sslc supports a -O command line option to perform an optimization pass over the generated code. This isn't a magic make-my-code-go-faster bullet; most of what it does is very limited in scope. It's primary purpose was to strip out the procedures and variables which get automatically pulled into every script that includes define.h, whether you use them or not, and to do something about the additional variables that get created by foreach loops.
 
 **There are several levels of optimization available:**
@@ -77,7 +77,7 @@ The sfall build of sslc supports a -O command line option to perform an optimiza
 
 - namelist compression: Fallout stores the names of all file scope variables and procedures in a namelist which is saved into the .int. Any of these that are unreferenced can be removed, and the names of global variables can be modified to make them shorter.
 
-
+---
 ## Writing your own code
 
 - Don't have global scripts running any more often that you need them to. Not everything needs to be run every single frame.
