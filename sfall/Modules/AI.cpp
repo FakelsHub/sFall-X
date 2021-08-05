@@ -388,7 +388,7 @@ static long aiReloadCost;
 
 static long __fastcall item_weapon_reload_cost_fix(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject** outAmmo) {
 	aiReloadCost = game::Items::item_weapon_mp_cost(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
-	//if (aiReloadCost > source->critter.getAP()) return -1; // not enough action points
+	if (aiReloadCost > source->critter.getAP()) return -1; // not enough action points
 
 	return fo::func::ai_have_ammo(source, weapon, outAmmo); // 0 - no ammo
 }
@@ -399,13 +399,13 @@ static void __declspec(naked) ai_try_attack_hook_cost_reload() {
 		push ebx;      // ammoObj ref
 		mov  ecx, eax; // source
 		call item_weapon_reload_cost_fix; // edx - weapon
-//		cmp  eax, -1;
-//		je   noAPs;
+		cmp  eax, -1;
+		je   noAPs;
 		retn;
-//noAPs:  // not enough action points
-//		add  esp, 4; // destroy ret
-//		mov  edi, 10;
-//		jmp  ai_try_attack_hook_goNext_Ret; // end ai_try_attack_
+noAPs:  // not enough action points
+		add  esp, 4; // destroy ret
+		mov  edi, 10;
+		jmp  ai_try_attack_hook_goNext_Ret; // end ai_try_attack_
 	}
 }
 
