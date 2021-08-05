@@ -64,7 +64,8 @@ public:
 
 	static bool LoadGameHook::IsMapLoading();
 
-	static long interfaceWID;
+	static char LoadGameHook::mapLoadingName[17];
+	static long LoadGameHook::interfaceWID;
 };
 
 // True if game was started, false when on the main menu

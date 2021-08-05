@@ -71,6 +71,8 @@ static DWORD saveInCombatFix;
 static bool gameLoaded = false;
 static bool onLoadingMap = false;
 
+char LoadGameHook::mapLoadingName[17]; // current loading/loaded map name
+
 long LoadGameHook::interfaceWID = -1;
 
 bool LoadGameHook::IsMapLoading() {
@@ -121,7 +123,7 @@ void __stdcall SetInLoop(DWORD mode, LoopFlag flag) {
 }
 
 void GetSavePath(char* buf, char* ftype) {
-	sprintf(buf, "%s\\savegame\\slot%.2d\\sfall%s.sav", fo::var::patches, fo::var::slot_cursor + 1 + LSPageOffset, ftype); //add SuperSave Page offset
+	sprintf(buf, "%s\\savegame\\slot%.2d\\sfall%s.sav", fo::var::patches, fo::var::slot_cursor + 1 + LSPageOffset, ftype); //add SuperSave Page offset //ExtraSaveSlots::
 }
 
 static void __stdcall SaveGame2() {
@@ -435,9 +437,14 @@ static void __declspec(naked) game_close_hook() {
 
 static void __declspec(naked) map_load_hook() {
 	__asm {
+		mov  esi, ebx;
+		lea  edi, LoadGameHook::mapLoadingName;
+		mov  ecx, 4;
+		rep  movsd; // copies the name of the loaded map to mapLoadingName
+
 		mov  onLoadingMap, 1;
 		call fo::funcoffs::map_load_file_;
-		mov  onLoadingMap, 0;
+		mov  onLoadingMap, cl; // unset
 		retn;
 	}
 }

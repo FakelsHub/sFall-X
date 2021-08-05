@@ -3960,6 +3960,9 @@ void BugFixes::init()
 	MakeCall(0x4551C0, op_create_object_sid_hack, 1);
 	// Additional fix op_create_object_sid_ for prevent the crash when the prototype of object is missing
 	SafeWrite8(0x45507B, 0x51); // jz 0x4550CD
+
+	// Fix to prevent the main menu music from stopping when entering the load game interface
+	BlockCall(0x480B25);
 }
 
 }

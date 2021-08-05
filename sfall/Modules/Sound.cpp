@@ -961,9 +961,9 @@ void Sound::init() {
 	MakeCall(0x4503CA, gsound_master_volume_set_hack, 1);
 	MakeCall(0x45042C, gsound_set_sfx_volume_hack);
 
-	void* soundLoad_func;
+	void* soundLoad_func = soundLoad_hook_B;
 
-	int allowDShowSound = GetConfigInt("Sound", "AllowDShowSound", 0);
+	int allowDShowSound = IniReader::GetConfigInt("Sound", "AllowDShowSound", 0);
 	if (allowDShowSound > 0) {
 		soundLoad_func = soundLoad_hook_A; // main hook
 
@@ -989,9 +989,8 @@ void Sound::init() {
 		MakeCall(0x4450C5, gdialogFreeSpeech_hack, 2);
 
 		CreateSndWnd();
-	} else {
-		soundLoad_func = soundLoad_hook_B;
 	}
+
 	// Support 44.1kHz sample rate for ACM files
 	MakeCall(0x4AD4D6, soundLoad_func, 1);
 	HookCalls(audioOpen_hook, {
@@ -1000,16 +999,15 @@ void Sound::init() {
 		0x4A96CC  // sfxc_decode_
 	});
 
-	int sBuff = GetConfigInt("Sound", "NumSoundBuffers", 16);
+	int sBuff = IniReader::GetConfigInt("Sound", "NumSoundBuffers", 16);
 	if (sBuff > 4) {
 		SafeWrite8(0x451129, (sBuff > 32) ? (BYTE)32 : (BYTE)sBuff);
 	}
 
-	if (GetConfigInt("Sound", "AllowSoundForFloats", 0)) {
+	if (IniReader::GetConfigInt("Sound", "AllowSoundForFloats", 0)) {
 		HookCall(0x42B7C7, combatai_msg_hook); // copy msg
 		HookCall(0x42B849, ai_print_msg_hook);
 
-		//Yes, I did leave this in on purpose. Will be of use to anyone trying to add in the sound effects
 		if (isDebug && IniReader::GetIntDefaultConfig("Debugging", "Test_ForceFloats", 0)) {
 			SafeWrite8(0x42B6F5, CodeType::JumpShort); // bypass chance
 		}
@@ -1017,6 +1015,13 @@ void Sound::init() {
 
 	// Support for ACM audio file playback and volume control for the soundplay script function
 	HookCall(0x4661B3, soundStartInterpret_hook);
+
+	if (IniReader::GetConfigInt("Sound", "FadeBackgroundMusic", 1) > 0) {
+		SafeMemSet(0x45020C, CodeType::Nop, 6); // gsound_reset_
+		SafeWrite32(0x45212C, 250); // delay start
+		SafeWrite32(0x450ADE, 500); // delay stop
+		LoadGameHook::OnAfterGameInit() += []() { *(DWORD*)FO_VAR_gsound_background_fade = 1; };
+	}
 }
 
 void Sound::exit() {
