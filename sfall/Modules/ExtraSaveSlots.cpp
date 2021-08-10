@@ -26,20 +26,29 @@
 namespace sfall
 {
 
-DWORD LSPageOffset = 0;
-
-int LSButtDN = 0;
-BYTE* SaveLoadSurface = nullptr;
+static long LSPageOffset = 0;
+static int LSButtDN = 0;
+static BYTE* SaveLoadSurface = nullptr;
 
 static const char* filename = "%s\\savegame\\slotdat.ini";
 
-void SavePageOffsets() {
+long ExtraSaveSlots::GetSaveSlot() {
+	return LSPageOffset + fo::var::slot_cursor;
+}
+
+void ExtraSaveSlots::SetSaveSlot(long page, long slot) {
+	LSPageOffset = page;
+	fo::var::slot_cursor = slot;
+}
+
+static void SavePageOffsets() {
 	char SavePath[MAX_PATH], buffer[6];
 
 	sprintf_s(SavePath, MAX_PATH, filename, fo::var::patches);
 
 	_itoa_s(fo::var::slot_cursor, buffer, 10);
 	WritePrivateProfileStringA("POSITION", "ListNum", buffer, SavePath);
+
 	_itoa_s(LSPageOffset, buffer, 10);
 	WritePrivateProfileStringA("POSITION", "PageOffset", buffer, SavePath);
 }
@@ -54,16 +63,16 @@ static void __declspec(naked) save_page_offsets(void) {
 	}
 }
 
-void LoadPageOffsets() {
+static void LoadPageOffsets() {
 	char LoadPath[MAX_PATH];
 
 	sprintf_s(LoadPath, MAX_PATH, filename, fo::var::patches);
 
-	fo::var::slot_cursor = iniGetInt("POSITION", "ListNum", 0, LoadPath);
+	fo::var::slot_cursor = IniReader::GetInt("POSITION", "ListNum", 0, LoadPath);
 	if (fo::var::slot_cursor > 9) {
 		fo::var::slot_cursor = 0;
 	}
-	LSPageOffset = iniGetInt("POSITION", "PageOffset", 0, LoadPath);
+	LSPageOffset = IniReader::GetInt("POSITION", "PageOffset", 0, LoadPath);
 	if (LSPageOffset > 9990) {
 		LSPageOffset = 0;
 	}
@@ -102,7 +111,7 @@ static void __declspec(naked) create_page_buttons(void) {
 	}
 }
 
-void SetPageNum() {
+static void SetPageNum() {
 	DWORD winRef = fo::var::lsgwin; // load/save winref
 	if (winRef == 0) {
 		return;
@@ -114,7 +123,7 @@ void SetPageNum() {
 
 	BYTE ConsoleGold = fo::var::YellowColor; // palette offset stored in mem - text colour
 
-	char TempText[32];
+	char tempText[32];
 	unsigned int TxtMaxWidth = fo::GetMaxCharWidth() * 6; // GetTextWidth(TempText);
 	unsigned int HalfMaxWidth = TxtMaxWidth / 2;
 	unsigned int TxtWidth = 0;
@@ -139,16 +148,16 @@ void SetPageNum() {
 			blip = (blip == '_') ? ' ' : '_';
 
 			if (tempPageOffset == -1) {
-				sprintf_s(TempText, 32, "[ %c ]", '_');
+				sprintf_s(tempText, 32, "[ %c ]", '_');
 			} else {
-				sprintf_s(TempText, 32, "[ %d%c ]", tempPageOffset / 10, '_');
+				sprintf_s(tempText, 32, "[ %d%c ]", tempPageOffset / 10, '_');
 			}
-			TxtWidth = fo::GetTextWidth(TempText);
+			TxtWidth = fo::GetTextWidth(tempText);
 
 			if (tempPageOffset == -1) {
-				sprintf_s(TempText, 32, "[ %c", blip);
+				sprintf_s(tempText, 32, "[ %c", blip);
 			} else {
-				sprintf_s(TempText, 32, "[ %d%c", tempPageOffset / 10, blip);
+				sprintf_s(tempText, 32, "[ %d%c", tempPageOffset / 10, blip);
 			}
 
 			int z = 0;
@@ -159,7 +168,7 @@ void SetPageNum() {
 
 			int HalfTxtWidth = TxtWidth / 2;
 
-			fo::PrintText(TempText, ConsoleGold, 170 - HalfTxtWidth, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
+			fo::PrintText(tempText, ConsoleGold, 170 - HalfTxtWidth, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
 			fo::PrintText(EndBracket, ConsoleGold, (170 - HalfTxtWidth) + TxtWidth - width, 64, width, SaveLoadWin->width, SaveLoadWin->surface);
 			fo::func::win_draw(winRef);
 		}
@@ -202,36 +211,32 @@ void SetPageNum() {
 
 static long __fastcall CheckPage(long button) {
 	switch (button) {
-		case 0x14B:                        // left button
-			if (LSPageOffset >= 10) LSPageOffset -= 10;
+		case 0x14B: // left button
+			LSPageOffset -= 10;
+			if (LSPageOffset < 0) LSPageOffset += 10000; // to Last Page
 			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
-		case 0x149:                        // fast left PGUP button
-			if (LSPageOffset < 100) {
-				LSPageOffset = 0;          // First Page
-			} else {
-				LSPageOffset -= 100;
-			}
+		case 0x149: // fast left PGUP button
+			LSPageOffset -= 100;
+			if (LSPageOffset < 0) LSPageOffset += 10000;
 			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
-		case 0x14D:                        // right button
-			if (LSPageOffset <= 9980) LSPageOffset += 10;
+		case 0x14D: // right button
+			LSPageOffset += 10;
+			if (LSPageOffset > 9999) LSPageOffset -= 10000; // to First Page
 			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
-		case 0x151:                        // fast right PGDN button
-			if (LSPageOffset > 9890) {
-				LSPageOffset = 9990;       // Last Page
-			} else {
-				LSPageOffset += 100;
-			}
+		case 0x151: // fast right PGDN button
+			LSPageOffset += 100;
+			if (LSPageOffset > 9999) LSPageOffset -= 10000;
 			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
-		case 'p':                          // p/P button pressed - start SetPageNum func
+		case 'p': // p/P button pressed - start SetPageNum func
 		case 'P':
 			SetPageNum();
 			break;
 		default:
-			if (button < 0x500) return 1;  // button in down state
+			if (button < 0x500) return 1; // button in down state
 	}
 
 	LSButtDN = button;
@@ -255,7 +260,7 @@ CheckUp:
 	}
 }
 
-void DrawPageText() {
+static void DrawPageText() {
 	if (fo::var::lsgwin == 0) {
 		return;
 	}
@@ -282,47 +287,47 @@ void DrawPageText() {
 	BYTE ConsoleGold = fo::var::YellowColor; // palette offset stored in mem - text colour
 	BYTE Colour = ConsoleGreen;
 
-	char TempText[32];
-	sprintf_s(TempText, 32, "[ %d ]", LSPageOffset / 10);
+	char tempText[32];
+	sprintf_s(tempText, 32, "[ %d ]", LSPageOffset / 10);
 
-	unsigned int TxtWidth = fo::GetTextWidth(TempText);
-	fo::PrintText(TempText, Colour, 170 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
+	unsigned int TxtWidth = fo::GetTextWidth(tempText);
+	fo::PrintText(tempText, Colour, 170 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
 
 	if (LSButtDN == 0x549) {
 		Colour = ConsoleGold;
 	} else {
 		Colour = ConsoleGreen;
 	}
-	strcpy_s(TempText, 12, "<<");
-	TxtWidth = fo::GetTextWidth(TempText);
-	fo::PrintText(TempText, Colour, 80 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
+	std::strcpy(tempText, "<<");
+	TxtWidth = fo::GetTextWidth(tempText);
+	fo::PrintText(tempText, Colour, 80 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
 
 	if (LSButtDN == 0x54B) {
 		Colour = ConsoleGold;
 	} else {
 		Colour = ConsoleGreen;
 	}
-	strcpy_s(TempText, 12, "<");
-	TxtWidth = fo::GetTextWidth(TempText);
-	fo::PrintText(TempText, Colour, 112 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
+	std::strcpy(tempText, "<");
+	TxtWidth = fo::GetTextWidth(tempText);
+	fo::PrintText(tempText, Colour, 112 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
 
 	if (LSButtDN == 0x551) {
 		Colour = ConsoleGold;
 	} else {
 		Colour = ConsoleGreen;
 	}
-	strcpy_s(TempText, 12, ">>");
-	TxtWidth = fo::GetTextWidth(TempText);
-	fo::PrintText(TempText, Colour, 260 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
+	std::strcpy(tempText, ">>");
+	TxtWidth = fo::GetTextWidth(tempText);
+	fo::PrintText(tempText, Colour, 260 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
 
 	if (LSButtDN == 0x54D) {
 		Colour = ConsoleGold;
 	} else {
 		Colour = ConsoleGreen;
 	}
-	strcpy_s(TempText, 12, ">");
-	TxtWidth = fo::GetTextWidth(TempText);
-	fo::PrintText(TempText, Colour, 228 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
+	std::strcpy(tempText, ">");
+	TxtWidth = fo::GetTextWidth(tempText);
+	fo::PrintText(tempText, Colour, 228 - TxtWidth / 2, 64, TxtWidth, SaveLoadWin->width, SaveLoadWin->surface);
 
 	SaveLoadWin = nullptr;
 }
@@ -340,8 +345,8 @@ static void __declspec(naked) draw_page_text(void) {
 // add page num offset when reading and writing various save data files
 static void __declspec(naked) AddPageOffset01(void) {
 	__asm {
-		mov  eax, dword ptr ds:[FO_VAR_slot_cursor] // list position 0-9
-		add  eax, LSPageOffset // add page num offset
+		mov  eax, dword ptr ds:[FO_VAR_slot_cursor]; // list position 0-9
+		add  eax, LSPageOffset; // add page num offset
 		ret
 	}
 }
@@ -361,13 +366,13 @@ static void __declspec(naked) AddPageOffset02(void) {
 static void __declspec(naked) AddPageOffset03(void) {
 	__asm {
 		inc  eax
-		add  eax, LSPageOffset // add page num offset
-		mov  bl, byte ptr ss:[esp+0x10] // add 4 bytes - func ret addr
+		add  eax, LSPageOffset;            // add page num offset
+		mov  bl, byte ptr ss:[esp + 0x10]; // add 4 bytes - func ret addr
 		ret
 	}
 }
 
-void EnableSuperSaving() {
+static void EnableSuperSaving() {
 
 	// save/load button setup func
 	MakeCalls(create_page_buttons, {0x47D80D});
@@ -412,43 +417,69 @@ static void GetSaveFileTime(char* filename, FILETIME* ftSlot) {
 	};
 }
 
-static const char* commentFmt = "%02d/%02d/%d - %02d:%02d:%02d";
+static const char* autoFmt  = "[AUTO] %02d/%02d/%d - %02d:%02d:%02d";
+static const char* quickFmt = "[QUICK] %02d/%02d/%d - %02d:%02d:%02d";
 
-static void CreateSaveComment(char* bufstr) {
+static void CreateSaveComment(char* bufstr, bool isAuto) {
 	SYSTEMTIME stUTC, stLocal;
 	GetSystemTime(&stUTC);
 	SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);
 
-	char buf[30];
-	sprintf_s(buf, commentFmt, stLocal.wDay, stLocal.wMonth, stLocal.wYear, stLocal.wHour, stLocal.wMinute, stLocal.wSecond);
-	strcpy(bufstr, buf);
+	const char* fmt = (isAuto) ? autoFmt : quickFmt;
+	sprintf_s(bufstr, 30, fmt, stLocal.wDay, stLocal.wMonth, stLocal.wYear, stLocal.wHour, stLocal.wMinute, stLocal.wSecond);
 }
 
-static long autoQuickSave = 0;
-static long quickSavePage = 0;
+static long quickSavePageInit = -1;
+static long quickSavePageCount;
+static long currentPageCount;
+
+static long quickSavePage = -1;
+static long quickSaveSlot = 0;
+
+static long dontCheckSlot = 0;
+static bool qFirst = true;
 
 static FILETIME ftPrevSlot;
 
 static DWORD __stdcall QuickSaveGame(fo::DbFile* file, char* filename) {
-	long currSlot = fo::var::slot_cursor;
+	long currSlot = quickSaveSlot;
 
-	if (file) { // This slot is not empty
-		fo::func::db_fclose(file);
+	if (dontCheckSlot) {
+		if (file) fo::func::db_fclose(file);
+	} else {
+	// for quick feature
+		if (file) { // This slot is not empty
+			fo::func::db_fclose(file);
 
-		FILETIME ftCurrSlot;
-		GetSaveFileTime(filename, &ftCurrSlot);
+			FILETIME ftCurrSlot;
+			GetSaveFileTime(filename, &ftCurrSlot);
 
-		if (currSlot == 0 || ftCurrSlot.dwHighDateTime > ftPrevSlot.dwHighDateTime ||
-		   (ftCurrSlot.dwHighDateTime == ftPrevSlot.dwHighDateTime && ftCurrSlot.dwLowDateTime > ftPrevSlot.dwLowDateTime))
-		{
-			ftPrevSlot.dwHighDateTime = ftCurrSlot.dwHighDateTime;
-			ftPrevSlot.dwLowDateTime  = ftCurrSlot.dwLowDateTime;
+			if (currSlot == 0 ||
+			    ftCurrSlot.dwHighDateTime > ftPrevSlot.dwHighDateTime ||
+			   (ftCurrSlot.dwHighDateTime == ftPrevSlot.dwHighDateTime && ftCurrSlot.dwLowDateTime > ftPrevSlot.dwLowDateTime))
+			{
+				ftPrevSlot.dwHighDateTime = ftCurrSlot.dwHighDateTime;
+				ftPrevSlot.dwLowDateTime  = ftCurrSlot.dwLowDateTime;
 
-			if (++currSlot > autoQuickSave) {
-				currSlot = 0;
-			} else {
-				fo::var::slot_cursor = currSlot;
-				return 0x47B929; // check next slot
+				if (!qFirst && currSlot < 9) {
+					fo::var::slot_cursor = ++quickSaveSlot;
+					return 0x47B929; // check next slot
+				}
+				currSlot = 0; // set if currSlot >= 9
+				qFirst = false;
+			}
+		}
+		// next save slot
+		if (++quickSaveSlot >= 10) {
+			quickSaveSlot = 0;
+			// next page
+			if (quickSavePageCount > 1 && quickSavePageInit != -1) {
+				if (++currentPageCount >= quickSavePageCount) {
+					currentPageCount = 0;
+					quickSavePage = quickSavePageInit;
+				} else if (quickSavePage <= 9980) {
+					quickSavePage += 10;
+				}
 			}
 		}
 	}
@@ -456,7 +487,7 @@ static DWORD __stdcall QuickSaveGame(fo::DbFile* file, char* filename) {
 	// Save to slot
 	fo::var::slot_cursor = currSlot;
 	fo::LSData* saveData = (fo::LSData*)FO_VAR_LSData;
-	CreateSaveComment(saveData[currSlot].comment);
+	CreateSaveComment(saveData[currSlot].comment, dontCheckSlot != 0);
 	fo::var::quick_done = 1;
 
 	return 0x47B9A4; // normal return
@@ -476,7 +507,8 @@ static void __declspec(naked) SaveGame_hack0() {
 
 static void __declspec(naked) SaveGame_hack1() {
 	__asm {
-		mov ds:[FO_VAR_slot_cursor], 0;
+		mov eax, quickSaveSlot;
+		mov ds:[FO_VAR_slot_cursor], eax;
 		mov eax, quickSavePage;
 		mov LSPageOffset, eax;
 		retn;
@@ -508,28 +540,42 @@ notEmpty:
 	}
 }
 
+long ExtraSaveSlots::GetQuickSavePage() {
+	return quickSavePage;
+}
+
+long ExtraSaveSlots::GetQuickSaveSlot() {
+	return quickSaveSlot;
+}
+
+void ExtraSaveSlots::SetQuickSaveSlot(long page, long slot, long check) {
+	if (page >= 0 && page <= 9990) quickSavePage = page;
+	if (slot >= 0 && slot < 10) quickSaveSlot = slot;
+	dontCheckSlot = check;
+}
+
 void ExtraSaveSlots::init() {
 
-	bool extraSaveSlots = (GetConfigInt("Misc", "ExtraSaveSlots", 0) != 0);
+	bool extraSaveSlots = (IniReader::GetConfigInt("Misc", "ExtraSaveSlots", 1) != 0);
 	if (extraSaveSlots) {
 		dlog("Applying extra save slots patch.", DL_INIT);
 		EnableSuperSaving();
 		dlogr(" Done", DL_INIT);
 	}
 
-	autoQuickSave = GetConfigInt("Misc", "AutoQuickSave", 0);
-	if (autoQuickSave > 0) {
+	quickSavePageCount = IniReader::GetConfigInt("Misc", "AutoQuickSave", 0);
+	if (quickSavePageCount > 0) {
 		dlog("Applying auto quick save patch.", DL_INIT);
-		if (autoQuickSave > 10) autoQuickSave = 10;
-		autoQuickSave--; // reserved slot count
+		if (quickSavePageCount > 10) quickSavePageCount = 10;
 
-		quickSavePage = GetConfigInt("Misc", "AutoQuickSavePage", 0);
+		quickSavePage = IniReader::GetConfigInt("Misc", "AutoQuickSavePage", 1);
 		if (quickSavePage > 999) quickSavePage = 999;
 
-		if (extraSaveSlots && quickSavePage > -1) {
+		if (extraSaveSlots && quickSavePage >= 0) {
 			quickSavePage *= 10;
+			quickSavePageInit = quickSavePage;
 			MakeCall(0x47B923, SaveGame_hack1, 1);
-		} else {
+		} else { // for quickSavePage = -1
 			SafeWrite8(0x47B923, 0x89);
 			SafeWrite32(0x47B924, 0x5193B83D); // mov [slot_cursor], edi = 0
 		}
