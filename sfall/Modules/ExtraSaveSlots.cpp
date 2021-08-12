@@ -27,7 +27,7 @@ namespace sfall
 {
 
 static long LSPageOffset = 0;
-static int LSButtDN = 0;
+static long LSButtDN = 0;
 static BYTE* SaveLoadSurface = nullptr;
 
 static const char* filename = "%s\\savegame\\slotdat.ini";
@@ -37,11 +37,12 @@ long ExtraSaveSlots::GetSaveSlot() {
 }
 
 void ExtraSaveSlots::SetSaveSlot(long page, long slot) {
-	LSPageOffset = page;
-	fo::var::slot_cursor = slot;
+	if (GetQuickSavePage() >= 0 && page >= 0 && page <= 9990) LSPageOffset = page - (page % 10);;
+	if (slot >= 0 && slot < 10) fo::var::slot_cursor = slot;
 }
 
-static void SavePageOffsets() {
+// save last slot position values to file
+static long save_page_offsets() {
 	char SavePath[MAX_PATH], buffer[6];
 
 	sprintf_s(SavePath, MAX_PATH, filename, fo::var::patches);
@@ -51,16 +52,8 @@ static void SavePageOffsets() {
 
 	_itoa_s(LSPageOffset, buffer, 10);
 	WritePrivateProfileStringA("POSITION", "PageOffset", buffer, SavePath);
-}
 
-static void __declspec(naked) save_page_offsets(void) {
-	__asm {
-		// save last slot position values to file
-		call SavePageOffsets
-		// restore original code
-		mov  eax, dword ptr ds:[FO_VAR_lsgwin]
-		ret
-	}
+	return fo::var::lsgwin; // restore original code
 }
 
 static void LoadPageOffsets() {
@@ -81,14 +74,13 @@ static void LoadPageOffsets() {
 static void __declspec(naked) load_page_offsets(void) {
 	__asm {
 		// load last slot position values from file
-		call LoadPageOffsets
-		// restore original code
-		mov  edx, 0x50A480  // ASCII "SAV"
-		ret
+		call LoadPageOffsets;
+		mov  edx, 0x50A480;  // ASCII "SAV" (restore original code)
+		retn;
 	}
 }
 
-static void CreateButtons() {
+static long create_page_buttons() {
 	DWORD winRef = fo::var::lsgwin;
 
 	// left button -10                   | X | Y | W | H |HOn |HOff |BDown |BUp |PicUp |PicDown |? |ButType
@@ -101,14 +93,8 @@ static void CreateButtons() {
 	fo::func::win_register_button(winRef, 248, 60, 24, 20, -1, 0x500, 0x551, 0x151, 0, 0, 0, 32);
 	// Set Number button
 	fo::func::win_register_button(winRef, 140, 60, 60, 20, -1, -1, 'p', -1, 0, 0, 0, 32);
-}
 
-static void __declspec(naked) create_page_buttons(void) {
-	__asm {
-		call CreateButtons;
-		mov  eax, 0x65; // restore original code
-		retn;
-	}
+	return 101; // restore original value
 }
 
 static void SetPageNum() {
@@ -223,12 +209,12 @@ static long __fastcall CheckPage(long button) {
 			break;
 		case 0x14D: // right button
 			LSPageOffset += 10;
-			if (LSPageOffset > 9999) LSPageOffset -= 10000; // to First Page
+			if (LSPageOffset >= 10000) LSPageOffset -= 10000; // to First Page
 			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
 		case 0x151: // fast right PGDN button
 			LSPageOffset += 100;
-			if (LSPageOffset > 9999) LSPageOffset -= 10000;
+			if (LSPageOffset >= 10000) LSPageOffset -= 10000;
 			__asm call fo::funcoffs::gsound_red_butt_press_;
 			break;
 		case 'p': // p/P button pressed - start SetPageNum func
@@ -245,15 +231,17 @@ static long __fastcall CheckPage(long button) {
 
 static void __declspec(naked) check_page_buttons(void) {
 	__asm {
-		pushad;
+		push eax;
+		push ecx;
 		mov  ecx, eax;
 		call CheckPage;
 		test eax, eax;
-		popad;
-		jnz  CheckUp;
+		pop  ecx;
+		pop  eax;
+		jnz  checkUp;
 		add  dword ptr ds:[esp], 26;        // set return to button pressed code
 		jmp  fo::funcoffs::GetSlotList_;    // reset page save list func
-CheckUp:
+checkUp:
 		// restore original code
 		cmp  eax, 0x148;                    // up button
 		retn;
@@ -334,28 +322,29 @@ static void DrawPageText() {
 
 static void __declspec(naked) draw_page_text(void) {
 	__asm {
-		pushad
-		call DrawPageText
-		popad
-		mov  ebp, 0x57; // restore original code
+		push eax;
+		call DrawPageText;
+		pop  eax;
+		mov  ebp, 87; // restore original code
 		retn;
 	}
 }
 
 // add page num offset when reading and writing various save data files
-static void __declspec(naked) AddPageOffset01(void) {
+static void __declspec(naked) add_page_offset_hack1(void) {
 	__asm {
 		mov  eax, dword ptr ds:[FO_VAR_slot_cursor]; // list position 0-9
-		add  eax, LSPageOffset; // add page num offset
-		ret
+		add  eax, LSPageOffset;                      // add page num offset
+		dec  eax; // align the numbering of slots in page (starting from the zero slot)
+		retn;
 	}
 }
 
 // getting info for the 10 currently displayed save slots from save.dats
-static void __declspec(naked) AddPageOffset02(void) {
+static void __declspec(naked) add_page_offset_hack2(void) {
 	__asm {
 		push 0x50A514;          // ASCII "SAVE.DAT"
-		lea  eax, [ebx + 1];
+		mov  eax, ebx;          // was lea  eax, [ebx + 1]; -remove for starting from the zero slot
 		add  eax, LSPageOffset; // add page num offset
 		mov  edx, 0x47E5E9;     // ret addr
 		jmp  edx;
@@ -363,44 +352,48 @@ static void __declspec(naked) AddPageOffset02(void) {
 }
 
 // printing current 10 slot numbers
-static void __declspec(naked) AddPageOffset03(void) {
+static void __declspec(naked) add_page_offset_hack3(void) {
 	__asm {
-		inc  eax
+//		inc  eax; -remove for starting from the zero slot
 		add  eax, LSPageOffset;            // add page num offset
 		mov  bl, byte ptr ss:[esp + 0x10]; // add 4 bytes - func ret addr
-		ret
+		retn;
 	}
 }
 
 static void EnableSuperSaving() {
 
 	// save/load button setup func
-	MakeCalls(create_page_buttons, {0x47D80D});
+	MakeCall(0x47D80D, create_page_buttons); // LSGameStart_
 
 	// Draw button text
-	MakeCalls(draw_page_text, {0x47E6E8});
+	MakeCall(0x47E6E8, draw_page_text); // ShowSlotList_
 
 	// check save/load buttons
-	MakeCalls(check_page_buttons, {0x47BD49, 0x47CB1C});
+	MakeCalls(check_page_buttons, {0x47BD49, 0x47CB1C}); // SaveGame_, LoadGame_
 
 	// save current page and list positions to file on load/save scrn exit
-	MakeCalls(save_page_offsets, {0x47D828});
+	MakeCall(0x47D828, save_page_offsets); // LSGameEnd_
 
 	// load saved page and list positions from file
-	MakeCalls(load_page_offsets, {0x47B82B});
+	MakeCall(0x47B82B, load_page_offsets); // InitLoadSave_
 
 	// Add Load/Save page offset to Load/Save folder number
-	MakeCalls(AddPageOffset01, {
-		0x47B929, 0x47D8DB, 0x47D9B0, 0x47DA34, 0x47DABF, 0x47DB58, 0x47DBE9,
-		0x47DC9C, 0x47EC77, 0x47F5AB, 0x47F694, 0x47F6EB, 0x47F7FB, 0x47F892,
-		0x47FB86, 0x47FC3A, 0x47FCF2, 0x480117, 0x4801CF, 0x480234, 0x480310,
-		0x4803F3, 0x48049F, 0x480512, 0x4805F2, 0x480767, 0x4807E6, 0x480839,
-		0x4808D3
+	MakeCalls(add_page_offset_hack1, {
+		0x47B929, // SaveGame_
+		0x47D8DB, 0x47D9B0, 0x47DA34, 0x47DABF, 0x47DB58, 0x47DBE9, // SaveSlot_
+		0x47EC77, // LoadTumbSlot_
+		0x47DC9C, // LoadSlot_
+		0x47F5AB, 0x47F694, 0x47F6EB, 0x47F7FB, 0x47F892, // GameMap2Slot_
+		0x47FB86, 0x47FC3A, 0x47FCF2,           // SlotMap2Game_
+		0x480117, 0x4801CF, 0x480234, 0x480310, // SaveBackup_
+		0x4803F3, 0x48049F, 0x480512, 0x4805F2, // RestoreSave_
+		0x480767, 0x4807E6, 0x480839, 0x4808D3  // EraseSave_
 	});
 
-	MakeJump(0x47E5E1, AddPageOffset02);
+	MakeJump(0x47E5E1, add_page_offset_hack2); // GetSlotList_
 
-	MakeCalls(AddPageOffset03, {0x47E756});
+	MakeCall(0x47E756, add_page_offset_hack3); // ShowSlotList_
 }
 
 static void GetSaveFileTime(char* filename, FILETIME* ftSlot) {
@@ -417,8 +410,8 @@ static void GetSaveFileTime(char* filename, FILETIME* ftSlot) {
 	};
 }
 
-static const char* autoFmt  = "[AUTO] %02d/%02d/%d - %02d:%02d:%02d";
-static const char* quickFmt = "[QUICK] %02d/%02d/%d - %02d:%02d:%02d";
+static const char* autoFmt  = "AUTO: %02d/%02d/%d - %02d:%02d:%02d";
+static const char* quickFmt = "QUICK: %02d/%02d/%d - %02d:%02d:%02d";
 
 static void CreateSaveComment(char* bufstr, bool isAuto) {
 	SYSTEMTIME stUTC, stLocal;
@@ -549,19 +542,19 @@ long ExtraSaveSlots::GetQuickSaveSlot() {
 }
 
 void ExtraSaveSlots::SetQuickSaveSlot(long page, long slot, long check) {
-	if (page >= 0 && page <= 9990) quickSavePage = page;
+	if (quickSavePage >= 0 && page >= 0 && page <= 9990) quickSavePage = page - (page % 10);
 	if (slot >= 0 && slot < 10) quickSaveSlot = slot;
 	dontCheckSlot = check;
 }
 
 void ExtraSaveSlots::init() {
 
-	bool extraSaveSlots = (IniReader::GetConfigInt("Misc", "ExtraSaveSlots", 1) != 0);
-	if (extraSaveSlots) {
+	//bool extraSaveSlots = (IniReader::GetConfigInt("Misc", "ExtraSaveSlots", 1) != 0);
+	//if (extraSaveSlots) {
 		dlog("Applying extra save slots patch.", DL_INIT);
 		EnableSuperSaving();
 		dlogr(" Done", DL_INIT);
-	}
+	//}
 
 	quickSavePageCount = IniReader::GetConfigInt("Misc", "AutoQuickSave", 0);
 	if (quickSavePageCount > 0) {
@@ -571,7 +564,7 @@ void ExtraSaveSlots::init() {
 		quickSavePage = IniReader::GetConfigInt("Misc", "AutoQuickSavePage", 1);
 		if (quickSavePage > 999) quickSavePage = 999;
 
-		if (extraSaveSlots && quickSavePage >= 0) {
+		if (/*extraSaveSlots &&*/ quickSavePage >= 0) {
 			quickSavePage *= 10;
 			quickSavePageInit = quickSavePage;
 			MakeCall(0x47B923, SaveGame_hack1, 1);
