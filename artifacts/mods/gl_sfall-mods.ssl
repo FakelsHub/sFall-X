@@ -23,8 +23,8 @@
 
 procedure start;
 
-procedure sfx_enable;
-// inline don't move
+procedure restore_slot;
+// inline don't move (TODO fix SSLC)
 procedure AutoSaving;
 procedure CheckSaveTime;
 procedure map_enter_p_proc;
@@ -46,14 +46,16 @@ procedure UseSkillOnHandler;
 variable quickAmmoReload, pickupKey, keyMod, hideIfaceKey;
 variable pickupItem, temp, pickupMessage, hideIface := false;
 variable deathNpcArray, countDeath;
-variable autoSaveTime, autoSaveIsEnabled = false;
-variable dudeElevation;
+
+variable autoSavePageCount, autoSaveCountMax, autoSaveIsEnabled = false;
+variable cAutoSavePage, autoSavePage, autoSaveSlot;
+variable autoSaveTime, dudeElevation;
 
 procedure start begin
    variable sfall_version;
 
    if game_loaded then begin
-      sfall_version := (1000 * sfall_ver_major) + (100 * sfall_ver_minor) + sfall_ver_build;
+      sfall_version := (1000 * sfall_ver_major) + (0100 * sfall_ver_minor) + sfall_ver_build; /* MmBB:  M - major, m - minor, BB - build */
       //isUnsafe := GetIniConfig("Debugging", "AllowUnsafeScripting", 0, "ddraw.ini");
 
       register_hook_proc(HOOK_KEYPRESS, KeyPressHandler);
@@ -84,17 +86,25 @@ procedure start begin
          if (hideIfaceKey) then register_hook_proc(HOOK_GAMEMODECHANGE, GameModeHandler);
       end
 
-      if (sfall_version >= 3823 andAlso GetIniConfig("Misc", "ExtraSaveSlots", 0, "ddraw.ini") andAlso GetConfig("Misc", "AutoSave", 0) > 0 andAlso
-         GetIniConfig("Misc", "AutoQuickSave", 0, "ddraw.ini") > 0 andAlso GetIniConfig("Misc", "AutoQuickSavePage", 0, "ddraw.ini") > 0) then
-      begin
-         autoSaveIsEnabled = true;
-         autoSaveTime = GetConfig("Misc", "AutoSaveTime", 5);
+      if ((sfall_version >= 4301 orElse (sfall_version >= 3831 andAlso sfall_version < 4000)) andAlso
+         GetConfig("Misc", "AutoSave", 0) > 0 andAlso
+         GetIniConfig("Misc", "ExtraSaveSlots", 0, "ddraw.ini") andAlso
+         GetIniConfig("Misc", "AutoQuickSave", 0, "ddraw.ini") > 0) // количество страниц для AutoQuickSave
+      then begin
+         autoSaveTime = GetConfig("Misc", "AutoSaveTime", 2);
+         autoSavePage = GetConfig("Misc", "AutoSavePage", 999) * 10;
+         autoSaveCountMax = GetConfig("Misc", "AutoSaveCountPages", 1);
+         cAutoSavePage = autoSavePage;
+
          if (autoSaveTime < 1) then
             autoSaveTime = ONE_GAME_SECOND * 30;
          else
             autoSaveTime *= ONE_GAME_MINUTE;
+
          if (get_sfall_global_int("AutoSave") == 0) then set_sfall_global("AutoSave", game_time);
+
          dudeElevation = dude_elevation;
+         autoSaveIsEnabled = true;
       end
 
       // Fix the lighting of the map from the night vision perk when loading the game
@@ -113,17 +123,52 @@ procedure start begin
 end
 
 variable bakupMem;
+variable pSlot, quickSavePage, quickSaveSlot;
 
-procedure sfx_enable begin
+procedure restore_slot begin
    SFX_SAVEHACK(bakupMem);
+
+   variable page = (pSlot / 10) * 10;
+
+   // восстановить
+   set_current_save_slot(page, pSlot - page);
+   set_current_quick_save_slot(quickSavePage, quickSaveSlot, false);
+
+   DEBUGMSG("next save: page/slot" + cAutoSavePage + "/" + autoSaveSlot)
 end
 
 inline procedure AutoSaving begin
    set_sfall_global("AutoSave", game_time);
+
    if (bakupMem == 0) then bakupMem = read_short(0x443B0D);
    SFX_SAVEHACK(0x08EB); // sfx disable (skip click sound)
-   tap_key(DIK_F6);
-   call sfx_enable in 1;
+
+   pSlot = get_current_save_slot;
+   quickSavePage = get_current_quick_save_page;
+   quickSaveSlot = get_current_quick_save_slot;
+
+   // устанавливает слот для сохранения
+   set_current_quick_save_slot(cAutoSavePage, autoSaveSlot, true);
+
+   tap_key(DIK_F6); // функция сохранения выполняется не сразу
+
+   autoSaveSlot++;
+   if (autoSaveSlot >= 10) then begin
+      autoSaveSlot = 0;
+
+      if (autoSaveCountMax > 1) then begin
+         autoSavePageCount++;
+         if (autoSavePageCount >= autoSaveCountMax) then begin
+            autoSavePageCount = 0;
+            cAutoSavePage = autoSavePage;
+         end
+         else if (cAutoSavePage <= 9980) then begin
+             cAutoSavePage += 10;
+         end
+      end
+   end
+
+   call restore_slot in 1;
 end
 
 inline procedure CheckSaveTime begin

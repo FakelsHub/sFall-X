@@ -37,7 +37,7 @@ long ExtraSaveSlots::GetSaveSlot() {
 }
 
 void ExtraSaveSlots::SetSaveSlot(long page, long slot) {
-	if (GetQuickSavePage() >= 0 && page >= 0 && page <= 9990) LSPageOffset = page - (page % 10);;
+	if (page >= 0 && page <= 9990) LSPageOffset = page - (page % 10);
 	if (slot >= 0 && slot < 10) fo::var::slot_cursor = slot;
 }
 
@@ -56,6 +56,7 @@ static long save_page_offsets() {
 	return fo::var::lsgwin; // restore original code
 }
 
+// load last slot position values from file
 static void LoadPageOffsets() {
 	char LoadPath[MAX_PATH];
 
@@ -73,9 +74,8 @@ static void LoadPageOffsets() {
 
 static void __declspec(naked) load_page_offsets(void) {
 	__asm {
-		// load last slot position values from file
 		call LoadPageOffsets;
-		mov  edx, 0x50A480;  // ASCII "SAV" (restore original code)
+		mov  edx, 0x50A480; // ASCII "SAV" (restore original code)
 		retn;
 	}
 }
@@ -459,9 +459,9 @@ static DWORD __stdcall QuickSaveGame(fo::DbFile* file, char* filename) {
 					return 0x47B929; // check next slot
 				}
 				currSlot = 0; // set if currSlot >= 9
-				qFirst = false;
 			}
 		}
+		qFirst = false;
 		// next save slot
 		if (++quickSaveSlot >= 10) {
 			quickSaveSlot = 0;
@@ -500,10 +500,17 @@ static void __declspec(naked) SaveGame_hack0() {
 
 static void __declspec(naked) SaveGame_hack1() {
 	__asm {
-		mov eax, quickSaveSlot;
-		mov ds:[FO_VAR_slot_cursor], eax;
-		mov eax, quickSavePage;
-		mov LSPageOffset, eax;
+		mov  eax, quickSavePage;
+		test eax, eax;
+		js   skip;
+		mov  LSPageOffset, eax;
+		mov  eax, quickSaveSlot;
+		mov  ds:[FO_VAR_slot_cursor], eax;
+		retn;
+skip:	// if AutoQuickSavePage disable (sets to less 0)
+		xor  eax, eax;
+		mov  quickSaveSlot, eax;
+		mov  ds:[FO_VAR_slot_cursor], eax;
 		retn;
 	}
 }
@@ -522,8 +529,8 @@ static void __fastcall SetSaveComment(char* comment) {
 
 static void __declspec(naked) GetComment_hack() {
 	__asm {
-		cmp [ecx], 0;
-		jne notEmpty;
+		cmp  [ecx], 0;
+		jne  notEmpty;
 		pushadc;
 		call SetSaveComment;
 		popadc;
@@ -542,7 +549,11 @@ long ExtraSaveSlots::GetQuickSaveSlot() {
 }
 
 void ExtraSaveSlots::SetQuickSaveSlot(long page, long slot, long check) {
-	if (quickSavePage >= 0 && page >= 0 && page <= 9990) quickSavePage = page - (page % 10);
+	if (page < 0) {
+		quickSavePage = -1;
+	} else if (page <= 9990) {
+		quickSavePage = page - (page % 10);
+	}
 	if (slot >= 0 && slot < 10) quickSaveSlot = slot;
 	dontCheckSlot = check;
 }
@@ -567,12 +578,9 @@ void ExtraSaveSlots::init() {
 		if (/*extraSaveSlots &&*/ quickSavePage >= 0) {
 			quickSavePage *= 10;
 			quickSavePageInit = quickSavePage;
-			MakeCall(0x47B923, SaveGame_hack1, 1);
-		} else { // for quickSavePage = -1
-			SafeWrite8(0x47B923, 0x89);
-			SafeWrite32(0x47B924, 0x5193B83D); // mov [slot_cursor], edi = 0
 		}
 		MakeJump(0x47B984, SaveGame_hack0);
+		MakeCall(0x47B923, SaveGame_hack1, 1);
 		dlogr(" Done", DL_INIT);
 	}
 
