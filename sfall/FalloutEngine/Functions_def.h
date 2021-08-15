@@ -53,6 +53,7 @@ WRAP_WATCOM_FFUNC3(long, inven_wield, fo::GameObject*, critter, fo::GameObject*,
 WRAP_WATCOM_FFUNC3(long, item_add_force, fo::GameObject*, critter, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC4(long, item_move, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC4(long, item_move_force, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
+WRAP_WATCOM_FFUNC3(long, item_remove_mult, fo::GameObject*, critter, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC3(long, item_w_mp_cost, fo::GameObject*, source, long, hitMode, long, isCalled)
 // Calculates path and returns it's length
 WRAP_WATCOM_FFUNC6(long, make_path_func, fo::GameObject*, objectFrom, long, tileFrom, long, tileTo, char*, pathDataBuffer, long, checkTileTo, void*, blockingFunc)
@@ -61,6 +62,7 @@ WRAP_WATCOM_FFUNC3(long, message_find, DWORD*, msgFile, long, msgNumber, DWORD*,
 WRAP_WATCOM_FFUNC4(long, mouse_click_in, long, x, long, y, long, x_offs, long, y_offs)
 WRAP_WATCOM_FFUNC4(long, mouse_in, long, x, long, y, long, x_offs, long, y_offs)
 WRAP_WATCOM_FFUNC3(fo::GameObject*, obj_blocking_at, fo::GameObject*, object, long, tile, long, elevation)
+WRAP_WATCOM_FFUNC4(long, obj_connect, fo::GameObject*, object, long, tile, long, elevation, RECT*, rect)
 WRAP_WATCOM_FFUNC4(long, obj_dist_with_tile, fo::GameObject*, source, long, sourceTile, fo::GameObject*, target, long, targetTile)
 WRAP_WATCOM_FFUNC1(void, obj_delete_list, void*, objList)
 WRAP_WATCOM_FFUNC4(long, obj_create_list, long, tile, long, elev, long, objType, void*, buf)
@@ -174,6 +176,7 @@ WRAP_WATCOM_FUNC1(long, isPartyMember, fo::GameObject*, obj)
 WRAP_WATCOM_FUNC1(long, item_c_curr_size, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC1(long, item_caps_total, fo::GameObject*, object)
 WRAP_WATCOM_FUNC1(long, item_cost, fo::GameObject*, item)
+WRAP_WATCOM_FUNC2(long, item_d_take_drug, fo::GameObject*, source, fo::GameObject*, item)
 WRAP_WATCOM_FUNC1(long, item_get_type, fo::GameObject*, item)
 WRAP_WATCOM_FUNC2(fo::GameObject*, item_hit_with, fo::GameObject*, critter, long, hitMode)
 WRAP_WATCOM_FUNC1(long, item_m_dec_charges, fo::GameObject*, item) // Returns 0 on success, -1 if the item has no charges
