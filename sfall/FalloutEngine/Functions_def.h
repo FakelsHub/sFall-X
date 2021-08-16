@@ -53,7 +53,7 @@ WRAP_WATCOM_FFUNC3(long, inven_wield, fo::GameObject*, critter, fo::GameObject*,
 WRAP_WATCOM_FFUNC3(long, item_add_force, fo::GameObject*, critter, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC4(long, item_move, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
 WRAP_WATCOM_FFUNC4(long, item_move_force, fo::GameObject*, src, fo::GameObject*, dst, fo::GameObject*, item, long, count)
-WRAP_WATCOM_FFUNC3(long, item_remove_mult, fo::GameObject*, critter, fo::GameObject*, item, long, count)
+WRAP_WATCOM_FFUNC3(long, item_remove_mult, fo::GameObject*, critter, fo::GameObject*, item, long, count) // WARNING: HOOK_REMOVEINVENOBJ - uses the return address in its function
 WRAP_WATCOM_FFUNC3(long, item_w_mp_cost, fo::GameObject*, source, long, hitMode, long, isCalled)
 // Calculates path and returns it's length
 WRAP_WATCOM_FFUNC6(long, make_path_func, fo::GameObject*, objectFrom, long, tileFrom, long, tileTo, char*, pathDataBuffer, long, checkTileTo, void*, blockingFunc)
@@ -92,7 +92,7 @@ WRAP_WATCOM_FFUNC3(const char*, interpretGetString, fo::Program*, scriptPtr, DWO
 /* stdcall */
 WRAP_WATCOM_FUNC1(fo::AIcap*, ai_cap, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC2(long, ai_can_use_drug, fo::GameObject*, critter, fo::GameObject*, item)
-WRAP_WATCOM_FUNC1(void, ai_check_drugs, fo::GameObject*, critter)
+//WRAP_WATCOM_FUNC1(void, ai_check_drugs, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC1(fo::GameObject*, ai_danger_source, fo::GameObject*, critter)
 WRAP_WATCOM_FUNC2(void, ai_print_msg, fo::GameObject*, object, long, mode)
 WRAP_WATCOM_FUNC2(fo::GameObject*, ai_retrieve_object, fo::GameObject*, critter, fo::GameObject*, item)

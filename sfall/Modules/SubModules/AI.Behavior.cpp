@@ -1135,7 +1135,7 @@ void AIBehavior::init(bool smartBehavior) {
 
 	// Реализация поиска предметов в трупах убитых NPC (looting corpses)
 	LootingCorpses = (IniReader::GetConfigInt("CombatAI", "LootingCorpses", 1) > 0);
-	if (LootingCorpses) AIInventory::CorpsesLootingHack();
+	AIInventory::init(LootingCorpses);
 
 	// Реализация функции освобождения пути криттера блокирующего путь к цели
 	MakeCall(0x42A0D6, ai_move_steps_closer_hack, 5);

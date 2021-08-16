@@ -11,7 +11,7 @@ namespace sfall
 
 class AIInventory {
 public:
-	static void CorpsesLootingHack();
+	static void init(bool);
 
 	// Оригинальнная функция ai_best_weapon_ с вызовом крючка
 	static fo::GameObject* BestWeapon(fo::GameObject* source, fo::GameObject* weapon1, fo::GameObject* weapon2, fo::GameObject* target);
@@ -42,6 +42,8 @@ public:
 
 	// Аналог функции ai_search_environ_, только с той разницей, что ищет требуемый предмет на карте в инвентаре убитых криттеров
 	static long ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* &itemGround, fo::GameObject* weapon);
+
+	static long ai_search_environ_corpse_drug(fo::GameObject* source, fo::ItemType type, long noInvenItem, fo::GameObject* &itemEnv);
 };
 
 }

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "Game\combatAI.h"
 #include "Game\inventory.h"
 #include "Game\render.h"
 #include "Game\skills.h"

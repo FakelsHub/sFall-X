@@ -35,7 +35,8 @@ long AIInventory::AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
 
 	fo::GameObject* ammo = nullptr;
 	// check ammo in corpses
-	AIInventory::ai_search_environ_corpse(critter, fo::ItemType::item_type_ammo, ammo, weapon);
+	if (AIInventory::ai_search_environ_corpse(critter, fo::ItemType::item_type_ammo, ammo, weapon) == -2) return 0;
+
 	// check ammo on ground
 	if (!ammo) ammo = AIInventory::ai_search_environ_ammo(critter, weapon);
 	return (ammo) ? 1 : 0;
@@ -175,7 +176,7 @@ fo::GameObject* AIInventory::GetInventoryWeapon(fo::GameObject* source, bool che
 	return bestWeapon;
 }
 
-// Возвращает первые наденные патроны к оружию в инвентаре криттера
+// Находит в инвентаре криттера первые найденные патроны к оружию для перезарядки
 fo::GameObject* AIInventory::GetInventAmmo(fo::GameObject* critter, fo::GameObject* weapon) {
 	DWORD slotNum = -1;
 	while (true) {
@@ -193,6 +194,7 @@ long AIInventory::CritterHaveAmmo(fo::GameObject* critter, fo::GameObject* weapo
 	return (ammo) ? ammo->item.charges : 0;
 }
 
+// Находит в инвентере криттера безопасное для совершения атаки оружие
 fo::GameObject* AIInventory::FindSafeWeaponAttack(fo::GameObject* source, fo::GameObject* target, fo::GameObject* hWeapon, fo::AttackType &outHitMode) {
 	long distance = fo::func::obj_dist(source, target);
 
@@ -229,19 +231,19 @@ bool AIInventory::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* wea
 	long reloadCost = game::Items::item_weapon_mp_cost(critter, weapon, fo::AttackType::ATKTYPE_RWEAPON_RELOAD, 0);
 	if (reloadCost > critter->critter.getAP()) return false;
 
-	bool reloadFree = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER);
+	bool reloadNoAmmo = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER); // не требуется патронов для перезарядки
 
-	if (!ammo && weapon->item.ammoPid != -1 || reloadFree) {
+	if (!ammo && weapon->item.ammoPid != -1 || reloadNoAmmo) {
 		fo::Proto* proto = fo::GetProto(weapon->protoId);
 		if (proto->item.type == fo::ItemType::item_type_weapon) {
 			if (weapon->item.charges <= 0 || weapon->item.charges < (proto->item.weapon.maxAmmo / 2)) {
-				if (!reloadFree) ammo = GetInventAmmo(critter, weapon);
+				if (!reloadNoAmmo) ammo = GetInventAmmo(critter, weapon);
 			} else {
-				reloadFree = false;
+				reloadNoAmmo = false; // патронов больше половина, перезарядка не требуется
 			}
 		}
 	}
-	if (reloadFree || ammo) {
+	if (ammo || reloadNoAmmo) {
 		long result = fo::func::item_w_reload(weapon, ammo);
 		if (result != -1) {
 			if (!result && ammo) fo::func::obj_destroy(ammo);
@@ -264,7 +266,7 @@ bool AIInventory::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* wea
 static long __fastcall pickup_item(fo::GameObject* source, fo::GameObject* item) {
 	int moveCount = 1;
 
-	// патроны: берем сразу несколько штук для полной перезарядки оружия
+	// патроны: берем сразу несколько штук/пачек для полной перезарядки оружия
 	fo::Proto* protoAmmo = fo::GetProto(item->protoId);
 	if (protoAmmo->item.type == fo::ItemType::item_type_ammo) {
 		fo::GameObject* weapon = fo::func::inven_right_hand(source);
@@ -403,6 +405,8 @@ fo::GameObject* AIInventory::ai_search_environ_ammo(fo::GameObject* critter, fo:
 
 // Аналог функции ai_search_environ, только с той разницей, что ищет требуемый предмет в инвентаре убитых криттеров
 long AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* &itemGround, fo::GameObject* weapon) {
+	if (fo::func::critter_body_type(source) != fo::BodyType::Biped) return -2; // critter не относится к типу Biped
+
 	if (!weapon && itemType == fo::ItemType::item_type_ammo) {
 		weapon = fo::func::inven_right_hand(source);
 		if (!weapon) return -1; // ERROR: не назначено или нет оружия для проверки
@@ -534,8 +538,12 @@ default:
 	}
 }
 
-static long __fastcall AISearchCorpseDrug(fo::GameObject* source, long addrType, long noInvenItem, fo::GameObject* &itemEnv) {
-	fo::ItemType type = (addrType == 0x4287B2 + 5) ? fo::ItemType::item_type_drug : fo::ItemType::item_type_misc_item;
+static bool lootingCorpses = false;
+
+long AIInventory::ai_search_environ_corpse_drug(fo::GameObject* source, fo::ItemType type, long noInvenItem, fo::GameObject* &itemEnv) {
+	if (!lootingCorpses) return 0;
+
+	//fo::ItemType type = (addrType == 0x4287B2 + 5) ? fo::ItemType::item_type_drug : fo::ItemType::item_type_misc_item;
 
 	fo::GameObject* outItem = itemEnv;
 	long lengthPath = AIInventory::ai_search_environ_corpse(source, type, outItem, nullptr);
@@ -547,12 +555,12 @@ static long __fastcall AISearchCorpseDrug(fo::GameObject* source, long addrType,
 	if (!outItem || outItem == itemEnv || lengthPath < 0) return 0; // default (в itemEnv ref значение из ai_search_environ_)
 
 	bool dontUse = false;
-	if (noInvenItem != 2) { // is set to 2 that healing is required
-		long pid = outItem->protoId;
-		if (pid == fo::ProtoID::PID_STIMPAK || pid == fo::ProtoID::PID_SUPER_STIMPAK || pid == fo::ProtoID::PID_HEALING_POWDER) {
-			dontUse = ((10 + source->critter.health) >= fo::func::stat_level(source, fo::Stat::STAT_max_hit_points));
-		}
-	}
+	//if (noInvenItem != 2) { // is set to 2 that healing is required
+	//	long pid = outItem->protoId;
+	//	if (pid == fo::ProtoID::PID_STIMPAK || pid == fo::ProtoID::PID_SUPER_STIMPAK || pid == fo::ProtoID::PID_HEALING_POWDER) {
+	//		dontUse = ((10 + source->critter.health) >= fo::func::stat_level(source, fo::Stat::STAT_max_hit_points));
+	//	}
+	//}
 
 	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, outItem);
 
@@ -560,31 +568,34 @@ static long __fastcall AISearchCorpseDrug(fo::GameObject* source, long addrType,
 	return (item) ? 1 : -1;
 }
 
-static void __declspec(naked) ai_check_drugs_hook_search_drug() {
-	static const uint32_t ai_check_drugs_hook_search_drug_UseRet = 0x4287DE;
-	__asm {
-		call fo::funcoffs::ai_search_environ_;
-		mov  edx, [esp]; // called addr
-		push eax;        // item
-		push esp;        // itemEnv (ref to item)
-		push [esp + 0x34 - 0x30 + 12]; // noInvenItem
-		mov  ecx, esi;   // source
-		call AISearchCorpseDrug;
-		pop  ebp;        // itemEnv
-		test eax, eax;
-		jz   default;
-		add  esp, 4;
-		jmp  ai_check_drugs_hook_search_drug_UseRet;
-default:
-		mov  eax, ebp;
-		retn;
-	}
-}
+//static void __declspec(naked) ai_check_drugs_hook_search_drug() {
+//	static const uint32_t ai_check_drugs_hook_search_drug_UseRet = 0x4287DE;
+//	__asm {
+//		call fo::funcoffs::ai_search_environ_;
+//		mov  edx, [esp]; // called addr
+//		push eax;        // item
+//		push esp;        // itemEnv (ref to item)
+//		push [esp + 0x34 - 0x30 + 12]; // noInvenItem
+//		mov  ecx, esi;   // source
+//		call ai_search_environ_corpse_drug;
+//		pop  ebp;        // itemEnv
+//		test eax, eax;
+//		jz   default;
+//		add  esp, 4;
+//		jmp  ai_check_drugs_hook_search_drug_UseRet;
+//default:
+//		mov  eax, ebp;
+//		retn;
+//	}
+//}
 
-void AIInventory::CorpsesLootingHack() {
-	HookCall(0x42A5F6, ai_switch_weapons_hook_search);
-	HookCall(0x42AA25, ai_try_attack_hook_search_ammo);
-	HookCalls(ai_check_drugs_hook_search_drug, { 0x4287B2, 0x4287C8 });
+void AIInventory::init(bool isLooting) {
+	if (isLooting) {
+		lootingCorpses = true;
+		HookCall(0x42A5F6, ai_switch_weapons_hook_search);
+		HookCall(0x42AA25, ai_try_attack_hook_search_ammo);
+		//HookCalls(ai_check_drugs_hook_search_drug, { 0x4287B2, 0x4287C8 });
+	}
 
 	bestWeaponFix = (IniReader::GetConfigInt("Misc", "AIBestWeaponFix", 1) > 0);
 }

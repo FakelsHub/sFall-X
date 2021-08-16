@@ -10,6 +10,27 @@
 namespace sfall
 {
 
+long UseObjOnHook_Script(fo::GameObject* source, fo::GameObject* item, fo::GameObject* target) {
+	BeginHook();
+
+	args[0] = (DWORD)target; // target
+	args[1] = (DWORD)source; // user
+	args[2] = (DWORD)item;   // item
+
+	argCount = 3;
+	RunHookScript(HOOK_USEOBJON);
+
+	int result = (cRet > 0) ? rets[0] : -1;
+	EndHook();
+
+	return result; // -1 - default handler
+}
+
+long UseObjOnHook_Invoke(fo::GameObject* source, fo::GameObject* item, fo::GameObject* target) {
+	if (!HookScripts::HookHasScript(HOOK_USEOBJON)) return -1;
+	return UseObjOnHook_Script(source, item, target);
+}
+
 static void __declspec(naked) UseObjOnHook() {
 	__asm {
 		HookBegin;
@@ -372,9 +393,9 @@ void Inject_UseObjOnHook() {
 
 	// the following hooks allows to catch drug use of AI and from action cursor
 	HookCalls(Drug_UseObjOnHook, {
-		0x4285DF, // ai_check_drugs
-		0x4286F8, // ai_check_drugs
-		0x4287F8, // ai_check_drugs
+		//0x4285DF, // ai_check_drugs
+		//0x4286F8, // ai_check_drugs
+		//0x4287F8, // ai_check_drugs
 		0x473573  // inven_action_cursor
 	});
 }

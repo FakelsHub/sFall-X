@@ -8,6 +8,7 @@
 
 #include "..\main.h"
 #include "..\Modules\HookScripts\CombatHs.h"
+#include "..\Modules\HookScripts\ObjectHs.h"
 #include "..\Modules\Perks.h"
 
 #include "..\Game\stats.h"
@@ -20,6 +21,11 @@ namespace game
 namespace sf = sfall;
 
 constexpr int reloadCostAP = 2; // engine default reload AP cost
+
+long Items::item_d_take_drug(fo::GameObject* source, fo::GameObject* item) {
+	if (sf::UseObjOnHook_Invoke(source, item, source) == -1) return -1;
+	return fo::func::item_d_take_drug(source, item);
+}
 
 long Items::item_count(fo::GameObject* who, fo::GameObject* item) {
 	for (int i = 0; i < who->invenSize; i++)

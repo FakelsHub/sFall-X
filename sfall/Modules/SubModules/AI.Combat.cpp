@@ -14,6 +14,7 @@
 #include "..\Combat.h"
 #include "..\PartyControl.h"
 
+#include "..\..\Game\combatAI.h"
 #include "..\..\Game\items.h"
 
 #include "..\AI.h"
@@ -80,7 +81,6 @@ static CombatShootResult CheckShotBeforeAttack(fo::GameObject* source, fo::GameO
 	}
 	return CombatShootResult::Ok;
 }
-
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -499,6 +499,7 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 
 	/* Distance: Charge behavior */
 	if (attacker.cap->distance == fo::AIpref::distance::charge && fo::func::obj_dist(source, target) > fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) / 2) {
+		DEV_PRINTF1("\n[AI] AIpref::distance::charge: %s", fo::func::critter_name(target));
 		// приблизиться на расстояние для совершения одной атаки
 		distance = source->critter.getAP();
 		long cost = AIHelpers::GetCurrenShootAPCost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
@@ -610,7 +611,7 @@ TrySpendExtraAP:
 	**************************************************************************/
 	if (fo::var::combatNumTurns == 0 || CheckEnemyCritters(source)) { // Проверяет имеются ли враждебные криттеры перед употреблением (NPC может в конце боя принять)
 		DEV_PRINTF("\n[AI] Check drugs...");
-		fo::func::ai_check_drugs(source);
+		game::CombatAI::ai_check_drugs(source); //fo::func::ai_check_drugs(source);
 	}
 
 	// текущие очки жизней меньше чем значение min_hp

@@ -14,6 +14,8 @@ class Items
 public:
 	static void init();
 
+	static long item_d_take_drug(fo::GameObject* source, fo::GameObject* item);
+
 	static long item_count(fo::GameObject* who, fo::GameObject* item);
 
 	//static long item_weapon_range(fo::GameObject* source, long hitMode);
