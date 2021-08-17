@@ -19,36 +19,18 @@ namespace game
 
 namespace sf = sfall;
 
+static const long aiUseItemAPCost = 2;
+
 // Implementation of ai_can_use_weapon_ engine function with the HOOK_CANUSEWEAPON hook
 bool CombatAI::ai_can_use_weapon(fo::GameObject* source, fo::GameObject* weapon, long hitMode) {
 	bool result = fo::func::ai_can_use_weapon(source, weapon, hitMode);
 	return sf::CanUseWeaponHook_Invoke(result, source, weapon, hitMode);
 }
 
-static const long aiUseItemAPCost = 2;
-static std::vector<long> healingItemPids = { fo::PID_STIMPAK, fo::PID_SUPER_STIMPAK, fo::PID_HEALING_POWDER };
-
-static bool CheckHealingItems(fo::GameObject* item) {
-	return (std::find(healingItemPids.cbegin(), healingItemPids.cend(), item->protoId) != healingItemPids.cend());
-}
-
-// True - use fail
-static bool UseItemDrugFunc(fo::GameObject* source, fo::GameObject* item) {
-	bool result = (game::Items::item_d_take_drug(source, item) == -1);
-	if (result) {
-		fo::func::item_add_force(source, item, 1);
-	} else {
-		fo::func::ai_magic_hands(source, item, 5000);
-		fo::func::obj_connect(item, source->tile, source->elevation, 0);
-		fo::func::obj_destroy(item);
-	}
-	return result;
-}
-
 static long drugUsePerfFixMode;
 
 void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
-	if (fo::func::critter_body_type(source)) return; // Robotic/Quadruped - they can't use
+	if (fo::func::critter_body_type(source)) return; // Robotic/Quadruped cannot use drugs
 
 	DWORD slot = -1;
 	long noInvenDrug = 0;
@@ -98,8 +80,8 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 				break;
 			}
 
-			if (CheckHealingItems(itemFind) && !fo::func::item_remove_mult(source, itemFind, 1)) {
-				if (!UseItemDrugFunc(source, itemFind)) {
+			if (game::Items::IsHealingItem(itemFind) && !fo::func::item_remove_mult(source, itemFind, 1)) {
+				if (!game::Items::UseDrugItemFunc(source, itemFind)) {
 					drugWasUse = true;
 				}
 
@@ -128,11 +110,11 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 				if (drugUsePerfFixMode > 0) {
 					fo::GameObject* firstFindDrug = item;
 					do {
-						// [FIX] Only allows the use of drugs items that are listed in the chem_primary_desire list (AIDrugUsePerfFix == 2)
+						// [FIX] Allow using only the drugs listed in chem_primary_desire and healing drugs (AIDrugUsePerfFix == 2)
 						while (item->protoId != cap->chem_primary_desire[counter]) if (++counter > 2) break;
 						if (counter <= 2) break; // there is a match
 
-						// [FIX] Fixes for preference when using drugs
+						// [FIX] Fixes for the chem_primary_desire preference list when using drugs
 						if (drugUsePerfFixMode == 1) {
 							item = fo::func::inven_find_type(source, fo::ItemType::item_type_drug, &slot);
 							if (!item) {
@@ -143,15 +125,15 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 						}
 					} while (counter < 3);
 				} else {
-					// if the drug is equal to the preference of the item, then check the following [vanilla bug behavior]
+					// if the drug is equal to the item in the preference list, then check the next [vanilla bug behavior]
 					while (item->protoId == cap->chem_primary_desire[counter]) if (++counter > 2) break;
 				}
 
 				// if the preference counter is less than 3, then can use item drug
 				if (counter < 3) {
-					// if the item does not belong to the healing drugs
-					if (!CheckHealingItems(item) && !fo::func::item_remove_mult(source, item, 1)) {
-						if (!UseItemDrugFunc(source, item)) {
+					// if the item is NOT a healing drug
+					if (!game::Items::IsHealingItem(item) && !fo::func::item_remove_mult(source, item, 1)) {
+						if (!game::Items::UseDrugItemFunc(source, item)) {
 							drugWasUse = true;
 							usedCount++;
 						}
@@ -188,9 +170,9 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 			}
 			if (!result && lastItem) lastItem = fo::func::ai_retrieve_object(source, lastItem);
 
-			// [FIX] Prevents the use of healing drugs when they are not needed
+			// [FIX] Prevent the use of healing drugs when not necessary
 			// noInvenDrug: is set to 2 that healing is required
-			if (lastItem && noInvenDrug != 2 && CheckHealingItems(lastItem)) {
+			if (lastItem && noInvenDrug != 2 && game::Items::IsHealingItem(lastItem)) {
 				long maxHP = fo::func::stat_level(source, fo::Stat::STAT_max_hit_points);
 				if (10 + source->critter.health >= maxHP) { // quick check current HP
 					return; // exit: don't use healing item
@@ -198,7 +180,7 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 			}
 
 			if (lastItem && !fo::func::item_remove_mult(source, lastItem, 1)) {
-				if (!UseItemDrugFunc(source, lastItem))	lastItem = nullptr;
+				if (!game::Items::UseDrugItemFunc(source, lastItem))	lastItem = nullptr;
 
 				if (source->critter.getAP() < aiUseItemAPCost) {
 					source->critter.movePoints = 0;
@@ -210,7 +192,20 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 	}
 }
 
+static void __declspec(naked) ai_check_drugs_replacement() {
+	__asm {
+		push ecx;
+		push eax; // source
+		call game::CombatAI::ai_check_drugs;
+		pop  ecx;
+		retn;
+	}
+}
+
 void CombatAI::init() {
+
+	// Replace functions
+	sf::MakeJump(fo::funcoffs::ai_check_drugs_, ai_check_drugs_replacement); // 0x428480
 
 	drugUsePerfFixMode = sf::IniReader::GetConfigInt("Misc", "AIDrugUsePerfFix", 0);
 	if (drugUsePerfFixMode > 0) sf::dlogr("Applying AI drug use preference fix.", DL_FIX);

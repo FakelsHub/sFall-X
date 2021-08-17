@@ -543,8 +543,6 @@ static bool lootingCorpses = false;
 long AIInventory::ai_search_environ_corpse_drug(fo::GameObject* source, fo::ItemType type, long noInvenItem, fo::GameObject* &itemEnv) {
 	if (!lootingCorpses) return 0;
 
-	//fo::ItemType type = (addrType == 0x4287B2 + 5) ? fo::ItemType::item_type_drug : fo::ItemType::item_type_misc_item;
-
 	fo::GameObject* outItem = itemEnv;
 	long lengthPath = AIInventory::ai_search_environ_corpse(source, type, outItem, nullptr);
 	if (lengthPath > 0 && noInvenItem != 2) {
@@ -554,7 +552,7 @@ long AIInventory::ai_search_environ_corpse_drug(fo::GameObject* source, fo::Item
 	}
 	if (!outItem || outItem == itemEnv || lengthPath < 0) return 0; // default (в itemEnv ref значение из ai_search_environ_)
 
-	bool dontUse = false;
+	//bool dontUse = false;
 	//if (noInvenItem != 2) { // is set to 2 that healing is required
 	//	long pid = outItem->protoId;
 	//	if (pid == fo::ProtoID::PID_STIMPAK || pid == fo::ProtoID::PID_SUPER_STIMPAK || pid == fo::ProtoID::PID_HEALING_POWDER) {
@@ -562,39 +560,17 @@ long AIInventory::ai_search_environ_corpse_drug(fo::GameObject* source, fo::Item
 	//	}
 	//}
 
-	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, outItem);
+	fo::GameObject* item = AIInventory::AIRetrieveCorpseItem(source, outItem); // получает предмет из трупа
 
-	itemEnv = (!dontUse) ? item : nullptr;
+	itemEnv = item; //itemEnv = (!dontUse) ? item : nullptr;
 	return (item) ? 1 : -1;
 }
-
-//static void __declspec(naked) ai_check_drugs_hook_search_drug() {
-//	static const uint32_t ai_check_drugs_hook_search_drug_UseRet = 0x4287DE;
-//	__asm {
-//		call fo::funcoffs::ai_search_environ_;
-//		mov  edx, [esp]; // called addr
-//		push eax;        // item
-//		push esp;        // itemEnv (ref to item)
-//		push [esp + 0x34 - 0x30 + 12]; // noInvenItem
-//		mov  ecx, esi;   // source
-//		call ai_search_environ_corpse_drug;
-//		pop  ebp;        // itemEnv
-//		test eax, eax;
-//		jz   default;
-//		add  esp, 4;
-//		jmp  ai_check_drugs_hook_search_drug_UseRet;
-//default:
-//		mov  eax, ebp;
-//		retn;
-//	}
-//}
 
 void AIInventory::init(bool isLooting) {
 	if (isLooting) {
 		lootingCorpses = true;
 		HookCall(0x42A5F6, ai_switch_weapons_hook_search);
 		HookCall(0x42AA25, ai_try_attack_hook_search_ammo);
-		//HookCalls(ai_check_drugs_hook_search_drug, { 0x4287B2, 0x4287C8 });
 	}
 
 	bestWeaponFix = (IniReader::GetConfigInt("Misc", "AIBestWeaponFix", 1) > 0);

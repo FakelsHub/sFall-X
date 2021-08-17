@@ -2044,7 +2044,7 @@ skip:
 	}
 }
 
-static DWORD firstItemDrug = -1;
+/*static DWORD firstItemDrug = -1;
 
 // when there are no more items in the inventory
 static void __declspec(naked) ai_check_drugs_hack_break() {
@@ -2093,7 +2093,7 @@ skip:
 		add  esp, 4;
 		jmp  ai_check_drugs_hack_Loop;     // goto begin loop, search next item
 	}
-}
+}*/
 
 static void __declspec(naked) cai_cap_save_hook() {
 	__asm {
