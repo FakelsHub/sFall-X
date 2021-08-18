@@ -3,7 +3,7 @@
  *    Copyright (C) 2008 - 2021  Timeslip and sfall team
  *
  */
-	
+
 #include <array>
 
 #include "..\FalloutEngine\Fallout2.h"
@@ -25,18 +25,22 @@ constexpr int reloadCostAP = 2; // engine default reload AP cost
 
 static std::array<long, 3> healingItemPids = { fo::PID_STIMPAK, fo::PID_SUPER_STIMPAK, fo::PID_HEALING_POWDER };
 
-void Items::SetHealingPID(long index, long pid) {
-	/*if (index < 0 && index < 3)*/ healingItemPids[index] = pid;
+long Items::GetHealingPID(long index) {
+	return healingItemPids[index];
 }
 
-bool Items::IsHealingItem(fo::GameObject* item) {
-	 if (std::find(healingItemPids.cbegin(), healingItemPids.cend(), item->protoId) != healingItemPids.cend()) return true;
-	 
-	 fo::Proto* proto; 
-	 if (fo::GetProto(item->protoId, &proto)) {
-		return (proto->item.flagsExt & fo::ItemFlags::HealingItem); // TODO check asm code
-	 }
-	 return false;
+void Items::SetHealingPID(long index, long pid) {
+	healingItemPids[index] = pid;
+}
+
+bool __fastcall Items::IsHealingItem(fo::GameObject* item) {
+	for each (long pid in healingItemPids) if (pid == item->protoId) return true;
+
+	fo::Proto* proto;
+	if (fo::GetProto(item->protoId, &proto)) {
+		return (proto->item.flagsExt & fo::ItemFlags::HealingItem) != 0;
+	}
+	return false;
 }
 
 bool Items::UseDrugItemFunc(fo::GameObject* source, fo::GameObject* item) {

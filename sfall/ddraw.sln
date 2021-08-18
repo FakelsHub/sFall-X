@@ -6,9 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ddraw", "ddraw.vcxproj", "{FB9023DA-CA5E-4704-B601-407810963EF0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Project files", "Project files", "{EA440259-1669-4720-AAC4-5A5F0D1F33AC}"
-	ProjectSection(SolutionItems) = preProject
-		Rebracer.xml = Rebracer.xml
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripting Headers", "Scripting Headers", "{5F3DA4F2-CE90-4B50-AF46-2FEFF3650DEA}"
 	ProjectSection(SolutionItems) = preProject
@@ -28,8 +25,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripting Docs", "Scripting
 	ProjectSection(SolutionItems) = preProject
 		..\artifacts\scripting\arrays.md = ..\artifacts\scripting\arrays.md
 		..\artifacts\scripting\HookScripts.md = ..\artifacts\scripting\HookScripts.md
-		..\artifacts\scripting\sfall function notes.txt = ..\artifacts\scripting\sfall function notes.txt
-		..\artifacts\scripting\sfall opcode list.txt = ..\artifacts\scripting\sfall opcode list.txt
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configs", "Configs", "{3A5B984E-9EB4-4A6E-808A-87B62A4A87AE}"

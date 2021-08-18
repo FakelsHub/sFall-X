@@ -39,6 +39,7 @@
 #include "Modules\DebugEditor.h"
 #include "Modules\Drugs.h"
 #include "Modules\Elevators.h"
+#include "Modules\EngineTweaks.h"
 #include "Modules\Explosions.h"
 #include "Modules\ExtraSaveSlots.h"
 #include "Modules\FileSystem.h"
@@ -123,6 +124,13 @@ static void InitModules() {
 	manager.add<LoadOrder>();
 	manager.add<LoadGameHook>();
 	manager.add<MainLoopHook>();
+
+	manager.add<EngineTweaks>();
+	manager.add<Books>();
+	manager.add<Criticals>();
+	manager.add<Elevators>();
+	manager.add<FileSystem>();
+
 	manager.add<Movies>();
 	manager.add<MainMenu>();
 	manager.add<Interface>();
@@ -136,8 +144,7 @@ static void InitModules() {
 	manager.add<Perks>();
 	manager.add<Combat>();
 	manager.add<Skills>();
-	manager.add<FileSystem>();
-	manager.add<Criticals>();
+
 	manager.add<Karma>();
 	manager.add<Tiles>();
 	manager.add<Credits>();
@@ -151,12 +158,10 @@ static void InitModules() {
 	manager.add<Drugs>();       // should be loaded before PartyControl
 	manager.add<PartyControl>();
 	manager.add<BurstMods>();
-	manager.add<Books>();
 	manager.add<Explosions>();
 	manager.add<Message>();
-	manager.add<Elevators>();
 	manager.add<KillCounter>();
-	//
+
 	manager.add<AI>();
 	manager.add<DamageMod>();
 	manager.add<Animations>();

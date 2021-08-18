@@ -14,10 +14,11 @@ class Items
 public:
 	static void init();
 
+	static long GetHealingPID(long index);
 	static void SetHealingPID(long index, long pid);
-	
-	static bool IsHealingItem(fo::GameObject* item);
-	
+
+	static bool __fastcall IsHealingItem(fo::GameObject* item);
+
 	// True - use failed
 	static bool UseDrugItemFunc(fo::GameObject* source, fo::GameObject* item);
 

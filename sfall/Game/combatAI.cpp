@@ -19,7 +19,7 @@ namespace game
 
 namespace sf = sfall;
 
-static const long aiUseItemAPCost = 2;
+const long aiUseItemAPCost = 2;
 
 // Implementation of ai_can_use_weapon_ engine function with the HOOK_CANUSEWEAPON hook
 bool CombatAI::ai_can_use_weapon(fo::GameObject* source, fo::GameObject* weapon, long hitMode) {
@@ -29,6 +29,9 @@ bool CombatAI::ai_can_use_weapon(fo::GameObject* source, fo::GameObject* weapon,
 
 static long drugUsePerfFixMode;
 
+/*
+	Describe the difference from the original function
+*/
 void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 	if (fo::func::critter_body_type(source)) return; // Robotic/Quadruped cannot use drugs
 
@@ -69,7 +72,7 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 
 		long minHP = (hpPercent * fo::func::stat_level(source, fo::Stat::STAT_max_hit_points)) / 100;
 
-		// [FIX] Fixed not checking minimum hp properly for using stimpaks (prevents premature fleeing)
+		// [FIX] Fixed not checking minimum hp properly for using healing drugs (prevents premature fleeing)
 		if (cap->min_hp > minHP) minHP = cap->min_hp;
 
 		while (fo::func::stat_level(source, fo::Stat::STAT_current_hp) < minHP && source->critter.getAP() >= aiUseItemAPCost)
@@ -157,7 +160,7 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 		}
 	}
 	// search drugs on the map environment
-	if (lastItem || (!drugWasUse /*&& noInvenDrug*/)) {
+	if (lastItem || (!drugWasUse && noInvenDrug)) {
 		do {
 			long result = 0;
 			if (!lastItem) {
@@ -202,10 +205,25 @@ static void __declspec(naked) ai_check_drugs_replacement() {
 	}
 }
 
+static void __declspec(naked) ai_can_use_drug_hack() {
+	__asm {
+		push ecx; // item
+		call game::Items::IsHealingItem;
+		pop  ecx;
+		test al, al;
+		retn;
+	}
+}
+
 void CombatAI::init() {
 
-	// Replace functions
+	// Replacing the ai_check_drugs_ function for checking healing items and code fixes
 	sf::MakeJump(fo::funcoffs::ai_check_drugs_, ai_check_drugs_replacement); // 0x428480
+
+	// Changing code ai_can_use_drug_ function to check the healing items
+	sf::MakeCall(0x429BDE, ai_can_use_drug_hack, 6);
+	sf::SafeWrite8(0x429BE9, sf::CodeType::JumpNZ);    // jz > jnz
+	sf::SafeWrite8(0x429BF1, sf::CodeType::JumpShort); // jnz > jmp
 
 	drugUsePerfFixMode = sf::IniReader::GetConfigInt("Misc", "AIDrugUsePerfFix", 0);
 	if (drugUsePerfFixMode > 0) sf::dlogr("Applying AI drug use preference fix.", DL_FIX);
