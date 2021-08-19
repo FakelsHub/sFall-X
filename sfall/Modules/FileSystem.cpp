@@ -721,6 +721,11 @@ void FileSystem::init() {
 	MakeJump(0x47CCE2, FSLoadHook); // LoadGame_
 
 	LoadGameHook::OnGameReset() += FileSystemReset;
+
+	// Fixes a crash if the file name contains a '%' character (relevant for SFX files)
+	// xfopen_ - remove calls sprintf_ functions that do nothing (probably just checking the file name for the '%' formatting char?)
+	BlockCall(0x4DEF12);
+	BlockCall(0x4DEF84);
 }
 
 }

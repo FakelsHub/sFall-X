@@ -34,7 +34,10 @@ void Items::SetHealingPID(long index, long pid) {
 }
 
 bool __fastcall Items::IsHealingItem(fo::GameObject* item) {
-	for each (long pid in healingItemPids) if (pid == item->protoId) return true;
+	//for each (long pid in healingItemPids) if (pid == item->protoId) return true;
+	if (healingItemPids[0] == item->protoId || healingItemPids[1] == item->protoId || healingItemPids[2] == item->protoId) {
+		return true;
+	}
 
 	fo::Proto* proto;
 	if (fo::GetProto(item->protoId, &proto)) {
@@ -57,8 +60,10 @@ bool Items::UseDrugItemFunc(fo::GameObject* source, fo::GameObject* item) {
 
 // Implementation of item_d_take_ engine function with the HOOK_USEOBJON hook
 long Items::item_d_take_drug(fo::GameObject* source, fo::GameObject* item) {
-	if (sf::UseObjOnHook_Invoke(source, item, source) == -1) return -1;
-	return fo::func::item_d_take_drug(source, item);
+	if (sf::UseObjOnHook_Invoke(source, item, source) == -1) { // default handler
+		return fo::func::item_d_take_drug(source, item);
+	}
+	return -1; // cancel use
 }
 
 long Items::item_count(fo::GameObject* who, fo::GameObject* item) {

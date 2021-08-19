@@ -119,6 +119,7 @@ static void InitModules() {
 
 	// initialize all modules
 	manager.add<BugFixes>();    // fixes should be applied at the beginning
+	manager.add<FileSystem>();
 	manager.add<Graphics>();
 	manager.add<Input>();
 	manager.add<LoadOrder>();
@@ -129,7 +130,6 @@ static void InitModules() {
 	manager.add<Books>();
 	manager.add<Criticals>();
 	manager.add<Elevators>();
-	manager.add<FileSystem>();
 
 	manager.add<Movies>();
 	manager.add<MainMenu>();
