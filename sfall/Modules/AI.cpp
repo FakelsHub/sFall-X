@@ -122,16 +122,16 @@ static void __declspec(naked) combat_ai_hack() {
 		mov  [ebx + 0x10], edx;             // update to cap.min_hp
 skip:
 		cmp  eax, edx;
-		jl   tryHeal; // curr_hp < min_hp
+		jl   tryHeal;                       // curr_hp < min_hp
 end:
 		add  esp, 4;
-		jmp  combat_ai_hack_Ret;
+		jmp  combat_ai_hack_Ret;            // jump to call ai_check_drugs_
 tryHeal:
 		push ecx;
 		push esi;                            // mov  eax, esi;
 		call game::CombatAI::ai_check_drugs; // call fo::funcoffs::ai_check_drugs_;
 		pop  ecx;
-		cmp  [esi + health], edx; // edx - minimum hp, below which NPC will run away
+		cmp  [esi + health], edx;            // edx - minimum hp, below which NPC will run away
 		jge  end;
 		retn; // flee
 	}

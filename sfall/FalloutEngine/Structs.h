@@ -212,6 +212,14 @@ struct GameObject {
 				return whoHitMe;
 			}
 
+			inline void decreaseAP(long value) {
+				if (movePoints > value) {
+					movePoints -= value;
+				} else {
+					movePoints = 0;
+				}
+			}
+
 			inline long getAP() {
 				return movePoints;
 			}
