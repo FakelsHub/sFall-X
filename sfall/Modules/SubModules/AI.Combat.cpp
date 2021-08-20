@@ -40,7 +40,7 @@ CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::Ga
 	fo::GameObject* item = fo::func::inven_right_hand(source);
 	if (item) {
 		long flags = source->critter.damageFlags;
-		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
+		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::util::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
 			return CombatShootResult::CrippledHand; // one of the hands is crippled, can't use a two-handed weapon
 		}
 		if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
@@ -64,7 +64,7 @@ static CombatShootResult CheckShotBeforeAttack(fo::GameObject* source, fo::GameO
 	fo::GameObject* item = fo::func::inven_right_hand(source);
 	if (item) {
 		long flags = source->critter.damageFlags;
-		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
+		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::util::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
 			return CombatShootResult::CrippledHand; // one of the hands is crippled, can't use a two-handed weapon
 		}
 		if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
@@ -116,7 +116,7 @@ static struct AttackerData {
 		InDudeParty = (fo::func::isPartyMember(_attacker) > 0);
 		cap = fo::func::ai_cap(_attacker);
 		bodyType = fo::func::critter_body_type(_attacker);
-		killType = GetCritterKillType(_attacker);
+		killType = fo::util::GetCritterKillType(_attacker);
 		maxAP = _attacker->critter.getAP();
 		totalBonusAP = 0;
 		moveBonusAP = 0;
@@ -210,7 +210,7 @@ static long GetCoverBehindObjectTile(fo::GameObject* source, fo::GameObject* tar
 	std::vector<long> checkTiles;
 
 	const unsigned long mask = 0xFFFF0000 | (fo::OBJ_TYPE_WALL << 8) | fo::OBJ_TYPE_SCENERY;
-	GetObjectsTileRadius(objects, source->tile, inRadius, source->elevation, mask); // объекты должны быть отсортированы по дальности расположения
+	fo::util::GetObjectsTileRadius(objects, source->tile, inRadius, source->elevation, mask); // объекты должны быть отсортированы по дальности расположения
 
 	//long dir = fo::func::tile_dir(target->tile, source->tile); // направление цели к source
 
@@ -388,20 +388,20 @@ static long GetMoveAwayDistaceFromTarget(fo::GameObject* source, fo::GameObject*
 			goto moveAway;
 		}
 		if (itemHandR) {
-			fo::GetProto(itemHandR->protoId, &protoR);
+			fo::util::GetProto(itemHandR->protoId, &protoR);
 			long weaponFlags = protoR->item.flagsExt;
 
-			wTypeR = fo::GetWeaponType(weaponFlags);
+			wTypeR = fo::util::GetWeaponType(weaponFlags);
 			if (wTypeR == fo::AttackSubType::GUNS) return 0; // the attacker **not move away** if the target has a firearm
-			wTypeRs = fo::GetWeaponType(weaponFlags >> 4);
+			wTypeRs = fo::util::GetWeaponType(weaponFlags >> 4);
 		}
 		if (target == fo::var::obj_dude) {
 			fo::GameObject* itemHandL = fo::func::inven_left_hand(target);
 			if (itemHandL) {
-				fo::GetProto(itemHandL->protoId, &protoL);
-				wTypeL = fo::GetWeaponType(protoL->item.flagsExt);
+				fo::util::GetProto(itemHandL->protoId, &protoL);
+				wTypeL = fo::util::GetWeaponType(protoL->item.flagsExt);
 				if (wTypeL == fo::AttackSubType::GUNS) return 0; // the attacker **not move away** if the target(dude) has a firearm
-				wTypeLs = fo::GetWeaponType(protoL->item.flagsExt >> 4);
+				wTypeLs = fo::util::GetWeaponType(protoL->item.flagsExt >> 4);
 			} else if (!itemHandR) {
 				// dude is unarmed
 				long damage = fo::func::stat_level(target, fo::Stat::STAT_melee_dmg);
@@ -568,7 +568,7 @@ static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
 		включена опция NPCRunAwayMode и атакующий не является постоянным партийцем игрока
 		(для постоянных партийцев min_hp рассчитывается при выборе предпочтений в панели управления)
 	**************************************************************************/
-	if (AICombat::npcPercentMinHP && attacker.cap->getRunAwayMode() != fo::AIpref::run_away_mode::none && !fo::IsPartyMember(source))
+	if (AICombat::npcPercentMinHP && attacker.cap->getRunAwayMode() != fo::AIpref::run_away_mode::none && !fo::util::IsPartyMember(source))
 	{
 		long caiMinHp = fo::func::cai_get_min_hp(attacker.cap);
 		long maxHP = fo::func::stat_level(source, fo::STAT_max_hit_points);

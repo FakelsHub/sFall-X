@@ -138,7 +138,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 		if (!itemHand) return false; // безоружный
 
 		fo::Proto* proto;
-		if (GetProto(itemHand->protoId, &proto) && proto->item.type == fo::ItemType::item_type_weapon) {
+		if (fo::util::GetProto(itemHand->protoId, &proto) && proto->item.type == fo::ItemType::item_type_weapon) {
 			int hitMode = fo::func::ai_pick_hit_mode(source, itemHand, target);
 			int maxRange = fo::func::item_w_range(source, hitMode);
 

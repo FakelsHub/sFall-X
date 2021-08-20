@@ -27,6 +27,8 @@
 // TODO: split these functions into several files
 namespace fo
 {
+namespace util
+{
 
 static fo::MessageNode messageBuf;
 
@@ -92,7 +94,7 @@ fo::Queue* QueueFind(fo::GameObject* object, long type) {
 long AnimCodeByWeapon(fo::GameObject* weapon) {
 	if (weapon != nullptr) {
 		fo::Proto* proto;
-		if (GetProto(weapon->protoId, &proto) && proto->item.type == item_type_weapon) {
+		if (GetProto(weapon->protoId, &proto) && proto->item.type == fo::item_type_weapon) {
 			return proto->item.weapon.animationCode;
 		}
 	}
@@ -133,11 +135,11 @@ void SkillSetTags(long* tags, long num) {
 }
 
 long GetItemType(fo::GameObject* item) {
-	return fo::GetProto(item->protoId)->item.type;
+	return fo::util::GetProto(item->protoId)->item.type;
 }
 
 long GetCritterKillType(fo::GameObject* critter) {
-	fo::Proto* proto = GetProto(critter->protoId);
+	fo::Proto* proto = fo::util::GetProto(critter->protoId);
 	return (proto) ? proto->critter.killType : -1;
 }
 
@@ -269,7 +271,7 @@ long IsPartyMemberByPid(long pid) {
 
 // Returns True if the NPC belongs to the player's potential (set in party.txt) party members (analog of broken isPotentialPartyMember_)
 bool IsPartyMember(fo::GameObject* critter) {
-	if (critter->id < PLAYER_ID) return false;
+	if (critter->id < fo::PLAYER_ID) return false;
 	return (IsPartyMemberByPid(critter->protoId) > 0);
 }
 
@@ -624,8 +626,8 @@ DWORD GetMaxCharWidth() {
 
 void RedrawObject(fo::GameObject* obj) {
 	fo::BoundRect rect;
-	func::obj_bound(obj, &rect);
-	func::tile_refresh_rect(&rect, obj->elevation);
+	fo::func::obj_bound(obj, &rect);
+	fo::func::tile_refresh_rect(&rect, obj->elevation);
 }
 
 // Redraws all windows
@@ -787,4 +789,5 @@ bool IsExistProto(long pid) {
 	return fo::func::db_access(pathProFile);
 }
 */
+}
 }

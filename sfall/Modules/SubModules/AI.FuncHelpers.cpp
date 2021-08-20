@@ -158,9 +158,9 @@ long AIHelpers::GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* tar
 
 fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, bool isSecond) {
 	fo::Proto* proto;
-	fo::GetProto(item->protoId, &proto);
+	fo::util::GetProto(item->protoId, &proto);
 	long type = (isSecond) ? proto->item.flagsExt >> 4 : proto->item.flagsExt;
-	return fo::GetWeaponType(type);
+	return fo::util::GetWeaponType(type);
 }
 
 fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, fo::AttackType hitMode) {
@@ -170,18 +170,18 @@ fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, fo::AttackTy
 
 // Проверяет относится ли предмет к типу стрелкового или метательному оружию
 bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
-	fo::Proto* proto = fo::GetProto(item->protoId);
+	fo::Proto* proto = fo::util::GetProto(item->protoId);
 
 	if (type > fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) type--;
 
 	if (type == -1 || type == fo::AttackType::ATKTYPE_LWEAPON_PRIMARY) {
-		long typePrimary = fo::GetWeaponType(proto->item.flagsExt);
+		long typePrimary = fo::util::GetWeaponType(proto->item.flagsExt);
 		if (typePrimary >= fo::AttackSubType::THROWING) {
 			return true;
 		}
 	}
 	if (type == -1 || type == fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) {
-		long typeSecondary = fo::GetWeaponType(proto->item.flagsExt >> 4);
+		long typeSecondary = fo::util::GetWeaponType(proto->item.flagsExt >> 4);
 		if (typeSecondary >= fo::AttackSubType::THROWING) {
 			return true;
 		}

@@ -19,7 +19,7 @@ public:
 	// Проверяет наличие патронов к оружию на карте или в инвентере убитых криттеров а так же в инвентаре самого NPC
 	static long AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter);
 
-	static fo::GameObject* SearchInventoryItemType(fo::GameObject* source, long itemType, fo::GameObject* object, fo::GameObject* weapon);
+	static fo::GameObject* SearchInventoryItemType(fo::GameObject* source, fo::ItemType type, fo::GameObject* object, fo::GameObject* weapon);
 
 	// Альтернативная реализация функции ai_search_inven_weap_
 	static fo::GameObject* GetInventoryWeapon(fo::GameObject* source, bool checkAP, bool useHand);
@@ -41,7 +41,7 @@ public:
 	static fo::GameObject* ai_search_environ_ammo(fo::GameObject* critter, fo::GameObject* weapon);
 
 	// Аналог функции ai_search_environ_, только с той разницей, что ищет требуемый предмет на карте в инвентаре убитых криттеров
-	static long ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* &itemGround, fo::GameObject* weapon);
+	static long ai_search_environ_corpse(fo::GameObject* source, fo::ItemType type, fo::GameObject* &itemGround, fo::GameObject* weapon);
 
 	static long ai_search_environ_corpse_drug(fo::GameObject* source, fo::ItemType type, long noInvenItem, fo::GameObject* &itemEnv);
 };

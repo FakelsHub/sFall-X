@@ -284,7 +284,7 @@ void __fastcall Objects::sf_obj_process_seen(long tileIndex) {
 					if (obj->elevation == fo::var::obj_dude->elevation) {
 						fo::GameObject* object = nullptr;
 						// check the line of sight from obj_dude to tile object, only critters and items
-						if (obj->Type() <= fo::ObjType::OBJ_TYPE_CRITTER) object = fo::LineOfSight(obj);
+						if (obj->Type() <= fo::ObjType::OBJ_TYPE_CRITTER) object = fo::util::LineOfSight(obj);
 						if (object == nullptr) obj->flags |= fo::ObjectFlag::Seen;
 					}
 					objptr = objptr->nextObject;
@@ -310,7 +310,7 @@ static void __declspec(naked) obj_process_seen_hack() {
 		push ecx;
 		push eax;
 		mov  ecx, ebx;
-		call LineOfSight;
+		call fo::util::LineOfSight;
 		test eax, eax;
 		pop  eax;
 		pop  ecx;

@@ -357,7 +357,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 
 			if (fo::func::obj_dist(source, object) > source->critter.getAP() + 1) break;
 
-			if (fo::GetProto(object->protoId)->critter.critterFlags & fo::CritterFlags::NoSteal) continue;
+			if (fo::util::GetProto(object->protoId)->critter.critterFlags & fo::CritterFlags::NoSteal) continue;
 
 			// check block and distance path
 			int toDistObject = 0;

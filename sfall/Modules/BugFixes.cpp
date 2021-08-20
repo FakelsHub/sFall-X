@@ -983,7 +983,7 @@ isFreeTile:
 isMultiHex:
 		push ecx;
 		mov  ecx, ebp;
-		call fo::MultiHexMoveIsBlocking;
+		call fo::util::MultiHexMoveIsBlocking;
 		pop  ecx;
 		retn;
 	}

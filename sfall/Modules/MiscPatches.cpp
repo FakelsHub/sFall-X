@@ -241,7 +241,7 @@ static void __declspec(naked) display_stats_hook() {
 
 static void __fastcall SwapHandSlots(fo::GameObject* item, fo::GameObject* &toSlot) {
 
-	if (toSlot && fo::GetItemType(item) != fo::item_type_weapon && fo::GetItemType(toSlot) != fo::item_type_weapon) {
+	if (toSlot && fo::util::GetItemType(item) != fo::item_type_weapon && fo::util::GetItemType(toSlot) != fo::item_type_weapon) {
 		return;
 	}
 	fo::ItemButtonItem* leftSlot  = &fo::var::itemButtonItems[0];
@@ -350,7 +350,7 @@ static long __fastcall HealthPointText(fo::GameObject* critter) {
 	int curHP = fo::func::stat_level(critter, fo::STAT_current_hp);
 
 	if (displayElectricalStat > 1) {
-		const char* msg = fo::MessageSearch(&fo::var::inventry_message_file, 7); // default text
+		const char* msg = fo::util::MessageSearch(&fo::var::inventry_message_file, 7); // default text
 		sprintf(messageBuffer, hpFmt, msg, curHP, maxHP);
 		return 0;
 	} else {
@@ -428,7 +428,7 @@ playWalkMovie:
 static void __declspec(naked) ListDrvdStats_hook() {
 	static const DWORD ListDrvdStats_Ret = 0x4354D9;
 	__asm {
-		call fo::IsRadInfluence;
+		call fo::util::IsRadInfluence;
 		test eax, eax;
 		jnz  influence;
 		mov  eax, ds:[FO_VAR_obj_dude];

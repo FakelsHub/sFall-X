@@ -31,6 +31,8 @@
 
 namespace fo
 {
+namespace util
+{
 
 __inline void DisplayPrint(const std::string& str) {
 	fo::func::display_print(str.c_str());
@@ -182,4 +184,5 @@ void RefreshGNW(bool skipOwner = false);
 
 UnlistedFrm *LoadUnlistedFrm(char *frmName, unsigned int folderRef);
 
+}
 }

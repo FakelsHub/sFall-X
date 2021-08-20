@@ -42,14 +42,14 @@ long AIInventory::AICheckAmmo(fo::GameObject* weapon, fo::GameObject* critter) {
 	return (ammo) ? 1 : 0;
 }
 
-fo::GameObject* AIInventory::SearchInventoryItemType(fo::GameObject* source, long itemType, fo::GameObject* object, fo::GameObject* weapon) {
+fo::GameObject* AIInventory::SearchInventoryItemType(fo::GameObject* source, fo::ItemType type, fo::GameObject* object, fo::GameObject* weapon) {
 	fo::GameObject* item;
 	DWORD slot = -1;
 	while (true)
 	{
-		item = fo::func::inven_find_type(object, itemType, &slot);
+		item = fo::func::inven_find_type(object, type, &slot);
 		if (item) {
-			switch (itemType) {
+			switch (type) {
 			case fo::ItemType::item_type_weapon:
 				if (!game::CombatAI::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
 				// проверяем наличее и количество имеющихся патронов
@@ -76,10 +76,10 @@ static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefSco
 	fo::AttackSubType weapType = fo::AttackSubType::NONE;
 	if (weapon) {
 		fo::Proto* proto;
-		if (!fo::GetProto(weapon->protoId, &proto)) return 0;
+		if (!fo::util::GetProto(weapon->protoId, &proto)) return 0;
 		if (proto->item.flagsExt & fo::ObjectFlag::HiddenItem) return -1;
 
-		weapType = fo::GetWeaponType(proto->item.flagsExt); // ATKTYPE_RWEAPON_PRIMARY
+		weapType = fo::util::GetWeaponType(proto->item.flagsExt); // ATKTYPE_RWEAPON_PRIMARY
 
 		long maxDmg = proto->item.weapon.maxDamage;
 		long minDmg = proto->item.weapon.minDamage;
@@ -234,7 +234,7 @@ bool AIInventory::AITryReloadWeapon(fo::GameObject* critter, fo::GameObject* wea
 	bool reloadNoAmmo = (weapon->protoId == fo::ProtoID::PID_SOLAR_SCORCHER); // не требуется патронов для перезарядки
 
 	if (!ammo && weapon->item.ammoPid != -1 || reloadNoAmmo) {
-		fo::Proto* proto = fo::GetProto(weapon->protoId);
+		fo::Proto* proto = fo::util::GetProto(weapon->protoId);
 		if (proto->item.type == fo::ItemType::item_type_weapon) {
 			if (weapon->item.charges <= 0 || weapon->item.charges < (proto->item.weapon.maxAmmo / 2)) {
 				if (!reloadNoAmmo) ammo = GetInventAmmo(critter, weapon);
@@ -267,11 +267,11 @@ static long __fastcall pickup_item(fo::GameObject* source, fo::GameObject* item)
 	int moveCount = 1;
 
 	// патроны: берем сразу несколько штук/пачек для полной перезарядки оружия
-	fo::Proto* protoAmmo = fo::GetProto(item->protoId);
+	fo::Proto* protoAmmo = fo::util::GetProto(item->protoId);
 	if (protoAmmo->item.type == fo::ItemType::item_type_ammo) {
 		fo::GameObject* weapon = fo::func::inven_right_hand(source);
 		if (weapon) {
-			fo::Proto* protoWeapon = fo::GetProto(weapon->protoId);
+			fo::Proto* protoWeapon = fo::util::GetProto(weapon->protoId);
 			long magMax = protoWeapon->item.weapon.maxAmmo;
 			long packSize = protoAmmo->item.ammo.packSize;
 			long count = magMax / packSize;
@@ -351,7 +351,7 @@ fo::GameObject* AIInventory::AIRetrieveCorpseItem(fo::GameObject* source, fo::Ga
 
 		__asm call fo::funcoffs::combat_turn_run_;
 
-		if (fo::GetInventItem(source, itemRetrive->protoId) == itemRetrive) {
+		if (fo::util::GetInventItem(source, itemRetrive->protoId) == itemRetrive) {
 			source->critter.movePoints -= pickupCostAP;
 			if (source->critter.getAP() < 0) source->critter.movePoints = 0;
 
@@ -387,7 +387,7 @@ fo::GameObject* AIInventory::ai_search_environ_ammo(fo::GameObject* critter, fo:
 
 			if (fo::func::obj_dist(critter, item) > maxDist) break;
 
-			if (fo::GetItemType(item) != fo::ItemType::item_type_ammo) continue;
+			if (fo::util::GetItemType(item) != fo::ItemType::item_type_ammo) continue;
 			// check block path
 			if (fo::func::make_path_func(critter, critter->tile, item->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_)) continue;
 
@@ -404,10 +404,10 @@ fo::GameObject* AIInventory::ai_search_environ_ammo(fo::GameObject* critter, fo:
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // Аналог функции ai_search_environ, только с той разницей, что ищет требуемый предмет в инвентаре убитых криттеров
-long AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType, fo::GameObject* &itemGround, fo::GameObject* weapon) {
-	if (fo::func::critter_body_type(source) != fo::BodyType::Biped) return -2; // critter не относится к типу Biped
+long AIInventory::ai_search_environ_corpse(fo::GameObject* source, fo::ItemType type, fo::GameObject* &itemGround, fo::GameObject* weapon) {
+	if (fo::func::critter_body_type(source) != fo::BodyType::Biped || fo::util::GetCritterKillType(source) == fo::KillType::KILL_TYPE_gecko) return -2; // critter не относится к типу Biped
 
-	if (!weapon && itemType == fo::ItemType::item_type_ammo) {
+	if (!weapon && type == fo::ItemType::item_type_ammo) {
 		weapon = fo::func::inven_right_hand(source);
 		if (!weapon) return -1; // ERROR: не назначено или нет оружия для проверки
 	}
@@ -437,7 +437,7 @@ long AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType
 
 			if (fo::func::obj_dist(source, object) > maxDist) break;
 
-			if (fo::GetProto(object->protoId)->critter.critterFlags & fo::CritterFlags::NoSteal) continue;
+			if (fo::util::GetProto(object->protoId)->critter.critterFlags & fo::CritterFlags::NoSteal) continue;
 
 			// check block path and distance
 			int toDist = 0;
@@ -446,7 +446,7 @@ long AIInventory::ai_search_environ_corpse(fo::GameObject* source, long itemType
 				if (toDist == 0 || (distanceLen > -1 && distanceLen < toDist)) continue;
 			}
 
-			fo::GameObject* item = AIInventory::SearchInventoryItemType(source, itemType, object, weapon);
+			fo::GameObject* item = AIInventory::SearchInventoryItemType(source, type, object, weapon);
 			if (item) {
 				DEV_PRINTF2("\n[AI] ai_search_environ_corpse: %s, Owner: %s", fo::func::critter_name(item), fo::func::critter_name(item->owner));
 				itemCorpse = item;

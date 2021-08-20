@@ -19,7 +19,7 @@ static void __declspec(naked) RemoveObjHook() {
 		mov args[0], eax;   // source
 		mov args[4], edx;   // item
 		mov args[8], ebx;   // count
-		mov args[12], ecx;
+		mov args[12], ecx;  // called func
 		xor esi, esi;
 		xor ecx, 0x47761D;  // from item_move_func_
 		cmovz esi, ebp;     // target
@@ -215,10 +215,10 @@ capsMultiDrop:
 static void __declspec(naked) InvenActionExplosiveDropHack() {
 	__asm {
 		pushadc;
-		xor  ecx, ecx;                       // no itemReplace
-		push 6;                              // event: item drop ground
-		call InventoryMoveHook_Script;       // edx - item
-		cmp  eax, -1;                        // ret value
+		xor  ecx, ecx;                 // no itemReplace
+		push 6;                        // event: item drop ground
+		call InventoryMoveHook_Script; // edx - item
+		cmp  eax, -1;                  // ret value
 		popadc;
 		jnz  noDrop;
 		mov  dword ptr ds:[FO_VAR_dropped_explosive], ebp; // overwritten engine code (ebp = 1)
@@ -226,7 +226,7 @@ static void __declspec(naked) InvenActionExplosiveDropHack() {
 		retn;
 noDrop:
 		add  esp, 4;
-		jmp  InvenActionObjDropRet;           // no drop
+		jmp  InvenActionObjDropRet; // no drop
 	}
 }
 
@@ -413,7 +413,7 @@ static void __declspec(naked) InvenUnwieldFuncHook() {
 	}
 
 	// get item
-	args[1] = (DWORD)fo::GetItemPtrSlot((fo::GameObject*)args[0], (fo::InvenType)args[2]);
+	args[1] = (DWORD)fo::util::GetItemPtrSlot((fo::GameObject*)args[0], (fo::InvenType)args[2]);
 
 	InvenWieldHook_ScriptPart(0); // unwield event
 
@@ -626,8 +626,7 @@ void Inject_InventoryMoveHook() {
 	Inject_SwitchHandHook();
 	MakeJump(0x4713A9, UseArmorHack); // old 0x4713A3
 	MakeJump(0x476491, DropIntoContainerHack);
-	MakeJump(0x471338, DropIntoContainerHandSlotHack);
-	MakeJump(0x4712AB, DropIntoContainerHandSlotHack);
+	MakeJumps(DropIntoContainerHandSlotHack, { 0x471338, 0x4712AB });
 	HookCall(0x471200, MoveInventoryHook);
 	HookCall(0x476549, DropAmmoIntoWeaponHook); // old 0x476588
 	HookCalls(InvenActionCursorObjDropHook, {
