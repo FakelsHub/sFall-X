@@ -10,19 +10,48 @@
 
 namespace sfall
 {
+/*
+void RemoveInventObjHook_Script(fo::GameObject* source, fo::GameObject* item, long count, long rmType) {
+	BeginHook();
+	argCount = 5;
+
+	args[0] = (DWORD)source;
+	args[1] = (DWORD)item;
+	args[2] = count;
+	args[3] = rmType; // RMOBJ_*
+	args[4] = 0; // target only from item_move_func_
+
+	RunHookScript(HOOK_REMOVEINVENOBJ);
+	EndHook();
+}
+
+void RemoveInventObjHook_Invoke(fo::GameObject* source, fo::GameObject* item, long count, long rmType) {
+	if (HookScripts::HookHasScript(HOOK_REMOVEINVENOBJ)) RemoveInventObjHook_Script(source, item, count, rmType);
+}
+*/
+
+static long rmObjType = -1;
+
+void SetRemoveObjectType(long rmType) {
+	rmObjType = rmType;
+}
 
 static void __declspec(naked) RemoveObjHook() {
 	static const DWORD RemoveObjHookRet = 0x477497;
 	__asm {
-		mov ecx, [esp + 8]; // call addr
+		mov  ecx, [esp + 8]; // call addr
+		cmp  rmObjType, -1;
+		cmovne ecx, rmObjType;
+		mov  rmObjType, -1;
+
 		HookBegin;
-		mov args[0], eax;   // source
-		mov args[4], edx;   // item
-		mov args[8], ebx;   // count
-		mov args[12], ecx;  // called func
-		xor esi, esi;
-		xor ecx, 0x47761D;  // from item_move_func_
-		cmovz esi, ebp;     // target
+		mov  args[0], eax;   // source
+		mov  args[4], edx;   // item
+		mov  args[8], ebx;   // count
+		mov  args[12], ecx;  // RMOBJ_* (called func)
+		xor  esi, esi;
+		xor  ecx, 0x47761D;  // from item_move_func_
+		cmovz esi, ebp;      // target
 		mov  args[16], esi;
 		push edi;
 		push ebp;
@@ -285,6 +314,25 @@ donothing:
 		add  esp, 4*4; // destroys all push and return address
 		xor  eax, eax; // result 0
 		jmp  DropAmmoIntoWeaponHack_return;
+
+// TODO
+//		mov  esi, [esp + 0x20 - 0x18 + 4]; // stack_num
+//		cmp  esi, -1;
+//		je   exitDrop;
+//		push ecx;
+//		mov  edx, [esp + 8];        // ammo item
+//		mov  ecx, ebp;              // weapon ptr
+//		push 4;                     // event: weapon reloading
+//		call InventoryMoveHook_Script;
+//		mov  edx, -1;
+//		pop  ecx;
+//		cmp  eax, edx;              // ret value
+//		cmovne esi, edx;            // set exit result
+//		lahf;
+//		xor  ah, 0x40;              // invert ZF
+//		sahf;
+//exitDrop:
+//		retn; // jz/e for exit drop_ammo_into_weapon_
 	}
 }
 
@@ -629,6 +677,7 @@ void Inject_InventoryMoveHook() {
 	MakeJumps(DropIntoContainerHandSlotHack, { 0x471338, 0x4712AB });
 	HookCall(0x471200, MoveInventoryHook);
 	HookCall(0x476549, DropAmmoIntoWeaponHook); // old 0x476588
+//MakeCall(0x476578, DropAmmoIntoWeaponHook, 2); // old 0x476588
 	HookCalls(InvenActionCursorObjDropHook, {
 		0x473851, 0x47386F,
 		0x47379A  // caps multi drop

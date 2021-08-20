@@ -10,6 +10,7 @@
 #include "..\main.h"
 #include "..\Modules\HookScripts\CombatHs.h"
 #include "..\Modules\HookScripts\ObjectHs.h"
+#include "..\Modules\HookScripts\InventoryHs.h"
 #include "..\Modules\Perks.h"
 
 #include "..\Game\stats.h"
@@ -64,6 +65,11 @@ long Items::item_d_take_drug(fo::GameObject* source, fo::GameObject* item) {
 		return fo::func::item_d_take_drug(source, item);
 	}
 	return -1; // cancel use
+}
+
+long Items::item_remove_mult(fo::GameObject* source, fo::GameObject* item, long count, long rmType) {
+	sf::SetRemoveObjectType(rmType);
+	return fo::func::item_remove_mult(source, item, count);
 }
 
 long Items::item_count(fo::GameObject* who, fo::GameObject* item) {
