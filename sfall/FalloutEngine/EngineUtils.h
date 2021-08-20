@@ -39,7 +39,7 @@ __inline void DisplayPrint(const std::string& str) {
 }
 
 // rect_free_ function for inline implementation
-__forceinline void sf_rect_free(fo::RectList* rect) {
+__forceinline void rect_free(fo::RectList* rect) {
 	fo::RectList* front = fo::var::rectList;
 	fo::var::rectList = rect;
 	rect->nextRect = front;
@@ -164,7 +164,7 @@ DWORD GetTextWidth(const char* textMsg);
 DWORD GetTextWidthFM(const char* textMsg);
 
 // get width of Char for current font
-DWORD GetCharWidth(char charVal);
+DWORD Get_CharWidth(char charVal);
 DWORD GetCharWidthFM(char charVal);
 
 // get maximum string length for current font - if all characters were maximum width

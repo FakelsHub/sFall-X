@@ -88,7 +88,7 @@ void __fastcall Render::GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE*
 
 				fo::RectList* free = rects;
 				rects = rects->nextRect;
-				fo::util::sf_rect_free(free);
+				fo::util::rect_free(free);
 			}
 		}
 		return;
@@ -112,7 +112,7 @@ void __fastcall Render::GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE*
 	if (rects->wRect.bottom > win->wRect.bottom) rects->wRect.bottom = win->wRect.bottom;
 
 	if (rects->wRect.right < rects->wRect.left || rects->wRect.bottom < rects->wRect.top) {
-		fo::util::sf_rect_free(rects);
+		fo::util::rect_free(rects);
 		return;
 	}
 
@@ -157,7 +157,7 @@ void __fastcall Render::GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE*
 			sf::Graphics::UpdateDDSurface(&GetBuffer()[rects->rect.x] + (rects->rect.y * widthFrom), width, height, widthFrom, &rects->wRect);
 		}
 		fo::RectList* next = rects->nextRect;
-		fo::util::sf_rect_free(rects);
+		fo::util::rect_free(rects);
 		rects = next;
 	}
 

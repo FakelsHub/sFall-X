@@ -107,7 +107,7 @@ static bool CreateWordWrapList(char *TextMsg, DWORD WrapWidth, DWORD *lineNum, L
 	while (TextMsg[i] != '\0') {
 		CurrentChar = TextMsg[i++];
 
-		int cWidth = fo::util::GetCharWidth(CurrentChar) + GapWidth;
+		int cWidth = fo::util::Get_CharWidth(CurrentChar) + GapWidth;
 		lineWidth += cWidth;
 		wordWidth += cWidth;
 

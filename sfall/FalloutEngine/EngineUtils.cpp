@@ -576,7 +576,7 @@ DWORD GetTextWidthFM(const char* TextMsg) {
 
 //---------------------------------------------------------
 //get width of Char for current font
-DWORD GetCharWidth(char charVal) {
+DWORD Get_CharWidth(char charVal) {
 	__asm {
 		mov  al, charVal;
 		call dword ptr ds:[FO_VAR_text_char_width];
