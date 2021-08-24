@@ -384,7 +384,7 @@
     <ClInclude Include="Game\GUI\Text.h">
       <Filter>Game\GUI</Filter>
     </ClInclude>
-    <ClInclude Include="Game\render.h">
+    <ClInclude Include="Game\GUI\render.h">
       <Filter>Game\GUI</Filter>
     </ClInclude>
   </ItemGroup>
@@ -705,7 +705,7 @@
     <ClCompile Include="Game\GUI\Text.cpp">
       <Filter>Game\GUI</Filter>
     </ClCompile>
-    <ClCompile Include="Game\render.cpp">
+    <ClCompile Include="Game\GUI\render.cpp">
       <Filter>Game\GUI</Filter>
     </ClCompile>
   </ItemGroup>

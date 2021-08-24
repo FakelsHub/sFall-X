@@ -103,11 +103,11 @@ DWORD HRPAddress(DWORD addr) {
 char falloutConfigName[65];
 
 void InitReplacementHack() {
+	game::gui::Render::init();
 	game::gui::Text::init();
 
 	game::CombatAI::init();
 	game::Inventory::init();
-	game::Render::init();
 	game::Skills::init();
 	game::Stats::init();
 	game::Items::init();
