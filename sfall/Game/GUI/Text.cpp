@@ -48,20 +48,23 @@ static long GetPositionWidth(const char* text, long width) {
 }
 
 // Implementation of the display_print_ function from HRP with support for the control character '\n' for line wrapping
-// Only for HRP 4.1.8
+// Work with vanilla and HRP 4.1.8
 static void __fastcall DisplayPrintLineBreak(const char* message) {
 	if (*message == 0 || !fo::var::GetInt(FO_VAR_disp_init)) return;
-
-	const long max_disp_chars = 256; // HRP value  (vanilla 80)
-	const long max_lines = 100;      // aka FO_VAR_max
-
-	unsigned char bulletChar = 149;
-	long wChar = fo::util::Get_CharWidth(bulletChar);
-	long width = sfall::GetIntHRPValue(HRP_VAR_disp_width) - wChar - fo::var::GetInt(FO_VAR_max_disp);
 	const char* text = message;
 
-	long font = fo::var::curr_font_num;
-	fo::func::text_font(101);
+	const long max_lines = 100; // aka FO_VAR_max
+	long max_disp_chars = 256;  // HRP value (vanilla 80)
+	char* display_string_buf_addr;
+
+	long width = (sfall::hrpIsEnabled) ? sfall::GetIntHRPValue(HRP_VAR_disp_width) : 0;
+	if (width == 0) {
+		width = 167; // vanilla size
+		max_disp_chars = 80;
+		display_string_buf_addr = (char*)FO_VAR_display_string_buf; // array size 100x80
+	} else {
+		display_string_buf_addr = (char*)sfall::HRPAddress(HRP_VAR_display_string_buf); // array size 100x256, allocated by HRP
+	}
 
 	if (!(fo::var::combat_state & 1)) {
 		long time = fo::var::GetInt(FO_VAR_bk_process_time);
@@ -71,8 +74,13 @@ static void __fastcall DisplayPrintLineBreak(const char* message) {
 		}
 	}
 
-	// array size 100x256, allocated by HRP
-	char* display_string_buf_addr = (char*)sfall::HRPAddress(HRP_VAR_display_string_buf);
+	long font = fo::var::curr_font_num;
+	fo::func::text_font(101);
+
+	unsigned char bulletChar = 149;
+	long wChar = fo::util::Get_CharWidth(bulletChar);
+	width -= wChar - fo::var::GetInt(FO_VAR_max_disp);
+
 	do {
 		char* display_string_buf = &display_string_buf_addr[max_disp_chars * fo::var::GetInt(FO_VAR_disp_start)];
 
@@ -151,7 +159,7 @@ static void __declspec(naked) sf_inven_display_msg() {
 void Text::init() {
 
 	// Support for the line break control character '\n' to describe the prototypes in game\pro_*.msg files
-	if (sfall::hrpVersionValid) { 
+	if (sfall::hrpVersionValid || !sfall::hrpIsEnabled) {
 		sfall::SafeWriteBatch<DWORD>((DWORD)sf_display_print, { 0x46ED87, 0x49AD7A }); // setup_inventory_, obj_examine_
 		sfall::SafeWrite32(0x472F9A, (DWORD)sf_inven_display_msg); // inven_obj_examine_func_
 	}

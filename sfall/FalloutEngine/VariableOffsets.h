@@ -70,6 +70,7 @@
 #define FO_VAR_disp_curr                  0x56FB48
 #define FO_VAR_disp_init                  0x51850C
 #define FO_VAR_disp_start                 0x56FB54
+#define FO_VAR_display_string_buf         0x56DBFC
 #define FO_VAR_display_win                0x631E4C
 #define FO_VAR_displayMapList             0x41B560
 #define FO_VAR_doing_refresh_all          0x6ADF38
