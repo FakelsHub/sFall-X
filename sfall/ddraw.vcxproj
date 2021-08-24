@@ -357,10 +357,12 @@
     <ClInclude Include="FalloutEngine\Structs.h" />
     <ClInclude Include="FalloutEngine\EngineUtils.h" />
     <ClInclude Include="FalloutEngine\VariableOffsets.h" />
+    <ClInclude Include="FalloutEngine\VariableOffsets_HRP.h" />
     <ClInclude Include="FalloutEngine\Variables.h" />
     <ClInclude Include="FalloutEngine\Functions.h" />
     <ClInclude Include="FalloutEngine\Functions_def.h" />
     <ClInclude Include="Game\combatAI.h" />
+    <ClInclude Include="Game\GUI\Text.h" />
     <ClInclude Include="Game\inventory.h" />
     <ClInclude Include="Game\items.h" />
     <ClInclude Include="Game\objects.h" />
@@ -479,6 +481,7 @@
     <ClCompile Include="FalloutEngine\Variables.cpp" />
     <ClCompile Include="FalloutEngine\Functions.cpp" />
     <ClCompile Include="Game\combatAI.cpp" />
+    <ClCompile Include="Game\GUI\Text.cpp" />
     <ClCompile Include="Game\inventory.cpp" />
     <ClCompile Include="Game\items.cpp" />
     <ClCompile Include="Game\objects.cpp" />

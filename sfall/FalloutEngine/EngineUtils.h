@@ -164,8 +164,8 @@ DWORD GetTextWidth(const char* textMsg);
 DWORD GetTextWidthFM(const char* textMsg);
 
 // get width of Char for current font
-DWORD Get_CharWidth(char charVal);
-DWORD GetCharWidthFM(char charVal);
+DWORD Get_CharWidth(BYTE charVal);
+DWORD GetCharWidthFM(BYTE charVal);
 
 // get maximum string length for current font - if all characters were maximum width
 DWORD GetMaxTextWidth(const char* textMsg);
