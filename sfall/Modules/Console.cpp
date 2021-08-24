@@ -31,7 +31,7 @@ static void __stdcall ConsoleFilePrint(const char* msg) {
 	consoleFile << msg << std::endl;
 }
 
-static void __declspec(naked) ConsoleHook() {
+static void __declspec(naked) display_print_hack() {
 	static const DWORD ConsoleHookRet = 0x431871;
 	__asm {
 		pushadc;
@@ -48,11 +48,12 @@ static void __declspec(naked) ConsoleHook() {
 }
 
 void Console::init() {
+	// option does not work in some cases, HRP has its own implementation of the display_print_ function
 	auto path = GetConfigString("Main", "ConsoleOutputPath", "", MAX_PATH);
 	if (!path.empty()) {
 		consoleFile.open(path);
 		if (consoleFile.is_open()) {
-			MakeJump(0x43186C, ConsoleHook);
+			MakeJump(0x43186C, display_print_hack);
 		}
 	}
 }

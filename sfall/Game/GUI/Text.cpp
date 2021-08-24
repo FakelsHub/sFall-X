@@ -47,7 +47,7 @@ static long GetPositionWidth(const char* text, long width) {
 	return position;
 }
 
-// Implementation of the display_print_ function from HRP with support for the control character '\n' for line wrapping
+// Replacing the implementation of the display_print_ function from HRP with support for the control character '\n' for line wrapping
 // Work with vanilla and HRP 4.1.8
 static void __fastcall DisplayPrintLineBreak(const char* message) {
 	if (*message == 0 || !fo::var::GetInt(FO_VAR_disp_init)) return;
@@ -79,7 +79,7 @@ static void __fastcall DisplayPrintLineBreak(const char* message) {
 
 	unsigned char bulletChar = 149;
 	long wChar = fo::util::Get_CharWidth(bulletChar);
-	width -= wChar - fo::var::GetInt(FO_VAR_max_disp);
+	width -= (wChar + fo::var::GetInt(FO_VAR_max_disp));
 
 	do {
 		char* display_string_buf = &display_string_buf_addr[max_disp_chars * fo::var::GetInt(FO_VAR_disp_start)];
@@ -122,7 +122,7 @@ static void __declspec(naked) sf_display_print() {
 	}
 }
 
-static void __stdcall InvenDisplayLineBreak(char* message) {
+static void __stdcall SplitPrintMessage(char* message, void* printFunc) {
 	char* text = message;
 	while (*text)
 	{
@@ -130,7 +130,7 @@ static void __stdcall InvenDisplayLineBreak(char* message) {
 			*text = 0; // set "End of Line"
 
 			__asm mov  eax, message;
-			__asm call fo::funcoffs::inven_display_msg_;
+			__asm call printFunc;
 
 			*text = '\\';
 			text += 2; // position behind the 'n' character
@@ -142,16 +142,28 @@ static void __stdcall InvenDisplayLineBreak(char* message) {
 	// print the last line or the all text if there was no line break
 	if (message != text) {
 		__asm mov  eax, message;
-		__asm call fo::funcoffs::inven_display_msg_;
+		__asm call printFunc;
 	}
 }
 
 static void __declspec(naked) sf_inven_display_msg() {
 	__asm {
 		push  ecx;
+		push  fo::funcoffs::inven_display_msg_;
 		push  eax; // message
-		call  InvenDisplayLineBreak;
+		call  SplitPrintMessage;
 		pop   ecx;
+		retn;
+	}
+}
+
+static void __declspec(naked) sf_display_print_alt() {
+	__asm {
+		push ecx;
+		push fo::funcoffs::display_print_;
+		push eax; // message
+		call SplitPrintMessage;
+		pop  ecx;
 		retn;
 	}
 }
@@ -159,10 +171,12 @@ static void __declspec(naked) sf_inven_display_msg() {
 void Text::init() {
 
 	// Support for the line break control character '\n' to describe the prototypes in game\pro_*.msg files
-	if (sfall::hrpVersionValid || !sfall::hrpIsEnabled) {
-		sfall::SafeWriteBatch<DWORD>((DWORD)sf_display_print, { 0x46ED87, 0x49AD7A }); // setup_inventory_, obj_examine_
-		sfall::SafeWrite32(0x472F9A, (DWORD)sf_inven_display_msg); // inven_obj_examine_func_
+	auto printFunc = sf_display_print; // for vanilla and HRP 4.1.8
+	if (sfall::hrpIsEnabled && !sfall::hrpVersionValid) {
+		printFunc = sf_display_print_alt;
 	}
+	sfall::SafeWriteBatch<DWORD>((DWORD)printFunc, { 0x46ED87, 0x49AD7A }); // setup_inventory_, obj_examine_
+	sfall::SafeWrite32(0x472F9A, (DWORD)sf_inven_display_msg); // inven_obj_examine_func_
 }
 
 }
