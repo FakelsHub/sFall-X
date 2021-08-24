@@ -334,9 +334,6 @@
     <ClInclude Include="Game\stats.h">
       <Filter>Game</Filter>
     </ClInclude>
-    <ClInclude Include="Game\render.h">
-      <Filter>Game</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\SubModules\WindowRender.h">
       <Filter>Modules\SubModules</Filter>
     </ClInclude>
@@ -385,6 +382,9 @@
       <Filter>FalloutEngine</Filter>
     </ClInclude>
     <ClInclude Include="Game\GUI\Text.h">
+      <Filter>Game\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\render.h">
       <Filter>Game\GUI</Filter>
     </ClInclude>
   </ItemGroup>
@@ -658,9 +658,6 @@
     <ClCompile Include="Game\stats.cpp">
       <Filter>Game</Filter>
     </ClCompile>
-    <ClCompile Include="Game\render.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\SubModules\WindowRender.cpp">
       <Filter>Modules\SubModules</Filter>
     </ClCompile>
@@ -706,6 +703,9 @@
       <Filter>Modules</Filter>
     </ClCompile>
     <ClCompile Include="Game\GUI\Text.cpp">
+      <Filter>Game\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\render.cpp">
       <Filter>Game\GUI</Filter>
     </ClCompile>
   </ItemGroup>
