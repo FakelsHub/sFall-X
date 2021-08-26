@@ -51,7 +51,7 @@ static long GetPositionWidth(const char* text, long width) {
 // Replacing the implementation of the display_print_ function from HRP with support for the control character '\n' for line wrapping
 // Work with vanilla and HRP 4.1.8
 static void __fastcall DisplayPrintLineBreak(const char* message) {
-	if (*message == 0 || !fo::var::GetInt(FO_VAR_disp_init)) return;
+	if (*message == 0 || !fo::var::getInt(FO_VAR_disp_init)) return;
 
 	sfall::Console::PrintFile(message);
 
@@ -68,10 +68,10 @@ static void __fastcall DisplayPrintLineBreak(const char* message) {
 		display_string_buf_addr = (char*)sfall::HRPAddress(HRP_VAR_display_string_buf); // array size 100x256, allocated by HRP
 	}
 
-	if (!(fo::var::combat_state & 1)) {
-		long time = fo::var::GetInt(FO_VAR_bk_process_time);
-		if ((time - fo::var::GetInt(FO_VAR_lastTime)) >= 500) {
-			*fo::var::SetInt(FO_VAR_lastTime) = time;
+	if (!(fo::var::combat_state & fo::CombatStateFlag::InCombat)) {
+		long time = fo::var::getInt(FO_VAR_bk_process_time);
+		if ((time - fo::var::getInt(FO_VAR_lastTime)) >= 500) {
+			fo::var::setInt(FO_VAR_lastTime) = time;
 			fo::func::gsound_play_sfx_file((const char*)0x50163C); // "monitor"
 		}
 	}
@@ -81,10 +81,10 @@ static void __fastcall DisplayPrintLineBreak(const char* message) {
 
 	unsigned char bulletChar = 149;
 	long wChar = fo::util::Get_CharWidth(bulletChar);
-	width -= (wChar + fo::var::GetInt(FO_VAR_max_disp));
+	width -= (wChar + fo::var::getInt(FO_VAR_max_disp));
 
 	do {
-		char* display_string_buf = &display_string_buf_addr[max_disp_chars * fo::var::GetInt(FO_VAR_disp_start)];
+		char* display_string_buf = &display_string_buf_addr[max_disp_chars * fo::var::getInt(FO_VAR_disp_start)];
 
 		long pos = GetPositionWidth(message, width);
 
@@ -101,14 +101,14 @@ static void __fastcall DisplayPrintLineBreak(const char* message) {
 		if (message[pos] == ' ') {
 			pos++;
 		} else if (message[pos] == '\\' && message[pos + 1] == 'n') {
-			pos += 2; // position behind the 'n' character
+			pos += 2; // position after the 'n' character
 		}
 		message += pos;
 
-		*fo::var::SetInt(FO_VAR_disp_start) = (fo::var::GetInt(FO_VAR_disp_start) + 1) % max_lines;
+		fo::var::setInt(FO_VAR_disp_start) = (fo::var::getInt(FO_VAR_disp_start) + 1) % max_lines;
 	} while (*message);
 
-	*fo::var::SetInt(FO_VAR_disp_curr) = fo::var::GetInt(FO_VAR_disp_start);
+	fo::var::setInt(FO_VAR_disp_curr) = fo::var::getInt(FO_VAR_disp_start);
 
 	fo::func::text_font(font);
     __asm call fo::funcoffs::display_redraw_;
@@ -135,7 +135,7 @@ static void __stdcall SplitPrintMessage(char* message, void* printFunc) {
 			__asm call printFunc;
 
 			*text = '\\';
-			text += 2; // position behind the 'n' character
+			text += 2; // position after the 'n' character
 			message = text;
 		} else {
 			text++;

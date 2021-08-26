@@ -3,7 +3,7 @@
 #include "..\InputFuncs.h"
 #include "..\Logging.h"
 #include "..\SafeWrite.h"
-#include "LoadGameHook.h"
+//#include "LoadGameHook.h"
 #include "ScriptExtender.h"
 
 #include "Input.h"
@@ -68,7 +68,7 @@ end:
 }
 
 void Input::init() {
-	//if (GetConfigInt("Input", "Enable", 0)) {
+	//if (IniReader::GetConfigInt("Input", "Enable", 0)) {
 		dlog("Applying input patch.", DL_INIT);
 		SafeWriteStr(0x50FB70, "ddraw.dll");
 		::sfall::availableGlobalScriptTypes |= 1;
@@ -77,9 +77,10 @@ void Input::init() {
 
 	xltKey = GetConfigInt("Input", "XltKey", 0);
 	if (xltKey > 0) {
-		auto table = GetConfigString("Input", "XltTable", "", 512);
+		auto table = IniReader::GetConfigString("Input", "XltTable", "", 512);
 		if (!table.empty()) {
 			dlog("Applying alternate keyboard character codes patch.", DL_INIT);
+
 			int count = 0;
 			xltTable = new char[94];
 			std::string::size_type pos = 0;
@@ -89,6 +90,7 @@ void Input::init() {
 				if (code > 31 && code < 256) xltTable[count++] = static_cast<BYTE>(code);
 				pos = table.find(',', ++pos);
 			}
+
 			if (count == 94) {
 				if (xltKey > 2) xltKey = 4;
 				MakeJump(0x433F3E, get_input_str_hack);
@@ -103,10 +105,6 @@ void Input::init() {
 			}
 		}
 	}
-
-	LoadGameHook::OnGameReset() += []() {
-		ForceGraphicsRefresh(0); // disable refresh
-	};
 }
 
 void Input::exit() {

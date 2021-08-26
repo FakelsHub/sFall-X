@@ -30,7 +30,14 @@ static bool fileIsOpen = false;
 static std::ofstream consoleFile;
 
 static void __fastcall ConsoleFilePrint(const char* msg) {
+	static long counter = 0;
+
 	consoleFile << "> " << msg << '\n';
+
+	if (++counter > 50) {
+		counter = 0;
+		consoleFile.flush();
+	}
 }
 
 static void __declspec(naked) display_print_hack() {
@@ -54,7 +61,7 @@ void Console::PrintFile(const char* msg) {
 }
 
 void Console::init() {
-	auto path = GetConfigString("Main", "ConsoleOutputPath", "", MAX_PATH);
+	auto path = IniReader::GetConfigString("Main", "ConsoleOutputPath", "", MAX_PATH);
 	if (!path.empty()) {
 		consoleFile.open(path);
 		if (consoleFile.is_open()) {
