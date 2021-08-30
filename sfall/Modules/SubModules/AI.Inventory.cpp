@@ -77,7 +77,7 @@ static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefSco
 	if (weapon) {
 		fo::Proto* proto;
 		if (!fo::util::GetProto(weapon->protoId, &proto)) return 0;
-		if (proto->item.flagsExt & fo::ObjectFlag::HiddenItem) return -1;
+		if (proto->item.flagsExt & fo::ItemFlags::HiddenItem) return -1;
 
 		weapType = fo::util::GetWeaponType(proto->item.flagsExt); // ATKTYPE_RWEAPON_PRIMARY
 

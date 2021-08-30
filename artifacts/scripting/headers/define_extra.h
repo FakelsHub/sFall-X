@@ -400,15 +400,18 @@
 #define ai_chem_anytime                (4)
 #define ai_chem_always                 (5)
 
+
 // common object data offsets
 #define OBJ_DATA_ID                 (0x00)
 #define OBJ_DATA_TILENUM            (0x04)
 #define OBJ_DATA_CUR_FRM            (0x18) // current frame number
 #define OBJ_DATA_ROTATION           (0x1C)
 #define OBJ_DATA_FID                (0x20)
+//#define OBJ_DATA_FLAGS            (0x24) // the same flags set in prototypes (PROTO_FLAG)
 #define OBJ_DATA_ELEVATION          (0x28)
+#define OBJ_DATA_MISC_FLAGS         (0x38)
 #define OBJ_DATA_PID                (0x64)
-#define OBJ_DATA_CID                (0x68) // combat ID, used for savegame
+#define OBJ_DATA_CID                (0x68) // combat ID used by critters in savegame (don't change while in combat)
 #define OBJ_DATA_SID                (0x78) // script ID
 #define OBJ_DATA_SCRIPT_INDEX       (0x80) // script index number in scripts.lst
 // items
@@ -418,6 +421,7 @@
 #define OBJ_DATA_CUR_ACTION_POINT   (0x40)
 #define OBJ_DATA_DAMAGE_LAST_TURN   (0x48)
 #define OBJ_DATA_WHO_HIT_ME         (0x54) // current target of the critter
+
 
 // compute attack result data offsets
 #define C_ATTACK_SOURCE             (0x00)
