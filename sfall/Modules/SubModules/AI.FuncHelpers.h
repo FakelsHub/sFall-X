@@ -21,6 +21,8 @@ public:
 	// destTile - тайл с которого будет проверяться линия
 	static fo::GameObject* CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker, long destTile);
 
+	static bool AICanUseWeapon(fo::GameObject* weapon);
+
 	static bool AttackInRange(fo::GameObject* source, fo::GameObject* weapon, long distance);
 	static bool AttackInRange(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* target);
 

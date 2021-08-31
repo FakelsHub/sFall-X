@@ -326,10 +326,10 @@ end
 
 procedure canuseweapon_handler begin
    variable critter = get_sfall_arg;
-   //if (critter) then begin
+   if (critter != dude_obj) then begin
       variable canWield = check_weapon_change(critter, get_sfall_arg, true);
       // override result
       set_sfall_arg(3, canWield);
       set_sfall_return(canWield);
-   //end
+   end
 end

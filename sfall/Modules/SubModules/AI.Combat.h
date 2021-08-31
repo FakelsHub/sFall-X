@@ -18,6 +18,7 @@ enum CombatShootResult : long {
 	ShootBlock    = 5,
 	CrippledHand  = 6,
 	CrippledHands = 7,
+	CantUseWeapon = 7,
 	NoActionPoint = 8, // add ext
 };
 

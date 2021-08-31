@@ -32,13 +32,17 @@ namespace sfall
 // В данной реализаци изменен порядок проверки результатов:
 //	"NoAmmo" проверяется перед "NotEnoughAPs" и "OutOfRange"
 //	проверка "OutOfRange" помещена перед "NotEnoughAPs"
-//	дополнительно добавлен результат "NoActionPoint", когда когда у атакующего нет очков действий
+//	дополнительно добавлено
+//	NoActionPoint: когда когда у атакующего нет очков действий
+//	CatnUseWeapon: тоже самое что и CrippledHand/CrippledHands
 CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode, long isCalled) {
 	if (source->critter.getAP() <= 0) return CombatShootResult::NoActionPoint;
 	if (target && target->critter.damageFlags & fo::DAM_DEAD) return CombatShootResult::TargetDead; // target is dead
 
 	fo::GameObject* item = fo::func::inven_right_hand(source);
 	if (item) {
+		if (!AIHelpers::AICanUseWeapon(item)) return CombatShootResult::CantUseWeapon;
+
 		long flags = source->critter.damageFlags;
 		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::util::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
 			return CombatShootResult::CrippledHand; // one of the hands is crippled, can't use a two-handed weapon
@@ -63,6 +67,8 @@ CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::Ga
 static CombatShootResult CheckShotBeforeAttack(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode) {
 	fo::GameObject* item = fo::func::inven_right_hand(source);
 	if (item) {
+		if (!AIHelpers::AICanUseWeapon(item)) return CombatShootResult::CantUseWeapon;
+
 		long flags = source->critter.damageFlags;
 		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::util::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
 			return CombatShootResult::CrippledHand; // one of the hands is crippled, can't use a two-handed weapon

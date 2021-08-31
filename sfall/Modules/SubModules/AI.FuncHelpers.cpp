@@ -46,6 +46,10 @@ fo::GameObject* AIHelpers::CheckFriendlyFire(fo::GameObject* target, fo::GameObj
 	return (object) ? AI::CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum) : nullptr; // 0 if there are no object
 }
 
+bool AIHelpers::AICanUseWeapon(fo::GameObject* weapon) {
+	return (weapon->item.miscFlags & fo::MiscFlags::CantUse) == 0;
+}
+
 bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, long distance) {
 	if (game::Items::item_weapon_range(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) >= distance) return true;
 	return (game::Items::item_weapon_range(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) >= distance);
