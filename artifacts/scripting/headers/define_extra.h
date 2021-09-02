@@ -141,8 +141,8 @@
 #define RMOBJ_THROW               4266040  // (action_ranged_)
 #define RMOBJ_SUB_CONTAINER       4683191  // search and remove the item from nested containers in the inventory (item_remove_mult_)
 #define RMOBJ_AI_USE_DRUG_ON      4359920  // removal before using the AI drug in combat (ai_check_drugs_)
-//#define RMOBJ_AI_USE_DRUG_ON_1  4359639  // same as RMOBJ_AI_USE_DRUG_ON (obsolete, use only for sfall below 4.3.1)
-//#define RMOBJ_AI_USE_DRUG_ON_2  4360176  // same as RMOBJ_AI_USE_DRUG_ON (obsolete, use only for sfall below 4.3.1)
+//#define RMOBJ_AI_USE_DRUG_ON_1  4359639  // same as RMOBJ_AI_USE_DRUG_ON (obsolete, use only for sfall below 4.3.1/3.8.31)
+//#define RMOBJ_AI_USE_DRUG_ON_2  4360176  // same as RMOBJ_AI_USE_DRUG_ON (obsolete, use only for sfall below 4.3.1/3.8.31)
 
 // common prototype offsets for get/set_proto_data
 #define PROTO_PID             (1)

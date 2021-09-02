@@ -295,7 +295,6 @@
 #define set_weapon_usable(item)                         set_object_data(item, OBJ_DATA_MISC_FLAGS, get_object_data(item, OBJ_DATA_MISC_FLAGS) bwand 0xFFFFFFEF)
 #define weapon_is_unusable(item)                        (get_object_data(item, OBJ_DATA_MISC_FLAGS) bwand 0x00000010)
 
-
 /* SFALL_FUNCX MACROS */
 
 #define add_extra_msg_file(name)                                sfall_func1("add_extra_msg_file", name)

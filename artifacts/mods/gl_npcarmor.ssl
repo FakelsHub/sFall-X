@@ -9,7 +9,7 @@
    NOTE: this script requires compiler from sfall modderspack with -s option
    (short circuit evaluation)
 
-   version 1.3 - for ext.
+   version 1.4 - for 4.3.1 ext.
 
 */
 
@@ -92,7 +92,7 @@ procedure search_alt_weapon(variable critter) begin
    variable obj, res, i := 0;
    obj := inven_ptr(critter, 0);
    while (obj) do begin
-      if (obj_item_subtype(obj) == item_type_weapon) then begin
+      if (obj_item_subtype(obj) == item_type_weapon andAlso weapon_is_unusable(obj) == false) then begin
          if (unWieldWeapon == 0 orElse unWieldWeapon != obj_pid(obj)) then begin
             res := check_weapon_change(critter, obj, 1);
             if (res == -1) then begin
@@ -326,7 +326,7 @@ end
 
 procedure canuseweapon_handler begin
    variable critter = get_sfall_arg;
-   if (critter != dude_obj) then begin
+   if (critter != dude_obj andAlso get_sfall_arg_at(3)) then begin
       variable canWield = check_weapon_change(critter, get_sfall_arg, true);
       // override result
       set_sfall_arg(3, canWield);

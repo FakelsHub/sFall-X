@@ -150,11 +150,11 @@ static void __stdcall SplitPrintMessage(char* message, void* printFunc) {
 
 static void __declspec(naked) sf_inven_display_msg() {
 	__asm {
-		push  ecx;
-		push  fo::funcoffs::inven_display_msg_;
-		push  eax; // message
-		call  SplitPrintMessage;
-		pop   ecx;
+		push ecx;
+		push fo::funcoffs::inven_display_msg_;
+		push eax; // message
+		call SplitPrintMessage;
+		pop  ecx;
 		retn;
 	}
 }
