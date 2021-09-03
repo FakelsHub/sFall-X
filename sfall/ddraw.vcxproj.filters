@@ -189,9 +189,6 @@
     <ClInclude Include="Modules\BugFixes.h">
       <Filter>Modules</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\Input.h">
-      <Filter>Modules</Filter>
-    </ClInclude>
     <ClInclude Include="Utils.h" />
     <ClInclude Include="FalloutEngine\FunctionOffsets.h">
       <Filter>FalloutEngine</Filter>
@@ -387,6 +384,12 @@
     <ClInclude Include="Game\GUI\render.h">
       <Filter>Game\GUI</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\Unarmed.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Input.h">
+      <Filter>Modules\SimplePatches</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -522,9 +525,6 @@
       <Filter>Modules</Filter>
     </ClCompile>
     <ClCompile Include="Modules\BugFixes.cpp">
-      <Filter>Modules</Filter>
-    </ClCompile>
-    <ClCompile Include="Modules\Input.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
     <ClCompile Include="Utils.cpp" />
@@ -707,6 +707,12 @@
     </ClCompile>
     <ClCompile Include="Game\GUI\render.cpp">
       <Filter>Game\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Unarmed.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Input.cpp">
+      <Filter>Modules\SimplePatches</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

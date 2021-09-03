@@ -409,6 +409,7 @@
     <ClInclude Include="Modules\SubModules\CombatExt.h" />
     <ClInclude Include="Modules\SubModules\EnginePerks.h" />
     <ClInclude Include="Modules\SubModules\WindowRender.h" />
+    <ClInclude Include="Modules\Unarmed.h" />
     <ClInclude Include="Modules\Worldmap.h" />
     <ClInclude Include="Modules\ScriptExtender.h" />
     <ClInclude Include="Modules\BarBoxes.h" />
@@ -527,6 +528,7 @@
     <ClCompile Include="Modules\SubModules\CombatExt.cpp" />
     <ClCompile Include="Modules\SubModules\EnginePerks.cpp" />
     <ClCompile Include="Modules\SubModules\WindowRender.cpp" />
+    <ClCompile Include="Modules\Unarmed.cpp" />
     <ClCompile Include="Modules\Worldmap.cpp" />
     <ClCompile Include="Modules\ScriptExtender.cpp" />
     <ClCompile Include="Modules\BarBoxes.cpp" />
