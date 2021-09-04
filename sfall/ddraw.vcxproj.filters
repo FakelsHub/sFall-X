@@ -28,14 +28,14 @@
     <Filter Include="Game">
       <UniqueIdentifier>{7f5e0899-7240-4a24-a99b-aaea1aabf440}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Modules\SubModules\ImproveAI">
-      <UniqueIdentifier>{04e331b6-12ad-4e74-82b0-cccd3cd19d7c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="HRP">
       <UniqueIdentifier>{f43d028f-5715-4825-b039-b89083142c8b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Game\GUI">
       <UniqueIdentifier>{3633c4d1-5dda-4ecc-9238-4e9c62ca191b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game\ImprovedAI">
+      <UniqueIdentifier>{04e331b6-12ad-4e74-82b0-cccd3cd19d7c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -351,22 +351,22 @@
     </ClInclude>
     <ClInclude Include="IniReader.h" />
     <ClInclude Include="Modules\SubModules\AI.Behavior.h">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClInclude>
     <ClInclude Include="Modules\SubModules\AI.Combat.h">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClInclude>
     <ClInclude Include="Modules\SubModules\AI.FuncHelpers.h">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClInclude>
     <ClInclude Include="Modules\SubModules\AI.SearchTarget.h">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClInclude>
     <ClInclude Include="Game\tilemap.h">
       <Filter>Game</Filter>
     </ClInclude>
     <ClInclude Include="Modules\SubModules\AI.Inventory.h">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClInclude>
     <ClInclude Include="Translate.h" />
     <ClInclude Include="Game\combatAI.h">
@@ -678,22 +678,22 @@
     </ClCompile>
     <ClCompile Include="IniReader.cpp" />
     <ClCompile Include="Modules\SubModules\AI.Behavior.cpp">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClCompile>
     <ClCompile Include="Modules\SubModules\AI.Combat.cpp">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClCompile>
     <ClCompile Include="Modules\SubModules\AI.FuncHelpers.cpp">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClCompile>
     <ClCompile Include="Modules\SubModules\AI.SearchTarget.cpp">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClCompile>
     <ClCompile Include="Game\tilemap.cpp">
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Modules\SubModules\AI.Inventory.cpp">
-      <Filter>Modules\SubModules\ImproveAI</Filter>
+      <Filter>Game\ImprovedAI</Filter>
     </ClCompile>
     <ClCompile Include="Translate.cpp" />
     <ClCompile Include="Game\combatAI.cpp">

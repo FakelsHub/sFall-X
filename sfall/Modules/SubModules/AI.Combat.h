@@ -6,7 +6,9 @@
 
 #pragma once
 
-namespace sfall
+namespace game
+{
+namespace imp_ai
 {
 
 enum CombatShootResult : long {
@@ -46,4 +48,5 @@ public:
 	static fo::AIcap* AttackerAI();
 };
 
+}
 }

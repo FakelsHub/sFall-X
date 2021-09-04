@@ -12,8 +12,12 @@
 
 #include "AI.FuncHelpers.h"
 
-namespace sfall
+namespace game
 {
+namespace imp_ai
+{
+
+namespace sf = sfall;
 
 //fo::GameObject* AIHelpers::CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object, long targetTile, long team) {
 //	if (object && object->Type() == fo::ObjType::OBJ_TYPE_CRITTER && object->critter.teamNum != team) { // is not friendly fire critter
@@ -43,7 +47,7 @@ namespace sfall
 fo::GameObject* AIHelpers::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker, long destTile) {
 	fo::GameObject* object = nullptr;
 	fo::func::make_straight_path_func(attacker, destTile, target->tile, 0, (DWORD*)&object, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-	return (object) ? AI::CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum) : nullptr; // 0 if there are no object
+	return (object) ? sf::AI::CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum) : nullptr; // 0 if there are no object
 }
 
 bool AIHelpers::AICanUseWeapon(fo::GameObject* weapon) {
@@ -196,7 +200,7 @@ bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 // Получает свободный гекс по направлению и дистанции
 long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax, long dir) {
 	// рандомно смежные гексы
-	long r = (GetRandom(1, 2) == 2) ? 5 : 1;
+	long r = (sf::GetRandom(1, 2) == 2) ? 5 : 1;
 	long dirNear0 = (dir + r) % 6;
 	r = (r == 1) ? 5 : 1;
 	long dirNear1 = (dir + r) % 6;
@@ -235,7 +239,7 @@ getTile:
 long AIHelpers::GetDirFreeTile(fo::GameObject* source, long tile, long distMax) {
 	long dist = 1;
 	do {
-		long dir = GetRandom(0, 5);
+		long dir = sf::GetRandom(0, 5);
 		for (size_t r = 0; r < 6; r++)
 		{
 			long _tile = fo::func::tile_num_in_direction(tile, dir, dist);
@@ -249,10 +253,10 @@ long AIHelpers::GetDirFreeTile(fo::GameObject* source, long tile, long distMax) 
 }
 
 long AIHelpers::GetRandomTile(long sourceTile, long minDist, long maxDist) {
-	long dist = (maxDist > minDist) ? GetRandom(minDist, maxDist) : minDist;
+	long dist = (maxDist > minDist) ? sf::GetRandom(minDist, maxDist) : minDist;
 	if (dist > 0) {
-		long dx = GetRandom(-dist, dist) * 32;
-		long dy = GetRandom(-dist, dist) * 16;
+		long dx = sf::GetRandom(-dist, dist) * 32;
+		long dy = sf::GetRandom(-dist, dist) * 16;
 
 		long x, y;
 		fo::func::tile_coord(sourceTile, &x, &y);
@@ -281,8 +285,8 @@ long AIHelpers::GetRandomTileToMove(fo::GameObject* source, long minDist, long m
 
 long AIHelpers::GetRandomDistTile(fo::GameObject* source, long tile, long distMax) { // переделать рекурсию с дистанцией
 	if (distMax <= 0) return -1;
-	long dist = GetRandom(1, distMax);
-	long _tile = fo::func::tile_num_in_direction(tile, GetRandom(0, 5), dist);
+	long dist = sf::GetRandom(1, distMax);
+	long _tile = fo::func::tile_num_in_direction(tile, sf::GetRandom(0, 5), dist);
 	fo::GameObject* object;
 	fo::func::make_straight_path_func(source, source->tile, _tile, 0, (DWORD*)&object, 0, (void*)fo::funcoffs::obj_blocking_at_);
 	return (object) ? GetRandomDistTile(source, tile, --distMax) : _tile;
@@ -428,4 +432,5 @@ fo::GameObject* obj_light_blocking_at(fo::GameObject* source, long tile, long el
 	return nullptr;
 }
 */
+}
 }

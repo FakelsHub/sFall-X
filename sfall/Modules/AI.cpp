@@ -109,7 +109,7 @@ static void __declspec(naked) combat_ai_hack() {
 	static const DWORD combat_ai_hack_Ret = 0x42B204;
 	__asm {
 		mov  edx, [ebx + 0x10];             // cap.min_hp
-		test AICombat::npcPercentMinHP, 0xFF;
+		test game::imp_ai::AICombat::npcPercentMinHP, 0xFF;
 		jz   skip;
 		cmp  dword ptr [ebx + 0x98], -1;    // cap.run_away_mode (none)
 		je   skip;
@@ -279,7 +279,7 @@ isNotDead:
 
 static long __fastcall ai_try_attack_switch_fix(fo::GameObject* target, long &hitMode, fo::GameObject* source, fo::GameObject* weapon) {
 	if (source->critter.getAP() <= 0) return -1; // exit from ai_try_attack_
-	return AIBehavior::AICheckBeforeWeaponSwitch(target, hitMode, source, weapon);
+	return game::imp_ai::AIBehavior::AICheckBeforeWeaponSwitch(target, hitMode, source, weapon);
 }
 
 static void __declspec(naked) ai_try_attack_hook_switch_fix() {
@@ -772,7 +772,7 @@ void AI::init() {
 	// Check the safety of weapons based on the selected attack mode instead of always the primary weapon hit mode
 	MakeCall(0x42A8D9, ai_try_attack_hack_check_safe_weapon);
 
-	AIBehavior::init(smartBehavior);
+	game::imp_ai::AIBehavior::init(smartBehavior);
 }
 
 fo::GameObject* __stdcall AI::AIGetLastAttacker(fo::GameObject* target) {

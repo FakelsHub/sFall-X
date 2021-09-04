@@ -38,8 +38,12 @@
 	berserk     -
 */
 
-namespace sfall
+namespace game
 {
+namespace imp_ai
+{
+
+namespace sf = sfall;
 
 static const char* retargetTileMsg = "\nI'm in the way of friendly fire! I'll try to move to the nearest tile.";
 
@@ -242,7 +246,7 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 
 		// если object равен null значит линия от цели до checkTile свободно простреливается
 		// проверяем есть ли на линии огня от object до цели дружественные криттеры
-		object = AI::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum);
+		object = sf::AI::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum);
 		if (!object) { // if there are no friendly critters
 			shotTile = checkTile;
 			distance = i + 1;
@@ -282,7 +286,7 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 				// check the line of fire from target to checkTile
 				fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
 
-				if (!AI::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
+				if (!sf::AI::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
 					newTile = checkTile;
 					dist = i;
 
@@ -300,7 +304,7 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 			}
 		}
 	}
-	if (shotTile && isDebug) fo::func::debug_printf("\n[AI] %s: Move to tile for shot.", fo::func::critter_name(source));
+	if (shotTile && sf::isDebug) fo::func::debug_printf("\n[AI] %s: Move to tile for shot.", fo::func::critter_name(source));
 
 	int result = (shotTile && AIHelpers::CombatMoveToTile(source, shotTile, distance) == 0) ? 1 : 0;
 	if (result) hitMode = (fo::AttackType)fo::func::ai_pick_hit_mode(source, itemHand, target); // try pick new weapon mode after move
@@ -381,7 +385,7 @@ static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::G
 				if (!game::CombatAI::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
 
 				// проверяем наличее и количество имеющихся патронов
-				if (itemGround->item.ammoPid != -1 && !AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) {
+				if (itemGround->item.ammoPid != -1 && !AIInventory::AICheckAmmo(itemGround, source) && sf::Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) {
 					continue;
 				}
 
@@ -439,7 +443,7 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 
 				if (game::CombatAI::ai_can_use_weapon(source, itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) &&
 					// проверяем наличее и количество имеющихся патронов
-					itemGround->item.ammoPid == -1 || AIInventory::AICheckAmmo(itemGround, source) && Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 0)
+					itemGround->item.ammoPid == -1 || AIInventory::AICheckAmmo(itemGround, source) && sf::Combat::check_item_ammo_cost(itemGround, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) > 0)
 				{
 					if (AIInventory::BestWeapon(source, item, itemGround, target) == itemGround) {
 						DEV_PRINTF2("\n[AI] SearchBestWeaponOnGround: %d (%s)", itemGround->protoId, fo::func::critter_name(itemGround));
@@ -492,7 +496,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 		{
 			if (item->item.ammoPid == -1 || // оружие не имеет патронов
 				fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) == fo::AttackSubType::THROWING || // Зачем здесь метательные?
-				(Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) || AIInventory::CritterHaveAmmo(source, item)))
+				(sf::Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) || AIInventory::CritterHaveAmmo(source, item)))
 			{
 				if (!fo::func::combat_safety_invalidate_weapon_func(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, target, 0, 0)) { // weapon safety
 					bestWeapon = AIInventory::BestWeapon(source, bestWeapon, item, target);
@@ -567,7 +571,7 @@ notRetrieve:
 	DEV_PRINTF2("\n[AI] BestWeapon Pid: %d AP: %d", ((bestWeapon) ? bestWeapon->protoId : -1), source->critter.getAP());
 
 	if (bestWeapon && (!itemHand || itemHand->protoId != bestWeapon->protoId)) {
-		if (isDebug) fo::func::debug_printf("\n[AI] Wield best weapon pid: %d AP: %d", bestWeapon->protoId, source->critter.getAP());
+		if (sf::isDebug) fo::func::debug_printf("\n[AI] Wield best weapon pid: %d AP: %d", bestWeapon->protoId, source->critter.getAP());
 		fo::func::inven_wield(source, bestWeapon, fo::InvenType::INVEN_TYPE_RIGHT_HAND);
 		__asm call fo::funcoffs::combat_turn_run_;
 		if (fo::func::inven_right_hand(source) == bestWeapon) { // check
@@ -611,7 +615,7 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 	if (attackCounter == 0 && AICombat::combatDifficulty != CombatDifficulty::Easy && hitMode == fo::AttackType::ATKTYPE_RWEAPON_PRIMARY && dist <= 3) {
 		// атакующий расположен достаточно близко к цели, его оружие имеет стрельбу очередью (burst attack)
 		// принудительно использовать втоичный режим стрельбы если атака по цели будет безопасной
-		if (!Combat::IsBurstDisabled(source) && fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst) {
+		if (!sf::Combat::IsBurstDisabled(source) && fo::func::item_w_anim_weap(weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) == fo::Animation::ANIM_fire_burst) {
 			if (statIQ <= 3 || !fo::func::combat_safety_invalidate_weapon_func(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY, target, 0, 0)) // weapon is safety
 			{
 				forceBurst = true;
@@ -798,7 +802,7 @@ static long __fastcall AIMoveStepToAttackTile(fo::GameObject* source, fo::GameOb
 		{
 			return 1;
 		}
-		if (isDebug) fo::func::debug_printf("\n[AI] %s: Attack out of range. Move to tile for attack.", fo::func::critter_name(source));
+		if (sf::isDebug) fo::func::debug_printf("\n[AI] %s: Attack out of range. Move to tile for attack.", fo::func::critter_name(source));
 	}
 
 	int result = (getTile != -1) ? AIHelpers::CombatMoveToTile(source, getTile, distToMove) : 1;
@@ -1134,12 +1138,12 @@ skip:
 void AIBehavior::init(bool smartBehavior) {
 
 	// Реализация поиска предметов в трупах убитых NPC (looting corpses)
-	LootingCorpses = (IniReader::GetConfigInt("CombatAI", "LootingCorpses", 1) > 0);
+	LootingCorpses = (sf::IniReader::GetConfigInt("CombatAI", "LootingCorpses", 1) > 0);
 	AIInventory::init(LootingCorpses);
 
 	// Реализация функции освобождения пути криттера блокирующего путь к цели
-	MakeCall(0x42A0D6, ai_move_steps_closer_hack, 5);
-	SafeWrite16(0x42A0BF, 0x9090);
+	sf::MakeCall(0x42A0D6, ai_move_steps_closer_hack, 5);
+	sf::SafeWrite16(0x42A0BF, 0x9090);
 
 	//////////////////// Combat AI improved behavior //////////////////////////
 
@@ -1148,24 +1152,24 @@ void AIBehavior::init(bool smartBehavior) {
 
 	if (smartBehavior) {
 		// Before starting his turn npc will always check if it has better weapons in inventory, than there is a current weapon
-		LookupOnGround = (IniReader::GetConfigInt("CombatAI", "TakeBetterWeapons", 0) > 0); // always check the items available on the ground
+		LookupOnGround = (sf::IniReader::GetConfigInt("CombatAI", "TakeBetterWeapons", 0) > 0); // always check the items available on the ground
 
-		HookCall(0x42A6BF, ai_called_shot_hook);
+		sf::HookCall(0x42A6BF, ai_called_shot_hook);
 
 		/**** Функция ai_try_attack_ ****/
 
 		//Точки непосредственной атаки ai_attack_ (0x42AE1D, 0x42AE5C)
 
 		// Точка проверки сделать атаку по цели, combat_check_bad_shot_ возвращается результат проверки (0-7)
-		HookCall(0x42A92F, ai_try_attack_hook_check_attack);
+		sf::HookCall(0x42A92F, ai_try_attack_hook_check_attack);
 
 		// Точка смены оружия, если текущее оружие небезопасно для текущей ситуации
 		// или найти оружие если NPC безоружен и цель не относится к типу Biped или цель вооружена и еще какие-то условия
-		HookCall(0x42A905, ai_try_attack_hook_w_switch_begin_turn);
+		sf::HookCall(0x42A905, ai_try_attack_hook_w_switch_begin_turn);
 
 		// Точка смены оружия, когда у NPC не хватает очков действия для совершения атаки
 		// Switching weapons when action points is not enough
-		HookCall(0x42AB57, ai_try_attack_hook_switch_weapon); // old ai_try_attack_hook_switch_fix
+		sf::HookCall(0x42AB57, ai_try_attack_hook_switch_weapon); // old ai_try_attack_hook_switch_fix
 
 		// Точка смены оружия, когда превышен радиус действия атаки и NPC безоружен
 		//HookCall(0x42AC05, ai_try_attack_hook_switch_weapon_out_of_range);
@@ -1179,41 +1183,42 @@ void AIBehavior::init(bool smartBehavior) {
 
 		// Точка входа при блокировании выстрела по цели
 		// Checks the movement path for the possibility а shot, if the shot to the target is blocked
-		HookCall(0x42AC55, ai_try_attack_hook_shot_blocked);
+		sf::HookCall(0x42AC55, ai_try_attack_hook_shot_blocked);
 
 		// Точка входа когда дистанция превышает радиус атаки
 		// Forces the AI to move to target closer to make an attack on the target when the distance exceeds the range of the weapon
-		HookCall(0x42ABD7, ai_try_attack_hook_out_of_range);
+		sf::HookCall(0x42ABD7, ai_try_attack_hook_out_of_range);
 
 		// Точка: плохой шанс поразить цель (вызывается ai_run_away_) [переопределяется в AI.cpp]
 		// Поведение попробовать сменить оружие или цель, если другой цели нет продолжить текущию атаку
-		HookCalls(ai_try_attack_hook_bad_tohit, { 0x42ACE5, 0x42ABA8 });
+		sf::HookCalls(ai_try_attack_hook_bad_tohit, { 0x42ACE5, 0x42ABA8 });
 
 		// Мove away from the target if the target is near
-		MakeCalls(ai_try_attack_hack_after_attack, { 0x42AE40, 0x42AE7F });
+		sf::MakeCalls(ai_try_attack_hack_after_attack, { 0x42AE40, 0x42AE7F });
 
 		/***** Misc *****/
 
 		// Поблажка для AI: Don't pickup a weapon if its magazine is empty and there are no ammo for it
-		HookCall(0x429CF2, ai_search_environ_hook_weapon);
+		sf::HookCall(0x429CF2, ai_search_environ_hook_weapon);
 
 		// Исправление функции для отрицательного значения дистанции которое игнорирует условия дистанции stay/stay_closer
-		HookCall(0x429FDB, ai_move_steps_closer_hook); // jle hook
+		sf::HookCall(0x429FDB, ai_move_steps_closer_hook); // jle hook
 
 		// Fix distance in ai_find_friend_ function (only for sfall extended)
-		SafeWrite8(0x428AF5, 0xC8); // cmp ecx, eax > cmp eax, ecx
+		sf::SafeWrite8(0x428AF5, 0xC8); // cmp ecx, eax > cmp eax, ecx
 	}
 
 	// Fixes a rare situation for an NPC when an attacking NPC (unarmed or armed with a melee weapon)
 	// wants to pickup a weapon placed on the map, but to perform actions, he will not have enough AP to pickup this item,
 	// after the next turn, he will attack the player's
 	// This will prevent an attempt to pickup the weapon at the beginning of the attack if there is not enough AP
-	if (IniReader::GetConfigInt("CombatAI", "ItemPickUpFix", 0)) {
-		HookCall(0x429CAF, ai_search_environ_hook);
+	if (sf::IniReader::GetConfigInt("CombatAI", "ItemPickUpFix", 0)) {
+		sf::HookCall(0x429CAF, ai_search_environ_hook);
 	}
 
 	// Замена отладочного сообшения "In the way!"
-	SafeWrite32(0x42A467, (DWORD)&retargetTileMsg); // cai_retargetTileFromFriendlyFireSubFunc_
+	sf::SafeWrite32(0x42A467, (DWORD)&retargetTileMsg); // cai_retargetTileFromFriendlyFireSubFunc_
 }
 
+}
 }

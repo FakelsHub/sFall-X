@@ -6,7 +6,9 @@
 
 #pragma once
 
-namespace sfall
+namespace game
+{
+namespace imp_ai
 {
 
 class AIInventory {
@@ -46,4 +48,5 @@ public:
 	static long ai_search_environ_corpse_drug(fo::GameObject* source, fo::ItemType type, long noInvenItem, fo::GameObject* &itemEnv);
 };
 
+}
 }

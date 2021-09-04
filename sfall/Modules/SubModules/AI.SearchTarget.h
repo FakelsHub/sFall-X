@@ -6,7 +6,9 @@
 
 #pragma once
 
-namespace sfall
+namespace game
+{
+namespace imp_ai
 {
 
 class AISearchTarget {
@@ -19,4 +21,5 @@ public:
 	static fo::GameObject* __fastcall RevertTarget(fo::GameObject* source, fo::GameObject* target);
 };
 
+}
 }

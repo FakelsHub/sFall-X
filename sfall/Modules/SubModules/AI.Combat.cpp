@@ -25,8 +25,12 @@
 
 #include "AI.Combat.h"
 
-namespace sfall
+namespace game
 {
+namespace imp_ai
+{
+
+namespace sf = sfall;
 
 // Реализация движковой функции combat_check_bad_shot_ для функции ai_try_attack_
 // В данной реализаци изменен порядок проверки результатов:
@@ -50,7 +54,7 @@ CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::Ga
 		if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
 			return CombatShootResult::CrippledHands; // crippled both hands
 		}
-		if (fo::func::item_w_max_ammo(item) > 0 && Combat::check_item_ammo_cost(item, hitMode) <= 0) return CombatShootResult::NoAmmo;
+		if (fo::func::item_w_max_ammo(item) > 0 && sf::Combat::check_item_ammo_cost(item, hitMode) <= 0) return CombatShootResult::NoAmmo;
 	}
 	long distance = (target) ? fo::func::obj_dist(source, target) : 1;
 	long attackRange = fo::func::item_w_range(source, hitMode);
@@ -76,7 +80,7 @@ static CombatShootResult CheckShotBeforeAttack(fo::GameObject* source, fo::GameO
 		if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
 			return CombatShootResult::CrippledHands; // crippled both hands
 		}
-		if (fo::func::item_w_max_ammo(item) > 0 && Combat::check_item_ammo_cost(item, hitMode) <= 0) return CombatShootResult::NoAmmo;
+		if (fo::func::item_w_max_ammo(item) > 0 && sf::Combat::check_item_ammo_cost(item, hitMode) <= 0) return CombatShootResult::NoAmmo;
 	}
 	long distance = (target) ? fo::func::obj_dist(source, target) : 1;
 	long attackRange = fo::func::item_w_range(source, hitMode);
@@ -239,7 +243,7 @@ reTryFindCoverTile:
 		long dirCentre = fo::func::tile_dir(target->tile, obj->tile);
 
 		// смежные направления гексов
-		long r = (GetRandom(1, 2) == 2) ? 5 : 1;
+		long r = (sf::GetRandom(1, 2) == 2) ? 5 : 1;
 		long dirNear0 = (dirCentre + r) % 6;
 		r = (r == 1) ? 5 : 1;
 		long dirNear1 = (dirCentre + r) % 6;
@@ -297,7 +301,7 @@ reTryFindCoverTile:
 			checkTiles.push_back(_tile);
 		}
 		if (tile > -1) {
-			if (isDebug) fo::func::debug_printf("\n[AI] Cover: %s move to tile %d\n", fo::func::critter_name(obj), tile);
+			if (sf::isDebug) fo::func::debug_printf("\n[AI] Cover: %s move to tile %d\n", fo::func::critter_name(obj), tile);
 			attacker.cover.tile = -1;
 			return tile;
 		}
@@ -341,7 +345,7 @@ static long CheckCoverConditionAndGetTile(fo::GameObject* source, fo::GameObject
 static unsigned long GetTargetDistance(fo::GameObject* source, fo::GameObject* &target) {
 	unsigned long distanceLast = -1; // inactive
 
-	fo::GameObject* lastAttacker = AI::AIGetLastAttacker(source);
+	fo::GameObject* lastAttacker = sf::AI::AIGetLastAttacker(source);
 	if (lastAttacker && lastAttacker != target && lastAttacker->critter.IsActiveNotDead()) {
 		distanceLast = fo::func::obj_dist(source, lastAttacker);
 	}
@@ -453,7 +457,7 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 		long cost = AIHelpers::GetCurrenShootAPCost(source, target);
 		if (cost > (source->critter.getAP() - 1)) return; // предварительная проверка
 
-		fo::GameObject* friendNPC = AI::CheckFriendlyFire(target, source);
+		fo::GameObject* friendNPC = sf::AI::CheckFriendlyFire(target, source);
 		if (friendNPC) {
 			long distToTarget = fo::func::obj_dist(friendNPC, target);
 			if (distToTarget >= 2 || fo::func::obj_dist(friendNPC, source) <= 2) {
@@ -462,7 +466,7 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 				long range = 1;
 				char check = 0;
 
-				long r = GetRandom(1, 2);
+				long r = sf::GetRandom(1, 2);
 				if (r > 1) r = 5;
 
 				while (true)
@@ -516,7 +520,7 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 	/* Distance: Snipe behavior */
 	else if (attacker.cap->distance == fo::AIpref::distance::snipe && (distance = fo::func::obj_dist(source, target)) < 10) {
 		DEV_PRINTF1("\n[AI] AIpref::distance::snipe: %s", fo::func::critter_name(target));
-		if (AI::AIGetLastTarget(target) == source) { // target атакует source target->critter.getHitTarget()
+		if (sf::AI::AIGetLastTarget(target) == source) { // target атакует source target->critter.getHitTarget()
 			// атакующий отойдет на расстояние в 10 гексов от своей цели если она на него нападает
 			bool shouldMove = ((fo::func::combatai_rating(source) + 10) < fo::func::combatai_rating(target));
 			if (shouldMove) {
@@ -645,7 +649,7 @@ TrySpendExtraAP:
 	fo::GameObject* findTarget;
 
 	if (!target) {
-		PartyControl::SetOrderTarget(source); // Party order attack feature
+		sf::PartyControl::SetOrderTarget(source); // Party order attack feature
 
 ReFindNewTarget:
 		DEV_PRINTF("\n[AI] Find targets...");
@@ -790,7 +794,7 @@ ReFindNewTarget:
 			if (dist > distance) // дистанция больше чем определено по умолчанию, идем к криттеру из своей команды который имеет цель
 			{
 				dist -= distance; // | 7-6=1
-				dist = GetRandom(dist, dist + 3);
+				dist = sf::GetRandom(dist, dist + 3);
 				fo::func::ai_move_steps_closer(source, ally_Critter, dist, 0);
 				DEV_PRINTF1("\n[AI] Move close to: %s", fo::func::critter_name(ally_Critter));
 			}
@@ -927,7 +931,7 @@ static bool combatDebug;
 static void __fastcall combat_ai_hook(fo::GameObject* source, fo::GameObject* target) {
 	//if (!source) return;
 
-	AICombat::combatDifficulty = (CombatDifficulty)IniReader::GetInt("preferences", "combat_difficulty", (int)AICombat::combatDifficulty, (const char*)FO_VAR_game_config);
+	AICombat::combatDifficulty = (CombatDifficulty)sf::IniReader::GetInt("preferences", "combat_difficulty", (int)AICombat::combatDifficulty, (const char*)FO_VAR_game_config);
 	attacker.setData(source);
 
 	// добавить очки действия атакующему для увеличении сложности боя [не для партийцев игрока]
@@ -1032,27 +1036,28 @@ void AICombat::init(bool smartBehavior) {
 
 	// Enables the use of the RunAwayMode value from the AI-packet for the NPC
 	// the min_hp value will be calculated as a percentage of the maximum number of NPC health points, instead of using fixed min_hp values
-	npcPercentMinHP = (IniReader::GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
+	npcPercentMinHP = (sf::IniReader::GetConfigInt("CombatAI", "NPCRunAwayMode", 0) > 0);
 
 	if (smartBehavior) {
 		// Override combat_ai_ engine function
-		HookCall(0x422B94, combat_ai_hook);
-		SafeWrite8(0x422B91, 0xF1); // mov  eax, esi > mov ecx, esi
+		sf::HookCall(0x422B94, combat_ai_hook);
+		sf::SafeWrite8(0x422B91, 0xF1); // mov  eax, esi > mov ecx, esi
 		// swap ASM codes
-		SafeWrite32(0x422B89, 0x8904518B);
-		SafeWrite8(0x422B8D, 0xF1); // mov  eax, esi > mov ecx, esi
+		sf::SafeWrite32(0x422B89, 0x8904518B);
+		sf::SafeWrite8(0x422B8D, 0xF1); // mov  eax, esi > mov ecx, esi
 
 		//HookCall(0X4230E8, combat_attack_hook);
 		//LoadGameHook::OnCombatStart() += []() { lastAttackerTile.clear(); };
 
 		// Добавить дополнительные очки действий, взависимомти от настройки сложности боя
-		useCombatDifficulty = (IniReader::GetConfigInt("CombatAI", "DifficultyMode", 1) != 0);
+		useCombatDifficulty = (sf::IniReader::GetConfigInt("CombatAI", "DifficultyMode", 1) != 0);
 
 		#ifndef NDEBUG
-		combatDebug = (IniReader::GetConfigInt("CombatAI", "Debug", 0) != 0);
-		MakeJump(0x42A1B6, ai_move_steps_closer_debug);
+		combatDebug = (sf::IniReader::GetConfigInt("CombatAI", "Debug", 0) != 0);
+		sf::MakeJump(0x42A1B6, ai_move_steps_closer_debug);
 		#endif
 	}
 }
 
+}
 }

@@ -6,7 +6,9 @@
 
 #pragma once
 
-namespace sfall
+namespace game
+{
+namespace imp_ai
 {
 
 #ifndef NDEBUG
@@ -41,4 +43,5 @@ public:
 
 constexpr int pickupCostAP = 3; // engine default cost
 
+}
 }

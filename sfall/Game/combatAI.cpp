@@ -160,11 +160,11 @@ void __stdcall CombatAI::ai_check_drugs(fo::GameObject* source) {
 			long result = 0;
 			if (!lastItem) {
 				lastItem = fo::func::ai_search_environ(source, fo::ItemType::item_type_drug);
-				result = sf::AIInventory::ai_search_environ_corpse_drug(source, fo::ItemType::item_type_drug, noInvenDrug, lastItem);
+				result = imp_ai::AIInventory::ai_search_environ_corpse_drug(source, fo::ItemType::item_type_drug, noInvenDrug, lastItem);
 			}
 			if (!lastItem) {
 				lastItem = fo::func::ai_search_environ(source, fo::ItemType::item_type_misc_item);
-				//result = sf::AIInventory::ai_search_environ_corpse_drug(source, fo::ItemType::item_type_misc_item, noInvenDrug, lastItem);
+				//result = imp_ai::AIInventory::ai_search_environ_corpse_drug(source, fo::ItemType::item_type_misc_item, noInvenDrug, lastItem);
 			}
 			if (!result && lastItem) lastItem = fo::func::ai_retrieve_object(source, lastItem);
 

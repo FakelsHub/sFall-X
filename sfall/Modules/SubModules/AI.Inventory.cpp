@@ -18,14 +18,18 @@
 
 #include "AI.Inventory.h"
 
-namespace sfall
+namespace game
 {
+namespace imp_ai
+{
+
+namespace sf = sfall;
 
 static bool bestWeaponFix;
 
 fo::GameObject* AIInventory::BestWeapon(fo::GameObject* source, fo::GameObject* weapon1, fo::GameObject* weapon2, fo::GameObject* target) {
 	fo::GameObject* bestWeapon = fo::func::ai_best_weapon(source, weapon1, weapon2, target);
-	return BestWeaponHook_Invoke(bestWeapon, source, weapon1, weapon2, target);
+	return sf::BestWeaponHook_Invoke(bestWeapon, source, weapon1, weapon2, target);
 }
 
 // Проверяет наличие патронов к оружию на карте или в инвентаре криттеров
@@ -53,7 +57,7 @@ fo::GameObject* AIInventory::SearchInventoryItemType(fo::GameObject* source, fo:
 			case fo::ItemType::item_type_weapon:
 				if (!game::CombatAI::ai_can_use_weapon(source, item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) continue;
 				// проверяем наличее и количество имеющихся патронов
-				if (item->item.ammoPid != -1 && !AICheckAmmo(item, source) && Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) continue;
+				if (item->item.ammoPid != -1 && !AICheckAmmo(item, source) && sf::Combat::check_item_ammo_cost(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) <= 0) continue;
 				break;
 			case fo::ItemType::item_type_ammo:
 				if (!fo::func::item_w_can_reload(weapon, item)) continue;
@@ -170,7 +174,7 @@ fo::GameObject* AIInventory::GetInventoryWeapon(fo::GameObject* source, bool che
 			(item->item.ammoPid == -1 || fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) != fo::AttackSubType::GUNS) ||
 			 fo::func::item_w_curr_ammo(item) || fo::func::ai_have_ammo(source, item, 0))
 		{
-			bestWeapon = BestWeaponHook_Invoke(BestWeaponLite(source, bestWeapon, item), source, bestWeapon, item, 0);
+			bestWeapon = sf::BestWeaponHook_Invoke(BestWeaponLite(source, bestWeapon, item), source, bestWeapon, item, 0);
 		}
 	}
 	return bestWeapon;
@@ -215,7 +219,7 @@ fo::GameObject* AIInventory::FindSafeWeaponAttack(fo::GameObject* source, fo::Ga
 		if (game::Items::item_weapon_mp_cost(source, item, outHitMode, 0) <= source->critter.getAP() && game::CombatAI::ai_can_use_weapon(source, item, outHitMode))
 		{
 			if ((item->item.ammoPid == -1 || // оружие не имеет магазина для патронов
-				Combat::check_item_ammo_cost(item, outHitMode)) &&
+				sf::Combat::check_item_ammo_cost(item, outHitMode)) &&
 				!fo::func::combat_safety_invalidate_weapon_func(source, pickWeapon, outHitMode, target, 0, 0)) // weapon is safety
 			{
 				pickWeapon = AIInventory::BestWeapon(source, pickWeapon, item, target);
@@ -569,11 +573,12 @@ long AIInventory::ai_search_environ_corpse_drug(fo::GameObject* source, fo::Item
 void AIInventory::init(bool isLooting) {
 	if (isLooting) {
 		lootingCorpses = true;
-		HookCall(0x42A5F6, ai_switch_weapons_hook_search);
-		HookCall(0x42AA25, ai_try_attack_hook_search_ammo);
+		sf::HookCall(0x42A5F6, ai_switch_weapons_hook_search);
+		sf::HookCall(0x42AA25, ai_try_attack_hook_search_ammo);
 	}
 
-	bestWeaponFix = (IniReader::GetConfigInt("Misc", "AIBestWeaponFix", 1) > 0);
+	bestWeaponFix = (sf::IniReader::GetConfigInt("Misc", "AIBestWeaponFix", 1) > 0);
 }
 
+}
 }

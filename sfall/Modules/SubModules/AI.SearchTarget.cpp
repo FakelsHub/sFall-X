@@ -22,8 +22,12 @@
 
 #include "AI.SearchTarget.h"
 
-namespace sfall
+namespace game
 {
+namespace imp_ai
+{
+
+namespace sf = sfall;
 
 static bool npcAttackWhoFix = false;
 static long reFindNewTargets = 0;
@@ -152,7 +156,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 			if (diff > 0) { // shot out of range (положительное число не хватает дистанции для оружия)
 				/*if (!pathToTarget) return true; // move block to target and shot out of range -> picking alternate target (это больше не нужно т.к. есть твик к подходу)*/
 
-				if (cap->disposition == fo::AIpref::coward && diff > GetRandom(8, 12)) {
+				if (cap->disposition == fo::AIpref::coward && diff > sf::GetRandom(8, 12)) {
 					DEV_PRINTF("-> is located beyond range of weapon. I'm afraid to approach target!");
 					return true;
 				}
@@ -362,7 +366,7 @@ FindNewTargets:
 	for (size_t i = 0; i < 4; i++)
 		DEV_PRINTF2("\n[AI] DangerSource: Find possible target: %s, ID:%d", (targets[i]) ? fo::func::critter_name(targets[i]) : "<None>", (targets[i]) ? targets[i]->id : 0);
 
-	FindTargetHook_Invoke(targets, source); // [HOOK_FINDTARGET] // TODO: Нужно добавлять тип крючка для вызовов когда происходит проверки для присоединею/отсоединение к бою
+	sf::FindTargetHook_Invoke(targets, source); // [HOOK_FINDTARGET] // TODO: Нужно добавлять тип крючка для вызовов когда происходит проверки для присоединею/отсоединение к бою
 
 	// [add ext] Переключаем режим с 1 к 2
 	if (type & 1) type ^= 3; // unset 1 and set type 2
@@ -443,25 +447,26 @@ static void __declspec(naked) ai_danger_source_hack() {
 
 void AISearchTarget::init(bool smartBehavior) {
 	// Enables the ability to use the AttackWho value from the AI-packet for the NPC
-	npcAttackWhoFix = (IniReader::GetConfigInt("CombatAI", "NPCAttackWhoFix", 0) > 0);
+	npcAttackWhoFix = (sf::IniReader::GetConfigInt("CombatAI", "NPCAttackWhoFix", 0) > 0);
 
 	if (smartBehavior) {
-		MakeJump(fo::funcoffs::ai_danger_source_ + 1, ai_danger_source_replacement); // 0x428F4C
-		SafeWrite8(0x428F4C, 0x52); // push edx
+		sf::MakeJump(fo::funcoffs::ai_danger_source_ + 1, ai_danger_source_replacement); // 0x428F4C
+		sf::SafeWrite8(0x428F4C, 0x52); // push edx
 
-		if (IniReader::GetConfigInt("CombatAI", "TryToFindTargets", 1) > 0) {
+		if (sf::IniReader::GetConfigInt("CombatAI", "TryToFindTargets", 1) > 0) {
 			reFindNewTargets = 1;
-		} else if (IniReader::GetConfigInt("CombatAI", "ReFindTargets", 0)) {
+		} else if (sf::IniReader::GetConfigInt("CombatAI", "ReFindTargets", 0)) {
 			reFindNewTargets = 2; // w/o logic
 		}
 	} else {
 		/// Changes the behavior of the AI so that the AI moves to its target to perform an attack/shot when the range of its weapon is less than
 		/// the distance to the target or the AI will choose the nearest target if any other targets are available
 
-		HookCall(0x42B240, combat_ai_hook_revert_target); // also need for TryToFindTargets option
+		sf::HookCall(0x42B240, combat_ai_hook_revert_target); // also need for TryToFindTargets option
 
-		if (npcAttackWhoFix) MakeCall(0x428F70, ai_danger_source_hack, 3);
+		if (npcAttackWhoFix) sf::MakeCall(0x428F70, ai_danger_source_hack, 3);
 	}
 }
 
+}
 }

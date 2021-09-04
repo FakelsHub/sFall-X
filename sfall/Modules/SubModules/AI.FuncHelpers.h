@@ -6,7 +6,9 @@
 
 #pragma once
 
-namespace sfall
+namespace game
+{
+namespace imp_ai
 {
 
 class AIHelpers {
@@ -70,4 +72,5 @@ public:
 	static void obj_ai_move_blocking_at_();
 };
 
+}
 }
