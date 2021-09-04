@@ -6,9 +6,9 @@
 
 #include "..\..\FalloutEngine\Fallout2.h"
 #include "..\..\Utils.h"
-#include "..\AI.h"
+#include "..\..\Modules\AI.h"
 
-#include "..\..\Game\items.h"
+#include "..\items.h"
 
 #include "AI.FuncHelpers.h"
 

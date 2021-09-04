@@ -10,14 +10,15 @@
 
 #include "..\..\main.h"
 #include "..\..\Utils.h"
-//#include "..\LoadGameHook.h"
-#include "..\Combat.h"
-#include "..\PartyControl.h"
 
-#include "..\..\Game\combatAI.h"
-#include "..\..\Game\items.h"
+#include "..\..\Modules\AI.h"
+//#include "..\..\Modules\LoadGameHook.h"
+#include "..\..\Modules\Combat.h"
+#include "..\..\Modules\PartyControl.h"
 
-#include "..\AI.h"
+#include "..\combatAI.h"
+#include "..\items.h"
+
 #include "AI.Behavior.h"
 #include "AI.SearchTarget.h"
 #include "AI.Inventory.h"

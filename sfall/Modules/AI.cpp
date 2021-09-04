@@ -25,9 +25,9 @@
 #include "..\Game\combatAI.h"
 #include "..\Game\items.h"
 
-#include "SubModules\AI.Behavior.h"
-#include "SubModules\AI.Combat.h"
-#include "SubModules\AI.FuncHelpers.h"
+#include "..\Game\ImprovedAI\AI.Behavior.h"
+#include "..\Game\ImprovedAI\AI.Combat.h"
+#include "..\Game\ImprovedAI\AI.FuncHelpers.h"
 
 #include "AI.h"
 

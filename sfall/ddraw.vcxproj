@@ -364,6 +364,11 @@
     <ClInclude Include="Game\combatAI.h" />
     <ClInclude Include="Game\GUI\render.h" />
     <ClInclude Include="Game\GUI\Text.h" />
+    <ClInclude Include="Game\ImprovedAI\AI.Behavior.h" />
+    <ClInclude Include="Game\ImprovedAI\AI.Combat.h" />
+    <ClInclude Include="Game\ImprovedAI\AI.FuncHelpers.h" />
+    <ClInclude Include="Game\ImprovedAI\AI.Inventory.h" />
+    <ClInclude Include="Game\ImprovedAI\AI.SearchTarget.h" />
     <ClInclude Include="Game\inventory.h" />
     <ClInclude Include="Game\items.h" />
     <ClInclude Include="Game\objects.h" />
@@ -400,11 +405,6 @@
     <ClInclude Include="Modules\Scripting\Handlers\Inventory.h" />
     <ClInclude Include="Modules\Scripting\Handlers\Math.h" />
     <ClInclude Include="Modules\SpeedPatch.h" />
-    <ClInclude Include="Modules\SubModules\AI.Behavior.h" />
-    <ClInclude Include="Modules\SubModules\AI.Combat.h" />
-    <ClInclude Include="Modules\SubModules\AI.FuncHelpers.h" />
-    <ClInclude Include="Modules\SubModules\AI.Inventory.h" />
-    <ClInclude Include="Modules\SubModules\AI.SearchTarget.h" />
     <ClInclude Include="Modules\SubModules\CombatBlock.h" />
     <ClInclude Include="Modules\SubModules\CombatExt.h" />
     <ClInclude Include="Modules\SubModules\EnginePerks.h" />
@@ -484,6 +484,11 @@
     <ClCompile Include="Game\combatAI.cpp" />
     <ClCompile Include="Game\GUI\render.cpp" />
     <ClCompile Include="Game\GUI\Text.cpp" />
+    <ClCompile Include="Game\ImprovedAI\AI.Behavior.cpp" />
+    <ClCompile Include="Game\ImprovedAI\AI.Combat.cpp" />
+    <ClCompile Include="Game\ImprovedAI\AI.FuncHelpers.cpp" />
+    <ClCompile Include="Game\ImprovedAI\AI.Inventory.cpp" />
+    <ClCompile Include="Game\ImprovedAI\AI.SearchTarget.cpp" />
     <ClCompile Include="Game\inventory.cpp" />
     <ClCompile Include="Game\items.cpp" />
     <ClCompile Include="Game\objects.cpp" />
@@ -519,11 +524,6 @@
     <ClCompile Include="Modules\Scripting\Handlers\Inventory.cpp" />
     <ClCompile Include="Modules\Scripting\Handlers\Math.cpp" />
     <ClCompile Include="Modules\SpeedPatch.cpp" />
-    <ClCompile Include="Modules\SubModules\AI.Behavior.cpp" />
-    <ClCompile Include="Modules\SubModules\AI.Combat.cpp" />
-    <ClCompile Include="Modules\SubModules\AI.FuncHelpers.cpp" />
-    <ClCompile Include="Modules\SubModules\AI.Inventory.cpp" />
-    <ClCompile Include="Modules\SubModules\AI.SearchTarget.cpp" />
     <ClCompile Include="Modules\SubModules\CombatBlock.cpp" />
     <ClCompile Include="Modules\SubModules\CombatExt.cpp" />
     <ClCompile Include="Modules\SubModules\EnginePerks.cpp" />

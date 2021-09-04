@@ -10,7 +10,7 @@
 
 #include "items.h"
 
-#include "..\Modules\SubModules\AI.Inventory.h"
+#include "ImprovedAI\AI.Inventory.h"
 
 #include "combatAI.h"
 

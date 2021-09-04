@@ -9,11 +9,11 @@
 #include "..\..\main.h"
 #include "..\..\Utils.h"
 
-#include "..\HookScripts\CombatHs.h"
+#include "..\..\Modules\HookScripts\CombatHs.h"
 
-#include "..\..\Game\items.h"
-#include "..\..\Game\objects.h"
-#include "..\..\Game\tilemap.h"
+#include "..\items.h"
+#include "..\objects.h"
+#include "..\tilemap.h"
 
 #include "AI.Behavior.h"
 #include "AI.Combat.h"

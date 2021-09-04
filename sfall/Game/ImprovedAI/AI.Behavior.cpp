@@ -8,14 +8,15 @@
 
 #include "..\..\main.h"
 #include "..\..\Utils.h"
-#include "..\Combat.h"
 
-#include "..\..\Game\combatAI.h"
-#include "..\..\Game\items.h"
-#include "..\..\Game\objects.h"
-#include "..\..\Game\tilemap.h"
+#include "..\..\Modules\AI.h"
+#include "..\..\Modules\Combat.h"
 
-#include "..\AI.h"
+#include "..\combatAI.h"
+#include "..\items.h"
+#include "..\objects.h"
+#include "..\tilemap.h"
+
 #include "AI.Combat.h"
 #include "AI.SearchTarget.h"
 #include "AI.Inventory.h"

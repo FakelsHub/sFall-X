@@ -10,7 +10,7 @@
 
 #include "..\..\Game\items.h"
 
-#include "AI.FuncHelpers.h"
+#include "..\..\Game\ImprovedAI\AI.FuncHelpers.h"
 
 #include "CombatExt.h"
 

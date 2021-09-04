@@ -7,11 +7,12 @@
 #include "..\..\FalloutEngine\Fallout2.h"
 
 #include "..\..\main.h"
-#include "..\Combat.h"
-#include "..\HookScripts\CombatHs.h"
 
-#include "..\..\Game\combatAI.h"
-#include "..\..\Game\items.h"
+#include "..\..\Modules\Combat.h"
+#include "..\..\Modules\HookScripts\CombatHs.h"
+
+#include "..\combatAI.h"
+#include "..\items.h"
 
 #include "AI.Behavior.h"
 #include "AI.FuncHelpers.h"
