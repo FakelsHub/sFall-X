@@ -30,13 +30,27 @@ namespace sfall
 
 static const DWORD offsets[] = {
 	// GetTickCount calls
-	0x4C9375, 0x4C93E8, 0x4C93C0, 0x4FE01E,
-	0x4C9384, 0x4C9D2E, 0x4C8D34,
+	0x4C9375, // get_time_
+	0x4C93E8, // elapsed_time_
+	0x4C93C0, // block_for_tocks_
+	0x4C9384, // pause_for_tocks_
+	0x4FE01E, // unused???
+	0x4C9D2E, // GNW95_process_message_
+	0x4C8D34, // GNW_do_bk_process_
+
 	// Delayed GetTickCount calls
 	0x4FDF64,
+
 	// timeGetTime calls
-	0x4A3179, 0x4A325D, 0x4F482B, 0x4FE036,
-	0x4F4E53, 0x4F5542, 0x4F56CC, 0x4F59C6, // for mve
+//	0x4A3179, // init_random_ (unused)
+//	0x4A325D, // timer_read_
+//	0x4F482B, // unused!!!
+	0x4FE036, // unused???
+
+	// for MVE
+//	0x4F4E53, // syncWait_
+//	0x4F5542, // syncInit_
+//	0x4F56CC, 0x4F59C6, // MVE_syncSync_
 };
 
 static DWORD getLocalTimeOffs;
@@ -65,6 +79,21 @@ static struct SpeedCfg {
 static int modKey[2];
 static int toggleKey;
 
+static bool defaultDelay = true;
+
+static void SetKeyboardDefaultDelay() {
+	if (defaultDelay) return;
+	defaultDelay = true;
+	fo::var::setInt(FO_VAR_GNW95_repeat_rate) = 80;
+	fo::var::setInt(FO_VAR_GNW95_repeat_delay) = 500;
+}
+
+static void SetKeyboardDelay() {
+	fo::var::setInt(FO_VAR_GNW95_repeat_rate) = static_cast<long>(80 * multi);
+	fo::var::setInt(FO_VAR_GNW95_repeat_delay) = static_cast<long>(500 * multi);
+	defaultDelay = false;
+}
+
 static DWORD __stdcall FakeGetTickCount() {
 	// Keyboard control
 	if (modKey[0] && (KeyDown(modKey[0]) || (modKey[1] && KeyDown(modKey[1])))) {
@@ -79,6 +108,7 @@ static DWORD __stdcall FakeGetTickCount() {
 				int key = speed[i].key;
 				if (key && KeyDown(key)) {
 					multi = speed[i].multiplier;
+					SetKeyboardDelay();
 					break;
 				}
 			}
@@ -98,11 +128,16 @@ static DWORD __stdcall FakeGetTickCount() {
 	lastTickCount = newTickCount;
 
 	// Multiply the tick count difference by the multiplier
-	if (enabled && !slideShow && !(GetLoopFlags() & (LoopFlag::INVENTORY | LoopFlag::INTFACEUSE | LoopFlag::INTFACELOOT | LoopFlag::DIALOG))) {
+	long mode = GetLoopFlags();
+	if (enabled && (!mode || (mode & (LoopFlag::WORLDMAP | LoopFlag::PCOMBAT | LoopFlag::COMBAT))) && !slideShow) {
 		elapsed *= multi;
 		elapsed += tickCountFraction;
 		tickCountFraction = modf(elapsed, &elapsed);
+		if (defaultDelay) SetKeyboardDelay();
+	} else {
+		SetKeyboardDefaultDelay();
 	}
+
 	sfallTickCount += (DWORD)elapsed;
 
 	return sfallTickCount;
@@ -145,15 +180,15 @@ void TimerInit() {
 	for (int i = 0; i < 10; i++) {
 		_itoa(i, buf, 10);
 		spKey[8] = spMulti[10] = buf[0];
-		speed[i].key = GetConfigInt("Input", spKey, 0);
-		speed[i].multiplier = GetConfigInt("Speed", spMulti, 0) / 100.0;
+		speed[i].key = IniReader::GetConfigInt("Input", spKey, 0);
+		speed[i].multiplier = IniReader::GetConfigInt("Speed", spMulti, 0) / 100.0;
 	}
 }
 
 void SpeedPatch::init() {
-	if (GetConfigInt("Speed", "Enable", 0)) {
-		modKey[0] = GetConfigInt("Input", "SpeedModKey", 0);
-		int init = GetConfigInt("Speed", "SpeedMultiInitial", 100);
+	if (IniReader::GetConfigInt("Speed", "Enable", 0)) {
+		modKey[0] = IniReader::GetConfigInt("Input", "SpeedModKey", 0);
+		int init = IniReader::GetConfigInt("Speed", "SpeedMultiInitial", 100);
 		if (init == 100 && !modKey[0]) return;
 
 		dlog("Applying speed patch.", DL_INIT);
@@ -176,13 +211,14 @@ void SpeedPatch::init() {
 		}
 
 		multi = (double)init / 100.0;
-		toggleKey = GetConfigInt("Input", "SpeedToggleKey", 0);
+		toggleKey = IniReader::GetConfigInt("Input", "SpeedToggleKey", 0);
 
 		getTickCountOffs = (DWORD)&FakeGetTickCount;
 		getLocalTimeOffs = (DWORD)&FakeGetLocalTime;
 
 		int size = sizeof(offsets) / 4;
-		if (GetConfigInt("Speed", "AffectPlayback", 0) == 0) size -= 4;
+		// Affect the playback speed of mve video files without an audio track
+		//if (IniReader::GetConfigInt("Speed", "AffectPlayback", 0) == 0) size -= 4;
 
 		for (int i = 0; i < size; i++) {
 			SafeWrite32(offsets[i], (DWORD)&getTickCountOffs);
@@ -190,6 +226,7 @@ void SpeedPatch::init() {
 		SafeWrite32(0x4FDF58, (DWORD)&getLocalTimeOffs);
 		HookCall(0x4A433E, scripts_check_state_hook);
 
+		SetKeyboardDelay();
 		TimerInit();
 		dlogr(" Done", DL_INIT);
 	}
