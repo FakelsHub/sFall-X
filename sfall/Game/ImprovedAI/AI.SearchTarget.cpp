@@ -217,7 +217,7 @@ static CombatShootResult CombatCheckBadShotLite(fo::GameObject* source, fo::Game
 
 	long attackRange = fo::func::item_w_range(source, hitMode);
 	if (attackRange > 1) {
-		if (AIHelpers::IsGunOrThrowingWeapon(item, hitMode) == false) {
+		if (AIHelpersExt::IsGunOrThrowingWeapon(item, hitMode) == false) {
 			return CombatShootResult::Ok; // for melee weapon
 		}
 		if (fo::func::combat_is_shot_blocked(source, source->tile, tile, target, 0)) {
@@ -311,7 +311,7 @@ fo::GameObject* AISearchTarget::AIDangerSource(fo::GameObject* source, long type
 				if (hitTarget && hitTarget->critter.IsNotDead()) {
 					targets[0] = hitTarget;
 				} else {
-					targets[0] = AIHelpers::GetNearestEnemyCritter(source);
+					targets[0] = AIHelpersExt::GetNearestEnemyCritter(source);
 				}
 				goto FindNewTargets;
 				//source->critter.whoHitMe = nullptr; // unset the target to find new ones
@@ -342,7 +342,7 @@ ReFindNewTargets:
 		}
 	} else {
 		// [add ext] когда нет собсвенной цели у source, находим первый враждебный криттер
-		targets[0] = AIHelpers::GetNearestEnemyCritter(source);
+		targets[0] = AIHelpersExt::GetNearestEnemyCritter(source);
 	}
 
 FindNewTargets:

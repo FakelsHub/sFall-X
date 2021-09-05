@@ -9,8 +9,10 @@
 #include "..\..\main.h"
 #include "..\..\Utils.h"
 
-#include "..\..\Modules\AI.h"
+//#include "..\..\Modules\AI.h"
 #include "..\..\Modules\Combat.h"
+
+#include "..\AI\AIHelpers.h"
 
 #include "..\combatAI.h"
 #include "..\items.h"
@@ -92,7 +94,7 @@ static long  __fastcall AIPickupWeaponFix(fo::GameObject* critter, long distance
 	if (!allowPickUp) {
 		// если NPC имеет стрелковое или метательное оружие, тогда позволено подойти к предмету
 		fo::GameObject* item = fo::func::inven_right_hand(critter);
-		if (item && AIHelpers::IsGunOrThrowingWeapon(item)) return 1; // allow pickup
+		if (item && AIHelpersExt::IsGunOrThrowingWeapon(item)) return 1; // allow pickup
 	}
 	DEV_PRINTF1("\nai_search_environ: ItemPickUpFix is allow: %d\n", allowPickUp);
 	return 0 | allowPickUp; // false - next item
@@ -168,7 +170,7 @@ long __fastcall AIBehavior::AICheckBeforeWeaponSwitch(fo::GameObject* target, lo
 		// is using a close range weapon?
 		long wType = fo::func::item_w_subtype(item, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY);
 		if (wType <= fo::AttackSubType::MELEE) { // unarmed and melee weapons, check the distance before switching
-			if (AIHelpers::AttackInRange(source, item, target) == false) return -1; // target out of range, exit ai_try_attack_
+			if (ai::AIHelpers::AttackInRange(source, item, target) == false) return -1; // target out of range, exit ai_try_attack_
 		}
 		return 1; // all good, execute vanilla behavior of ai_switch_weapons_ function
 	}
@@ -247,7 +249,7 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 
 		// если object равен null значит линия от цели до checkTile свободно простреливается
 		// проверяем есть ли на линии огня от object до цели дружественные криттеры
-		object = sf::AI::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum);
+		object = ai::AIHelpers::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum);
 		if (!object) { // if there are no friendly critters
 			shotTile = checkTile;
 			distance = i + 1;
@@ -287,7 +289,7 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 				// check the line of fire from target to checkTile
 				fo::func::make_straight_path_func(target, target->tile, checkTile, 0, (DWORD*)&object, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
 
-				if (!sf::AI::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
+				if (!ai::AIHelpers::CheckShootAndTeamCritterOnLineOfFire(object, checkTile, source->critter.teamNum)) { // if there are no friendly critters
 					newTile = checkTile;
 					dist = i;
 
@@ -307,7 +309,7 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 	}
 	if (shotTile && sf::isDebug) fo::func::debug_printf("\n[AI] %s: Move to tile for shot.", fo::func::critter_name(source));
 
-	int result = (shotTile && AIHelpers::CombatMoveToTile(source, shotTile, distance) == 0) ? 1 : 0;
+	int result = (shotTile && AIHelpersExt::CombatMoveToTile(source, shotTile, distance) == 0) ? 1 : 0;
 	if (result) hitMode = (fo::AttackType)fo::func::ai_pick_hit_mode(source, itemHand, target); // try pick new weapon mode after move
 
 	return result;
@@ -462,11 +464,11 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 // Проверяет сможет ли атакующий атаковать цель с текущей позиции используя лучшее оружие
 // если лучшее оружие является оружием ближнего действия, а текущее оружие является метательным или стрелковым
 static bool CheckCanAttackTarget(fo::GameObject* bestWeapon, fo::GameObject* itemHand, fo::GameObject* source, fo::GameObject* target) {
-	if (AIHelpers::GetWeaponSubType(bestWeapon, 0) <= fo::AttackSubType::MELEE) {
+	if (AIHelpersExt::GetWeaponSubType(bestWeapon, 0) <= fo::AttackSubType::MELEE) {
 		DEV_PRINTF("\n[AI] BestWeapon is MELEE.");
-		if (AIHelpers::IsGunOrThrowingWeapon(itemHand, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) {
+		if (AIHelpersExt::IsGunOrThrowingWeapon(itemHand, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) {
 			DEV_PRINTF("\n[AI] Hand Weapon is ranged.");
-			if (AIHelpers::AttackInRange(source, bestWeapon, target) == false) {
+			if (ai::AIHelpers::AttackInRange(source, bestWeapon, target) == false) {
 				return false;
 			}
 		}
@@ -508,7 +510,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 
 	if (itemHand != bestWeapon)	{
 		DEV_PRINTF2("\n[AI] Find best weapon Pid: %d (%s)", (bestWeapon) ? bestWeapon->protoId : -1, (bestWeapon) ? fo::func::critter_name(bestWeapon) : "");
-		bestWeapon = AIHelpers::AICheckWeaponSkill(source, itemHand, bestWeapon); // выбрать лучшее на основе навыка
+		bestWeapon = AIHelpersExt::AICheckWeaponSkill(source, itemHand, bestWeapon); // выбрать лучшее на основе навыка
 		DEV_PRINTF1("\n[AI] Skill best weapon pid: %d", (bestWeapon) ? bestWeapon->protoId : -1);
 		// проверить сможет ли атакующий сразу атаковать свою цель
 		if (itemHand && (itemHand != bestWeapon) && CheckCanAttackTarget(bestWeapon, itemHand, source, target) == false) bestWeapon = itemHand; // оружие неподходит в текущей ситуации
@@ -517,7 +519,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 
 	if (source->critter.getAP() >= pickupCostAP && fo::func::critter_body_type(source) == fo::BodyType::Biped && !fo::func::critterIsOverloaded(source)) {
 
-		long itemHandType = (itemHand) ? AIHelpers::GetWeaponSubType(itemHand, hitMode) : fo::AttackSubType::NONE;
+		long itemHandType = (itemHand) ? AIHelpersExt::GetWeaponSubType(itemHand, hitMode) : fo::AttackSubType::NONE;
 
 		// построить путь до цели
 		if (itemHand && itemHandType <= fo::AttackSubType::MELEE) {
@@ -546,7 +548,7 @@ static fo::AttackType AISearchBestWeaponOnBeginAttack(fo::GameObject* source, fo
 					if (leftAp < apShoot) goto notRetrieve;
 				}
 
-				fo::GameObject* item = AIHelpers::AICheckWeaponSkill(source, bestWeapon, itemGround);
+				fo::GameObject* item = AIHelpersExt::AICheckWeaponSkill(source, bestWeapon, itemGround);
 				DEV_PRINTF1("\n[AI] Skill best weapon pid: %d", (item) ? item->protoId : -1);
 				if (item != itemGround) goto notRetrieve;
 
@@ -653,7 +655,7 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 								// если процент попадания по цели достаточно высокий, уменьшить дистанцию передвижения, чтобы хватило на несколько атак
 								while (moveDist >= costAP) moveDist -= costAP;
 							}
-							if (moveDist > 0) AIHelpers::MoveToTarget(source, target, moveDist);
+							if (moveDist > 0) AIHelpersExt::MoveToTarget(source, target, moveDist);
 						}
 					}
 				}
@@ -806,7 +808,7 @@ static long __fastcall AIMoveStepToAttackTile(fo::GameObject* source, fo::GameOb
 		if (sf::isDebug) fo::func::debug_printf("\n[AI] %s: Attack out of range. Move to tile for attack.", fo::func::critter_name(source));
 	}
 
-	int result = (getTile != -1) ? AIHelpers::CombatMoveToTile(source, getTile, distToMove) : 1;
+	int result = (getTile != -1) ? AIHelpersExt::CombatMoveToTile(source, getTile, distToMove) : 1;
 	if (!result) outHitMode = fo::func::ai_pick_hit_mode(source, itemHand, target); // try pick new weapon mode after move
 
 	return result;
@@ -894,7 +896,7 @@ static AIBehavior::AttackResult __fastcall AICheckResultAfterAttack(fo::GameObje
 
 			// проверить веротность удара и очки жизней прежде чем подходить
 
-			if (dist > 0 && AIHelpers::ForceMoveToTarget(source, target, dist) == -1) return AIBehavior::AttackResult::Default; // не удалось приблизиться к цели
+			if (dist > 0 && AIHelpersExt::ForceMoveToTarget(source, target, dist) == -1) return AIBehavior::AttackResult::Default; // не удалось приблизиться к цели
 			hitMode = fo::AttackType::ATKTYPE_PUNCH; // установить тип атаки
 			weapon = nullptr;                        // без оружия
 			return AIBehavior::AttackResult::ReTryAttack;
@@ -1005,7 +1007,7 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 	__asm call fo::funcoffs::gmouse_bk_process_;
 
 	// check the path is clear
-	if (game::Tilemap::make_path_func(source, source->tile, target->tile, 0, 0, AIHelpers::obj_ai_move_blocking_at_) > 0) {
+	if (game::Tilemap::make_path_func(source, source->tile, target->tile, 0, 0, AIHelpersExt::obj_ai_move_blocking_at_) > 0) {
 		DEV_PRINTF("\n[AI] ClearMovePath: free.");
 		// TODO: найти причину по которой путь строится для obj_ai_move_blocking_at_ но для obj_blocking_at_ это блокировано
 		if (game::Tilemap::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
@@ -1061,12 +1063,12 @@ static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* t
 				if (dir > 5) dir -= 6; // направление движение к source
 			}
 
-			long moveTile = AIHelpers::GetFreeTile(blockCritter, blockCritter->tile, 1, dir);
+			long moveTile = AIHelpersExt::GetFreeTile(blockCritter, blockCritter->tile, 1, dir);
 			if (moveTile == -1)	return blockCritter;
 
 			DEV_PRINTF1("\n[AI] Path Clear Object Move: %s", fo::func::critter_name(blockCritter));
 
-			if (AIHelpers::CombatMoveToTile(blockCritter, moveTile, 1)) return blockCritter; // error
+			if (AIHelpersExt::CombatMoveToTile(blockCritter, moveTile, 1)) return blockCritter; // error
 			if (blockCritter->critter.getAP()) blockCritter->critter.movePoints--;
 
 			blockCritter->flags ^= fo::ObjectFlag::WalkThru; // снимаем флаг прохода, чтобы проверить свободен ли путь

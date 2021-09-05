@@ -22,12 +22,12 @@
 #include "..\FalloutEngine\Fallout2.h"
 #include "LoadGameHook.h"
 
+#include "..\Game\AI\AIHelpers.h"
 #include "..\Game\combatAI.h"
 #include "..\Game\items.h"
 
 #include "..\Game\ImprovedAI\AI.Behavior.h"
 #include "..\Game\ImprovedAI\AI.Combat.h"
-#include "..\Game\ImprovedAI\AI.FuncHelpers.h"
 
 #include "AI.h"
 
@@ -38,37 +38,6 @@ using namespace fo::Fields;
 
 static std::unordered_map<fo::GameObject*, fo::GameObject*> targets;
 static std::unordered_map<fo::GameObject*, fo::GameObject*> sources;
-
-// Returns the friendly critter or any blocking object that located on the line of fire
-fo::GameObject* AI::CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object, long targetTile, long team) {
-	if (object && object->IsCritter() && object->critter.teamNum != team) { // is not friendly fire
-		long objTile = object->tile;
-		if (objTile == targetTile) return nullptr;
-
-		if (object->flags & fo::ObjectFlag::MultiHex) {
-			long dir = fo::func::tile_dir(objTile, targetTile);
-			objTile = fo::func::tile_num_in_direction(objTile, dir, 1);
-			if (objTile == targetTile) return nullptr; // just in case
-		}
-		// continue checking the line of fire from object tile to targetTile
-		fo::GameObject* obj = object; // for ignoring the object (multihex) when building the path
-		fo::func::make_straight_path_func(object, objTile, targetTile, 0, (DWORD*)&obj, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-
-		object = CheckShootAndTeamCritterOnLineOfFire(obj, targetTile, team);
-	}
-	if (object) {
-		fo::func::dev_printf("\n[AI] TeamCritterOnLineOfFire: %s (team: %d==%d)", fo::func::critter_name(object), object->critter.teamNum, team);
-	}
-	return object; // friendly critter, any object or null
-}
-
-// Returns the friendly critter that located on the line of fire
-fo::GameObject* AI::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
-	fo::GameObject* object = nullptr;
-	fo::func::make_straight_path_func(attacker, attacker->tile, target->tile, 0, (DWORD*)&object, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-	object = CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum);
-	return (object && object->IsCritter()) ? object : nullptr; // 0 - if there are no friendly critters
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -506,7 +475,7 @@ static long hitChance, loopCounter = 0;
 static long checkBurstFriendlyFireMode;
 
 static bool __fastcall RollFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
-	if (AI::CheckFriendlyFire(target, attacker)) {
+	if (game::ai::AIHelpers::CheckFriendlyFire(target, attacker)) {
 		if (checkBurstFriendlyFireMode >= 1) return true;
 		long dice = fo::func::roll_random(1, 10);
 		return (fo::func::stat_level(attacker, fo::STAT_iq) >= dice); // true - is friendly

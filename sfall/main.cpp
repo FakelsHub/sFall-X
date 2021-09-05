@@ -102,18 +102,6 @@ DWORD HRPAddress(DWORD addr) {
 
 char falloutConfigName[65];
 
-void InitReplacementHack() {
-	game::gui::Render::init();
-	game::gui::Text::init();
-
-	game::CombatAI::init();
-	game::Inventory::init();
-	game::Skills::init();
-	game::Stats::init();
-	game::Items::init();
-	game::Tilemap::init();
-}
-
 static void InitModules() {
 	dlogr("In InitModules", DL_MAIN);
 

@@ -16,6 +16,7 @@
 #include "..\..\Modules\Combat.h"
 #include "..\..\Modules\PartyControl.h"
 
+#include "..\AI\AIHelpers.h"
 #include "..\combatAI.h"
 #include "..\items.h"
 
@@ -46,7 +47,7 @@ CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::Ga
 
 	fo::GameObject* item = fo::func::inven_right_hand(source);
 	if (item) {
-		if (!AIHelpers::AICanUseWeapon(item)) return CombatShootResult::CantUseWeapon;
+		if (!AIHelpersExt::AICanUseWeapon(item)) return CombatShootResult::CantUseWeapon;
 
 		long flags = source->critter.damageFlags;
 		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::util::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
@@ -72,7 +73,7 @@ CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::Ga
 static CombatShootResult CheckShotBeforeAttack(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode) {
 	fo::GameObject* item = fo::func::inven_right_hand(source);
 	if (item) {
-		if (!AIHelpers::AICanUseWeapon(item)) return CombatShootResult::CantUseWeapon;
+		if (!AIHelpersExt::AICanUseWeapon(item)) return CombatShootResult::CantUseWeapon;
 
 		long flags = source->critter.damageFlags;
 		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::util::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
@@ -320,7 +321,7 @@ static long CheckCoverConditionAndGetTile(fo::GameObject* source, fo::GameObject
 
 	// выход если NPC безоружен или у атакующего не стрелковое оружие
 	fo::GameObject* item = fo::func::inven_right_hand(source);
-	if (!item || AIHelpers::GetWeaponSubType(item, false) != fo::AttackSubType::GUNS) {
+	if (!item || AIHelpersExt::GetWeaponSubType(item, false) != fo::AttackSubType::GUNS) {
 		return -1;
 	}
 
@@ -328,11 +329,11 @@ static long CheckCoverConditionAndGetTile(fo::GameObject* source, fo::GameObject
 	bool isRangeAttack = false;
 	if (target == fo::var::obj_dude) {
 		fo::GameObject* lItem = fo::func::inven_left_hand(target);
-		if (lItem && AIHelpers::IsGunOrThrowingWeapon(lItem)) isRangeAttack = true;
+		if (lItem && AIHelpersExt::IsGunOrThrowingWeapon(lItem)) isRangeAttack = true;
 	}
 	if (!isRangeAttack) {
 		fo::GameObject* rItem = fo::func::inven_right_hand(target);
-		if (!rItem || !AIHelpers::IsGunOrThrowingWeapon(rItem)) return -1;
+		if (!rItem || !AIHelpersExt::IsGunOrThrowingWeapon(rItem)) return -1;
 		isRangeAttack = true;
 	}
 	if (isRangeAttack && fo::func::combat_is_shot_blocked(target, target->tile, source->tile, source, 0)) return -1; // может ли цель стрелять по цели
@@ -455,10 +456,10 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 
 	if (fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) >= 2) {
 
-		long cost = AIHelpers::GetCurrenShootAPCost(source, target);
+		long cost = AIHelpersExt::GetCurrenShootAPCost(source, target);
 		if (cost > (source->critter.getAP() - 1)) return; // предварительная проверка
 
-		fo::GameObject* friendNPC = sf::AI::CheckFriendlyFire(target, source);
+		fo::GameObject* friendNPC = ai::AIHelpers::CheckFriendlyFire(target, source);
 		if (friendNPC) {
 			long distToTarget = fo::func::obj_dist(friendNPC, target);
 			if (distToTarget >= 2 || fo::func::obj_dist(friendNPC, source) <= 2) {
@@ -476,7 +477,7 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 					long tile = fo::func::tile_num_in_direction(source->tile, dir, range);
 					long pathLen = fo::func::make_path_func(source, source->tile, tile, 0, 1, (void*)fo::funcoffs::obj_blocking_at_);
 					if (pathLen > 0 && pathLen < (source->critter.getMoveAP() - cost)) {
-						if (!AIHelpers::CheckFriendlyFire(target, source, tile)) {
+						if (!ai::AIHelpers::CheckFriendlyFire(target, source, tile)) {
 							reTargetTile = tile;
 							DEV_PRINTF("\n[AI] -> pick tile to retarget.");
 							break;
@@ -500,7 +501,7 @@ static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject*
 	}
 	if (reTargetTile != source->tile) {
 		DEV_PRINTF("\n[AI] -> move tile before attack");
-		AIHelpers::CombatMoveToTile(source, reTargetTile, source->critter.getAP());
+		AIHelpersExt::CombatMoveToTile(source, reTargetTile, source->critter.getAP());
 	}
 }
 
@@ -513,7 +514,7 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 		DEV_PRINTF1("\n[AI] AIpref::distance::charge: %s", fo::func::critter_name(target));
 		// приблизиться на расстояние для совершения одной атаки
 		distance = source->critter.getAP();
-		long cost = AIHelpers::GetCurrenShootAPCost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
+		long cost = AIHelpersExt::GetCurrenShootAPCost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
 		if (cost != -1 && distance > cost) distance -= cost;
 		if (source->critter.getAP(distance) < cost) return;
 		fo::func::ai_move_steps_closer(source, target, distance, 1);
@@ -525,7 +526,7 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 			// атакующий отойдет на расстояние в 10 гексов от своей цели если она на него нападает
 			bool shouldMove = ((fo::func::combatai_rating(source) + 10) < fo::func::combatai_rating(target));
 			if (shouldMove) {
-				long costAP = AIHelpers::GetCurrenShootAPCost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
+				long costAP = AIHelpersExt::GetCurrenShootAPCost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
 				if (costAP != -1) {
 					long shotCount = source->critter.getAP() / costAP;
 					long freeAPs = source->critter.getAP() - (costAP * shotCount); // положительное число если останутся AP после атаки
@@ -544,7 +545,7 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 
 static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject* target, bool сheckAP) {
 	if (сheckAP) {
-		long cost = AIHelpers::GetCurrenShootAPCost(source, target);
+		long cost = AIHelpersExt::GetCurrenShootAPCost(source, target);
 		if (cost == -1 || cost >= source->critter.getAP()) return;
 	}
 	ReTargetTileFromFriendlyFire(source, target);
@@ -601,7 +602,7 @@ static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
 			fo::func::debug_printf("\n[AI] %s FLEEING: I'm Hurt!", attacker.name);
 
 			if (!target) {
-				target = AIHelpers::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
+				target = AIHelpersExt::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
 			}
 			if (fo::func::obj_dist(source, fo::var::obj_dude) <= attacker.cap->max_dist * 2) {
 				fo::func::ai_run_away(source, target);              // убегаем от цели или от игрока если цель не была назначена
@@ -633,7 +634,7 @@ TrySpendExtraAP:
 		if (attacker.InDudeParty) { // партийцы бегут к игроку
 			fo::func::ai_move_steps_closer(source, fo::var::obj_dude, source->critter.getAP(), 0); // !!! здесь диспозиция stay не позволяет бежать к игроку !!!
 		} else {
-			if (!lastTarget) lastTarget = AIHelpers::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
+			if (!lastTarget) lastTarget = AIHelpersExt::GetNearestEnemyCritter(source); // получить самого ближнего криттера не из своей команды
 			if (lastTarget && fo::func::obj_dist(source, lastTarget) <= 1) fo::func::ai_try_attack(source, lastTarget);
 
 			fo::func::ai_run_away(source, lastTarget);                               // убегаем от потенцеально опасного криттера (или от игрока)
@@ -802,10 +803,10 @@ ReFindNewTarget:
 			else if (!attacker.InDudeParty && attacker.cap->getDistance() != fo::AIpref::distance::stay)
 			{	// поведение не для партийцев игрока
 				// если атакующий уже находится в радиусе, рандомное перемещение вокруг ally_Critter
-				long tile = AIHelpers::GetRandomDistTile(source, ally_Critter->tile, 5);
+				long tile = AIHelpersExt::GetRandomDistTile(source, ally_Critter->tile, 5);
 				if (tile != -1) {
 					DEV_PRINTF("\n[AI] Random move tile.");
-					AIHelpers::CombatMoveToTile(source, tile, source->critter.getAP());
+					AIHelpersExt::CombatMoveToTile(source, tile, source->critter.getAP());
 				}
 			}
 			/* Со следующего хода (если закончились AP) возможно, что атакующий получит цель которую он заметит */
@@ -831,8 +832,8 @@ ReFindNewTarget:
 					fo::func::debug_printf("\n[AI] %s: FLEEING: Somebody is shooting at me that I can't see!", attacker.name); // Бегство: кто-то стреляет в меня, но я этого не вижу!
 					// рандомное перемещение
 					long max = source->critter.getMoveAP();
-					long tile = AIHelpers::GetRandomTileToMove(source, max, max);
-					if (tile != -1) AIHelpers::CombatRunToTile(source, tile, max);
+					long tile = AIHelpersExt::GetRandomTileToMove(source, max, max);
+					if (tile != -1) AIHelpersExt::CombatMoveToTile(source, tile, max, true);
 				}
 				///return; // обязательно иначе возникнет конфликт поведения
 			}
@@ -859,8 +860,8 @@ ReFindNewTarget:
 		} else if (attacker.InDudeParty == false) {
 			// рандомное перемещение
 			long max = source->critter.getMoveAP();
-			long tile = AIHelpers::GetRandomTileToMove(source, max / 2, max);
-			if (tile != -1) AIHelpers::CombatMoveToTile(source, tile, max);
+			long tile = AIHelpersExt::GetRandomTileToMove(source, max / 2, max);
+			if (tile != -1) AIHelpersExt::CombatMoveToTile(source, tile, max);
 			DEV_PRINTF("\n[AI] End Random move tile.");
 		}
 	}
@@ -908,7 +909,7 @@ ReFindNewTarget:
 		}
 		// отход в укрытие имеет приоритет над другими функциями перестраивания
 		if (coverTile != -1) {
-			if (AIHelpers::CombatMoveToTile(source, coverTile, source->critter.getAP()) != 0) coverTile = -1;
+			if (AIHelpersExt::CombatMoveToTile(source, coverTile, source->critter.getAP()) != 0) coverTile = -1;
 			DEV_PRINTF1("\n[AI] AP's after move to cover tile: %d", source->critter.getAP());
 		}
 		attacker.RemoveMoveBonusAP(source);  // удалить полученные бонусные очки передвижения

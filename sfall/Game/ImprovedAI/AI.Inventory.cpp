@@ -5,12 +5,12 @@
  */
 
 #include "..\..\FalloutEngine\Fallout2.h"
-
 #include "..\..\main.h"
 
 #include "..\..\Modules\Combat.h"
 #include "..\..\Modules\HookScripts\CombatHs.h"
 
+#include "..\AI\AIHelpers.h"
 #include "..\combatAI.h"
 #include "..\items.h"
 
@@ -213,7 +213,7 @@ fo::GameObject* AIInventory::FindSafeWeaponAttack(fo::GameObject* source, fo::Ga
 		if (hWeapon && hWeapon->protoId == item->protoId) continue;
 
 		// проверить дальность оружия до цели
-		if (AIHelpers::AttackInRange(source, item, distance) == false) continue;
+		if (ai::AIHelpers::AttackInRange(source, item, distance) == false) continue;
 
 		outHitMode = (fo::AttackType)fo::func::ai_pick_hit_mode(source, item, target);
 

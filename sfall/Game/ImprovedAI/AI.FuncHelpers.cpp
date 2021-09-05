@@ -6,7 +6,9 @@
 
 #include "..\..\FalloutEngine\Fallout2.h"
 #include "..\..\Utils.h"
-#include "..\..\Modules\AI.h"
+//#include "..\..\Modules\AI.h"
+
+#include "..\AI\AIHelpers.h"
 
 #include "..\items.h"
 
@@ -19,56 +21,16 @@ namespace imp_ai
 
 namespace sf = sfall;
 
-//fo::GameObject* AIHelpers::CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object, long targetTile, long team) {
-//	if (object && object->Type() == fo::ObjType::OBJ_TYPE_CRITTER && object->critter.teamNum != team) { // is not friendly fire critter
-//		long objTile = object->tile;
-//
-//		if (object->flags & fo::ObjectFlag::MultiHex) { // если криттер много гексовый
-//			long dir = fo::func::tile_dir(objTile, targetTile);
-//			objTile = fo::func::tile_num_in_direction(objTile, dir, 1);
-//		}
-//		if (objTile == targetTile) return nullptr;
-//
-//		// continue check the line_of_fire from object tile to targetTile
-//		fo::GameObject*	obj = object;
-//		fo::func::make_straight_path_func(object, objTile, targetTile, 0, (DWORD*)&obj, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-//		if (!CheckShootAndTeamCritterOnLineOfFire(obj, targetTile, team)) return nullptr;
-//	}
-//	return object;
-//}
-//
-//fo::GameObject* AIHelpers::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker) {
-//	fo::GameObject* object = nullptr;
-//	fo::func::make_straight_path_func(attacker, attacker->tile, target->tile, 0, (DWORD*)&object, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-//	if (object) object = CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum);
-//	return (!object || object->TypeFid() == fo::ObjType::OBJ_TYPE_CRITTER) ? object : nullptr; // 0 if there are no friendly critters
-//}
-
-fo::GameObject* AIHelpers::CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker, long destTile) {
-	fo::GameObject* object = nullptr;
-	fo::func::make_straight_path_func(attacker, destTile, target->tile, 0, (DWORD*)&object, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
-	return (object) ? sf::AI::CheckShootAndTeamCritterOnLineOfFire(object, target->tile, attacker->critter.teamNum) : nullptr; // 0 if there are no object
-}
-
-bool AIHelpers::AICanUseWeapon(fo::GameObject* weapon) {
+bool AIHelpersExt::AICanUseWeapon(fo::GameObject* weapon) {
 	return (weapon->item.miscFlags & fo::MiscFlags::CantUse) == 0;
 }
 
-bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, long distance) {
-	if (game::Items::item_weapon_range(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) >= distance) return true;
-	return (game::Items::item_weapon_range(source, weapon, fo::AttackType::ATKTYPE_RWEAPON_SECONDARY) >= distance);
-}
-
-bool AIHelpers::AttackInRange(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* target) {
-	return AIHelpers::AttackInRange(source, weapon, fo::func::obj_dist(source, target));
-}
-
-fo::GameObject* AIHelpers::GetNearestEnemyCritter(fo::GameObject* source) {
+fo::GameObject* AIHelpersExt::GetNearestEnemyCritter(fo::GameObject* source) {
 	fo::GameObject* enemyCritter = fo::func::ai_find_nearest_team_in_combat(source, source, 2);
 	return (enemyCritter && enemyCritter->critter.getHitTarget()->critter.teamNum == source->critter.teamNum) ? enemyCritter : nullptr;
 }
 
-long AIHelpers::CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
+long AIHelpersExt::CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist) {
 	fo::func::register_begin(fo::RB_RESERVED);
 	if (dist >= 3) {
 		fo::func::register_object_run_to_object(source, target, dist, -1);
@@ -89,9 +51,12 @@ long AIHelpers::CombatMoveToObject(fo::GameObject* source, fo::GameObject* targe
 	return result; // 0 - ok, -1 - error
 }
 
-long AIHelpers::CombatMoveToTile(fo::GameObject* source, long tile, long dist) {
+long AIHelpersExt::CombatMoveToTile(fo::GameObject* source, long tile, long dist, bool run) {
 	fo::func::register_begin(fo::RB_RESERVED);
-	fo::func::register_object_move_to_tile(source, tile, source->elevation, dist, -1);
+
+	auto func = (run) ? fo::func::register_object_run_to_tile : fo::func::register_object_move_to_tile;
+	func(source, tile, source->elevation, dist, -1);
+
 	long result = fo::func::register_end();
 	if (!result) {
 		__asm call fo::funcoffs::combat_turn_run_;
@@ -102,30 +67,17 @@ long AIHelpers::CombatMoveToTile(fo::GameObject* source, long tile, long dist) {
 	return result; // 0 - ok, -1 - error
 }
 
-long AIHelpers::CombatRunToTile(fo::GameObject* source, long tile, long dist) {
-	fo::func::register_begin(fo::RB_RESERVED);
-	fo::func::register_object_run_to_tile(source, tile, source->elevation, dist, -1);
-	long result = fo::func::register_end();
-	if (!result) {
-		__asm call fo::funcoffs::combat_turn_run_;
-		if (source->critter.IsNotActiveOrDead()) {
-			source->critter.movePoints = 0; // для предотвращения дальнейших действий в бою
-		}
-	}
-	return result; // 0 - ok, -1 - error
-}
-
-long AIHelpers::ForceMoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
+long AIHelpersExt::ForceMoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
 	dist |= 0x02000000; // sfall force flag (stay and stay_close)
 	return fo::func::ai_move_steps_closer(source, target, ~dist, 0); // 0 - ok, -1 - don't move
 }
 
-long AIHelpers::MoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
+long AIHelpersExt::MoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
 	dist |= 0x01000000; // sfall force flag (stay_close)
 	return fo::func::ai_move_steps_closer(source, target, ~dist, 0); // 0 - ok, -1 - don't move
 }
 
-fo::GameObject* AIHelpers::AICheckWeaponSkill(fo::GameObject* source, fo::GameObject* hWeapon, fo::GameObject* sWeapon) {
+fo::GameObject* AIHelpersExt::AICheckWeaponSkill(fo::GameObject* source, fo::GameObject* hWeapon, fo::GameObject* sWeapon) {
 	if (!hWeapon) return sWeapon;
 	if (!sWeapon) return hWeapon;
 
@@ -147,37 +99,37 @@ fo::GameObject* AIHelpers::AICheckWeaponSkill(fo::GameObject* source, fo::GameOb
 	return (hLevel > (sLevel + 10)) ? hWeapon : sWeapon;
 }
 
-long AIHelpers::GetCurrenShootAPCost(fo::GameObject* source, long modeHit, long isCalled) {
+long AIHelpersExt::GetCurrenShootAPCost(fo::GameObject* source, long modeHit, long isCalled) {
 	fo::GameObject* item = fo::func::inven_right_hand(source);
 	if (fo::func::item_get_type(item) != fo::ItemType::item_type_weapon) return -1;
 	return game::Items::item_weapon_mp_cost(source, item, modeHit, isCalled);
 }
 
-long AIHelpers::GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* target) {
+long AIHelpersExt::GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* target) {
 	fo::GameObject* item = fo::func::inven_right_hand(source);
 	if (fo::func::item_get_type(item) != fo::ItemType::item_type_weapon) return -1;
 	return GetCurrenShootAPCost(source, target, item);
 }
 
-long AIHelpers::GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* target, fo::GameObject* weapon) {
+long AIHelpersExt::GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* target, fo::GameObject* weapon) {
 	long modeHit = fo::func::ai_pick_hit_mode(source, weapon, target);
 	return game::Items::item_weapon_mp_cost(source, weapon, modeHit, 0);
 }
 
-fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, bool isSecond) {
+fo::AttackSubType AIHelpersExt::GetWeaponSubType(fo::GameObject* item, bool isSecond) {
 	fo::Proto* proto;
 	fo::util::GetProto(item->protoId, &proto);
 	long type = (isSecond) ? proto->item.flagsExt >> 4 : proto->item.flagsExt;
 	return fo::util::GetWeaponType(type);
 }
 
-fo::AttackSubType AIHelpers::GetWeaponSubType(fo::GameObject* item, fo::AttackType hitMode) {
+fo::AttackSubType AIHelpersExt::GetWeaponSubType(fo::GameObject* item, fo::AttackType hitMode) {
 	bool isSecond = (hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY || fo::AttackType::ATKTYPE_LWEAPON_SECONDARY);
 	return GetWeaponSubType(item, isSecond);
 }
 
 // Проверяет относится ли предмет к типу стрелкового или метательному оружию
-bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
+bool AIHelpersExt::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 	fo::Proto* proto = fo::util::GetProto(item->protoId);
 
 	if (type > fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) type--;
@@ -198,7 +150,7 @@ bool AIHelpers::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 }
 
 // Получает свободный гекс по направлению и дистанции
-long AIHelpers::GetFreeTile(fo::GameObject* source, long tile, long distMax, long dir) {
+long AIHelpersExt::GetFreeTile(fo::GameObject* source, long tile, long distMax, long dir) {
 	// рандомно смежные гексы
 	long r = (sf::GetRandom(1, 2) == 2) ? 5 : 1;
 	long dirNear0 = (dir + r) % 6;
@@ -236,7 +188,7 @@ getTile:
 	return freeTile;
 }
 
-long AIHelpers::GetDirFreeTile(fo::GameObject* source, long tile, long distMax) {
+long AIHelpersExt::GetDirFreeTile(fo::GameObject* source, long tile, long distMax) {
 	long dist = 1;
 	do {
 		long dir = sf::GetRandom(0, 5);
@@ -252,7 +204,7 @@ long AIHelpers::GetDirFreeTile(fo::GameObject* source, long tile, long distMax) 
 	return -1;
 }
 
-long AIHelpers::GetRandomTile(long sourceTile, long minDist, long maxDist) {
+long AIHelpersExt::GetRandomTile(long sourceTile, long minDist, long maxDist) {
 	long dist = (maxDist > minDist) ? sf::GetRandom(minDist, maxDist) : minDist;
 	if (dist > 0) {
 		long dx = sf::GetRandom(-dist, dist) * 32;
@@ -269,7 +221,7 @@ long AIHelpers::GetRandomTile(long sourceTile, long minDist, long maxDist) {
 	return -1;
 }
 
-long AIHelpers::GetRandomTileToMove(fo::GameObject* source, long minDist, long maxDist) {
+long AIHelpersExt::GetRandomTileToMove(fo::GameObject* source, long minDist, long maxDist) {
 	long iteration = (maxDist + minDist) * 10;
 	while (true)
 	{
@@ -283,7 +235,7 @@ long AIHelpers::GetRandomTileToMove(fo::GameObject* source, long minDist, long m
 	return -1;
 }
 
-long AIHelpers::GetRandomDistTile(fo::GameObject* source, long tile, long distMax) { // переделать рекурсию с дистанцией
+long AIHelpersExt::GetRandomDistTile(fo::GameObject* source, long tile, long distMax) { // переделать рекурсию с дистанцией
 	if (distMax <= 0) return -1;
 	long dist = sf::GetRandom(1, distMax);
 	long _tile = fo::func::tile_num_in_direction(tile, sf::GetRandom(0, 5), dist);
@@ -316,7 +268,7 @@ long CheckLineOfFire(long sourceTile, long targetTile) {
 
 //
 // нужна ли поддержка для многогексовых критеров? если нужна то заменить на combat_is_shot_blocked_
-bool AIHelpers::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
+bool AIHelpersExt::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
 	fo::GameObject* src = source;
 	fo::GameObject* object = target;
 	do {
@@ -374,7 +326,7 @@ static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source
 	return nullptr;
 }
 
-void __declspec(naked) AIHelpers::obj_ai_move_blocking_at_() {
+void __declspec(naked) AIHelpersExt::obj_ai_move_blocking_at_() {
 	__asm {
 		push ecx;
 		push ebx;

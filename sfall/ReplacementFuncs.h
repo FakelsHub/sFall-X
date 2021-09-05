@@ -15,3 +15,15 @@
 #include "Game\stats.h"
 #include "Game\items.h"
 #include "Game\tilemap.h"
+
+__inline void InitReplacementHack() {
+	game::gui::Render::init();
+	game::gui::Text::init();
+
+	game::CombatAI::init();
+	game::Inventory::init();
+	game::Skills::init();
+	game::Stats::init();
+	game::Items::init();
+	game::Tilemap::init();
+}

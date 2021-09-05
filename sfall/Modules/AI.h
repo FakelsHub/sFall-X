@@ -30,9 +30,6 @@ public:
 	const char* name() { return "AI"; }
 	void init();
 
-	static fo::GameObject* CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object, long targetTile, long team);
-	static fo::GameObject* CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker);
-
 	static fo::GameObject* __stdcall AIGetLastAttacker(fo::GameObject* target);
 	static fo::GameObject* __stdcall AIGetLastTarget(fo::GameObject* source);
 };

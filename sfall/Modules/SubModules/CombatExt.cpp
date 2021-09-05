@@ -65,7 +65,7 @@ static long __fastcall DudeMoveToAttackTarget(fo::GameObject* target, fo::Attack
 
 	// check ammo
 	int result = ((fo::func::item_w_max_ammo(weapon) > 0) && !Combat::check_item_ammo_cost(weapon, hitMode));
-	return (result || game::imp_ai::AIHelpers::CombatMoveToObject(fo::var::obj_dude, target, distance));
+	return (result || game::imp_ai::AIHelpersExt::CombatMoveToObject(fo::var::obj_dude, target, distance));
 }
 
 static void __declspec(naked) combat_attack_this_hack() {

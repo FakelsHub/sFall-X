@@ -11,22 +11,10 @@ namespace game
 namespace imp_ai
 {
 
-class AIHelpers {
+class AIHelpersExt {
 public:
-	// Рекурсивная функция, возвращающая криттера принадлежащей указанной команде расположенного на линии огня указанной цели или не простреливаемый объект
-	//static fo::GameObject* CheckShootAndTeamCritterOnLineOfFire(fo::GameObject* object, long targetTile, long team);
-
-	// The return of the friendly critter that are located on the line of fire
-	//static fo::GameObject* CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker);
-
-	// The return of the friendly critter that are located on the line of fire or any other non-shooting object
-	// destTile - тайл с которого будет проверяться линия
-	static fo::GameObject* CheckFriendlyFire(fo::GameObject* target, fo::GameObject* attacker, long destTile);
 
 	static bool AICanUseWeapon(fo::GameObject* weapon);
-
-	static bool AttackInRange(fo::GameObject* source, fo::GameObject* weapon, long distance);
-	static bool AttackInRange(fo::GameObject* source, fo::GameObject* weapon, fo::GameObject* target);
 
 	static fo::GameObject* GetNearestEnemyCritter(fo::GameObject* source);
 
@@ -41,8 +29,7 @@ public:
 	static long GetCurrenShootAPCost(fo::GameObject* source, fo::GameObject* target, fo::GameObject* weapon);
 
 	static long CombatMoveToObject(fo::GameObject* source, fo::GameObject* target, long dist);
-	static long CombatMoveToTile(fo::GameObject* source, long tile, long dist);
-	static long CombatRunToTile(fo::GameObject* source, long tile, long dist);
+	static long CombatMoveToTile(fo::GameObject* source, long tile, long dist, bool run = false);
 
 	// Принудительно заставит NPC подойти к цели на указанную дистанцию (игнорируется stay и stay_close)
 	static long ForceMoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist);

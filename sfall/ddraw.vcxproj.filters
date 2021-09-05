@@ -37,6 +37,9 @@
     <Filter Include="Game\ImprovedAI">
       <UniqueIdentifier>{23c93924-fde6-44bf-b856-224632ae7da6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\AI">
+      <UniqueIdentifier>{34a50afa-4b08-4f9c-964f-3ea7d75832dc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h" />
@@ -354,9 +357,6 @@
       <Filter>Game</Filter>
     </ClInclude>
     <ClInclude Include="Translate.h" />
-    <ClInclude Include="Game\combatAI.h">
-      <Filter>Game</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\EngineTweaks.h">
       <Filter>Modules</Filter>
     </ClInclude>
@@ -389,6 +389,12 @@
     </ClInclude>
     <ClInclude Include="Game\ImprovedAI\AI.SearchTarget.h">
       <Filter>Game\ImprovedAI</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\combatAI.h">
+      <Filter>Game\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\AI\AIHelpers.h">
+      <Filter>Game\AI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -681,9 +687,6 @@
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Translate.cpp" />
-    <ClCompile Include="Game\combatAI.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\EngineTweaks.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
@@ -713,6 +716,12 @@
     </ClCompile>
     <ClCompile Include="Game\ImprovedAI\AI.SearchTarget.cpp">
       <Filter>Game\ImprovedAI</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\combatAI.cpp">
+      <Filter>Game\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\AI\AIHelpers.cpp">
+      <Filter>Game\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
