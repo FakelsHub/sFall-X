@@ -47,7 +47,7 @@ static const DWORD offsets[] = {
 //	0x4F482B, // unused!!!
 	0x4FE036, // unused???
 
-	// Affect the playback speed of mve video files without an audio track
+	// Affect the playback speed of MVE video files without an audio track
 //	0x4F4E53, // syncWait_
 //	0x4F5542, // syncInit_
 //	0x4F56CC, 0x4F59C6, // MVE_syncSync_
@@ -129,8 +129,10 @@ static DWORD __stdcall FakeGetTickCount() {
 	lastTickCount = newTickCount;
 
 	// Multiply the tick count difference by the multiplier
-	long mode = GetLoopFlags();
-	if (IsGameLoaded() && enabled && (!mode || (mode & (LoopFlag::WORLDMAP | LoopFlag::PCOMBAT | LoopFlag::COMBAT))) && !slideShow) {
+	long mode;
+	if (IsGameLoaded() && enabled &&
+		(!(mode = GetLoopFlags()) || mode == LoopFlag::COMBAT || mode == (LoopFlag::COMBAT | LoopFlag::PCOMBAT) || (mode & LoopFlag::WORLDMAP)) && !slideShow)
+	{
 		elapsed *= multi;
 		elapsed += tickCountFraction;
 		tickCountFraction = modf(elapsed, &elapsed);

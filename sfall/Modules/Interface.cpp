@@ -782,7 +782,7 @@ static void __declspec(naked) wmInterfaceRefreshCarFuel_hack() {
 	}
 }
 
-static void __declspec(naked) register_button() {
+static void __declspec(naked) wmInterfaceInit_hook() {
 	static DWORD retAddr;
 	__asm {
 		pop  retAddr;
@@ -806,7 +806,7 @@ static void WorldMapInterfacePatch() {
 	}
 	
 	// Adds missing sounds for the buttons of the world map interface (wmInterfaceInit_)
-	HookCalls(register_button, {
+	HookCalls(wmInterfaceInit_hook, {
 		0x4C2BF4, // town labels
 		0x4C2BB5, // town/city
 		0x4C2D4C, // up
