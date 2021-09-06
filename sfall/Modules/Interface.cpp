@@ -782,6 +782,20 @@ static void __declspec(naked) wmInterfaceRefreshCarFuel_hack() {
 	}
 }
 
+static void __declspec(naked) register_button() {
+	static DWORD retAddr;
+	__asm {
+		pop  retAddr;
+		call fo::funcoffs::win_register_button_;
+		push eax;
+		mov  ebx, fo::funcoffs::gsound_red_butt_release_;
+		mov  edx, fo::funcoffs::gsound_red_butt_press_;
+		call fo::funcoffs::win_register_button_sound_func_;
+		pop  eax;
+		jmp  retAddr;
+	}
+}
+
 static void WorldMapInterfacePatch() {
 	BlockCall(0x4C2380); // Remove disabling palette animations (can be used as a place to call a hack function in wmInterfaceInit_)
 
@@ -790,6 +804,14 @@ static void WorldMapInterfacePatch() {
 		HookCall(0x4C2343, wmInterfaceInit_text_font_hook);
 		dlogr(" Done", DL_INIT);
 	}
+	
+	// Adds missing sounds for the buttons of the world map interface (wmInterfaceInit_)
+	HookCalls(register_button, {
+		0x4C2BF4, // town labels
+		0x4C2BB5, // town/city
+		0x4C2D4C, // up
+		0x4C2D8A  // down
+	});
 
 	// Fix images for up/down buttons
 	SafeWrite32(0x4C2C0A, 199); // index of UPARWOFF.FRM
@@ -926,7 +948,7 @@ static long gmouse_handle_event_hook() {
 	}
 	if (IFACE_BAR_MODE) return 1;
 	// if IFACE_BAR_MODE is not enabled, check the display_win window area
-	win = fo::func::GNW_find(*(DWORD*)FO_VAR_display_win);
+	win = fo::func::GNW_find(fo::var::getInt(FO_VAR_display_win));
 	RECT *rect = &win->wRect;
 	return fo::func::mouse_click_in(rect->left, rect->top, rect->right, rect->bottom); // 1 - click in the display window area
 }
