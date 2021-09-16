@@ -28,6 +28,8 @@ public:
 	const char* name() { return "Unarmed"; }
 	void init();
 	void exit() override;
+
+	static long GetHitCostAP(fo::AttackType hit);
 };
 
 }

@@ -22,6 +22,8 @@
 #include "..\Logging.h"
 #include "HookScripts.h"
 
+#include "..\Game\stats.h"
+
 #include "DamageMod.h"
 
 namespace sfall
@@ -315,6 +317,7 @@ static __declspec(naked) void MeleeDmgDisplayPrintFix_hook() {
 		call fo::funcoffs::perk_level_;                // Get rank of Bonus HtH Damage
 		shl  eax, 1;                                   // Multiply by 2
 		sub  ecx, eax;                                 // Subtract from Melee Damage
+
 		mov  edx, STAT_melee_dmg;
 		mov  eax, ds:[FO_VAR_obj_dude];                // Get pointer to PC
 		call fo::funcoffs::stat_get_base_;             // Get Melee Damage w/o bonuses
@@ -335,6 +338,7 @@ static __declspec(naked) void CommonDmgRngDispFix_hook() {
 		call fo::funcoffs::perk_level_;                // Get rank of Bonus HtH Damage
 		shl  eax, 1;                                   // Multiply by 2
 		sub  ebx, eax;                                 // Subtract from Melee Damage
+
 		mov  edx, STAT_melee_dmg;
 		mov  eax, ds:[FO_VAR_stack];
 		call fo::funcoffs::stat_get_base_;             // Get Melee Damage w/o bonuses
@@ -344,22 +348,22 @@ static __declspec(naked) void CommonDmgRngDispFix_hook() {
 	}
 }
 
-static __declspec(naked) void HtHDamageFix1a_hack() {
-	using namespace fo;
-	__asm {
-		cmp  ecx, dword ptr ds:[FO_VAR_obj_dude];      // Is the critter == PC?
-		je   fix;                                      // Skip if no
-		mov  edx, 1;                                   // Min_Damage = 1
-		retn;
-fix:
-		mov  edx, PERK_bonus_hth_damage;               // perk_level_ argument: PERK_bonus_hth_damage
-		mov  eax, ecx;                                 // pointer to PC
-		call fo::funcoffs::perk_level_;                // Return Rank_of_Bonus_HtH_Damage_perk
-		shl  eax, 1;                                   // Rank_of_Bonus_HtH_Damage_perk *= 2
-		lea  edx, [eax + 1];                           // Min_Damage = 1 + Rank_of_Bonus_HtH_Damage_perk
-		retn;
-	}
-}
+//static __declspec(naked) void HtHDamageFix1a_hack() {
+//	using namespace fo;
+//	__asm {
+//		cmp  ecx, dword ptr ds:[FO_VAR_obj_dude];      // Is the critter == PC?
+//		je   fix;                                      // Skip if no
+//		mov  edx, 1;                                   // Min_Damage = 1
+//		retn;
+//fix:
+//		mov  edx, PERK_bonus_hth_damage;               // perk_level_ argument: PERK_bonus_hth_damage
+//		mov  eax, ecx;                                 // pointer to PC
+//		call fo::funcoffs::perk_level_;                // Return Rank_of_Bonus_HtH_Damage_perk
+//		shl  eax, 1;                                   // Rank_of_Bonus_HtH_Damage_perk *= 2
+//		lea  edx, [eax + 1];                           // Min_Damage = 1 + Rank_of_Bonus_HtH_Damage_perk
+//		retn;
+//	}
+//}
 
 static __declspec(naked) void HtHDamageFix1b_hook() {
 	using namespace fo;
@@ -422,9 +426,17 @@ static void __declspec(naked) DisplayBonusHtHDmg2_hack() {
 	}
 }
 
+static bool bonusHtHDamageFix = false;
+
+long DamageMod::GetHtHMinDamageBonus(fo::GameObject* source) {
+	return (bonusHtHDamageFix)
+		? game::Stats::perk_level(source, fo::Perk::PERK_bonus_hth_damage) << 1 // Rank_of_Bonus_HtH_Damage_perk x2;
+		: 0;
+}
+
 void DamageMod::init() {
 
-	if (formula = GetConfigInt("Misc", "DamageFormula", 0)) {
+	if (formula = IniReader::GetConfigInt("Misc", "DamageFormula", 0)) {
 		switch (formula) {
 		case 1:
 		case 2:
@@ -436,10 +448,13 @@ void DamageMod::init() {
 		}
 	}
 
-	int BonusHtHDmgFix = GetConfigInt("Misc", "BonusHtHDamageFix", 1);
-	int DisplayBonusDmg = GetConfigInt("Misc", "DisplayBonusDamage", 0);
+	int BonusHtHDmgFix = IniReader::GetConfigInt("Misc", "BonusHtHDamageFix", 1);
+	int DisplayBonusDmg = IniReader::GetConfigInt("Misc", "DisplayBonusDamage", 0);
+
 	if (BonusHtHDmgFix) {
+		bonusHtHDamageFix = true;
 		dlog("Applying Bonus HtH Damage Perk fix.", DL_INIT);
+
 		if (DisplayBonusDmg == 0) {                           // Subtract damage from perk bonus (vanilla displaying)
 			HookCalls(MeleeDmgDisplayPrintFix_hook, {
 				0x435C0C,                                     // DisplayFix (ListDrvdStats_)
@@ -450,13 +465,15 @@ void DamageMod::init() {
 				0x472546                                      // Unarmed    (display_stats_)
 			});
 		}
-		MakeCall(0x478492, HtHDamageFix1a_hack);              // Unarmed    (item_w_damage_)
+		//MakeCall(0x478492, HtHDamageFix1a_hack);            // Unarmed    (item_w_damage_)
 		HookCall(0x47854C, HtHDamageFix1b_hook);              // MeleeWeap  (item_w_damage_)
+
 		dlogr(" Done", DL_INIT);
 	}
 
 	if (DisplayBonusDmg) {
 		dlog("Applying Display Bonus Damage patch.", DL_INIT);
+
 		HookCall(0x4722DD, DisplayBonusRangedDmg_hook);       // display_stats_
 		if (BonusHtHDmgFix) {
 			HookCall(0x472309, DisplayBonusHtHDmg1_hook);     // display_stats_

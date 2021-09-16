@@ -20,7 +20,7 @@
 
 #include "Module.h"
 
-namespace sfall 
+namespace sfall
 {
 
 class DamageMod : public Module {
@@ -33,6 +33,7 @@ public:
 	static void DamageYAAM(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamage, int rounds, int armorDT, int armorDR, int bonusRangedDamage,int multiplyDamage, int difficulty);
 	static void DamageGlovz(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamage, int rounds, int armorDT, int armorDR, int bonusRangedDamage, int multiplyDamage, int difficulty);
 
+	static long GetHtHMinDamageBonus(fo::GameObject* source);
 };
 
 }

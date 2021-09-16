@@ -103,32 +103,32 @@ long CalcAPCostHook_Invoke(fo::GameObject* source, long hitMode, long isCalled, 
 			: cost;
 }
 
-static void __declspec(naked) CalcApCostHook() {
-	__asm {
-		HookBegin;
-		mov  args[0], eax;
-		mov  args[4], edx;
-		mov  args[8], ebx;
-		call fo::funcoffs::item_w_mp_cost_;
-		mov  args[12], eax;
-		mov  ebx, eax;
-		push ecx;
-	}
-
-	argCount = 5;
-	args[4] = 0;
-
-	RunHookScript(HOOK_CALCAPCOST);
-
-	__asm {
-		cmp  cRet, 1;
-		cmovge ebx, rets[0];
-		call EndHook;
-		mov  eax, ebx;
-		pop  ecx;
-		retn;
-	}
-}
+//static void __declspec(naked) CalcApCostHook() {
+//	__asm {
+//		HookBegin;
+//		mov  args[0], eax;
+//		mov  args[4], edx;
+//		mov  args[8], ebx;
+//		call fo::funcoffs::item_w_mp_cost_;
+//		mov  args[12], eax;
+//		mov  ebx, eax;
+//		push ecx;
+//	}
+//
+//	argCount = 5;
+//	args[4] = 0;
+//
+//	RunHookScript(HOOK_CALCAPCOST);
+//
+//	__asm {
+//		cmp  cRet, 1;
+//		cmovge ebx, rets[0];
+//		call EndHook;
+//		mov  eax, ebx;
+//		pop  ecx;
+//		retn;
+//	}
+//}
 
 // this is for using non-weapon items, always 2 AP in vanilla
 static void __declspec(naked) CalcApCostHook2() {
@@ -309,9 +309,10 @@ static void __declspec(naked) ItemDamageHook() {
 	}
 	argCount = 6;
 
-	if (args[2] == 0) {  // weapon arg
-		args[4] += 8;    // type arg
-	}
+	// tweak for 004784AA (obsolete)
+	//if (args[2] == 0) { // weapon arg
+	//	args[4] += 8;     // type arg
+	//}
 
 	RunHookScript(HOOK_ITEMDAMAGE);
 
@@ -694,18 +695,18 @@ void Inject_AfterHitRollHook() {
 }
 
 void Inject_CalcApCostHook() {
-	HookCalls(CalcApCostHook, {
-		0x42307A,
-		0x42669F,
-		0x42687B,
-		0x42A625,
-		0x42A655,
-		0x42A686,
-		0x42AE32,
-		0x42AE71,
-		0x460048,
-		0x47807B
-	});
+	//HookCalls(CalcApCostHook, {
+	//	0x42307A,
+	//	0x42669F,
+	//	0x42687B,
+	//	0x42A625,
+	//	0x42A655,
+	//	0x42A686,
+	//	0x42AE32,
+	//	0x42AE71,
+	//	0x460048,
+	//	0x47807B
+	//});
 	MakeCall(0x478083, CalcApCostHook2);
 }
 

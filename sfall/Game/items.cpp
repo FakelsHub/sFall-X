@@ -12,6 +12,7 @@
 #include "..\Modules\HookScripts\ObjectHs.h"
 #include "..\Modules\HookScripts\InventoryHs.h"
 #include "..\Modules\Perks.h"
+#include "..\Modules\Unarmed.h"
 
 #include "..\Game\stats.h"
 
@@ -22,7 +23,8 @@ namespace game
 
 namespace sf = sfall;
 
-constexpr int reloadCostAP = 2; // engine default reload AP cost
+constexpr int reloadCostAP = 2;  // engine default reload AP cost
+constexpr int defaultCostAP = 3; // engine default use item AP cost
 
 static std::array<long, 3> healingItemPids = { fo::PID_STIMPAK, fo::PID_SUPER_STIMPAK, fo::PID_HEALING_POWDER };
 
@@ -121,7 +123,34 @@ long Items::item_weapon_range(fo::GameObject* source, fo::GameObject* weapon, lo
 //	return item_weapon_range(source, fo::func::item_hit_with(source, hitMode), hitMode);
 //}
 
-static bool fastShotTweak = false;
+static int fastShotTweak;
+
+static long item_w_mp_cost_sub(fo::GameObject* source, fo::GameObject* item, long hitMode, long isCalled, long cost) {
+	if (isCalled) cost++;
+	if (cost < 0) cost = 0;
+
+	long type = fo::func::item_w_subtype(item, hitMode);
+
+	if (source->protoId == fo::ProtoID::PID_Player && sf::Perks::DudeHasTrait(fo::Trait::TRAIT_fast_shot)) {
+		// Alternative behaviors the "Fast Shot" trait
+		if (item && fastShotTweak > 2) { // Fallout 1 behavior (allowed for all weapons)
+			cost--;
+		} else if (fastShotTweak == 2) { // Alternative behavior (allowed for all)
+			cost--;
+		} else if (fastShotTweak < 2 && type > fo::AttackSubType::MELEE && fo::func::item_w_range(source, hitMode) >= 2) { // Fallout 2 behavior (with Haenlomal's fix)
+			cost--;
+		}
+	}
+	if ((type == fo::AttackSubType::MELEE || type == fo::AttackSubType::UNARMED) && Stats::perk_level(source, fo::Perk::PERK_bonus_hth_attacks)) {
+		cost--;
+	}
+	if (type == fo::AttackSubType::GUNS && Stats::perk_level(source, fo::Perk::PERK_bonus_rate_of_fire)) {
+		cost--;
+	}
+	if (cost < 1) cost = 1;
+
+	return cost;
+}
 
 // Implementing the item_w_primary_mp_cost and item_w_secondary_mp_cost engine functions in single function with the HOOK_CALCAPCOST hook
 long __fastcall Items::item_weapon_mp_cost(fo::GameObject* source, fo::GameObject* weapon, long hitMode, long isCalled) {
@@ -144,35 +173,13 @@ long __fastcall Items::item_weapon_mp_cost(fo::GameObject* source, fo::GameObjec
 				cost--;
 			}
 		}
+		goto endReload;
 	}
-	if (hitMode < fo::AttackType::ATKTYPE_LWEAPON_RELOAD) {
-		if (isCalled) cost++;
-		if (cost < 0) cost = 0;
 
-		long type = fo::func::item_w_subtype(weapon, hitMode);
+	cost = item_w_mp_cost_sub(source, weapon, hitMode, isCalled, cost);
 
-		if (source->protoId == fo::ProtoID::PID_Player && sf::Perks::DudeHasTrait(fo::Trait::TRAIT_fast_shot)) {
-			if (fastShotTweak || // Fallout 1 behavior and Alternative behavior (allowed for all weapons)
-			   (fo::func::item_w_range(source, hitMode) >= 2 && type > fo::AttackSubType::MELEE)) // Fallout 2 behavior (with fix) and Haenlomal's fix
-			{
-				cost--;
-			}
-		}
-		if ((type == fo::AttackSubType::MELEE || type == fo::AttackSubType::UNARMED) && Stats::perk_level(source, fo::Perk::PERK_bonus_hth_attacks)) {
-			cost--;
-		}
-		if (type == fo::AttackSubType::GUNS && Stats::perk_level(source, fo::Perk::PERK_bonus_rate_of_fire)) {
-			cost--;
-		}
-		if (cost < 1) cost = 1;
-	}
-	return sf::CalcAPCostHook_Invoke(source, hitMode, isCalled, cost, weapon);
-}
-
-// Implementation of item_w_mp_cost_ engine function with the HOOK_CALCAPCOST hook
-long Items::item_w_mp_cost(fo::GameObject* source, long hitMode, long isCalled) {
-	long cost = fo::func::item_w_mp_cost(source, hitMode, isCalled);
-	return sf::CalcAPCostHook_Invoke(source, hitMode, isCalled, cost, nullptr);
+endReload:
+	return sf::CalcAPCostHook_Invoke(source, hitMode, isCalled, cost, weapon); // return cost
 }
 
 static void __declspec(naked) ai_search_inven_weap_hook() {
@@ -187,12 +194,64 @@ static void __declspec(naked) ai_search_inven_weap_hook() {
 	}
 }
 
+// Implementation of item_w_mp_cost_ engine function with the HOOK_CALCAPCOST hook
+long __fastcall Items::item_w_mp_cost(fo::GameObject* source, long hitMode, long isCalled) {
+	fo::GameObject* handItem = nullptr;
+
+	switch (hitMode) {
+		case fo::AttackType::ATKTYPE_LWEAPON_PRIMARY:
+		case fo::AttackType::ATKTYPE_LWEAPON_SECONDARY:
+		case fo::AttackType::ATKTYPE_LWEAPON_RELOAD:
+			handItem = fo::func::inven_left_hand(source);
+			break;
+		case fo::AttackType::ATKTYPE_RWEAPON_PRIMARY:
+		case fo::AttackType::ATKTYPE_RWEAPON_SECONDARY:
+		case fo::AttackType::ATKTYPE_RWEAPON_RELOAD:
+			handItem = fo::func::inven_right_hand(source);
+			break;
+		default:
+			break;
+	}
+	if (handItem) {
+		return Items::item_weapon_mp_cost(source, handItem, hitMode, isCalled);
+	}
+
+	// unarmed hits
+	long cost = defaultCostAP;
+	if (hitMode == fo::AttackType::ATKTYPE_PUNCH || hitMode == fo::AttackType::ATKTYPE_KICK || hitMode >= fo::AttackType::ATKTYPE_STRONGPUNCH) {
+		cost = sf::Unarmed::GetHitCostAP((fo::AttackType)hitMode);
+	}
+
+	// return cost
+	return sf::CalcAPCostHook_Invoke(
+		source,
+		hitMode,
+		isCalled,
+		item_w_mp_cost_sub(source, nullptr, hitMode, isCalled, cost),
+		nullptr
+	);
+}
+
+static void __declspec(naked) item_w_mp_cost_replacement() {
+	using namespace fo;
+	__asm {
+		push ebx;      // isCalled
+		mov  ecx, eax; // source
+		call Items::item_w_mp_cost;
+		pop  ecx;
+		retn;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
 void Items::init() {
 	// Replacement the item_w_primary_mp_cost_ function to the sfall implementation with the HOOK_CALCAPCOST hook
 	sf::HookCall(0x429A08, ai_search_inven_weap_hook);
 
-	int fastShotFix = sf::IniReader::GetConfigInt("Misc", "FastShotFix", 0);
-	fastShotTweak = (fastShotFix > 0 && fastShotFix <= 3);
+	sf::MakeJump(fo::funcoffs::item_w_mp_cost_ + 1, item_w_mp_cost_replacement); // 0x478B25
+
+	fastShotTweak = sf::IniReader::GetConfigInt("Misc", "FastShotFix", 0);
 }
 
 }

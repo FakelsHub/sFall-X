@@ -122,42 +122,42 @@ isFloat:
 	}
 }
 
-static void __declspec(naked) compute_attack_hack() {
-	static const DWORD UnarmedAttacksFixEnd = 0x423A0D;
-	__asm {
-		mov  ecx, 5;                        // 5% chance of critical hit
-		cmp  edx, ATKTYPE_POWERKICK;        // Power Kick
-		je   RollCheck;
-		cmp  edx, ATKTYPE_HAMMERPUNCH;      // Hammer Punch
-		je   RollCheck;
-		add  ecx, 5;                        // 10% chance of critical hit
-		cmp  edx, ATKTYPE_HOOKKICK;         // Hook Kick
-		je   RollCheck;
-		cmp  edx, ATKTYPE_JAB;              // Jab
-		je   RollCheck;
-		add  ecx, 5;                        // 15% chance of critical hit
-		cmp  edx, ATKTYPE_HAYMAKER;         // Haymaker
-		je   RollCheck;
-		add  ecx, 5;                        // 20% chance of critical hit
-		cmp  edx, ATKTYPE_PALMSTRIKE;       // Palm Strike
-		je   RollCheck;
-		add  ecx, 20;                       // 40% chance of critical hit
-		cmp  edx, ATKTYPE_PIERCINGSTRIKE;   // Piercing Strike
-		je   RollCheck;
-		cmp  edx, ATKTYPE_PIERCINGKICK;     // Piercing Kick
-		jne  end;
-		add  ecx, 10;                       // 50% chance of critical hit
-RollCheck:
-		mov  edx, 100;
-		mov  eax, 1;
-		call fo::funcoffs::roll_random_;
-		cmp  eax, ecx;                      // Check chance
-		jg   end;
-		mov  ebx, ROLL_CRITICAL_SUCCESS;    // Upgrade to critical hit
-end:
-		jmp  UnarmedAttacksFixEnd;
-	}
-}
+//static void __declspec(naked) compute_attack_hack() {
+//	static const DWORD UnarmedAttacksFixEnd = 0x423A0D;
+//	__asm {
+//		mov  ecx, 5;                        // 5% chance of critical hit
+//		cmp  edx, ATKTYPE_POWERKICK;        // Power Kick
+//		je   RollCheck;
+//		cmp  edx, ATKTYPE_HAMMERPUNCH;      // Hammer Punch
+//		je   RollCheck;
+//		add  ecx, 5;                        // 10% chance of critical hit
+//		cmp  edx, ATKTYPE_HOOKKICK;         // Hook Kick
+//		je   RollCheck;
+//		cmp  edx, ATKTYPE_JAB;              // Jab
+//		je   RollCheck;
+//		add  ecx, 5;                        // 15% chance of critical hit
+//		cmp  edx, ATKTYPE_HAYMAKER;         // Haymaker
+//		je   RollCheck;
+//		add  ecx, 5;                        // 20% chance of critical hit
+//		cmp  edx, ATKTYPE_PALMSTRIKE;       // Palm Strike
+//		je   RollCheck;
+//		add  ecx, 20;                       // 40% chance of critical hit
+//		cmp  edx, ATKTYPE_PIERCINGSTRIKE;   // Piercing Strike
+//		je   RollCheck;
+//		cmp  edx, ATKTYPE_PIERCINGKICK;     // Piercing Kick
+//		jne  end;
+//		add  ecx, 10;                       // 50% chance of critical hit
+//RollCheck:
+//		mov  edx, 100;
+//		mov  eax, 1;
+//		call fo::funcoffs::roll_random_;
+//		cmp  eax, ecx;                      // Check chance
+//		jg   end;
+//		mov  ebx, ROLL_CRITICAL_SUCCESS;    // Upgrade to critical hit
+//end:
+//		jmp  UnarmedAttacksFixEnd;
+//	}
+//}
 
 static void __declspec(naked) SharpShooterFix() {
 	__asm {
@@ -1787,7 +1787,7 @@ static DWORD expSwiftLearner; // experience points for print
 static void __declspec(naked) statPCAddExperienceCheckPMs_hack() {
 	__asm {
 		mov  expSwiftLearner, edi;
-		mov  eax, dword ptr ds:[FO_VAR_Experience_];
+		mov  eax, dword ptr ds:[FO_VAR_Experience_pc];
 		retn;
 	}
 }
@@ -3195,13 +3195,16 @@ void BugFixes::init()
 
 	// Fix vanilla negate operator for float values
 	MakeCall(0x46AB68, NegateFixHack);
+
 	// Fix incorrect int-to-float conversion
+	// replace operator to "fild 32bit"
 	// op_mult:
-	SafeWrite16(0x46A3F4, 0x04DB); // replace operator to "fild 32bit"
+	SafeWrite16(0x46A3F4, 0x04DB);
 	SafeWrite16(0x46A3A8, 0x04DB);
 	// op_div:
 	SafeWrite16(0x46A566, 0x04DB);
 	SafeWrite16(0x46A4E7, 0x04DB);
+
 	// Fix for vanilla division operator treating negative integers as unsigned
 	if (GetConfigInt("Misc", "DivisionOperatorFix", 1)) {
 		dlog("Applying division operator fix.", DL_FIX);
@@ -3211,7 +3214,7 @@ void BugFixes::init()
 
 	//if (GetConfigInt("Misc", "SpecialUnarmedAttacksFix", 1)) {
 		dlog("Applying Special Unarmed Attacks fix.", DL_FIX);
-		MakeJump(0x42394D, compute_attack_hack);
+	//	MakeJump(0x42394D, compute_attack_hack); -- implementation moved to Unarmed module
 		dlogr(" Done", DL_FIX);
 	//}
 
