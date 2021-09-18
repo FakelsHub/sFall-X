@@ -27,7 +27,7 @@ class Unarmed : public Module {
 public:
 	const char* name() { return "Unarmed"; }
 	void init();
-	void exit() override;
+	//void exit() override;
 
 	static long GetHitCostAP(fo::AttackType hit);
 };

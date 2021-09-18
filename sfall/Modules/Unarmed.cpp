@@ -18,7 +18,7 @@ namespace sfall
 
 class Hits {
 public:
-	static const long count = 14;
+	static const long count = 20;
 
 private:
 	struct HitsData {
@@ -40,7 +40,7 @@ private:
 	};
 
 	// sorted in descending order of the required stats in group hits
-	SortHits sortHits[Hits::count - 2];
+	SortHits sortHits[Hits::count - fo::AttackType::ATKTYPE_STRONGPUNCH];
 
 	HitsData hit[Hits::count];
 
@@ -50,7 +50,10 @@ private:
 public:
 	class Types{
 		public: enum : long {
-			strong_punch,
+			punch         = fo::AttackType::ATKTYPE_PUNCH,
+			kick          = fo::AttackType::ATKTYPE_KICK,
+
+			strong_punch  = fo::AttackType::ATKTYPE_STRONGPUNCH,
 			hammer_punch,
 			haymaker,
 			jab,
@@ -62,10 +65,7 @@ public:
 			power_kick,
 			hip_kick,
 			hook_kick,
-			piercing_kick,
-
-			punch,
-			kick,
+			piercing_kick
 		};
 	};
 
@@ -172,22 +172,17 @@ public:
 		hit[Types::piercing_kick].isSecondary = true;
 	}
 
-	HitsData& Hit(fo::AttackType i) {
-		if (i < fo::AttackType::ATKTYPE_STRONGPUNCH) {
-			return (i - fo::AttackType::ATKTYPE_KICK) ? hit[Types::punch] : hit[Types::kick];
-		}
-		return hit[i - fo::AttackType::ATKTYPE_STRONGPUNCH];
-	}
+	HitsData& Hit(fo::AttackType i) { return hit[i]; }
 
 	// Get hit by index
 	HitsData& Hit(size_t index) { return hit[index]; }
 
-	fo::AttackType GetSortHit(size_t index) { return (fo::AttackType)(sortHits[index].hit + fo::AttackType::ATKTYPE_STRONGPUNCH); }
+	fo::AttackType GetSortHit(size_t index) { return (fo::AttackType)sortHits[index].hit; }
 
 	void Sort() {
-		for (char i = 0; i < Hits::count - 2; i++) {
-			sortHits[i].level = (char)hit[i].reqLevel;
-			sortHits[i].hit = i;
+		for (char i = fo::AttackType::ATKTYPE_STRONGPUNCH, j = 0; i < Hits::count; i++, j++) {
+			sortHits[j].level = (char)hit[i].reqLevel;
+			sortHits[j].hit = i;
 		}
 
 		auto greater_comp = [&](const SortHits &a, const SortHits &b) {
@@ -229,7 +224,7 @@ static bool UnarmedReqStats(fo::AttackType hit) {
 }
 
 static bool Punching(bool isPrimary) {
-	for (size_t i = Hits::Types::strong_punch; i < Hits::Types::strong_kick; i++) {
+	for (size_t i = 0; i < 6; i++) {
 		fo::AttackType hit = unarmed.GetSortHit(i);
 		if (unarmed.Hit(hit).isSecondary == isPrimary) continue;
 
@@ -260,7 +255,7 @@ static void __declspec(naked) intface_update_items_hack_punch() {
 }
 
 static bool Kicking(bool isPrimary) {
-	for (size_t i = Hits::Types::strong_kick; i < Hits::count - 2; i++) {
+	for (size_t i = 6; i < 12; i++) {
 		fo::AttackType hit = unarmed.GetSortHit(i);
 		if (unarmed.Hit(hit).isSecondary == isPrimary) continue;
 
@@ -322,7 +317,7 @@ static void __declspec(naked) item_w_damage_hack() {
 		push eax;      // minOut ref
 		mov  edx, esi; // hit
 		call get_unarmed_damage;
-		add  ebx, eax; // bonus
+		mov  ebx, eax; // bonus
 		pop  ecx;
 		jmp  item_w_damage_hack_ret;
 	}
@@ -340,14 +335,16 @@ void Unarmed::init() {
 
 	unarmed = Hits();
 
-	auto fileUnarmed = IniReader::GetConfigString("Misc", "UnarmedHitsFile", "", MAX_PATH);
+	auto fileUnarmed = IniReader::GetConfigString("Misc", "UnarmedFile", "", MAX_PATH);
 	if (!fileUnarmed.empty()) {
 		const char* file = fileUnarmed.insert(0, ".\\").c_str();
 		if (!(GetFileAttributes(file) == INVALID_FILE_ATTRIBUTES)) { // check exist file
 			char stat[6] = "Stat0";
 			char sHit[4] = "0";
-			for (size_t i = 0; i < Hits::count; _itoa(++i, sHit, 10))
+			for (size_t i = fo::AttackType::ATKTYPE_PUNCH; i < Hits::count; _itoa(++i, sHit, 10))
 			{
+				if (i < fo::ATKTYPE_STRONGPUNCH && i != fo::ATKTYPE_PUNCH && i != fo::ATKTYPE_KICK) continue;
+
 				auto& hit = unarmed.Hit(i);
 
 				int val = IniReader::GetInt(sHit, "ReqLevel", -1, file);
@@ -389,23 +386,23 @@ void Unarmed::init() {
 			MakeJump(0x45F278, intface_update_items_hack_kick);
 		}
 	}
-	unarmed.Sort(); //
+	unarmed.Sort();
 
-	//
+	// Get ñritical chance hack
 	MakeJump(0x42394D, compute_attack_hack);
 	SafeWrite16(0x423A03, 0xC839); // cmp eax, 50 -> cmp eax, ecx
 	SafeWrite8(0x423A05, CodeType::Nop);
 
-	//
+	// Get damage hack
 	MakeJump(0x478492, item_w_damage_hack);
 
-	// compute_damage_ hack
+	// Penetrane compute_damage_ hack's
 	SafeWrite8(0x4248B4, 0x4E); // mov ecx, [hit]
 	MakeCall(0x4248B6, check_unarmed_penetrate, 5);
 	SafeWrite16(0x4248C1, 0x01F8); // cmp eax, 1
 	SafeWrite8(0x4248C8, CodeType::JumpShort);
 }
 
-void Unarmed::exit() {}
+//void Unarmed::exit() {}
 
 }

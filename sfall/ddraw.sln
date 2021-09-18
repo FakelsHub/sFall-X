@@ -29,16 +29,22 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripting Docs", "Scripting
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configs", "Configs", "{3A5B984E-9EB4-4A6E-808A-87B62A4A87AE}"
 	ProjectSection(SolutionItems) = preProject
+		..\artifacts\config_files\AmmoGlovz.ini = ..\artifacts\config_files\AmmoGlovz.ini
+		..\artifacts\config_files\AmmoYAAM.ini = ..\artifacts\config_files\AmmoYAAM.ini
 		..\artifacts\config_files\books.ini = ..\artifacts\config_files\books.ini
 		..\artifacts\config_files\CriticalOverrides.ini = ..\artifacts\config_files\CriticalOverrides.ini
 		..\artifacts\ddraw.ini = ..\artifacts\ddraw.ini
 		..\artifacts\config_files\Drugs.ini = ..\artifacts\config_files\Drugs.ini
 		..\artifacts\config_files\elevators.ini = ..\artifacts\config_files\elevators.ini
+		..\artifacts\config_files\npcarmor.ini = ..\artifacts\config_files\npcarmor.ini
+		..\artifacts\config_files\NpcArmorRP.ini = ..\artifacts\config_files\NpcArmorRP.ini
 		..\artifacts\config_files\Perks.ini = ..\artifacts\config_files\Perks.ini
 		..\artifacts\config_files\sfall-mods.ini = ..\artifacts\config_files\sfall-mods.ini
 		..\artifacts\config_files\Skills.ini = ..\artifacts\config_files\Skills.ini
 		..\artifacts\config_files\Stats.ini = ..\artifacts\config_files\Stats.ini
 		..\artifacts\config_files\Translations.ini = ..\artifacts\config_files\Translations.ini
+		..\artifacts\config_files\Tweaks.ini = ..\artifacts\config_files\Tweaks.ini
+		..\artifacts\config_files\Unarmed.ini = ..\artifacts\config_files\Unarmed.ini
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SfallDebugEditor", "..\DebugEditor\SfallDebugEditor.csproj", "{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}"
