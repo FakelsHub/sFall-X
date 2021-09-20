@@ -23,8 +23,8 @@ namespace game
 
 namespace sf = sfall;
 
-constexpr int reloadCostAP = 2;  // engine default reload AP cost
-constexpr int defaultCostAP = 3; // engine default use item AP cost
+constexpr int reloadAPCost = 2; // engine default reload AP cost
+constexpr int attackAPCost = 3; // engine default item attack AP cost
 
 static std::array<long, 3> healingItemPids = { fo::PID_STIMPAK, fo::PID_SUPER_STIMPAK, fo::PID_HEALING_POWDER };
 
@@ -132,10 +132,10 @@ static long item_w_mp_cost_sub(fo::GameObject* source, fo::GameObject* item, lon
 	long type = fo::func::item_w_subtype(item, hitMode);
 
 	if (source->protoId == fo::ProtoID::PID_Player && sf::Perks::DudeHasTrait(fo::Trait::TRAIT_fast_shot)) {
-		// Alternative behaviors the "Fast Shot" trait
+		// Alternative behaviors the Fast Shot trait
 		if (item && fastShotTweak > 2) { // Fallout 1 behavior (allowed for all weapons)
 			cost--;
-		} else if (fastShotTweak == 2) { // Alternative behavior (allowed for all)
+		} else if (fastShotTweak == 2) { // Alternative behavior (allowed for all attacks)
 			cost--;
 		} else if (fastShotTweak < 2 && type > fo::AttackSubType::MELEE && fo::func::item_w_range(source, hitMode) >= 2) { // Fallout 2 behavior (with Haenlomal's fix)
 			cost--;
@@ -168,7 +168,7 @@ long __fastcall Items::item_weapon_mp_cost(fo::GameObject* source, fo::GameObjec
 	case fo::AttackType::ATKTYPE_LWEAPON_RELOAD:
 	case fo::AttackType::ATKTYPE_RWEAPON_RELOAD:
 		if (weapon && weapon->protoId != fo::ProtoID::PID_SOLAR_SCORCHER) { // Solar Scorcher has no reload AP cost
-			cost = reloadCostAP;
+			cost = reloadAPCost;
 			if (fo::util::GetProto(weapon->protoId)->item.weapon.perk == fo::Perk::PERK_weapon_fast_reload) {
 				cost--;
 			}
@@ -195,7 +195,7 @@ static void __declspec(naked) ai_search_inven_weap_hook() {
 }
 
 // Implementation of item_w_mp_cost_ engine function with the HOOK_CALCAPCOST hook
-long __fastcall Items::item_w_mp_cost(fo::GameObject* source, long hitMode, long isCalled) {
+long __fastcall Items::item_w_mp_cost(fo::GameObject* source, fo::AttackType hitMode, long isCalled) {
 	fo::GameObject* handItem = nullptr;
 
 	switch (hitMode) {
@@ -217,9 +217,9 @@ long __fastcall Items::item_w_mp_cost(fo::GameObject* source, long hitMode, long
 	}
 
 	// unarmed hits
-	long cost = defaultCostAP;
+	long cost = attackAPCost;
 	if (hitMode == fo::AttackType::ATKTYPE_PUNCH || hitMode == fo::AttackType::ATKTYPE_KICK || hitMode >= fo::AttackType::ATKTYPE_STRONGPUNCH) {
-		cost = sf::Unarmed::GetHitCostAP((fo::AttackType)hitMode);
+		cost = sf::Unarmed::GetHitCostAP(hitMode);
 	}
 
 	// return cost
@@ -246,9 +246,10 @@ static void __declspec(naked) item_w_mp_cost_replacement() {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 void Items::init() {
-	// Replacement the item_w_primary_mp_cost_ function to the sfall implementation with the HOOK_CALCAPCOST hook
+	// Replace the item_w_primary_mp_cost_ function with the sfall implementation in ai_search_inven_weap_
 	sf::HookCall(0x429A08, ai_search_inven_weap_hook);
 
+	// Replace the item_w_mp_cost_ function with the sfall implementation
 	sf::MakeJump(fo::funcoffs::item_w_mp_cost_ + 1, item_w_mp_cost_replacement); // 0x478B25
 
 	fastShotTweak = sf::IniReader::GetConfigInt("Misc", "FastShotFix", 0);

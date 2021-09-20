@@ -484,7 +484,7 @@ static long __fastcall AISearchCorpseWeapon(fo::GameObject* target, fo::GameObje
 		weapon = item;
 		hitMode = fo::func::ai_pick_hit_mode(source, item, target);
 
-		if (game::Items::item_w_mp_cost(source, hitMode, 0) <= source->critter.getAP()) return 0; // Ok
+		if (game::Items::item_w_mp_cost(source, (fo::AttackType)hitMode, 0) <= source->critter.getAP()) return 0; // Ok
 	}
 	return -1; // error (exit ai_try_attack_)
 }

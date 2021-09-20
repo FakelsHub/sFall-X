@@ -53,7 +53,7 @@ static long DudeCanMeleeAttack(fo::GameObject* target, long hitMode, long isCall
 	long dudeAP = fo::var::obj_dude->critter.getAP() + fo::var::combat_free_move;
 	long needAP = fo::func::critter_compute_ap_from_distance(fo::var::obj_dude, distance);
 	if (needAP > dudeAP) return -1;
-	needAP += game::Items::item_w_mp_cost(fo::var::obj_dude, hitMode, isCalledShot);
+	needAP += game::Items::item_w_mp_cost(fo::var::obj_dude, (fo::AttackType)hitMode, isCalledShot);
 
 	return (needAP <= dudeAP) ? distance : -1;
 }

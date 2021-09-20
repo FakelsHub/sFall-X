@@ -719,7 +719,7 @@ static long __fastcall AIMoveStepToAttackTile(fo::GameObject* source, fo::GameOb
 	long weaponRange = fo::func::item_w_range(source, hitMode);
 	if (weaponRange <= 1) return 1;
 
-	long cost = game::Items::item_w_mp_cost(source, hitMode, 0);
+	long cost = game::Items::item_w_mp_cost(source, (fo::AttackType)hitMode, 0);
 	long dist = fo::func::obj_dist(source, target);
 
 	DEV_PRINTF1("\n[AI] MoveStepToAttackTile: dist to target: %d", dist);

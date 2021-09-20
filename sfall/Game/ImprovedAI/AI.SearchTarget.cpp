@@ -161,7 +161,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 					return true;
 				}
 
-				long cost = game::Items::item_w_mp_cost(source, hitMode, 0);
+				long cost = game::Items::item_w_mp_cost(source, (fo::AttackType)hitMode, 0);
 				if (source->critter.getAP(diff) < cost) {
 					DEV_PRINTF("-> I don't have enough AP to move to target and make shot!");
 					return true; // не хватит очков действия для подхода и выстрела -> picking alternate target
