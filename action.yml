@@ -52,7 +52,7 @@ runs:
           if   [[ "${{ runner.os }}" != "Windows" ]]; then
                echo "[ERROR] This action can only be used on Windows"
                exit 1
-          elif [[ "${{ inputs.release-xp }}" != "true" ]] && [[ "${{ inputs.dev-xp }}" != "true" ]]; then
+          elif [[ "${{ inputs.release-xp }}" == "" ]] && [[ "${{ inputs.dev-xp }}" == "" ]]; then
                echo "[ERROR] At least one of following inputs must be set to 'true' -- 'release-xp', 'dev-xp'"
                exit 1
           #

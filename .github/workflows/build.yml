@@ -37,9 +37,14 @@ jobs:
     run:   |
            :
            mkdir -p ddraw/DevXP
-           cp "${{ steps.build2.outputs.dev-xp }}"     ddraw/DevXP
-           cp "${{ steps.build2.outputs.dev-xp-pdb }}" ddraw/DevXP
-           cp "${{ steps.build.outputs.release-xp }}"  ddraw
+           if [[ "${{ steps.build2.outputs.dev-xp }}" != "" ]]; then
+              cp "${{ steps.build2.outputs.dev-xp }}"     ddraw/DevXP
+              cp "${{ steps.build2.outputs.dev-xp-pdb }}" ddraw/DevXP
+           fi
+
+           if [[ "${{ steps.build.outputs.release-xp }}" != "" ]]; then
+              cp "${{ steps.build.outputs.release-xp }}"  ddraw
+           fi
     shell: bash
 
   - name: Upload artifacts
