@@ -331,7 +331,26 @@ long Unarmed::GetHitCostAP(fo::AttackType hit) {
 	return unarmed.Hit(hit).costAP;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+
+static void __declspec(naked) statPCAddExperienceCheckPMs_hook() {
+	__asm {
+		call fo::funcoffs::intface_update_hit_points_;
+		sub  esp, 8;
+		lea  edx, [esp + 4]; // modeR
+		mov  eax, esp;       // modeL
+		call fo::funcoffs::intface_get_item_states_;
+		pop  edx;
+		pop  ebx;
+		xor  eax, eax;
+		jmp  fo::funcoffs::intface_update_items_;
+	}
+}
+
 void Unarmed::init() {
+
+	// Update unarmed hit after level up
+	HookCall(0x4AFC15, statPCAddExperienceCheckPMs_hook);
 
 	unarmed = Hits();
 
