@@ -594,7 +594,7 @@ static void AddNewDot() {
 	dots.emplace_back(dot_xpos, dot_ypos);
 }
 
-static void __declspec(naked) DrawingDots() {
+static void __declspec(naked) DrawingDots() noexcept {
 	long x_offset,  y_offset;
 	__asm {
 		mov ebp, esp; // prolog
@@ -807,8 +807,8 @@ static void WorldMapInterfacePatch() {
 	
 	// Adds missing sounds for the buttons of the world map interface (wmInterfaceInit_)
 	HookCalls(wmInterfaceInit_hook, {
-		0x4C2BF4, // town labels
-		0x4C2BB5, // town/city
+		0x4C2BF4, // location labels
+		0x4C2BB5, // town/world
 		0x4C2D4C, // up
 		0x4C2D8A  // down
 	});
@@ -825,8 +825,8 @@ static void WorldMapInterfacePatch() {
 		dlogr(" Done", DL_INIT);
 	//}
 
-	DWORD wmSlots = IniReader::GetConfigInt("Interface", "WorldMapSlots", -1);
-	if (wmSlots == -1) wmSlots = IniReader::GetConfigInt("Misc", "WorldMapSlots", 0); // for compatibility
+	DWORD wmSlots = IniReader::GetConfigInt("Interface", "WorldMapSlots", 0);
+	if (wmSlots == 0) wmSlots = IniReader::GetConfigInt("Misc", "WorldMapSlots", 0); // for compatibility
 	if (wmSlots && wmSlots < 128) {
 		dlog("Applying world map slots patch.", DL_INIT);
 		if (wmSlots < 7) wmSlots = 7;

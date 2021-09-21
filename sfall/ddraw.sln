@@ -61,14 +61,29 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RU", "RU", "{F194EF63-A395-
 		..\artifacts\scripting\RU\sfall function notes [RU].txt = ..\artifacts\scripting\RU\sfall function notes [RU].txt
 	EndProjectSection
 EndProject
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "FALLOUT2", "F:\Fallout2\FALLOUT2.EXE", "{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}"
+	ProjectSection(DebuggerProjectSystem) = preProject
+		PortSupplier = 00000000-0000-0000-0000-000000000000
+		Executable = F:\Fallout2\FALLOUT2.EXE
+		RemoteMachine = DebugPC
+		StartingDirectory = F:\Fallout2
+		Environment = По умолчанию
+		LaunchingEngine = 3b476d35-a401-11d2-aad4-00c04f990171
+		UseLegacyDebugEngines = No
+		LaunchSQLEngine = No
+		AttachLaunchAction = No
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|Win32 = Debug|Win32
+		DebugEditor Build|Any CPU = DebugEditor Build|Any CPU
+		DebugEditor Build|Win32 = DebugEditor Build|Win32
 		DevXP|Any CPU = DevXP|Any CPU
 		DevXP|Win32 = DevXP|Win32
-		Release (DebugEditor)|Any CPU = Release (DebugEditor)|Any CPU
-		Release (DebugEditor)|Win32 = Release (DebugEditor)|Win32
+		Release|Any CPU = Release|Any CPU
+		Release|Win32 = Release|Win32
 		ReleaseXP (NoSSE)|Any CPU = ReleaseXP (NoSSE)|Any CPU
 		ReleaseXP (NoSSE)|Win32 = ReleaseXP (NoSSE)|Win32
 		ReleaseXP|Any CPU = ReleaseXP|Any CPU
@@ -76,15 +91,21 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{FB9023DA-CA5E-4704-B601-407810963EF0}.Debug|Any CPU.Build.0 = Debug|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.Debug|Win32.ActiveCfg = Debug|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.Debug|Win32.Build.0 = Debug|Win32
+		{FB9023DA-CA5E-4704-B601-407810963EF0}.DebugEditor Build|Any CPU.ActiveCfg = Release|Win32
+		{FB9023DA-CA5E-4704-B601-407810963EF0}.DebugEditor Build|Win32.ActiveCfg = Release|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.DevXP|Any CPU.ActiveCfg = DevXP|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.DevXP|Any CPU.Build.0 = DevXP|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.DevXP|Win32.ActiveCfg = DevXP|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.DevXP|Win32.Build.0 = DevXP|Win32
-		{FB9023DA-CA5E-4704-B601-407810963EF0}.Release (DebugEditor)|Any CPU.ActiveCfg = Release|Win32
-		{FB9023DA-CA5E-4704-B601-407810963EF0}.Release (DebugEditor)|Win32.ActiveCfg = Release|Win32
+		{FB9023DA-CA5E-4704-B601-407810963EF0}.Release|Any CPU.ActiveCfg = Release|Win32
+		{FB9023DA-CA5E-4704-B601-407810963EF0}.Release|Any CPU.Build.0 = Release|Win32
+		{FB9023DA-CA5E-4704-B601-407810963EF0}.Release|Win32.ActiveCfg = Release|Win32
+		{FB9023DA-CA5E-4704-B601-407810963EF0}.Release|Win32.Build.0 = Release|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP (NoSSE)|Any CPU.ActiveCfg = ReleaseXP (NoSSE)|Win32
+		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP (NoSSE)|Any CPU.Build.0 = ReleaseXP (NoSSE)|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP (NoSSE)|Win32.ActiveCfg = ReleaseXP (NoSSE)|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP (NoSSE)|Win32.Build.0 = ReleaseXP (NoSSE)|Win32
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP|Any CPU.ActiveCfg = ReleaseXP|Win32
@@ -93,16 +114,30 @@ Global
 		{FB9023DA-CA5E-4704-B601-407810963EF0}.ReleaseXP|Win32.Build.0 = ReleaseXP|Win32
 		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.DebugEditor Build|Any CPU.ActiveCfg = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.DebugEditor Build|Any CPU.Build.0 = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.DebugEditor Build|Win32.ActiveCfg = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.DebugEditor Build|Win32.Build.0 = Release|Any CPU
 		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.DevXP|Any CPU.ActiveCfg = Debug|Any CPU
 		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.DevXP|Win32.ActiveCfg = Debug|Any CPU
-		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Release (DebugEditor)|Any CPU.ActiveCfg = Release|Any CPU
-		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Release (DebugEditor)|Any CPU.Build.0 = Release|Any CPU
-		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Release (DebugEditor)|Win32.ActiveCfg = Release|Any CPU
-		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Release (DebugEditor)|Win32.Build.0 = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.Release|Win32.ActiveCfg = Release|Any CPU
 		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.ReleaseXP (NoSSE)|Any CPU.ActiveCfg = Release|Any CPU
 		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.ReleaseXP (NoSSE)|Win32.ActiveCfg = Release|Any CPU
 		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.ReleaseXP|Any CPU.ActiveCfg = Release|Any CPU
 		{80ED0DCE-100E-4EC9-A79D-2FBFA4CAD1E3}.ReleaseXP|Win32.ActiveCfg = Release|Any CPU
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.Debug|Any CPU.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.Debug|Win32.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.DebugEditor Build|Any CPU.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.DebugEditor Build|Win32.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.DevXP|Any CPU.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.DevXP|Win32.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.Release|Any CPU.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.Release|Win32.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.ReleaseXP (NoSSE)|Any CPU.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.ReleaseXP (NoSSE)|Win32.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.ReleaseXP|Any CPU.ActiveCfg = Release|x86
+		{D053BBB5-A5F3-44DC-9CFC-9F15F2A1C475}.ReleaseXP|Win32.ActiveCfg = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
