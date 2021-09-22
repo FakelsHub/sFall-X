@@ -25,7 +25,7 @@ jobs:
     id:   build
     uses: ./
     with:
-     release-xp: false
+     release-xp: true
 
   - name: DevXP build
     id:   build2
