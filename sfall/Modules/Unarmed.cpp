@@ -35,8 +35,8 @@ private:
 	};
 
 	struct SortHits {
-		char level;
-		char hit; // index in Hits class
+		uint8_t level;
+		uint8_t hit; // index in Hits class
 	};
 
 	// sorted in descending order of the required stats in group hits
@@ -349,7 +349,7 @@ static void __declspec(naked) statPCAddExperienceCheckPMs_hook() {
 
 void Unarmed::init() {
 
-	// Update unarmed hit after level up
+	// Update unarmed hit after leveling up
 	HookCall(0x4AFC15, statPCAddExperienceCheckPMs_hook);
 
 	unarmed = Hits();
@@ -360,7 +360,7 @@ void Unarmed::init() {
 		if (!(GetFileAttributes(file) == INVALID_FILE_ATTRIBUTES)) { // check exist file
 			char stat[6] = "Stat0";
 			char sHit[4] = "0";
-			for (size_t i = fo::AttackType::ATKTYPE_PUNCH; i < Hits::count; _itoa(++i, sHit, 10))
+			for (size_t i = 0; i < Hits::count; _itoa(++i, sHit, 10))
 			{
 				if (i < fo::ATKTYPE_STRONGPUNCH && i != fo::ATKTYPE_PUNCH && i != fo::ATKTYPE_KICK) continue;
 
@@ -390,7 +390,7 @@ void Unarmed::init() {
 				val = IniReader::GetInt(sHit, "Penetrate", -1, file);
 				if (val >= 0) hit.isPenetrate = (val != 0);
 
-				val = IniReader::GetInt(sHit, "Second", -1, file);
+				val = IniReader::GetInt(sHit, "Secondary", -1, file);
 				if (val >= 0) hit.isSecondary = (val != 0);
 
 				for (size_t s = 0; s < fo::Stat::STAT_base_count; _itoa(++s, &stat[4], 10)) {
