@@ -30,6 +30,8 @@ public:
 	//void exit() override;
 
 	static long GetHitCostAP(fo::AttackType hit);
+	static long GetDamage(fo::AttackType hit, long &minOut, long &maxOut);
+	static const char* GetName(fo::AttackType hit);
 };
 
 }

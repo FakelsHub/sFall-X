@@ -8,6 +8,7 @@
 
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\main.h"
+#include "..\Translate.h"
 
 #include "DamageMod.h"
 
@@ -15,6 +16,8 @@
 
 namespace sfall
 {
+
+std::string hitNames[14];
 
 class Hits {
 public:
@@ -331,6 +334,24 @@ long Unarmed::GetHitCostAP(fo::AttackType hit) {
 	return unarmed.Hit(hit).costAP;
 }
 
+long Unarmed::GetDamage(fo::AttackType hit, long &minOut, long &maxOut) {
+	minOut = unarmed.Hit(hit).minDamage;
+	maxOut = unarmed.Hit(hit).maxDamage;
+	return unarmed.Hit(hit).bonusDamage;
+}
+
+const char* Unarmed::GetName(fo::AttackType hit) {
+	if (hit > fo::AttackType::ATKTYPE_PIERCINGKICK) return nullptr;
+	switch (hit)
+	{
+		case fo::AttackType::ATKTYPE_PUNCH:
+		case fo::AttackType::ATKTYPE_KICK:
+			return (!hitNames[hit - 4].empty()) ? hitNames[hit - 4].c_str() : nullptr;
+		default:
+			return (hit >= fo::AttackType::ATKTYPE_STRONGPUNCH && !hitNames[hit - 6].empty()) ? hitNames[hit - 6].c_str() : nullptr;
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
 static void __declspec(naked) statPCAddExperienceCheckPMs_hook() {
@@ -420,6 +441,27 @@ void Unarmed::init() {
 	MakeCall(0x4248B6, check_unarmed_penetrate, 5);
 	SafeWrite16(0x4248C1, 0x01F8); // cmp eax, 1
 	SafeWrite8(0x4248C8, CodeType::JumpShort);
+
+
+	const char* setting[14] = {
+		"Punch",
+		"Kick",
+		"StrongPunch",
+		"HammerPunch",
+		"Haymaker",
+		"Jab",
+		"PalmStrike",
+		"PiercingStrike",
+		"StrongKick",
+		"SnapKick",
+		"PowerKick",
+		"HipKick",
+		"HookKick",
+		"PiercingKick"
+	};
+	for (size_t i = 0; i < 14; i++) {
+		hitNames[i] = Translate::Get("Hits", setting[i], "", 17);
+	}
 }
 
 //void Unarmed::exit() {}

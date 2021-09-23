@@ -22,7 +22,7 @@ inputs:
 
  release-xp:
   description: 'Set to true to enable building with ReleaseXP configuration'
-  required:    true
+  required:    false
 
  dev-xp:
   description: 'Set to true to enable building with DevXP configuration'
@@ -106,7 +106,7 @@ runs:
 
              #
              echo "@echo off" > "$GITHUB_ACTION_PATH/sfall/PostBuild.cmd"
-             "${{ steps.msbuild.outputs.exe }}" "$GITHUB_ACTION_PATH/sfall/ddraw.sln" -p:Configuration=Release -p:Platform=Win32 -p:PlatformToolset=v140
+             "${{ steps.msbuild.outputs.exe }}" "$GITHUB_ACTION_PATH/sfall/ddraw.sln" -p:Configuration=Release -p:Platform=Win32 -p:PlatformToolset=v142
              #
              echo "::set-output name=ddraw-dll::$(cygpath --windows "$GITHUB_ACTION_PATH/sfall/ReleaseXP/ddraw.dll")"
 

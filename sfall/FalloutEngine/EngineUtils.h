@@ -93,6 +93,9 @@ fo::GameObject* GetActiveItem();
 
 fo::GameObject* GetInventItem(fo::GameObject* source, long pid);
 
+// Hand: 0 - left, 1 - right
+fo::AttackType GetSlotHitMode(fo::HandSlot hand);
+
 long GetCurrentAttackMode();
 
 fo::AttackSubType GetWeaponType(unsigned long weaponFlag);

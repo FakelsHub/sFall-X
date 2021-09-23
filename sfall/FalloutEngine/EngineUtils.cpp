@@ -177,24 +177,25 @@ fo::GameObject* GetInventItem(fo::GameObject* source, long pid) {
 	return nullptr;
 }
 
-long GetCurrentAttackMode() {
-	long hitMode = -1;
-	if (fo::var::interfaceWindow != -1) {
-		long activeHand = fo::var::itemCurrentItem; // 0 - left, 1 - right
-		switch (fo::var::itemButtonItems[activeHand].mode) {
+fo::AttackType GetSlotHitMode(fo::HandSlot hand) { // 0 - left, 1 - right
+	switch (fo::var::itemButtonItems[hand].mode) {
 		case 1:
 		case 2: // called shot
-			hitMode = fo::var::itemButtonItems[activeHand].primaryAttack;
-			break;
+			return (fo::AttackType)fo::var::itemButtonItems[hand].primaryAttack;
 		case 3:
 		case 4: // called shot
-			hitMode = fo::var::itemButtonItems[activeHand].secondaryAttack;
-			break;
+			return (fo::AttackType)fo::var::itemButtonItems[hand].secondaryAttack;
 		case 5: // reload mode
-			hitMode = fo::AttackType::ATKTYPE_LWEAPON_RELOAD + activeHand;
-		}
+			return (fo::AttackType)(fo::AttackType::ATKTYPE_LWEAPON_RELOAD + hand);
 	}
-	return hitMode;
+	return fo::AttackType::ATKTYPE_PUNCH;
+}
+
+long GetCurrentAttackMode() {
+	if (fo::var::interfaceWindow != -1) {
+		return GetSlotHitMode((fo::HandSlot)fo::var::itemCurrentItem);
+	}
+	return -1;
 }
 
 fo::AttackSubType GetWeaponType(unsigned long weaponFlag) {
