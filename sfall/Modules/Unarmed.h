@@ -32,6 +32,9 @@ public:
 	static long GetHitCostAP(fo::AttackType hit);
 	static long GetDamage(fo::AttackType hit, long &minOut, long &maxOut);
 	static const char* GetName(fo::AttackType hit);
+
+	static void SlotsStoreCurrentHitMode();
+	static fo::AttackType GetStoredHitMode(fo::HandSlot slot);
 };
 
 }

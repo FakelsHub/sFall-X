@@ -17,6 +17,12 @@
 namespace sfall
 {
 
+static struct {
+	fo::AttackType primaryHit;
+	fo::AttackType secondaryHit;
+	long mode;
+} slotHitData[2];
+
 std::string hitNames[14];
 
 class Hits {
@@ -81,8 +87,8 @@ public:
 		// sec
 		hit[Types::jab].reqLevel = 5;
 		hit[Types::jab].reqSkill = 75;
-		hit[Types::jab].reqStat[fo::Stat::STAT_st] = 4;
-		hit[Types::jab].reqStat[fo::Stat::STAT_ag] = 6;
+		hit[Types::jab].reqStat[fo::Stat::STAT_st] = 5;
+		hit[Types::jab].reqStat[fo::Stat::STAT_ag] = 7;
 		hit[Types::jab].bonusDamage = 3;
 		hit[Types::jab].bonusCrit = 10;
 		hit[Types::jab].isSecondary = true;
@@ -216,7 +222,7 @@ static bool UnarmedReqStats(fo::AttackType hit) {
 	if (unarmed.SkillLevel() >= unarmed.Hit(hit).reqSkill && (long)fo::var::Level_pc >= unarmed.Hit(hit).reqLevel) {
 		for (size_t stat = 0; stat < fo::Stat::STAT_base_count; stat++)
 		{
-			if (unarmed.Hit(hit).reqStat[stat] == 0) continue;
+			if (unarmed.Hit(hit).reqStat[stat] <= 0) continue;
 			if (unarmed.Hit(hit).reqStat[stat] > unarmed.DudeStat(stat)) {
 				return false;
 			}
@@ -226,28 +232,19 @@ static bool UnarmedReqStats(fo::AttackType hit) {
 	return false;
 }
 
-static bool Punching(bool isPrimary) {
+static fo::AttackType GetPunchingHit(bool isPrimary) {
 	for (size_t i = 0; i < 6; i++) {
 		fo::AttackType hit = unarmed.GetSortHit(i);
-		if (unarmed.Hit(hit).isSecondary == isPrimary) continue;
-
-		if (UnarmedReqStats(hit)) {
-			if (unarmed.Hit(hit).isSecondary) {
-				fo::var::itemButtonItems[fo::HandSlot::Left].secondaryAttack = hit;
-			} else {
-				fo::var::itemButtonItems[fo::HandSlot::Left].primaryAttack = hit;
-			}
-			return true;
-		}
+		if (unarmed.Hit(hit).isSecondary != isPrimary && UnarmedReqStats(hit)) return hit;
 	}
-	return false;
+	return fo::AttackType::ATKTYPE_PUNCH;
 }
 
 static void __fastcall check_unarmed_left_slot(long skillLevel) {
 	unarmed.GetDudeStats(skillLevel);
 
-	if (!Punching(true))  fo::var::itemButtonItems[fo::HandSlot::Left].primaryAttack = fo::AttackType::ATKTYPE_PUNCH;
-	if (!Punching(false)) fo::var::itemButtonItems[fo::HandSlot::Left].secondaryAttack = fo::AttackType::ATKTYPE_PUNCH;
+	fo::var::itemButtonItems[fo::HandSlot::Left].primaryAttack = GetPunchingHit(true);
+	fo::var::itemButtonItems[fo::HandSlot::Left].secondaryAttack = GetPunchingHit(false);
 }
 
 static void __declspec(naked) intface_update_items_hack_punch() {
@@ -257,27 +254,18 @@ static void __declspec(naked) intface_update_items_hack_punch() {
 	}
 }
 
-static bool Kicking(bool isPrimary) {
+static fo::AttackType GetKickingHit(bool isPrimary) {
 	for (size_t i = 6; i < 12; i++) {
 		fo::AttackType hit = unarmed.GetSortHit(i);
-		if (unarmed.Hit(hit).isSecondary == isPrimary) continue;
-
-		if (UnarmedReqStats(hit)) {
-			if (unarmed.Hit(hit).isSecondary) {
-				fo::var::itemButtonItems[fo::HandSlot::Right].secondaryAttack = hit;
-			} else {
-				fo::var::itemButtonItems[fo::HandSlot::Right].primaryAttack = hit;
-			}
-			return true;
-		}
+		if (unarmed.Hit(hit).isSecondary != isPrimary && UnarmedReqStats(hit)) return hit;
 	}
-	return false;
+	return fo::AttackType::ATKTYPE_KICK;
 }
 
 // Kick hits
 static void check_unarmed_right_slot() {
-	if (!Kicking(true))  fo::var::itemButtonItems[fo::HandSlot::Right].primaryAttack = fo::AttackType::ATKTYPE_KICK;
-	if (!Kicking(false)) fo::var::itemButtonItems[fo::HandSlot::Right].secondaryAttack = fo::AttackType::ATKTYPE_KICK;
+	fo::var::itemButtonItems[fo::HandSlot::Right].primaryAttack = GetKickingHit(true);
+	fo::var::itemButtonItems[fo::HandSlot::Right].secondaryAttack = GetKickingHit(false);
 }
 
 static void __declspec(naked) intface_update_items_hack_kick() {
@@ -342,14 +330,65 @@ long Unarmed::GetDamage(fo::AttackType hit, long &minOut, long &maxOut) {
 
 const char* Unarmed::GetName(fo::AttackType hit) {
 	if (hit > fo::AttackType::ATKTYPE_PIERCINGKICK) return nullptr;
-	switch (hit)
-	{
-		case fo::AttackType::ATKTYPE_PUNCH:
-		case fo::AttackType::ATKTYPE_KICK:
-			return (!hitNames[hit - 4].empty()) ? hitNames[hit - 4].c_str() : nullptr;
-		default:
-			return (hit >= fo::AttackType::ATKTYPE_STRONGPUNCH && !hitNames[hit - 6].empty()) ? hitNames[hit - 6].c_str() : nullptr;
+
+	switch (hit) {
+	case fo::AttackType::ATKTYPE_PUNCH:
+	case fo::AttackType::ATKTYPE_KICK:
+		return (!hitNames[hit - 4].empty()) ? hitNames[hit - 4].c_str() : nullptr;
+	default:
+		return (hit >= fo::AttackType::ATKTYPE_STRONGPUNCH && !hitNames[hit - 6].empty()) ? hitNames[hit - 6].c_str() : nullptr;
 	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+static fo::AttackType GetPunchingHit() {
+	unarmed.GetDudeStats(fo::func::skill_level(fo::var::obj_dude, fo::Skill::SKILL_UNARMED_COMBAT));
+	return GetPunchingHit(true);
+}
+
+static fo::AttackType GetKickingHit() {
+	//unarmed.GetDudeStats(fo::func::skill_level(fo::var::obj_dude, fo::Skill::SKILL_UNARMED_COMBAT));
+	return GetKickingHit(true);
+}
+
+void Unarmed::SlotsStoreCurrentHitMode() {
+	slotHitData[fo::HandSlot::Left].primaryHit   = fo::util::GetHandSlotPrimaryAttack(fo::HandSlot::Left);
+	slotHitData[fo::HandSlot::Left].secondaryHit = fo::util::GetHandSlotSecondaryAttack(fo::HandSlot::Left);
+	slotHitData[fo::HandSlot::Left].mode = fo::util::GetHandSlotMode(fo::HandSlot::Left);
+
+	slotHitData[fo::HandSlot::Right].primaryHit   = fo::util::GetHandSlotPrimaryAttack(fo::HandSlot::Right);
+	slotHitData[fo::HandSlot::Right].secondaryHit = fo::util::GetHandSlotSecondaryAttack(fo::HandSlot::Right);
+	slotHitData[fo::HandSlot::Right].mode = fo::util::GetHandSlotMode(fo::HandSlot::Right);
+}
+
+fo::AttackType Unarmed::GetStoredHitMode(fo::HandSlot slot) {
+	fo::AttackType hit;
+
+	switch (slotHitData[slot].mode)
+	{
+		case fo::HandSlotMode::Primary:
+		case fo::HandSlotMode::Primary_Aimed: // called shot
+			hit = slotHitData[slot].primaryHit;
+			break;
+		case fo::HandSlotMode::Secondary:
+		case fo::HandSlotMode::Secondary_Aimed: // called shot
+			hit = slotHitData[slot].secondaryHit;
+			break;
+	}
+
+	if (hit < fo::AttackType::ATKTYPE_STRONGPUNCH && hit != fo::AttackType::ATKTYPE_PUNCH && hit != fo::AttackType::ATKTYPE_KICK) {
+		hit = (slot == fo::HandSlot::Left) ? GetPunchingHit() : GetKickingHit(); // get Primary
+
+		if (slot == fo::HandSlot::Left) {
+			slotHitData[fo::HandSlot::Left].primaryHit = hit;
+			slotHitData[fo::HandSlot::Left].mode = fo::HandSlotMode::Primary;
+		} else {
+			slotHitData[fo::HandSlot::Right].primaryHit = hit;
+			slotHitData[fo::HandSlot::Right].mode = fo::HandSlotMode::Primary;
+		}
+	}
+	return hit;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

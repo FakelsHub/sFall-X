@@ -159,6 +159,18 @@ _declspec(noinline) fo::GameObject* GetItemPtrSlot(fo::GameObject* critter, fo::
 	return itemPtr;
 }
 
+fo::AttackType GetHandSlotPrimaryAttack(fo::HandSlot slot) {
+	return (fo::AttackType)fo::var::itemButtonItems[slot].primaryAttack;
+}
+
+fo::AttackType GetHandSlotSecondaryAttack(fo::HandSlot slot) {
+	return (fo::AttackType)fo::var::itemButtonItems[slot].secondaryAttack;
+}
+
+fo::HandSlotMode GetHandSlotMode(fo::HandSlot slot) {
+	return (fo::HandSlotMode)fo::var::itemButtonItems[slot].mode;
+}
+
 long& GetActiveItemMode() {
 	return fo::var::itemButtonItems[fo::var::itemCurrentItem].mode;
 }
@@ -179,14 +191,14 @@ fo::GameObject* GetInventItem(fo::GameObject* source, long pid) {
 
 fo::AttackType GetSlotHitMode(fo::HandSlot hand) { // 0 - left, 1 - right
 	switch (fo::var::itemButtonItems[hand].mode) {
-		case 1:
-		case 2: // called shot
-			return (fo::AttackType)fo::var::itemButtonItems[hand].primaryAttack;
-		case 3:
-		case 4: // called shot
-			return (fo::AttackType)fo::var::itemButtonItems[hand].secondaryAttack;
-		case 5: // reload mode
-			return (fo::AttackType)(fo::AttackType::ATKTYPE_LWEAPON_RELOAD + hand);
+	case fo::HandSlotMode::Primary:
+	case fo::HandSlotMode::Primary_Aimed: // called shot
+		return GetHandSlotPrimaryAttack(hand);
+	case fo::HandSlotMode::Secondary:
+	case fo::HandSlotMode::Secondary_Aimed: // called shot
+		return GetHandSlotSecondaryAttack(hand);
+	case fo::HandSlotMode::Reload:
+		return (fo::AttackType)(fo::AttackType::ATKTYPE_LWEAPON_RELOAD + hand);
 	}
 	return fo::AttackType::ATKTYPE_PUNCH;
 }
