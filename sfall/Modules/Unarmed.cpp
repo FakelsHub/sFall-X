@@ -20,7 +20,7 @@ namespace sfall
 static struct {
 	fo::AttackType primaryHit;
 	fo::AttackType secondaryHit;
-	long mode;
+	fo::HandSlotMode mode;
 } slotHitData[2];
 
 std::string hitNames[14];
@@ -380,13 +380,8 @@ fo::AttackType Unarmed::GetStoredHitMode(fo::HandSlot slot) {
 	if (hit < fo::AttackType::ATKTYPE_STRONGPUNCH && hit != fo::AttackType::ATKTYPE_PUNCH && hit != fo::AttackType::ATKTYPE_KICK) {
 		hit = (slot == fo::HandSlot::Left) ? GetPunchingHit() : GetKickingHit(); // get Primary
 
-		if (slot == fo::HandSlot::Left) {
-			slotHitData[fo::HandSlot::Left].primaryHit = hit;
-			slotHitData[fo::HandSlot::Left].mode = fo::HandSlotMode::Primary;
-		} else {
-			slotHitData[fo::HandSlot::Right].primaryHit = hit;
-			slotHitData[fo::HandSlot::Right].mode = fo::HandSlotMode::Primary;
-		}
+		slotHitData[slot].primaryHit = hit;
+		slotHitData[slot].mode = fo::HandSlotMode::Primary;
 	}
 	return hit;
 }
@@ -488,7 +483,7 @@ void Unarmed::init() {
 	SafeWrite16(0x4248C1, 0x01F8); // cmp eax, 1
 	SafeWrite8(0x4248C8, CodeType::JumpShort);
 
-	// Stores the current value of the unarmed attacks mode when opening the player's inventory
+	// Store the current values of unarmed attack modes when opening the player's inventory
 	HookCall(0x46E8D4, handle_inventory_hook);
 
 	const char* setting[14] = {

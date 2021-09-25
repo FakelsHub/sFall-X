@@ -456,7 +456,7 @@ customName:
 
 long DamageMod::GetHtHMinDamageBonus(fo::GameObject* source) {
 	return (bonusHtHDamageFix)
-		? game::Stats::perk_level(source, fo::Perk::PERK_bonus_hth_damage) << 1 // Rank_of_Bonus_HtH_Damage_perk x2;
+		? game::Stats::perk_level(source, fo::Perk::PERK_bonus_hth_damage) << 1 // Multiply by 2
 		: 0;
 }
 
@@ -507,7 +507,7 @@ void DamageMod::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Unarmed (display_stats_ hacks)
+	// Display actual damage values for unarmed attacks (display_stats_ hacks)
 	MakeJump(0x472546, DisplayBonusHtHDmg2_hack);
 	SafeWrite32(0x472558, 0x509EDC); // fmt: '%s %d-%d'
 	SafeWrite8(0x472552, 0x98 + 4);
