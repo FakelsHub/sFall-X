@@ -352,7 +352,7 @@ static fo::AttackType GetKickingHit() {
 	return GetKickingHit(true);
 }
 
-void Unarmed::SlotsStoreCurrentHitMode() {
+static void SlotsStoreCurrentHitMode() {
 	slotHitData[fo::HandSlot::Left].primaryHit   = fo::util::GetHandSlotPrimaryAttack(fo::HandSlot::Left);
 	slotHitData[fo::HandSlot::Left].secondaryHit = fo::util::GetHandSlotSecondaryAttack(fo::HandSlot::Left);
 	slotHitData[fo::HandSlot::Left].mode = fo::util::GetHandSlotMode(fo::HandSlot::Left);
@@ -389,6 +389,13 @@ fo::AttackType Unarmed::GetStoredHitMode(fo::HandSlot slot) {
 		}
 	}
 	return hit;
+}
+
+static void __declspec(naked) handle_inventory_hook() {
+	__asm {
+		call SlotsStoreCurrentHitMode;
+		jmp  fo::funcoffs::display_stats_;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -481,6 +488,8 @@ void Unarmed::init() {
 	SafeWrite16(0x4248C1, 0x01F8); // cmp eax, 1
 	SafeWrite8(0x4248C8, CodeType::JumpShort);
 
+	// Stores the current value of the unarmed attacks mode when opening the player's inventory
+	HookCall(0x46E8D4, handle_inventory_hook);
 
 	const char* setting[14] = {
 		"Punch",

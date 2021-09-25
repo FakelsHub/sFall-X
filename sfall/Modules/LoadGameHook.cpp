@@ -35,7 +35,6 @@
 #include "Perks.h"
 #include "ScriptExtender.h"
 #include "Scripting\Arrays.h"
-#include "Unarmed.h"
 #include "Worldmap.h"
 
 #include "LoadGameHook.h"
@@ -609,7 +608,6 @@ static void __declspec(naked) SkilldexHook() {
 static void __declspec(naked) HandleInventoryHook_Start() {
 	__asm {
 		_InLoop2(1, INVENTORY);
-		call Unarmed::SlotsStoreCurrentHitMode;
 		xor  eax, eax;
 		jmp  fo::funcoffs::inven_set_mouse_;
 	}

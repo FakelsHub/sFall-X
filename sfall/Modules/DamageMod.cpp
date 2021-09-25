@@ -416,6 +416,7 @@ static const char* __fastcall GetHtHName(long handOffset) {
 }
 
 static bool bonusHtHDamageFix = false;
+static bool displayBonusDamage = false;
 
 static long __fastcall GetHtHDamage(fo::GameObject* source, long &meleeDmg, long handOffset) {
 	long max, min;
@@ -424,7 +425,9 @@ static long __fastcall GetHtHDamage(fo::GameObject* source, long &meleeDmg, long
 	long bonus = Unarmed::GetDamage(hit, min, max);
 	meleeDmg += max + bonus;
 
-	if (bonusHtHDamageFix) min += game::Stats::perk_level(source, fo::Perk::PERK_bonus_hth_damage) << 1;
+	long perkBonus = game::Stats::perk_level(source, fo::Perk::PERK_bonus_hth_damage) << 1;
+	if (!displayBonusDamage) meleeDmg -= perkBonus;
+	if (displayBonusDamage && bonusHtHDamageFix) min += perkBonus;
 
 	return min + bonus;
 }
@@ -471,15 +474,14 @@ void DamageMod::init() {
 		}
 	}
 
-	int BonusHtHDmgFix = IniReader::GetConfigInt("Misc", "BonusHtHDamageFix", 1);
-	int DisplayBonusDmg = IniReader::GetConfigInt("Misc", "DisplayBonusDamage", 0);
+	bonusHtHDamageFix = IniReader::GetConfigInt("Misc", "BonusHtHDamageFix", 1) != 0;
+	displayBonusDamage = IniReader::GetConfigInt("Misc", "DisplayBonusDamage", 0) != 0;
 
-	if (BonusHtHDmgFix) {
-		bonusHtHDamageFix = true;
+	if (bonusHtHDamageFix) {
 		dlog("Applying Bonus HtH Damage Perk fix.", DL_INIT);
 
 		// Subtract damage from perk bonus (vanilla displaying)
-		if (DisplayBonusDmg == 0) {
+		if (displayBonusDamage == false) {
 			HookCalls(MeleeDmgDisplayPrintFix_hook, {
 				0x435C0C,                                     // DisplayFix (ListDrvdStats_)
 				0x439921                                      // PrintFix   (Save_as_ASCII_)
@@ -495,24 +497,22 @@ void DamageMod::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (DisplayBonusDmg) {
+	if (displayBonusDamage) {
 		dlog("Applying Display Bonus Damage patch.", DL_INIT);
-
 		HookCall(0x4722DD, DisplayBonusRangedDmg_hook);       // display_stats_
 
-		if (BonusHtHDmgFix) {
+		if (bonusHtHDamageFix) {
 			HookCall(0x472309, DisplayBonusHtHDmg1_hook);     // MeleeWeap (display_stats_)
 		}
-
-		// Unarmed (display_stats_)
-		MakeJump(0x472546, DisplayBonusHtHDmg2_hack);
-		SafeWrite32(0x472558, 0x509EDC); // fmt: '%s %d-%d'
-		SafeWrite8(0x472552, 0x98 + 4);
-		SafeWrite8(0x47255F, 0x0C + 4);
-		SafeWrite8(0x472568, 0x10 + 4);
-
 		dlogr(" Done", DL_INIT);
 	}
+
+	// Unarmed (display_stats_ hacks)
+	MakeJump(0x472546, DisplayBonusHtHDmg2_hack);
+	SafeWrite32(0x472558, 0x509EDC); // fmt: '%s %d-%d'
+	SafeWrite8(0x472552, 0x98 + 4);
+	SafeWrite8(0x47255F, 0x0C + 4);
+	SafeWrite8(0x472568, 0x10 + 4);
 }
 
 }
