@@ -307,7 +307,7 @@ void DamageMod::DamageYAAM(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamag
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-// Display melee damage w/o perk bonus
+// Display melee damage w/o PERK_bonus_hth_damage bonus
 static __declspec(naked) void MeleeDmgDisplayPrintFix_hook() {
 	using namespace fo;
 	__asm {
@@ -328,7 +328,7 @@ static __declspec(naked) void MeleeDmgDisplayPrintFix_hook() {
 	}
 }
 
-// Display max melee damage w/o perk bonus
+// Display max melee damage w/o PERK_bonus_hth_damage bonus
 static __declspec(naked) void CommonDmgRngDispFix_hook() {
 	using namespace fo;
 	__asm {
@@ -348,23 +348,6 @@ static __declspec(naked) void CommonDmgRngDispFix_hook() {
 		retn;
 	}
 }
-
-//static __declspec(naked) void HtHDamageFix1a_hack() {
-//	using namespace fo;
-//	__asm {
-//		cmp  ecx, dword ptr ds:[FO_VAR_obj_dude];      // Is the critter == PC?
-//		je   fix;                                      // Skip if no
-//		mov  edx, 1;                                   // Min_Damage = 1
-//		retn;
-//fix:
-//		mov  edx, PERK_bonus_hth_damage;               // perk_level_ argument: PERK_bonus_hth_damage
-//		mov  eax, ecx;                                 // pointer to PC
-//		call fo::funcoffs::perk_level_;                // Return Rank_of_Bonus_HtH_Damage_perk
-//		shl  eax, 1;                                   // Rank_of_Bonus_HtH_Damage_perk *= 2
-//		lea  edx, [eax + 1];                           // Min_Damage = 1 + Rank_of_Bonus_HtH_Damage_perk
-//		retn;
-//	}
-//}
 
 static __declspec(naked) void HtHDamageFix1b_hook() {
 	using namespace fo;

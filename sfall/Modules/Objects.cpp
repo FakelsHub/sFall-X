@@ -33,6 +33,10 @@ char Objects::sfallProcessSeenState = 0; // set 1-bit: allowed, 2-bit: run proce
 
 long Objects::uniqueID = UniqueID::Start; // current counter id, saving to sfallgv.sav
 
+bool Objects::IsUniqueID(long id) {
+	return (id > UniqueID::Start || (id >= fo::PLAYER_ID && id < 83536)); // 65535 maximum possible number of prototypes
+}
+
 static void SetScriptObjectID(fo::GameObject* obj) {
 	fo::ScriptInstance* script;
 	if (fo::func::scr_ptr(obj->scriptId, &script) != -1) {
@@ -45,7 +49,7 @@ static void SetScriptObjectID(fo::GameObject* obj) {
 // player ID = 18000, all party members have ID = 18000 + its pid (file number of prototype)
 long __fastcall Objects::SetObjectUniqueID(fo::GameObject* obj) {
 	long id = obj->id;
-	if (id > UniqueID::Start || (id >= fo::PLAYER_ID && id < 83536)) return id; // 65535 maximum possible number of prototypes
+	if (IsUniqueID(id)) return id;
 
 	if ((DWORD)uniqueID >= (DWORD)UniqueID::End) uniqueID = UniqueID::Start;
 	obj->id = ++uniqueID;
