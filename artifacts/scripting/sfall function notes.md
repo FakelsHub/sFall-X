@@ -1038,6 +1038,13 @@ Data types mentioned in this document:
 - `gvarNumber`: the number of the global variable controlling the quest
 - `thresholdValue`: the value of the global variable at which the quest is counted as a failure
 
+----
+#### set_scr_name
+`void sfall_func1("set_scr_name", string name)`
+- Overrides the name of the script object that was sets to the object from the **scrname.msg** file
+- The set new name will be reset to default every time you leave the map or load the game
+- __NOTE:__ The function is intended for vanilla game scripts
+
 
 ****
 _See other documentation files (Arrays.md, HookScripts.md) for related functions reference._

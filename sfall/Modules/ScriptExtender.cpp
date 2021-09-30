@@ -35,6 +35,8 @@
 #include "Objects.h"
 #include "Worldmap.h"
 
+#include "SubModules\ObjectName.h"
+
 #include "Scripting\Arrays.h"
 #include "Scripting\Opcodes.h"
 #include "Scripting\OpcodeContext.h"
@@ -1009,7 +1011,8 @@ void ScriptExtender::init() {
 		MakeCall(0x423DEB, (void*)fo::funcoffs::compute_damage_);
 	}
 
-	InitNewOpcodes();
+	Opcodes::InitNew();
+	ObjectName::init();
 
 	ScriptExtender::OnMapExit() += ClearEventsOnMapExit; // for reordering the execution of functions before exiting the map
 }

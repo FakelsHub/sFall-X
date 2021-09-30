@@ -62,6 +62,8 @@ public:
 	static Delegate<>& OnCombatStart();
 	static Delegate<>& OnCombatEnd();
 
+	static Delegate<>& OnBeforeMapLoad();
+
 	static bool LoadGameHook::IsMapLoading();
 
 	static char LoadGameHook::mapLoadingName[17];

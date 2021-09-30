@@ -258,7 +258,7 @@ struct GameObject {
 	long lightDistance;
 	long lightIntensity;
 	DWORD outline;
-	long scriptId; // SID 0x0Y00XXXX: Y - type: 0=s_system, 1=s_spatial, 2=s_time, 3=s_item, 4=s_critter; XXXX - index in scripts.lst; 0xFFFFFFFF no attached script
+	long scriptId; // SID 0x0Y00XXXX: Y - type: 0=s_system, 1=s_spatial, 2=s_time, 3=s_item, 4=s_critter; XXXX - ID number (1-32000); 0xFFFFFFFF no attached script
 	GameObject* owner; // (don't save)
 	long scriptIndex;
 
@@ -323,12 +323,12 @@ struct CombatGcsd {
 
 // Script instance attached to an object or tile (spatial script).
 struct ScriptInstance {
-	long id;
+	long id; // same as sid
 	long next;
 	long elevationAndTile; // first 3 bits - elevation, rest - tile number
 	long spatialRadius;
 	long flags;
-	long scriptIdx;
+	long scriptIdx; // script index in scripts.lst ?
 	Program *program;
 	long ownerObjectId;
 	long localVarOffset; // data
@@ -341,9 +341,9 @@ struct ScriptInstance {
 	GameObject *targetObject;
 	long actionNum;
 	long scriptOverrides;
-	long field_48;
+	long field_48; // unknown
 	long howMuch;
-	long field_50;
+	long field_50; // not used
 	long procedureTable[28];
 	long gap[7];
 };

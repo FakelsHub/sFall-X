@@ -412,6 +412,7 @@
     <ClInclude Include="Modules\SubModules\CombatBlock.h" />
     <ClInclude Include="Modules\SubModules\CombatExt.h" />
     <ClInclude Include="Modules\SubModules\EnginePerks.h" />
+    <ClInclude Include="Modules\SubModules\ObjectName.h" />
     <ClInclude Include="Modules\SubModules\WindowRender.h" />
     <ClInclude Include="Modules\Unarmed.h" />
     <ClInclude Include="Modules\Worldmap.h" />
@@ -532,6 +533,7 @@
     <ClCompile Include="Modules\SubModules\CombatBlock.cpp" />
     <ClCompile Include="Modules\SubModules\CombatExt.cpp" />
     <ClCompile Include="Modules\SubModules\EnginePerks.cpp" />
+    <ClCompile Include="Modules\SubModules\ObjectName.cpp" />
     <ClCompile Include="Modules\SubModules\WindowRender.cpp" />
     <ClCompile Include="Modules\Unarmed.cpp" />
     <ClCompile Include="Modules\Worldmap.cpp" />
