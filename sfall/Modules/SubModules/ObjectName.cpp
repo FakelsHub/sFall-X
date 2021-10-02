@@ -20,6 +20,7 @@ static long lastNameSid = -1;
 static long lastItemPid = -1;
 
 void ObjectName::SetName(long sid, const char* name) {
+	if (!name) name = "";
 	overrideScrName.emplace(sid, name);
 }
 
@@ -27,7 +28,9 @@ const char* __stdcall ObjectName::GetName(fo::GameObject* object) {
 	if (!overrideScrName.empty()) {
 		auto name = overrideScrName.find(object->scriptId);
 		if (name != overrideScrName.cend()) {
-			return name->second.c_str();
+			return (name->second.length() > 0)
+				? name->second.c_str()
+				: fo::func::proto_get_msg_info(object->protoId, 0);
 		}
 	}
 	return nullptr;

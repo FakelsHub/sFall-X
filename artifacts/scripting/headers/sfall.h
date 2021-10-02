@@ -405,6 +405,7 @@
 #define tile_by_position(x, y)                                  sfall_func2("tile_by_position", x, y)
 #define tile_refresh_display                                    sfall_func0("tile_refresh_display")
 #define unjam_lock(obj)                                         sfall_func1("unjam_lock", obj)
+#define unset_scr_name                                          sfall_func0("set_scr_name") /* sets the use of the object name from pro_*.msg instead of scrname.msg */
 #define unset_unique_id(obj)                                    sfall_func2("set_unique_id", obj, -1)
 #define unwield_slot(critter, slot)                             sfall_func2("unwield_slot", critter, slot)
 #define win_fill_color(x, y, width, height, color)              sfall_func5("win_fill_color", x, y, width, height, color)

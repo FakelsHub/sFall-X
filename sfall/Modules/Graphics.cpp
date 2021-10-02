@@ -348,15 +348,14 @@ static void ResetDevice(bool create) {
 }
 
 #if !(NDEBUG) && !(_DEBUG)
+static long lastTime = GetTickCount();
 static long frameCount;
 static long elapsedTime;
 static long fps;
-static long palCounter;
-static long lockCounter;
+//static long palCounter;
+//static long lockCounter;
 
 static void CalcFPS() {
-	static long lastTime = GetTickCount();
-
 	frameCount++;
 
 	long time = GetTickCount();
