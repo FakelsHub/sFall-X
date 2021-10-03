@@ -943,7 +943,7 @@ public:
 		0x4CB36B GNW95_SetPaletteEntries_
 	*/
 	HRESULT __stdcall SetEntries(DWORD a, DWORD b, DWORD c, LPPALETTEENTRY d) { // used to set palette for splash screen, fades, subtitles
-		if (!windowInit || c <= 0) return DDERR_INVALIDPARAMS;
+		if (!windowInit || (LONG)c <= 0) return DDERR_INVALIDPARAMS;
 		//palCounter++;
 
 		PALETTE* destPal = (PALETTE*)d;
@@ -951,7 +951,7 @@ public:
 		if (Graphics::GPUBlt) {
 			D3DLOCKED_RECT pal;
 			if (c != 256) {
-				RECT rect = { b, 0, b + c, 1 };
+				RECT rect = { (LONG)b, 0, (LONG)(b + c), 1 };
 				paletteTex->LockRect(0, &pal, &rect, D3DLOCK_NO_DIRTY_UPDATE);
 				paletteTex->AddDirtyRect(&rect);
 				b = 0;

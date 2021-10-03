@@ -20,6 +20,7 @@ static long lastNameSid = -1;
 static long lastItemPid = -1;
 
 void ObjectName::SetName(long sid, const char* name) {
+	if (sid == lastNameSid) lastNameSid = -1;
 	if (!name) name = "";
 	overrideScrName.emplace(sid, name);
 }
