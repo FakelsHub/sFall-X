@@ -1041,10 +1041,10 @@ Data types mentioned in this document:
 ----
 #### set_scr_name
 `void sfall_func1("set_scr_name", string name)`
-- Overrides the name of the script object that was sets to the object from the **scrname.msg** file
-- The set new name will be reset to default every time you leave the map or load the game
-- If you pass an empty string ("") to the `name` parameter or omit it, this will allow the game to get the name for the object from the pro_*.msg files
-- __NOTE:__ The function is intended for vanilla game scripts
+- Overrides the name of the script object that was set from **scrname.msg**
+- The changed name will be reset each time the player leaves the map or reloads the game
+- Passing an empty string ("") to the `name` argument or omitting it will allow the game to get the name for the object from pro_*.msg files
+- __NOTE:__ This function is intended for use in normal game scripts
 
 
 ****
