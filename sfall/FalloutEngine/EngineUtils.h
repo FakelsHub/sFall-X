@@ -104,6 +104,8 @@ long GetCurrentAttackMode();
 
 fo::AttackSubType GetWeaponType(unsigned long weaponFlag);
 
+long ObjIsOpenable(fo::GameObject* object);
+
 bool HeroIsFemale();
 
 long CheckAddictByPid(fo::GameObject* critter, long pid);

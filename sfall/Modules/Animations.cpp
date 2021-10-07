@@ -474,28 +474,35 @@ skip:
 	}
 }
 
-static bool usedThroughMenu = false;
+static bool usedThroughMenu, _usedThroughMenu = false;
 
 static void __declspec(naked) obj_use_container_hook() {
-	static const DWORD obj_use_container_Ret = 0x49D012;
+	static const DWORD obj_use_container_Ret = 0X49D012;
+	static const DWORD obj_use_container_ExitRet = 0x49D069;
 	using namespace fo::Fields;
 	__asm {
 		mov  ebx, [ecx + currFrame]; // obj.cur_frm
 		test ebx, ebx;
 		jz   default; // container is closed
+
 		cmp  ebx, 1;  // grave type containers?
 		je   skip;    // skip closing
+
 		cmp  usedThroughMenu, 1;
 		je   default;
+
 		cmp  edi, ds:[FO_VAR_obj_dude];
 		jne  default; // vanilla behavior for NPC
+		add  esp, 4;
+dude:
+		xor  eax, eax;
+		jmp  obj_use_container_Ret; // skip close
 skip:
 		add  esp, 4;
-		xor  eax, eax;
-		mov  usedThroughMenu, al;
-		jmp  obj_use_container_Ret; // skip close
+		cmp  edi, ds:[FO_VAR_obj_dude];
+		je   dude;
+		jmp  obj_use_container_ExitRet;
 default:
-		mov  usedThroughMenu, 0;
 		jmp  fo::funcoffs::register_begin_;
 	}
 }
@@ -516,8 +523,18 @@ default:
 
 static void __declspec(naked) gmouse_handle_event_hook() {
 	__asm {
-		mov  usedThroughMenu, 1;
+		mov  _usedThroughMenu, 1;
 		jmp  fo::funcoffs::action_get_an_object_;
+	}
+}
+
+static void __declspec(naked) obj_use_container_hack() {
+	__asm {
+		mov  bl, _usedThroughMenu;
+		mov  usedThroughMenu,bl;
+		mov  _usedThroughMenu, 0;
+		and  eax, 0x0F000000;
+		retn;
 	}
 }
 
@@ -631,10 +648,11 @@ void Animations::init() {
 
 	// Prevents open containers from being closed when they are looted
 	// also fixes grave type containers to execute the use_p_proc script handler
-	HookCall(0x44C7B0, gmouse_handle_event_hook);
 	HookCall(0x49CFAC, obj_use_container_hook);
 	MakeCall(0x4122FF, action_get_an_object_hack);
 	SafeWrite16(0x4122D9, 0x9090); // action_get_an_object_
+	HookCall(0x44C7B0, gmouse_handle_event_hook);
+	MakeCall(0x49CE8E, obj_use_container_hack);
 }
 
 void Animations::exit() {

@@ -3178,28 +3178,6 @@ noObject:
 	}
 }
 
-static void __declspec(naked) obj_is_open_hack() {
-	__asm {
-		je   checkMaxFrames; // curr.frame == 0
-		setnz al;
-		and  eax, 0xFF;
-		retn;
-checkMaxFrames:
-		push edx;
-		sub  esp, 4;
-		mov  eax, [eax + artFid];
-		mov  edx, esp;
-		call fo::funcoffs::art_ptr_lock_;
-		call fo::funcoffs::art_frame_max_frame_;
-		add  esp, 4;
-		cmp  eax, 1;
-		pop  edx;
-		setle al; // 1 - is open if frames == 1
-		and  eax, 0xFF;
-		retn;
-	}
-}
-
 void BugFixes::init()
 {
 	#ifndef NDEBUG
@@ -4008,9 +3986,6 @@ void BugFixes::init()
 
 	// Fix to prevent the main menu music from stopping when entering the load game interface
 	BlockCall(0x480B25);
-
-	// Fix obj_is_open script function
-	MakeJump(0x49D2E8, obj_is_open_hack, 3);
 }
 
 }

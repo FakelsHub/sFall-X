@@ -1046,6 +1046,11 @@ Data types mentioned in this document:
 - Passing an empty string ("") to the `name` argument or omitting it will allow the game to get the name for the object from pro_*.msg files
 - __NOTE:__ This function is intended for use in normal game scripts and overrides the name only once (for the same object) until a reset is performed
 
+----
+#### obj_is_openable
+`bool sfall_func1("obj_is_openable", object obj)`
+- Returns `True` (1) if the object is openable (i.e. has an opening/closing animation)
+
 
 ****
 _See other documentation files (Arrays.md, HookScripts.md) for related functions reference._
