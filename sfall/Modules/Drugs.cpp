@@ -30,6 +30,7 @@ static int drugsCount = 0;
 static bool drugsReset = false; // true - need reset
 
 long Drugs::addictionGvarCount = 0;
+bool Drugs::JetWithdrawal = false;
 
 sDrugs *drugs = nullptr;
 
@@ -283,14 +284,14 @@ long Drugs::SetDrugAddictTimeOff(long pid, long time) {
 }
 
 void Drugs::init() {
-	auto drugsFile = GetConfigString("Misc", "DrugsFile", "", MAX_PATH);
+	auto drugsFile = IniReader::GetConfigString("Misc", "DrugsFile", "", MAX_PATH);
 	if (!drugsFile.empty()) {
 		dlog("Applying drugs patch...", DL_INIT);
 		const char* iniDrugs = drugsFile.insert(0, ".\\").c_str();
 
-		if (iniGetInt("main", "JetWithdrawal", 0, iniDrugs) == 1) SafeWrite8(0x47A3A8, 0);
+		JetWithdrawal = (IniReader::GetInt("main", "JetWithdrawal", 0, iniDrugs) == 1); // SafeWrite8(0x47A3A8, 0); item_wd_process_
 
-		int count = iniGetInt("main", "Count", 0, iniDrugs);
+		int count = IniReader::GetInt("main", "Count", 0, iniDrugs);
 		if (count > 0) {
 			if (count > drugsMax) count = drugsMax;
 			drugs = new sDrugs[count]();
@@ -299,12 +300,12 @@ void Drugs::init() {
 			char section[4];
 			for (int i = 1; i <= count; i++) {
 				_itoa(i, section, 10);
-				int pid = iniGetInt(section, "PID", 0, iniDrugs);
+				int pid = IniReader::GetInt(section, "PID", 0, iniDrugs);
 				if (pid > 0) {
 					CheckEngineNumEffects(set, pid);
 					drugs[drugsCount].drugPid = pid;
-					drugs[drugsCount].addictTimeOff = drugs[drugsCount].iniAddictTimeOff = iniGetInt(section, "AddictTime", 0, iniDrugs);
-					long ef = iniGetInt(section, "NumEffects", -1, iniDrugs);
+					drugs[drugsCount].addictTimeOff = drugs[drugsCount].iniAddictTimeOff = IniReader::GetInt(section, "AddictTime", 0, iniDrugs);
+					long ef = IniReader::GetInt(section, "NumEffects", -1, iniDrugs);
 					if (set != -1) {
 						if (ef < -1) {
 							ef = -1;
@@ -318,12 +319,12 @@ void Drugs::init() {
 						drugs[drugsCount].numEffects = ef; // -1 to use the value from the engine
 					} else {
 						drugs[drugsCount].numEffects = drugs[drugsCount].iniNumEffects = max(0, ef);
-						int gvar = iniGetInt(section, "GvarID", 0, iniDrugs);
+						int gvar = IniReader::GetInt(section, "GvarID", 0, iniDrugs);
 						drugs[drugsCount].gvarID = max(0, gvar); // not allow negative values
 						if (gvar) {
-							int msg = iniGetInt(section, "TextID", -1, iniDrugs);
+							int msg = IniReader::GetInt(section, "TextID", -1, iniDrugs);
 							drugs[drugsCount].msgID = (msg > 0) ? msg : -1;
-							drugs[drugsCount].frmID = iniGetInt(section, "FrmID", -1, iniDrugs);
+							drugs[drugsCount].frmID = IniReader::GetInt(section, "FrmID", -1, iniDrugs);
 							addictionGvarCount++;
 						}
 					}
@@ -335,8 +336,8 @@ void Drugs::init() {
 				MakeCall(0x43C15C, list_karma_hack, 2);
 				MakeCall(0x47A5B8, pid_to_gvar_hack, 1);
 				MakeCall(0x47A50C, perform_withdrawal_start_hack);
-				SafeWrite32(0x47A523, 0x9090EBD1); // shr ebx, 1 (fix for trait drug addict)
-				SafeWrite8(0x47A527, CodeType::Nop);
+				SafeWrite32(0x47A523, 0x9090EBD1); // shr ebx, 1 (fix for trait drug addict perform_withdrawal_start_)
+				SafeWrite8(0x47A527, CodeType::Nop); // perform_withdrawal_start_
 
 				if (addictionGvarCount) {
 					LoadGameHook::OnAfterGameInit() += CheckValidGvarNumber;
