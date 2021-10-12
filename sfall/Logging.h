@@ -30,7 +30,10 @@
 namespace sfall
 {
 
+void dlog(const char*);
+void dlog(const char*, int type);
 void dlog(const std::string&, int type);
+void dlogr(const char*, int type);
 void dlogr(const std::string&, int type);
 void dlog_f(const char* fmt, int type, ...);
 void dlogh(const char* fmt, long, long, long);

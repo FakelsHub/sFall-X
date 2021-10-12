@@ -515,7 +515,7 @@ static void __declspec(naked) action_get_an_object_hack() {
 		xor  edi, edi;
 		retn; // request loot container
 default:
-		mov  edi, 2;
+		mov  edi, 2; // set current frame
 		test edi, edi;
 		retn;
 	}
