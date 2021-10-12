@@ -26,6 +26,7 @@ VAR_(combat_free_move,           DWORD)
 VARD(combat_list,                fo::GameObject*)
 VAR_(combat_obj,                 fo::GameObject*)
 VAR_(combat_state,               DWORD)
+VAR_(combat_turn_obj,            fo::GameObject*)
 VAR_(combat_turn_running,        DWORD)
 VAR_(combatNumTurns,             DWORD)
 VAR3(crit_succ_eff,              fo::CritInfo, 20, 9, 6)  // 20 critters with 9 body parts and 6 effects each

@@ -7,8 +7,9 @@
    NOTE: this script requires compiler from sfall modderspack with -s option
    (short circuit evaluation)
 
-   version 1.2
+   version 1.3
 
+   TODO: Обработчик CombaTurn_Handler должен всегда выполняться первым в цепочке других скриптов, требуется добавить реализацию для этого.
 */
 
 #define SFALL_SC_EVALUATION   (true) // ScriptEditor 4.0: Automatic script compilation with -s option
@@ -23,6 +24,7 @@
 
 procedure start;
 procedure AllowControl(variable pid);
+procedure SetLight(variable critter, variable int, variable dist);
 procedure CombaTurn_Handler;
 procedure InventoryMove_Handler;
 procedure GameModeChange_Handler;
@@ -33,64 +35,77 @@ procedure SetGlobalVar_Handler;
 variable
    controlMode,
    toggleControlKey, toggleControl := true,
-   noCheckArray,
    pidList, perksList,
    lightInt, lightDist, npcControl,
    displayName, displayNameColor, isShowTag, //isOutline := false,
-   inControl := false;
+   inControl := false,
+   dudeLightInt, dudeLightDist;
 
 
 procedure AllowControl(variable pid) begin
-   if (noCheckArray or scan_array(pidList, pid bwand 0xFFFFFF) != -1) and (party_member_obj(pid)) then return true;
-   return false;
+   return ((pidList == 0 or scan_array(pidList, pid bwand 0xFFFFFF) != -1) and (party_member_obj(pid)));
+end
+
+procedure SetLight(variable critter, variable lInt, variable lDist) begin
+     if (lInt) then lInt := round((lInt / 65536.0) * 100); // calc percent of intensity
+     obj_set_light_level(critter, lInt, lDist); // TODO: make sfall obj_set_light_level function
 end
 
 procedure CombaTurn_Handler begin
    variable
       status := get_sfall_arg,
-      critter := get_sfall_arg,
-      pid, perkID, level;
+      critter := get_sfall_arg;
 
-   if (not(toggleControl)) then return;
+   if (toggleControl == false) then return;
 
    #if DEBUG
       display_msg("Combat Turn: " + status + ", by "  + obj_name(critter)+ "/" + critter + ", arg3: " + get_sfall_arg);
    #endif
 
-   if (npcControl) then begin
-      if (lightInt) then lightInt := round((lightInt / 65536.0) * 100); // calc percent of intensity
-      obj_set_light_level(npcControl, lightInt, lightDist);             // restore light for prev. controlled npc
-   end
+   variable pid := obj_pid(critter);
+   if (pid == PID_PLAYER and inControl == false) then return;
+   if (pid != PID_PLAYER and controlMode != 1 and AllowControl(pid) == false) then return;
 
-   pid := obj_pid(critter);
-   if (status == 1 and (AllowControl(pid) or controlMode == 1)) then begin
+   if (status == 1) then begin
       set_dude_obj(critter);
       #if DEBUG
          display_msg("Set control to: " + obj_name(critter));
       #endif
+
       if (critter != real_dude_obj) then begin
-         if not(npcControl) then obj_set_light_level(real_dude_obj, 0, 0); // dude off light
+         if (npcControl == 0) then begin
+            dudeLightDist = get_object_data(real_dude_obj, OBJ_DATA_LIGHT_DISTANCE);
+            dudeLightInt  = get_object_data(real_dude_obj, OBJ_DATA_LIGHT_INTENSITY);
+            obj_set_light_level(real_dude_obj, 0, 0); // dude off light
+         end
          npcControl := critter;
+
+         lightDist := get_object_data(critter, OBJ_DATA_LIGHT_DISTANCE);
+         lightInt  := get_object_data(critter, OBJ_DATA_LIGHT_INTENSITY);
+
          // set perks (worked on 4.1.8)
+         variable perkID;
          foreach (perkID in perksList) begin
-            level := has_trait(TRAIT_PERK, real_dude_obj, perkID);
+            variable level := has_trait(TRAIT_PERK, real_dude_obj, perkID);
             if (level) then critter_add_trait(critter, TRAIT_PERK, perkID, level);
          end
          intface_redraw;
-         lightDist := get_object_data(critter, OBJ_DATA_LIGHT_DISTANCE);
-         lightInt  := get_object_data(critter, OBJ_DATA_LIGHT_INTENSITY);
+
          obj_set_light_level(critter, 100, 4);
          inControl := true;
       end
       else if (npcControl) then begin
-         obj_set_light_level(dude_obj, 100, 4); // set dude default light
+         call SetLight(dude_obj, dudeLightInt, dudeLightDist); // restore dude light
          npcControl := 0; // dude control
       end
-      if inControl then begin
+
+      if (inControl) then begin
          // check preference setting _combat_highlight
-         if (read_byte(0x56D38C)) then set_outline(critter, OUTLINE_GREY);
+         if (read_byte(0x56D38C)) then set_outline(critter, OUTLINE_GREY); // TODO: replace read_byte to normal function
+
          // center the screen on the controlled critter/dude and remove roof tiles
          move_to(dude_obj, dude_tile, dude_elevation);
+
          if (displayName and critter != real_dude_obj) then begin
             set_iface_tag_text(displayName, obj_name(critter), displayNameColor);
             show_iface_tag(displayName);
@@ -98,31 +113,37 @@ procedure CombaTurn_Handler begin
          end
       end
    end
-   else if (inControl) then begin
+   else begin
+      if (npcControl) then begin
+         call SetLight(critter, lightInt, lightDist); // restore light for controlled npc
+      end
+      if (isShowTag) then begin
+         hide_iface_tag(displayName);
+         isShowTag := false;
+      end
+
       // remove perks before switching control (only work with 4.1.8+)
       if (dude_obj != real_dude_obj) then begin
          foreach (perkID in perksList) begin
             level := has_trait(TRAIT_PERK, real_dude_obj, perkID);
             if (level) then critter_rm_trait(critter, TRAIT_PERK, perkID, level);
          end
+
+         set_dude_obj(0); // w/o redraw interface bar
+         #if DEBUG
+            display_msg("Return control to real dude!");
+         #endif
       end
-      if (isShowTag) then begin
-         hide_iface_tag(displayName);
-         isShowTag := false;
-      end
-      if (status < 0 or AllowControl(pid) == false) then begin
-         if (dude_obj != real_dude_obj) then begin
-            set_dude_obj(real_dude_obj);
-            obj_set_light_level(dude_obj, 100, 4);
-            npcControl := 0;
-         end
+
+      if (status < 0) then begin
+         set_dude_obj(real_dude_obj);
+         call SetLight(dude_obj, dudeLightInt, dudeLightDist); //obj_set_light_level(dude_obj, 100, 4);
       end
    end
-
 end
 
 procedure GameModeChange_Handler begin
-   if (inControl and not(get_game_mode BWAND COMBAT)) then begin
+   if (inControl and (get_game_mode bwand COMBAT) == 0) then begin
       inControl := false;
       npcControl := 0;
       move_to(dude_obj, dude_tile, dude_elevation);
@@ -178,8 +199,10 @@ procedure start begin
          set_perk_level(PERK_gecko_skinning_perk, 999); // prevent it from appearing in the perk selection window
 
          pidList := GetConfigListInt("CombatControl", "PIDList");
-         fix_array(pidList);
-         noCheckArray := (len_array(pidList) == 0);
+         if (len_array(pidList) > 0) then
+            fix_array(pidList);
+         else
+            pidList = 0;
 
          perksList := GetConfigListInt("CombatControl", "PerksList");
          fix_array(perksList);
@@ -193,6 +216,9 @@ procedure start begin
          if (GetConfig("CombatControl", "GainReputation", 0) == 0) then begin
              register_hook_proc(HOOK_SETGLOBALVAR, SetGlobalVar_Handler);
          end
+      end
+      else begin
+         exit;
       end
    end
 end
@@ -233,4 +259,3 @@ procedure SetGlobalVar_Handler begin
       end
    end
 end
-
