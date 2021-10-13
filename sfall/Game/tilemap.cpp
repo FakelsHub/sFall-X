@@ -1,4 +1,4 @@
-/*
+п»ї/*
  *    sfall
  *    Copyright (C) 2008 - 2021 Timeslip and sfall team
  *
@@ -180,7 +180,7 @@ long __fastcall Tilemap::tile_num_beyond(long sourceTile, long targetTile, long 
 	}
 }
 
-static void __declspec(naked) tile_num_beyond_hack() {
+static void __declspec(naked) tile_num_beyond_replacement() {
 	__asm { //push ecx;
 		push ebx;
 		mov  ecx, eax;
@@ -214,7 +214,7 @@ static __forceinline fo::GameObject* CheckTileBlocking(void* blockFunc, long til
 	//return object;
 }
 
-// idist_
+// same as idist_
 static __inline long DistanceFromPositions(long sX, long sY, long tX, long tY) {
 	long diffX = std::abs(tX - sX);
 	long diffY = std::abs(tY - sY);
@@ -222,8 +222,9 @@ static __inline long DistanceFromPositions(long sX, long sY, long tX, long tY) {
 	return (diffX + diffY) - (minDiff >> 1);
 }
 
-// optimized version
-long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTile, long targetTile, uint8_t* arrayRotation, long checkTargetTile, void* blockFunc) {
+// optimized version with added 'type' arg
+// type: 1 - tile path, 0 - rotation path
+long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTile, long targetTile, long type, void* arrayRef, long checkTargetTile, void* blockFunc) {
 
 	if (checkTargetTile && fo::func::obj_blocking_at_wrapper(srcObject, targetTile, srcObject->elevation, blockFunc)) return 0;
 
@@ -281,7 +282,9 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 		if (childData.tile == targetTile) break; // exit the loop path is built
 
 		*dadData = childData;
-		if (++dadData == m_dadData.end()) return 0; // path can't be built reached the end of the array (limit the maximum path length)
+		if (++dadData == m_dadData.end()) {
+			return 0; // path can't be built reached the end of the array (limit the maximum path length)
+		}
 
 		char rotation = 0;
 		do {
@@ -295,7 +298,7 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 				if (tile != targetTile) {
 					fo::GameObject* objBlock = CheckTileBlocking(blockFunc, tile, srcObject);
 					if (objBlock) {
-						// Fix for building the path to the central hex of a multihex object (from BugFixes.cpp)
+						// [FIX] Fixes building the path to the central hex of a multihex object (from BugFixes.cpp)
 						if (objBlock->tile != targetTile) {
 							if (!fo::func::anim_can_use_door(srcObject, objBlock)) continue; // block - next rotation
 						} else {
@@ -303,9 +306,8 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 						}
 					}
 				}
-				if (++pathCounter >= 2000) {
-					//BREAKPOINT
-					return 0; // ограничение максимальной длины пути?
+				if (++pathCounter >= 2000) { // РѕРіСЂР°РЅРёС‡РµРЅРёРµ РјР°РєСЃРёРјР°Р»СЊРЅРѕР№ РґР»РёРЅС‹ РїСѓС‚Рё?
+					return 0;
 				}
 
 				pathData = m_pathData.begin();
@@ -338,32 +340,50 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 		if (!pathCounter) return 0; // the path can't be built
 	}
 
+	uint8_t* arrayR = reinterpret_cast<uint8_t*>(arrayRef);
+	uint16_t* arrayT = reinterpret_cast<uint16_t*>(arrayRef);
 	size_t pathLen = 0;
-	uint8_t* array = arrayRotation;
+
 	// building and calculating the path length
 	do {
 		if (childData.tile == sourceTile) break; // reached the source tile
-		if (array) *array++ = childData.rotation;
-
+		if (arrayRef) {
+			if (type) {
+				*arrayT++ = (uint16_t)childData.tile;
+			} else {
+				*arrayR++ = childData.rotation;
+			}
+		}
 		while (childData.from_tile != dadData->tile) --dadData; // search a linked tile 'from -> tile'
 		childData = *dadData;
 	} while (++pathLen < 800);
 
-	if (arrayRotation && pathLen > 1) {
+	if (arrayRef && pathLen > 1) {
 		// reverse the array values
 		size_t count = pathLen >> 1;
-		do {
-			uint8_t last = *--array;
-			*array = *arrayRotation; // last < front
-			*arrayRotation++ = last;
-		} while (--count);
+		if (type) {
+			uint16_t* arrayFront = reinterpret_cast<uint16_t*>(arrayRef);;
+			do {
+				uint16_t last = *--arrayT;
+				*arrayT = *arrayFront; // last < front
+				*arrayFront++ = last;
+			} while (--count);
+		} else {
+			uint8_t* arrayFront = reinterpret_cast<uint8_t*>(arrayRef);;
+			do {
+				uint8_t last = *--arrayR;
+				*arrayR = *arrayFront; // last < front
+				*arrayFront++ = last;
+			} while (--count);
+		}
 	}
 	return pathLen;
 }
 
-//static void __declspec(naked) make_path_func_hack() {
+//static void __declspec(naked) make_path_func_replacement() {
 //	__asm {
 //		xchg [esp], ecx; // ret addr <> array
+//		push 0;          // type
 //		push ebx;        // target tile
 //		push ecx;        // ret addr
 //		mov  ecx, eax;
@@ -372,10 +392,10 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 //}
 
 void Tilemap::init() {
-	sf::MakeJump(fo::funcoffs::tile_num_beyond_ + 1, tile_num_beyond_hack); // 0x4B1B84
+	sf::MakeJump(fo::funcoffs::tile_num_beyond_ + 1, tile_num_beyond_replacement); // 0x4B1B84
 
-	// test
-	//sf::MakeJump(fo::funcoffs::make_path_func_, make_path_func_hack); // 0x415EFC
+	// for test in game
+	//sf::MakeJump(fo::funcoffs::make_path_func_, make_path_func_replacement); // 0x415EFC
 }
 
 }

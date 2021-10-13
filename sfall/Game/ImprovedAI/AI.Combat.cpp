@@ -685,7 +685,7 @@ ReFindNewTarget:
 		{
 		case AIBehavior::AttackResult::TargetDead:
 			DEV_PRINTF("\n[AI] Attack result: TARGET DEAD!\n");
-			if (target == fo::var::obj_dude) return;
+			if (target->protoId == fo::PID_Player) return;
 			findTargetAfterKill = true;
 			goto ReFindNewTarget; // поиск новой цели, текущая была убита
 
@@ -1015,24 +1015,24 @@ static void __declspec(naked) combat_attack_hook() {
 */
 /////////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef NDEBUG
-static void __declspec(naked) ai_move_steps_closer_debug() {
-	static const char* move_steps_closer_fail = "\nERROR: ai_move_steps_closer.";
-	__asm {
-		test eax, eax;
-		jns  skip;
-		push move_steps_closer_fail;
-		call fo::funcoffs::debug_printf_;
-		add  esp, 4;
-skip:
-		add  esp, 0x10;
-		pop  ebp;
-		pop  edi;
-		pop  esi;
-		retn;
-	}
-}
-#endif
+//#ifndef NDEBUG
+//static void __declspec(naked) ai_move_steps_closer_debug() {
+//	static const char* move_steps_closer_fail = "\nERROR: ai_move_steps_closer.";
+//	__asm {
+//		test eax, eax;
+//		jns  skip;
+//		push move_steps_closer_fail;
+//		call fo::funcoffs::debug_printf_;
+//		add  esp, 4;
+//skip:
+//		add  esp, 0x10;
+//		pop  ebp;
+//		pop  edi;
+//		pop  esi;
+//		retn;
+//	}
+//}
+//#endif
 
 void AICombat::init(bool smartBehavior) {
 
@@ -1056,7 +1056,7 @@ void AICombat::init(bool smartBehavior) {
 
 		#ifndef NDEBUG
 		combatDebug = (sf::IniReader::GetConfigInt("CombatAI", "Debug", 0) != 0);
-		sf::MakeJump(0x42A1B6, ai_move_steps_closer_debug);
+		//sf::MakeJump(0x42A1B6, ai_move_steps_closer_debug);
 		#endif
 	}
 }

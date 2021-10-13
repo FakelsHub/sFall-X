@@ -50,36 +50,6 @@ namespace sf = sfall;
 
 static const char* retargetTileMsg = "\nI'm in the way of friendly fire! I'll try to move to the nearest tile.";
 
-// Доработка функции ai_move_steps_closer_ которая принимает флаги в параметре дистанции для игнорирования stay/stat_close
-// параметр дистанции при этом должен передаваться в инвертированном значении
-// flags:
-//	0x01000000 - игнорирует только stay_close
-//  0x02000000 - игнорирует stay и stay_close
-static void __declspec(naked) ai_move_steps_closer_hook() {
-	static DWORD ai_move_steps_closer_MoveRet  = 0x42A02F;
-	static DWORD ai_move_steps_closer_ErrorRet = 0x42A1B1;
-	__asm {
-		jz   badDistance;
-		not  ebx;              // здесь значение дистанции в отрицательном значении
-		mov  ebp, ebx;         // restored the distance value
-		and  ebp, ~0x0F000000; // unset flags
-		test ebx, 0x02000000;  // check move flag
-		jz   stayClose;        // неустановлен бит
-		jmp  ai_move_steps_closer_MoveRet;
-
-stayClose:
-		test ebx, 0x01000000;  // check move flag
-		jz   badDistance;      // неустановлен бит
-		call fo::funcoffs::ai_cap_;
-		cmp  [eax + 0xA0], 4;  // cap.distance
-		je   badDistance;      // это stay
-		jmp  ai_move_steps_closer_MoveRet;
-
-badDistance:
-		jmp  ai_move_steps_closer_ErrorRet;
-	}
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // Исправляет редкую ситуацию для NPC, когда атакующий NPC (безоружный или вооруженный ближнем оружием)
@@ -993,120 +963,233 @@ forceAttack:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-std::vector<fo::GameObject*> moveBlockObjs;
-static long recursiveDepth;
+static fo::GameObject* MoveCritter(fo::GameObject* source, fo::GameObject* critter, long tile) {
+	long dist = fo::func::obj_dist(source, critter);
+	if (dist == 1) tile = source->tile; // направление к source
+	long dir = fo::func::tile_dir(critter->tile, tile); // направление к гексу
 
-static void ClearWalkThru() {
-	for (fo::GameObject* obj : moveBlockObjs) obj->flags ^= fo::ObjectFlag::WalkThru;
-	moveBlockObjs.clear();
-}
+	long moveTile = AIHelpersExt::GetFreeTile(critter, critter->tile, 1, dir);
+	if (moveTile == -1)	return critter;
 
-static fo::GameObject* AIClearMovePath(fo::GameObject* source, fo::GameObject* target) {
-	fo::var::moveBlockObj = 0; // всегда содержит криттер или null
+	if (AIHelpersExt::CombatMoveToTile(critter, moveTile, 1)) return critter; // error
+	if (critter->critter.getAP()) critter->critter.movePoints--;
 
-	__asm call fo::funcoffs::gmouse_bk_process_;
-
-	// check the path is clear
-	if (game::Tilemap::make_path_func(source, source->tile, target->tile, 0, 0, AIHelpersExt::obj_ai_move_blocking_at_) > 0) {
-		DEV_PRINTF("\n[AI] ClearMovePath: free.");
-		// TODO: найти причину по которой путь строится для obj_ai_move_blocking_at_ но для obj_blocking_at_ это блокировано
-		if (game::Tilemap::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
-			return target;
-		}
-		if (++recursiveDepth > 5) return nullptr;
-
-		DEV_PRINTF("\n[AI] ClearMovePath: ClearWalkThru.");
-		ClearWalkThru();
-		//	BREAKPOINT;
-		return AIClearMovePath(source, target);
-	}
-	#ifndef NDEBUG
-	if (fo::var::moveBlockObj) {
-		fo::var::moveBlockObj->outline = 10 << 8; // grey
-		fo::BoundRect rect;
-		fo::func::obj_bound(fo::var::moveBlockObj, &rect);
-		rect.x--;
-		rect.y--;
-		rect.offx += 2;
-		rect.offy += 2;
-		fo::func::tile_refresh_rect(&rect, fo::var::map_elevation);
-	}
-	#endif
-	if (fo::var::moveBlockObj) {
-		fo::GameObject* blockCritter = fo::var::moveBlockObj;
-		DEV_PRINTF2("\n[AI] ClearMovePath: Blocked: %s ID: %d", fo::func::critter_name(blockCritter), blockCritter->id);
-
-		if (!(blockCritter->flags & fo::ObjectFlag::WalkThru)) {
-			blockCritter->flags |= fo::ObjectFlag::WalkThru; // устанавливаем флаг для obj_ai_move_blocking_at_
-			moveBlockObjs.push_back(blockCritter);
-		}
-
-		long len = game::Tilemap::make_path_func(blockCritter, blockCritter->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_);
-		if (len) { // путь свободен от блокирующего криттера до цели
-			if (blockCritter->critter.teamNum != source->critter.teamNum || blockCritter->critter.IsNotActive()) return blockCritter;
-
-			long dir;
-			long dist = fo::func::obj_dist(source, blockCritter);
-			if (dist == 1) {
-				dir = fo::func::tile_dir(blockCritter->tile, source->tile);
-			} else {
-				// проверить можно ли построить путь от source к блокирующему криттеру
-				uint8_t rotation[800];
-				len = game::Tilemap::make_path_func(source, source->tile, blockCritter->tile, rotation, 0, (void*)fo::funcoffs::obj_blocking_at_);
-				if (len == 0) {
-					DEV_PRINTF("\n[AI] ClearMovePath: don't make path from source to block critter.");
-					return nullptr; // нельзя!!!
-				}
-				if (len > source->critter.getMoveAP()) return blockCritter;
-
-				dir = rotation[len - 1] + 3;
-				if (dir > 5) dir -= 6; // направление движение к source
-			}
-
-			long moveTile = AIHelpersExt::GetFreeTile(blockCritter, blockCritter->tile, 1, dir);
-			if (moveTile == -1)	return blockCritter;
-
-			DEV_PRINTF1("\n[AI] Path Clear Object Move: %s", fo::func::critter_name(blockCritter));
-
-			if (AIHelpersExt::CombatMoveToTile(blockCritter, moveTile, 1)) return blockCritter; // error
-			if (blockCritter->critter.getAP()) blockCritter->critter.movePoints--;
-
-			blockCritter->flags ^= fo::ObjectFlag::WalkThru; // снимаем флаг прохода, чтобы проверить свободен ли путь
-		}
-		// recursively calling functions until the path is freed or completely blocked
-		return AIClearMovePath(source, target);
-	}
-	DEV_PRINTF("\n[AI] ClearMovePath: null.");
+	DEV_PRINTF1("\n[AI] Path is сlear: Critter move: %s", fo::func::critter_name(critter));
 	return nullptr;
 }
 
-static void __fastcall GetMoveObject(fo::GameObject* source, fo::GameObject* target, fo::GameObject* nearCritter, long isMouse3d) {
-	if (isMouse3d) target->flags &= ~fo::ObjectFlag::Mouse_3d;
+static fo::GameObject* ClearMovePathSub(fo::GameObject* source, fo::GameObject* target, long &outTile) {
+	uint16_t pathTiles[800]; // массив гексов
 
-	recursiveDepth = 0;
-	DEV_PRINTF2("\n[AI] TargetСritter: %s / NearСritter: %s", fo::func::critter_name(target), fo::func::critter_name(nearCritter));
-	fo::GameObject* blockObject = AIClearMovePath(source, target);
+	// построить путь до цели игнорируя гексы союзных криттеров
+	long pathLen = game::Tilemap::make_path_func(source, source->tile, target->tile, 1, pathTiles, 0, AIHelpersExt::obj_ai_move_blocking_at_);
+	if (pathLen > 0) {
+		// путь построен, ищем криттеров по гексам пути
+		long tile = source->tile;
 
-	DEV_PRINTF1("\n[AI] GetMoveObject: %s", (blockObject) ? fo::func::critter_name(blockObject) : "<None>");
+		long lastStep;
+		fo::GameObject* lastCritter = nullptr;
+		bool findBlock = false;
 
-	ClearWalkThru();
+		long moveAP = source->critter.getMoveAP();
+		if (pathLen > moveAP) pathLen = moveAP; // ограничиваем путь до текущего значения AP
 
-	fo::var::moveBlockObj = (blockObject && game::Tilemap::make_path_func(source, source->tile, blockObject->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0)
-	                      ? blockObject
-	                      : nearCritter;
+		long stepPath;
+		for (stepPath = 0; stepPath < pathLen; stepPath++)
+		{
+			tile = pathTiles[stepPath];
+			fo::GameObject* obj = fo::func::obj_blocking_at(source, tile, source->elevation);
+			if (obj) {
+				if (lastCritter) {
+					// проверить путь до текущего криттера
+					if (game::Tilemap::make_path_func(obj, obj->tile, target->tile, 0, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) {
+						// путь блокирован, передвинуть предыдущего криттера
+						if (MoveCritter(source, lastCritter, pathTiles[lastStep - 1])) return lastCritter;
+					}
+				}
+				lastCritter = obj; // запоминаем текущего криттера
 
-	DEV_PRINTF2("\n[AI] MoveToСritter: %s ID:%d\n", fo::func::critter_name(fo::var::moveBlockObj), fo::var::moveBlockObj->id);
+				#ifndef NDEBUG
+					obj->outline = 10 << 8; // grey
+					fo::BoundRect rect;
+					fo::func::obj_bound(obj, &rect);
+					rect.x--;
+					rect.y--;
+					rect.offx += 2;
+					rect.offy += 2;
+					fo::func::tile_refresh_rect(&rect, obj->elevation);
+				#endif
 
-	fo::func::register_begin(fo::RB_RESERVED);
+				// проверить свободен ли путь от него до цели
+				if (game::Tilemap::make_path_func(obj, obj->tile, target->tile, 0, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
+					// путь свободен, значит только этот критер блокирует путь
+					if (obj->critter.IsNotActive()) return obj; // криттер не активен, возвращаем его как блокирующего путь
+					findBlock = true;
+					break;
+				}
+				// путь не свободен, блокирует кто-то еще
+				// запомнить текущий шаг
+				lastStep = stepPath;
+			}
+		}
+
+		if (!findBlock && !lastCritter) {
+			// не найдено блокирующего криттера и нет lastCritter, просто передвигаемся до последней плитки
+			outTile = tile;
+			return nullptr;
+		}
+		return (findBlock) ? MoveCritter(source, lastCritter, pathTiles[stepPath - 1]) : lastCritter; // перейти к последнему криттеру в пути
+	}
+	return nullptr;
 }
 
-static void __declspec(naked) ai_move_steps_closer_hack() {
+static fo::GameObject* ClearMovePath(fo::GameObject* source, fo::GameObject* target, long &outTile) {
+	fo::GameObject* object = nullptr;
+	long count = 10;
+	do {
+		fo::GameObject* obj = ClearMovePathSub(source, target, outTile);
+		if (!obj || obj == object) return obj;
+		object = obj;
+		//__asm call fo::funcoffs::gmouse_bk_process_;
+	} while (--count);
+
+	return object;
+}
+
+// Доработанная и улушенная реализаия функции ai_move_steps_closer_ (с исправлениями)
+// Функции принимает дополнительные флаги для игнорирования stay/stat_close
+// flags:
+//  0x00000001 - печатает сообщение (vanilla)
+//	0x01000000 - игнорирует только stay_close
+//  0x02000000 - игнорирует stay и stay_close
+long __fastcall AIBehavior::AIMoveStepsCloser(long flags, fo::GameObject* target, fo::GameObject* source, long distance) {
+	if (distance <= 0) return -1;
+
+	// [ADD-EXT]
+	bool ignoreStay = false;
+	bool ignoreStayClose = false;
+	// check move flags
+	if (flags & 0x02000000) {
+		ignoreStayClose = true;
+		ignoreStay = true;
+	}
+	else if (flags & 0x01000000) {
+		ignoreStayClose = true;
+	}
+
+	if (fo::func::obj_dist(source, target) <= 1) return -1;
+
+	long prefDistance = fo::func::ai_cap(source)->distance;
+
+	if (!ignoreStay && prefDistance == fo::AIpref::distance::stay) {
+		return -1;
+	}
+
+	if (!ignoreStayClose && prefDistance == fo::AIpref::distance::stay_close) {
+		// Стоять на месте:
+		// если цель не игрок, и расстояние от игрока до source больше чем 5 гексов
+		// или если расстояние между целью и игроком более 5 гексов, и дистанция для передвижения привышает радиус в 5 гексов от игрока
+		if (target != fo::var::obj_dude) {
+			long scr_dude_dist = fo::func::obj_dist(source, fo::var::obj_dude);
+			if (scr_dude_dist > 5 || fo::func::obj_dist(target, fo::var::obj_dude) > 5 && distance + scr_dude_dist > 5) {
+				return -1;
+			}
+		}
+	}
+
+	fo::GameObject* sTarget = target;
+	long destinationTile = target->tile;
+
+	// unused code
+	//bool multiHexIsMouse3d = false;
+	//if (target->flags & fo::ObjectFlag::MultiHex) {
+	//	target->flags |= fo::ObjectFlag::Mouse_3d;
+	//	multiHexIsMouse3d = true;
+	//}
+
+	if (!fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_)) {
+		// [ADD-EXT] Реализация функции освобождения пути криттера блокирующего путь к цели
+		long gotoTile = -1;
+		fo::GameObject* object = ClearMovePath(source, target, gotoTile);
+		if (object) {
+			target = object;
+			destinationTile = object->tile;
+		}
+		else if (gotoTile != -1) {
+			destinationTile = gotoTile;
+		} else {
+			// не удалось построить путь, найти ближайщего криттера
+			fo::var::moveBlockObj = 0;
+			if (!fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_ai_blocking_at_)
+				&& fo::var::moveBlockObj && fo::var::moveBlockObj->IsCritter())
+			{
+				//if (multiHexIsMouse3d) target->flags ^= fo::ObjectFlag::Mouse_3d; // сбросить флаг
+
+				target = fo::var::moveBlockObj;
+				destinationTile = target->tile;
+
+				// [FIX] Fixes for NPC stuck in an animation loop in combat when trying to move close to a multihex critter
+				// this prevents moving to the multihex critter when the critters are close together
+				if (fo::func::obj_dist(source, target) <= 1) return -1;
+
+				//if (fo::var::moveBlockObj->flags & fo::ObjectFlag::MultiHex) {
+				//	fo::var::moveBlockObj->flags |= fo::ObjectFlag::Mouse_3d;
+				//	multiHexIsMouse3d = true;
+				//} else {
+				//	multiHexIsMouse3d = false;
+				//}
+				fo::func::debug_printf("\nai_move_steps_closer: can't move to target, move to near critter.");
+			}
+		}
+	}
+	//if (multiHexIsMouse3d) target->flags ^= fo::ObjectFlag::Mouse_3d; // сбросить флаг
+
+	bool run = false;
+	if (distance >= fo::func::stat_level(source, fo::Stat::STAT_max_move_points) / 2 && fo::func::artCritterFidShouldRun(source->artFid)) {
+		run = true;
+	}
+
+	if (target == sTarget) fo::func::cai_retargetTileFromFriendlyFire(source, target, &destinationTile); // переопределяет гекс
+
+	bool toTile = true;	// always move to tile
+	if (target->flags & fo::ObjectFlag::MultiHex || source->flags & fo::ObjectFlag::MultiHex) { // [FIX] Fixes multihex critters moving too close and overlapping their targets in combat
+		if (destinationTile == target->tile) toTile = false; // for move to object
+	}
+
+	fo::func::register_begin(fo::RB_RESERVED);
+	// check say flag
+	if (flags & 0x01) fo::func::combatai_msg(source, nullptr, 1, 0);
+
+	if (toTile) {
+		if (run) {
+			fo::func::register_object_run_to_tile(source, destinationTile, source->elevation, distance, 0);
+		} else {
+			fo::func::register_object_move_to_tile(source, destinationTile, source->elevation, distance, 0);
+		}
+	} else {
+		if (run) {
+			fo::func::register_object_run_to_object(source, target, distance, 0);
+		} else {
+			fo::func::register_object_move_to_object(source, target, distance, 0);
+		}
+	}
+	if (fo::func::register_end()) {
+		fo::func::debug_printf("\n[ERROR] ai_move_steps_closer: failed register animation!");
+		return -1;
+	}
+	__asm call fo::funcoffs::combat_turn_run_;
+
+	// [FIX] Fixes for critters killed in combat still being able to move in their combat turn
+	if (source->critter.IsNotActiveOrDead()) source->critter.movePoints = 0;
+
+	return 0;
+}
+
+static void __declspec(naked) ai_move_steps_closer_replacement() {
 	__asm {
-		push [esp + 0x1C - 0x10 + 4]; // multiHexIsMouse3d
-		push edx;      // block critter to move
-		mov  ecx, esi; // source
-		mov  edx, edi; // target
-		call GetMoveObject;
+		push ebx; // distance
+		push eax; // source
+		call AIBehavior::AIMoveStepsCloser;
 		retn;
 	}
 }
@@ -1144,9 +1227,8 @@ void AIBehavior::init(bool smartBehavior) {
 	LootingCorpses = (sf::IniReader::GetConfigInt("CombatAI", "LootingCorpses", 1) > 0);
 	AIInventory::init(LootingCorpses);
 
-	// Реализация функции освобождения пути криттера блокирующего путь к цели
-	sf::MakeCall(0x42A0D6, ai_move_steps_closer_hack, 5);
-	sf::SafeWrite16(0x42A0BF, 0x9090);
+	// Реализация функции ai_move_steps_closer_ для освобождения пути криттера блокирующего путь к цели
+	sf::MakeJump(fo::funcoffs::ai_move_steps_closer_, ai_move_steps_closer_replacement, 1); // 0x429FC8
 
 	//////////////////// Combat AI improved behavior //////////////////////////
 
@@ -1203,9 +1285,6 @@ void AIBehavior::init(bool smartBehavior) {
 
 		// Поблажка для AI: Don't pickup a weapon if its magazine is empty and there are no ammo for it
 		sf::HookCall(0x429CF2, ai_search_environ_hook_weapon);
-
-		// Исправление функции для отрицательного значения дистанции которое игнорирует условия дистанции stay/stay_closer
-		sf::HookCall(0x429FDB, ai_move_steps_closer_hook); // jle hook
 
 		// Fix distance in ai_find_friend_ function (only for sfall extended)
 		sf::SafeWrite8(0x428AF5, 0xC8); // cmp ecx, eax > cmp eax, ecx

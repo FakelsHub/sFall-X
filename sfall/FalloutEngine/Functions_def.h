@@ -37,6 +37,7 @@ WRAP_WATCOM_FFUNC3(void, check_for_death, fo::GameObject*, critter, long, amount
 WRAP_WATCOM_FFUNC4(long, combat_check_bad_shot, fo::GameObject*, source, fo::GameObject*, target, long, hitMode, long, isSecondary)
 WRAP_WATCOM_FFUNC5(bool, combat_is_shot_blocked, fo::GameObject*, source, DWORD, tileSource, DWORD, tileTarget, fo::GameObject*, target, long*, accumulator)
 WRAP_WATCOM_FFUNC6(long, combat_safety_invalidate_weapon_func, fo::GameObject*, source, fo::GameObject*, weapon, long, hitMode, fo::GameObject*, targetA, DWORD*, outSafeRange, fo::GameObject*, targetB)
+WRAP_WATCOM_FFUNC4(long, combatai_msg, fo::GameObject*, source, fo::ComputeAttackResult*, ctd, long, action, long, delay)
 WRAP_WATCOM_FFUNC3(void, correctFidForRemovedItem, fo::GameObject*, critter, fo::GameObject*, item, long, slotFlag)
 WRAP_WATCOM_FFUNC7(long, createWindow, const char*, winName, DWORD, x, DWORD, y, DWORD, width, DWORD, height, long, color, long, flags)
 WRAP_WATCOM_FFUNC4(long, determine_to_hit, fo::GameObject*, source, fo::GameObject*, target, long, bodyPart, long, hitMode)

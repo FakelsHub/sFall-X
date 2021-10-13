@@ -39,6 +39,7 @@ public:
 	};
 
 	static long __fastcall AICheckBeforeWeaponSwitch(fo::GameObject* target, long &hitMode, fo::GameObject* source, fo::GameObject* weapon);
+	static long __fastcall AIMoveStepsCloser(long flags, fo::GameObject* target, fo::GameObject* source, long distance);
 };
 
 constexpr int pickupCostAP = 3; // engine default cost

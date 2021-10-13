@@ -56,6 +56,8 @@ public:
 
 	static bool CanSeeObject(fo::GameObject* source, fo::GameObject* target);
 
+	static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source, long tile, long elev);
+	// wrapper
 	static void obj_ai_move_blocking_at_();
 };
 

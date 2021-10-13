@@ -6,12 +6,11 @@
 
 #include "..\..\FalloutEngine\Fallout2.h"
 #include "..\..\Utils.h"
-//#include "..\..\Modules\AI.h"
 
 #include "..\AI\AIHelpers.h"
-
 #include "..\items.h"
 
+#include "AI.Behavior.h"
 #include "AI.FuncHelpers.h"
 
 namespace game
@@ -68,13 +67,13 @@ long AIHelpersExt::CombatMoveToTile(fo::GameObject* source, long tile, long dist
 }
 
 long AIHelpersExt::ForceMoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
-	dist |= 0x02000000; // sfall force flag (stay and stay_close)
-	return fo::func::ai_move_steps_closer(source, target, ~dist, 0); // 0 - ok, -1 - don't move
+	// sfall force flag (stay and stay_close)
+	return AIBehavior::AIMoveStepsCloser(0x02000000, target, source, dist); // 0 - ok, -1 - don't move
 }
 
 long AIHelpersExt::MoveToTarget(fo::GameObject* source, fo::GameObject* target, long dist) {
-	dist |= 0x01000000; // sfall force flag (stay_close)
-	return fo::func::ai_move_steps_closer(source, target, ~dist, 0); // 0 - ok, -1 - don't move
+	// sfall force flag (stay_close)
+	return AIBehavior::AIMoveStepsCloser(0x01000000, target, source, dist); // 0 - ok, -1 - don't move
 }
 
 fo::GameObject* AIHelpersExt::AICheckWeaponSkill(fo::GameObject* source, fo::GameObject* hWeapon, fo::GameObject* sWeapon) {
@@ -286,7 +285,7 @@ bool AIHelpersExt::CanSeeObject(fo::GameObject* source, fo::GameObject* target) 
 //	return fo::func::can_see(source, target) && AIHelpers::CanSeeObject(source, target);
 //}
 
-static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source, long tile, long elev) {
+fo::GameObject* __fastcall AIHelpersExt::obj_ai_move_blocking_at(fo::GameObject* source, long tile, long elev) {
 	if (tile < 0 || tile >= 40000) return nullptr;
 
 	fo::ObjectTable* obj = fo::var::objectTable[tile];
@@ -297,8 +296,9 @@ static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source
 			long flags = object->flags;
 			// не установлены флаги Mouse_3d, NoBlock и WalkThru
 			if (!(flags & fo::ObjectFlag::Mouse_3d) && !(flags & fo::ObjectFlag::NoBlock) && !(flags & fo::ObjectFlag::WalkThru) && source != object) {
-				if (object->TypeFid() == fo::ObjType::OBJ_TYPE_CRITTER) fo::var::moveBlockObj = object;
-				return object;
+				if (object->TypeFid() != fo::ObjType::OBJ_TYPE_CRITTER || object->critter.teamNum != source->critter.teamNum) {
+					return object;
+				};
 			}
 		}
 		obj = obj->nextObject;
@@ -315,14 +315,16 @@ static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source
 					fo::GameObject* object = obj->object;
 					long flags = object->flags;
 					if (flags & fo::ObjectFlag::MultiHex && !(flags & fo::ObjectFlag::Mouse_3d) && !(flags & fo::ObjectFlag::NoBlock) && !(flags & fo::ObjectFlag::WalkThru) && source != object) {
-						if (object->TypeFid() == fo::ObjType::OBJ_TYPE_CRITTER) fo::var::moveBlockObj = object;
-						return object;
+						if (object->TypeFid() != fo::ObjType::OBJ_TYPE_CRITTER || object->critter.teamNum != source->critter.teamNum) {
+							return object;
+						};
 					}
 				}
 				obj = obj->nextObject;
 			}
 		}
 	} while (++direction < 6);
+
 	return nullptr;
 }
 
