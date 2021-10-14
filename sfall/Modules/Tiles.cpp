@@ -175,6 +175,15 @@ exit:
 	}
 	overrides[tile] = new OverrideEntry(xSize, ySize, listPos);
 
+	// Test
+	///sprintf(&buf[10], "z_%s", &tiles->names[13 * tile]);
+	///fo::func::db_fseek(artFile, 0, SEEK_SET);
+	///fo::func::db_freadByteCount(artFile, (BYTE*)&frame, 74);
+	///fo::DbFile* file = fo::func::db_fopen(buf, "wb");
+	///fo::func::db_fwriteByteCount(file, (BYTE*)&frame, 74);
+	///fo::func::db_fwriteByteCount(file, pixelData, bytes);
+	///fo::func::db_fclose(file);
+
 	fo::func::db_fclose(artFile);
 	delete[] pixelData;
 

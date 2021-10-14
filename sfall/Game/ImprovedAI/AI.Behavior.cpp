@@ -555,6 +555,7 @@ notRetrieve:
 	return hitMode;
 }
 
+#ifndef NDEBUG
 static void PrintShootResult(long result) {
 	const char* type;
 	switch (result) {
@@ -570,6 +571,9 @@ static void PrintShootResult(long result) {
 	}
 	fo::func::debug_printf("\n[AI] Try Attack: Check bad shot result: %s", type);
 }
+#else
+static void PrintShootResult(long result) {}
+#endif
 
 static bool weaponIsSwitched = false; // true - смена оружия уже была произведена
 
@@ -606,9 +610,8 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 
 	CombatShootResult result = AICombat::combat_check_bad_shot(source, target, hitMode, 0);
 
-	#ifndef NDEBUG
+	// for debug
 	PrintShootResult((long)result); // "Try Attack: Check bad shot result:"
-	#endif
 
 	switch (result)
 	{
@@ -1002,7 +1005,7 @@ static fo::GameObject* ClearMovePathSub(fo::GameObject* source, fo::GameObject* 
 			if (obj) {
 				if (lastCritter) {
 					// проверить путь до текущего криттера
-					if (game::Tilemap::make_path_func(obj, obj->tile, target->tile, 0, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) {
+					if (game::Tilemap::make_path_func(source, source->tile, obj->tile, 0, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) {
 						// путь блокирован, передвинуть предыдущего криттера
 						if (MoveCritter(source, lastCritter, pathTiles[lastStep - 1])) return lastCritter;
 					}
@@ -1109,6 +1112,7 @@ long __fastcall AIBehavior::AIMoveStepsCloser(long flags, fo::GameObject* target
 
 	if (!fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_)) {
 		// [ADD-EXT] Реализация функции освобождения пути криттера блокирующего путь к цели
+		if (fo::func::critter_body_type(source) != fo::BodyType::Biped) goto block;
 		long gotoTile = -1;
 		fo::GameObject* object = ClearMovePath(source, target, gotoTile);
 		if (object) {
@@ -1118,8 +1122,8 @@ long __fastcall AIBehavior::AIMoveStepsCloser(long flags, fo::GameObject* target
 		else if (gotoTile != -1) {
 			destinationTile = gotoTile;
 		} else {
-			// не удалось построить путь, найти ближайщего криттера
-			fo::var::moveBlockObj = 0;
+	block:	// не удалось построить путь, найти ближайщего криттера	
+			fo::var::moveBlockObj = nullptr;
 			if (!fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_ai_blocking_at_)
 				&& fo::var::moveBlockObj && fo::var::moveBlockObj->IsCritter())
 			{

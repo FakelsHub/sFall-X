@@ -298,6 +298,7 @@ void __cdecl buf_to_buf(BYTE* src, long width, long height, long src_width, BYTE
 		mov  esi, src;
 		mov  edi, dst;
 		mov  eax, height;
+
 	startLoop:
 		mov  ecx, blockCount;
 		test ecx, ecx;
@@ -325,6 +326,7 @@ void __cdecl buf_to_buf(BYTE* src, long width, long height, long src_width, BYTE
 		dec  eax;      // height
 		jnz  startLoop;
 		jmp  end;
+
 	copySmall: // copies the small size data
 		mov  ecx, sizeD;
 		rep  movsd;

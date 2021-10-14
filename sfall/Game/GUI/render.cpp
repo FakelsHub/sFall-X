@@ -43,6 +43,9 @@ static void Draw(fo::Window* win, BYTE* surface, long width, long height, long w
 }
 
 void __fastcall Render::GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE* toBuffer) {
+	///fo::func::GNW_win_refresh(win, (fo::BoundRect*)updateRect, (long*)toBuffer);
+	///return;
+
 	if (win->flags & fo::WinFlags::Hidden) return;
 	fo::RectList* rects;
 
@@ -138,7 +141,7 @@ void __fastcall Render::GNW_win_refresh(fo::Window* win, RECT* updateRect, BYTE*
 			}
 			surface = &win->surface[currRect->wRect.left - win->rect.x] + ((currRect->wRect.top - win->rect.y) * win->width);
 		} else {
-			surface = new BYTE[height * width](); // black background
+			surface = new BYTE[height * width](); // black background (for main menu)
 			widthFrom = width; // replace with rectangle
 		}
 
@@ -188,6 +191,11 @@ void Render::init() {
 	sf::MakeJump(0x4D6FD9, GNW_win_refresh_hack, 1);
 	// replace _screendump_buf to _screen_buffer for create screenshot
 	sf::SafeWriteBatch<DWORD>(FO_VAR_screen_buffer, { 0x4C8FD1, 0x4C900D });
+
+	// dev test
+	//sf::BlockCall(0x4CA506);
+	//sf::SafeWrite8(0x4CA50B, 0x90);
+	//sf::BlockCall(0x4D764C);
 }
 
 }
