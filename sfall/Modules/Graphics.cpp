@@ -24,6 +24,8 @@
 
 #include "SubModules\WindowRender.h"
 
+#include "..\HRP\Init.h"
+
 #include "Graphics.h"
 
 namespace sfall
@@ -115,7 +117,8 @@ static IDirect3DSurface9* backBuffer;
 
 static IDirect3DVertexBuffer9* vertexOrigRes;
 static IDirect3DVertexBuffer9* vertexSfallRes;
-static IDirect3DVertexBuffer9* vertexMovie;
+static IDirect3DVertexBuffer9* vertexMovie; // for AVI
+static IDirect3DVertexBuffer9* vertexStaticScreen; // splash/death/endslides
 
 static IDirect3DTexture9* paletteTex;
 static IDirect3DTexture9* gpuPalette;
@@ -1098,8 +1101,8 @@ HRESULT __stdcall InitFakeDirectDrawCreate(void*, IDirectDraw** b, void*) {
 	dlog("Initializing Direct3D...", DL_MAIN);
 
 	// original resolution or HRP
-	ResWidth = *(DWORD*)0x4CAD6B;  // 640
-	ResHeight = *(DWORD*)0x4CAD66; // 480
+	ResWidth  = HRP::ScreenWidth();  //*(DWORD*)0x4CAD6B; // 640
+	ResHeight = HRP::ScreenHeight(); //*(DWORD*)0x4CAD66; // 480
 
 	if (!d3d9) d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
 
