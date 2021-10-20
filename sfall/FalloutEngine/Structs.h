@@ -245,7 +245,7 @@ struct GameObject {
 				return movePoints;
 			}
 		} critter;
-		
+
 		struct {
 			fo::MiscFlags sceneryFlags; // unused for scenery? (aka updated_flags)
 			fo::MiscFlags doorFlags;    // used for doors states open/locked/jammed (aka cur_open_flags)
@@ -1171,6 +1171,32 @@ struct QuestData {
 	long gvarIndex;
 	long displayThreshold;
 	long completedThreshold;
+};
+
+struct BlendColorTableData {
+	struct BlendData {
+		unsigned char colors[256];
+	};
+	BlendData data[16]; // [0] - without blending (filled values from 0 to 255)
+};
+
+struct BlendColorTable {
+	long unk; // counter?
+	BlendColorTableData table;
+};
+
+static_assert(sizeof(BlendColorTable) == 0x1004, "Incorrect BlendColorTable definition.");
+
+struct FontData { // sizeof = 0x810
+	short field0;
+	short field2;
+	short field4;
+	short field6;
+	short field8;
+	short fieldA;
+	short fieldC;
+	char  eUnkArray[2046];
+	long  field80C;
 };
 
 #pragma pack(pop)

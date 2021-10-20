@@ -91,6 +91,10 @@ WRAP_WATCOM_FFUNC4(void, wmInterfaceDrawSubTileRectFogged, BYTE*, surface, long,
 
 WRAP_WATCOM_FFUNC3(const char*, interpretGetString, fo::Program*, scriptPtr, DWORD, dataType, DWORD, strId)
 
+//
+WRAP_WATCOM_FUNC1(fo::BlendColorTableData*, getColorBlendTable, long, color)
+WRAP_WATCOM_FUNC1(void, freeColorBlendTable, long, color)
+
 //WRAP_WATCOM_FFUNC6(void, drawScaledBuf, BYTE*, dst, int, dstW, int, dstH, const BYTE*, src, int, w, int, h)
 
 /* stdcall */

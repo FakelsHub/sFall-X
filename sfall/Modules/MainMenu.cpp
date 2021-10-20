@@ -56,7 +56,7 @@ static void __declspec(naked) MainMenuHookTextYOffset() {
 	}
 }
 
-static long __fastcall main_menu_create_hook_print_text(long xPos, const char* text, long yPos, long color) {
+static void __fastcall main_menu_create_hook_print_text(long xPos, const char* text, long yPos, long color) {
 	long winId = fo::var::main_window;
 	if (!hrpIsEnabled) { // todo: test w/o any HRP
 		fo::Window* win = fo::var::window[winId];
