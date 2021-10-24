@@ -43,7 +43,7 @@
     <Filter Include="HRP\interface">
       <UniqueIdentifier>{6ee1fa02-a414-401e-a367-dee92c2c810a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="HRP\mapview">
+    <Filter Include="HRP\viewmap">
       <UniqueIdentifier>{aad887b9-5fc2-4171-be31-39b4f1eaef13}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -417,6 +417,12 @@
     <ClInclude Include="HRP\Image.h">
       <Filter>HRP</Filter>
     </ClInclude>
+    <ClInclude Include="HRP\viewmap\EdgeBorder.h">
+      <Filter>HRP\viewmap</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\viewmap\ViewMap.h">
+      <Filter>HRP\viewmap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -758,6 +764,12 @@
     </ClCompile>
     <ClCompile Include="HRP\Image.cpp">
       <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\viewmap\EdgeBorder.cpp">
+      <Filter>HRP\viewmap</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\viewmap\ViewMap.cpp">
+      <Filter>HRP\viewmap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

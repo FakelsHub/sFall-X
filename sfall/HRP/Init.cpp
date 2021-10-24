@@ -8,6 +8,7 @@
 #include "..\main.h"
 #include "..\Modules\LoadOrder.h"
 
+#include "viewmap\ViewMap.h"
 #include "SplashScreen.h"
 #include "MainMenu.h"
 
@@ -62,6 +63,13 @@ void HRP::init() {
 	//END_SLIDE_SIZE
 	//HELP_SCRN_SIZE
 
+	std::string x = IniReader::GetString("MAPS", "SCROLL_DIST_X", "480", 16, f2ResIni);
+	std::string y = IniReader::GetString("MAPS", "SCROLL_DIST_Y", "400", 16, f2ResIni);
+	ViewMap::SCROLL_DIST_X = (x == "HALF_SCRN") ? (SCR_WIDTH / 2) + 32 : std::atol(x.c_str());
+	ViewMap::SCROLL_DIST_Y = (y == "HALF_SCRN") ? (SCR_HEIGHT / 2) + 24 : std::atol(y.c_str());
+
+
+
 	// add before sfall.dat and after critter.dat
 	LoadOrder::AddResourcePatches(
 		IniReader::GetString("Main", "f2_res_dat", "f2_res.dat", MAX_PATH, f2ResIni),
@@ -77,6 +85,7 @@ void HRP::init() {
 	// Inits
 	SplashScreen::init();
 	MainMenuScreen::init();
+	ViewMap::init();
 }
 
 }
