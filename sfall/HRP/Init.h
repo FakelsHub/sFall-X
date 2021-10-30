@@ -13,12 +13,15 @@ class HRP {
 public:
 	static void init();
 
+	static DWORD hrpDLLBaseAddr;
+	static bool CheckExternalPatch();
+
 	// Built-in high-resolution patch
 	static bool Enabled;
 
 	static long ScreenWidth();
 	static long ScreenHeight();
-
 };
+
 
 }

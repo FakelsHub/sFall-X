@@ -16,6 +16,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "..\version.h"
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\InputFuncs.h"
@@ -50,6 +51,7 @@ static DWORD ResHeight;
 
 DWORD Graphics::GPUBlt;
 DWORD Graphics::mode;
+bool Graphics::IsWindowMode;
 
 bool Graphics::PlayAviMovie = false;
 bool Graphics::AviMovieWidthFit = false;
@@ -96,7 +98,7 @@ static bool windowInit = false;
 static LONG windowLeft = 0;
 static LONG windowTop = 0;
 static HWND  window;
-static DWORD windowStyle = WS_CAPTION | WS_BORDER | WS_MINIMIZEBOX;
+static DWORD windowStyle = WS_VISIBLE | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
 
 static int windowData;
 
@@ -398,7 +400,7 @@ static void Present() {
 		r.right = windowLeft + gWidth;
 		r.top = windowTop;
 		r.bottom = windowTop + gHeight;
-		AdjustWindowRect(&r, WS_CAPTION | WS_BORDER, false);
+		AdjustWindowRect(&r, WS_CAPTION, false);
 
 		r.right -= (r.left - windowLeft);
 		r.left = windowLeft;
@@ -1068,6 +1070,7 @@ public:
 	HRESULT __stdcall RestoreDisplayMode() { return DD_OK; }
 
 	HRESULT __stdcall SetCooperativeLevel(HWND a, DWORD b) { // called 0x4CB005 GNW95_init_DirectDraw_
+		char captionTile[128];
 		window = a;
 
 		if (!d3d9Device) {
@@ -1077,7 +1080,14 @@ public:
 		dlog("Creating D3D9 Device window...", DL_MAIN);
 
 		if (Graphics::mode >= 5) {
-			SetWindowLong(a, GWL_STYLE, windowStyle);
+			if (ResWidth != gWidth || ResHeight != gHeight) {
+				std::sprintf(captionTile, "%s   @sfall-e v" VERSION_STRING "  %ix%i >> %ix%i", (const char*)0x50AF08, ResWidth, ResHeight, gWidth, gHeight);
+			} else {
+				std::sprintf(captionTile, "%s   @sfall-e v" VERSION_STRING, (const char*)0x50AF08);
+			}
+			SetWindowTextA(a, captionTile);
+
+			SetWindowLongA(a, GWL_STYLE, windowStyle);
 			RECT r;
 			r.left = 0;
 			r.right = gWidth;
@@ -1086,7 +1096,7 @@ public:
 			AdjustWindowRect(&r, windowStyle, false);
 			r.right -= r.left;
 			r.bottom -= r.top;
-			SetWindowPos(a, HWND_NOTOPMOST, windowLeft, windowTop, r.right, r.bottom, SWP_DRAWFRAME | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+			SetWindowPos(a, HWND_NOTOPMOST, windowLeft, windowTop, r.right, r.bottom, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 		}
 
 		dlogr(" Done", DL_MAIN);
@@ -1267,6 +1277,7 @@ void Graphics::init() {
 	} else if (Graphics::mode != 4 && Graphics::mode != 5) {
 		Graphics::mode = 0;
 	}
+	IsWindowMode = (mode == 5 || mode == 6);
 
 	if (Graphics::mode) {
 		dlog("Applying DX9 graphics patch.", DL_INIT);
