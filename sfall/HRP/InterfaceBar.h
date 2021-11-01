@@ -9,11 +9,10 @@
 namespace sfall
 {
 
-class WinProc {
+class IFaceBar {
 public:
 	static void init();
 
-	static void SetWindowProc();
 };
 
 }
