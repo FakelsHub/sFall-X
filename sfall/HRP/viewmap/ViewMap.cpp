@@ -8,12 +8,15 @@
 #include "..\..\main.h"
 #include "..\..\Modules\LoadGameHook.h"
 
+#include "..\Init.h"
 #include "EdgeBorder.h"
 
 #include "ViewMap.h"
 
 namespace sfall
 {
+
+static Rectangle obj_on_screen_rect;
 
 long ViewMap::SCROLL_DIST_X;
 long ViewMap::SCROLL_DIST_Y;
@@ -51,17 +54,17 @@ void ViewMap::GetTileCoordOffset(long tile, long &outX, long &outY) {
 	outX = 16 * x;
 }
 
-void ViewMap::GetMapWindowSize(long &outW, long &outH) {
+void ViewMap::GetWinMapHalfSize(long &outW, long &outH) {
 	long mapWinWidth = fo::var::getInt(FO_VAR_buf_width_2);
 	long mapWinHeight = fo::var::getInt(FO_VAR_buf_length_2);
 
-	long wHalf = mapWinWidth >> 1;   // 1280/2 = 640
-	mapWidthModSize = wHalf & 31;    // 640&31 = 0
-	outW = wHalf - mapWidthModSize;  // усекаем на 32 единицы
+	long wHalf = mapWinWidth >> 1;
+	mapWidthModSize = wHalf & 31;
+	outW = wHalf - mapWidthModSize;  // truncated by 32 units
 
-	long hHalf = mapWinHeight >> 1;  // 720/2 = 360
-	mapHeightModSize = hHalf % 24;   // 360%24=0
-	outH = hHalf - mapHeightModSize; // усекаем на 24 единицы
+	long hHalf = mapWinHeight >> 1;
+	mapHeightModSize = hHalf % 24;
+	outH = hHalf - mapHeightModSize; // reduce by the remainder
 }
 
 // Implementation from HRP by Mash
@@ -127,14 +130,14 @@ static long __fastcall tile_set_center(long tile, long modeFlags) {
 	}
 
 	// set square variables
-	fo::var::square_rect.x = tile_x / 2;
 	fo::var::square_rect.y = tile_y / 2;
+	fo::var::square_rect.x = tile_x / 2;
 	fo::var::square_rect.offx = tile_offx - 16;
 	fo::var::square_rect.offy = tile_offy - 2;
 
 	if (modeFlags & 1 && fo::var::getInt(FO_VAR_refresh_enabled)) {
 		fo::func::tile_refresh_display();
-		return -1; // почему так? (это исправляет баг отрисовки карты)
+		return -1; // почему так? (исправляет баг отрисовки карты)
 	}
 	return 0;
 }
@@ -165,6 +168,10 @@ void ViewMap::init() {
 
 	MakeJump(fo::funcoffs::tile_set_center_, tile_set_center_hack_replacement); // 0x4B12F8
 	MakeJump(fo::funcoffs::tile_scroll_to_, tile_scroll_to_hack_replacement);  // 0x4B3924
+
+	obj_on_screen_rect.width = HRP::ScreenWidth();
+	obj_on_screen_rect.height = HRP::ScreenHeight(); // возможно это должно учитывать интерфейс и быть: height - 100 ?
+	SafeWrite32(0x45C886, (DWORD)&obj_on_screen_rect); // op_obj_on_screen_ replace rectangle
 
 	EdgeBorder::init();
 
