@@ -427,6 +427,9 @@
     <ClInclude Include="HRP\InterfaceBar.h">
       <Filter>HRP\interface</Filter>
     </ClInclude>
+    <ClInclude Include="HRP\viewmap\EdgeClipping.h">
+      <Filter>HRP\viewmap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -778,6 +781,9 @@
     <ClCompile Include="WinProc.cpp" />
     <ClCompile Include="HRP\InterfaceBar.cpp">
       <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\viewmap\EdgeClipping.cpp">
+      <Filter>HRP\viewmap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
