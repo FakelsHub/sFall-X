@@ -230,14 +230,14 @@ long EdgeBorder::GetCenterTile(long tile, long mapLevel) {
 	Edge* edgeData = &MapEdgeData[mapLevel];
 	сurrentMapEdge = edgeData;
 
-	long mapWinW = fo::var::getInt(FO_VAR_buf_width_2);
-	long mapWinH = fo::var::getInt(FO_VAR_buf_length_2);
-
-	// заливка черным, зачем? (если это включить появляется черное мерцание)
-	//std::memset((void*)fo::var::getInt(FO_VAR_display_buf), 0, mapWinW * mapWinH); // можно использовать переменную _buf_size вместо умножения
-	//fo::func::win_draw(fo::var::getInt(FO_VAR_display_win));
+	// очищает неперересоаванные области при включеной опции EDGE_CLIPPING (возможно есть другой способ это сделать, а не каждый раз)
+	std::memset((void*)fo::var::getInt(FO_VAR_display_buf), 0, fo::var::getInt(FO_VAR_buf_size));
+	//fo::func::win_draw(fo::var::getInt(FO_VAR_display_win)); // for test
 
 	if (edgeData->nextEdgeData) {
+		long mapWinW = fo::var::getInt(FO_VAR_buf_width_2);
+		long mapWinH = fo::var::getInt(FO_VAR_buf_length_2);
+
 		long width = (mapWinW / 2) - 1; // -1 why?
 		long height = (mapWinH / 2) + 1;
 		Edge* edge = edgeData;

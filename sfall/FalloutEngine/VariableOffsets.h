@@ -32,6 +32,7 @@
 #define FO_VAR_buf_rect_2                 0x66BBD4
 #define FO_VAR_buf_length_2               0x66BE14
 #define FO_VAR_buf_width_2                0x66BE30
+#define FO_VAR_buf_size                   0x6610A0 
 #define FO_VAR_button_down_data           0x519500
 #define FO_VAR_button_up_data             0x5194FC
 #define FO_VAR_carCurrentArea             0x672E68
