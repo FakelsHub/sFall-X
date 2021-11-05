@@ -647,12 +647,14 @@ void Animations::init() {
 	MakeCall(0x419A17, art_alias_fid_hack);
 
 	// Prevents open containers from being closed when they are looted
-	// also fixes grave type containers to execute the use_p_proc script handler
 	HookCall(0x49CFAC, obj_use_container_hook);
 	MakeCall(0x4122FF, action_get_an_object_hack);
-	SafeWrite16(0x4122D9, 0x9090); // action_get_an_object_
 	HookCall(0x44C7B0, gmouse_handle_event_hook);
 	MakeCall(0x49CE8E, obj_use_container_hack);
+	// also fixes grave type containers to execute the use_p_proc script handler
+	if (IniReader::GetConfigInt("Misc", "GraveContainersFix", 0) > 0) {
+		SafeWrite16(0x4122D9, 0x9090); // action_get_an_object_
+	}
 }
 
 void Animations::exit() {

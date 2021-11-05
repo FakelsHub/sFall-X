@@ -63,18 +63,21 @@ void DamageMod::DamageGlovz(fo::ComputeAttackResult &ctd, DWORD &accumulatedDama
 	if (ammoX <= 0) ammoX = 1;
 
 	long ammoDRM = fo::func::item_w_dr_adjust(ctd.weapon);  // ammoDRM value
-	if (ammoDRM > 0) ammoDRM = -ammoDRM;
+	if (ammoDRM > 0) ammoDRM = -ammoDRM;                    // to negative
 
 	long calcDT = (armorDT > 0) ? DivRound(armorDT, ammoY) : armorDT;
 
-	long calcDR = armorDR + ammoDRM;                        // add the ammoDRM value to the armorDR value
-	if (difficulty > 100) {                                 // if the CD value is greater than 100
-		calcDR -= 20;                                       // subtract 20 from the armorDR value
-	} else if (difficulty < 100) {                          // if the CD value is less than 100
-		calcDR += 20;                                       // add 20 to the armorDR value
+	long calcDR = armorDR;
+	if (armorDR > 0) {
+		if (difficulty > 100) {                             // if the CD value is greater than 100
+			calcDR -= 20;                                   // subtract 20 from the armorDR value
+		} else if (difficulty < 100) {                      // if the CD value is less than 100
+			calcDR += 20;                                   // add 20 to the armorDR value
+		}
+		calcDR += ammoDRM;                                  // add the ammoDRM value to the armorDR value
+		calcDR = DivRound(calcDR, ammoX);                   // goto divTwo
+		if (calcDR >= 100) return;                          // if armorDR >= 100, skip damage calculation
 	}
-	calcDR = DivRound(calcDR, ammoX);                       // goto divTwo
-	if (calcDR >= 100) return;                              // if armorDR >= 100, skip damage calculation
 
 	// start of damage calculation loop
 	for (long i = 0; i < rounds; i++) {
