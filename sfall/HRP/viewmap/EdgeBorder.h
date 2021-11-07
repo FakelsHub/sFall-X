@@ -12,9 +12,9 @@ namespace sfall
 class EdgeBorder {
 public:
 	struct Edge {
-		POINT center; // x/y center of current map screen?
-		RECT borderRect;
-		RECT rect_2;
+		POINT center;    // x/y center of current map screen?
+		RECT borderRect; // right is less than left
+		RECT rect_2;     //
 		RECT tileRect;
 		RECT squareRect;
 		long field_48;      // unknown
@@ -36,7 +36,10 @@ public:
 	};
 
 	static void init();
+
 	static Edge* CurrentMapEdge();
+	static long EdgeBorder::EdgeVersion();
+
 	static long GetCenterTile(long tile, long mapLevel);
 	static long CheckBorder(long tile);
 };
