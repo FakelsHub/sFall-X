@@ -595,7 +595,7 @@ void ApplyAnimationsAtOncePatches(signed char aniMax) {
 }
 
 void Animations::init() {
-	animationLimit = GetConfigInt("Misc", "AnimationsAtOnceLimit", sfall::animationLimit);
+	animationLimit = IniReader::GetConfigInt("Misc", "AnimationsAtOnceLimit", sfall::animationLimit);
 	if (animationLimit < 32) animationLimit = 32;
 
 	if (animationLimit > 32) {
