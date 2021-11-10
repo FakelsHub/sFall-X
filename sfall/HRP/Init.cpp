@@ -107,6 +107,12 @@ void HRP::init() {
 	Dialog::DIALOG_SCRN_ART_FIX = (IniReader::GetInt("OTHER_SETTINGS", "DIALOG_SCRN_ART_FIX", 1, f2ResIni) != 0);
 	Dialog::DIALOG_SCRN_BACKGROUND = (IniReader::GetInt("OTHER_SETTINGS", "DIALOG_SCRN_BACKGROUND", 0, f2ResIni) != 0);
 
+	if (IniReader::GetInt("OTHER_SETTINGS", "BARTER_PC_INV_DROP_FIX", 1, f2ResIni)) {
+		// barter_move_from_table_inventory_
+		if (fo::var::getInt(0x47523D) == 80)  SafeWrite32(0x47523D, 100); // x_start
+		if (fo::var::getInt(0x475231) == 144) SafeWrite32(0x475231, 164); // x_end
+	}
+
 	// add before sfall.dat and after critter.dat
 	LoadOrder::AddResourcePatches(
 		IniReader::GetString("Main", "f2_res_dat", "f2_res.dat", MAX_PATH, f2ResIni),

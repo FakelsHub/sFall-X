@@ -6,6 +6,7 @@
 
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\main.h"
+#include "..\Modules\LoadGameHook.h"
 
 #include "init.h"
 #include "viewmap\ViewMap.h"
@@ -17,6 +18,8 @@ namespace sfall
 
 static const long width = 640; // art
 static long scr_width = 639;
+
+static fo::UnlistedFrm* altDialogArt;
 
 bool Dialog::DIALOG_SCRN_ART_FIX = true;
 bool Dialog::DIALOG_SCRN_BACKGROUND = false;
@@ -129,11 +132,11 @@ static void __cdecl gdDisplayFrame_hook_buf_to_buf(BYTE* src, long w, long h, lo
 	ViewMap::GetTileCoord(dialog_target->tile, x, y);
 
 	long xDist = 16 * (cx - x);
-	long yDist = 12 * (cy - y);
+	long yDist = 12 * (y - cy);
 
 	DWORD lockPtr;
 	auto frm = fo::func::art_ptr_lock(dialog_target->artFid, &lockPtr);
-	long yOffset = (fo::func::art_frame_length(frm, dialog_target->frm, dialog_target->rotation) / 2);
+	long yOffset = fo::func::art_frame_length(frm, dialog_target->frm, dialog_target->rotation) / 2;
 	fo::func::art_ptr_unlock(lockPtr);
 
 	long mapWinH = fo::var::getInt(FO_VAR_buf_length_2) - h;
@@ -151,7 +154,29 @@ static void __cdecl gdDisplayFrame_hook_buf_to_buf(BYTE* src, long w, long h, lo
 	} else if (x > (mapWinW)) {
 		x = mapWinW;
 	}
-	return fo::func::buf_to_buf((BYTE*)fo::var::getInt(FO_VAR_display_buf) + x + (y * srcWidth), w, h, srcWidth, dst, width);
+	fo::func::buf_to_buf((BYTE*)fo::var::getInt(FO_VAR_display_buf) + x + (y * srcWidth), w, h, srcWidth, dst, width);
+}
+
+static bool loadAltDialogArt = false;
+
+static void __cdecl talk_to_refresh_background_window_hook_buf_to_buf(BYTE* src, long w, long h, long srcWidth, BYTE* dst, long dstWidth) {
+	if (!loadAltDialogArt) {
+		loadAltDialogArt = true;
+		altDialogArt = fo::util::LoadUnlistedFrm("HR_ALLTLK.frm", fo::ArtType::OBJ_TYPE_INTRFACE);
+	}
+	if (altDialogArt) {
+		src = altDialogArt->frames->indexBuff;
+		srcWidth = altDialogArt->frames->width;
+	}
+	fo::func::buf_to_buf(src, w, h, srcWidth, dst, dstWidth);
+}
+
+static void UnloadDialogArt() {
+	if (altDialogArt) {
+		delete altDialogArt;
+		altDialogArt = nullptr;
+	}
+	loadAltDialogArt = false;
 }
 
 void Dialog::init() {
@@ -183,7 +208,7 @@ void Dialog::init() {
 
 		0x474E35, 0x474E76,                     // barter_move_inventory_
 		0x4750FE, 0x475139,                     // barter_move_from_table_inventory_
-		0x4733DF, 0x47343A, // inven_action_cursor_
+		0x4733DF, 0x47343A,                     // inven_action_cursor_
 	});
 
 	HookCall(0x44718F, gdCreateHeadWindow_hook_win_add);
@@ -196,7 +221,7 @@ void Dialog::init() {
 	});
 
 	// gdCustomSelect_
-	long yoffset = (DIALOG_SCRN_BACKGROUND) ? 100 : 200;
+	long yoffset = (DIALOG_SCRN_BACKGROUND) ? 100 : 200; // shifted the window up so that the window with the selected parameters was visible
 	SafeWrite32(0x44A03E, HRP::ScreenHeight() - yoffset);
 	SafeWrite32(0x44A02A, HRP::ScreenWidth());
 
@@ -217,11 +242,29 @@ void Dialog::init() {
 		0x449661            // gdControl_ (custom disposition button)
 	});
 
-	if (DIALOG_SCRN_BACKGROUND) {
-		HookCall(0x4472D8, gdDestroyHeadWindow_hook_win_delete);
-	}
+	if (DIALOG_SCRN_BACKGROUND) HookCall(0x4472D8, gdDestroyHeadWindow_hook_win_delete);
 
-	//Dialog::DIALOG_SCRN_ART_FIX
+	if (DIALOG_SCRN_ART_FIX) {
+		HookCall(0x44AB79, talk_to_refresh_background_window_hook_buf_to_buf);
+
+		// gdCreateHeadWindow_
+		SafeWrite16(0x447255, 0xD269);
+		SafeWrite32(0x447257, 19); // y
+		SafeWrite8(0x44725B, 0x90);
+		SafeWrite16(0x44725C, 0x3EB);
+		// gdDisplayFrame_
+		SafeWrite8(0x44AF9D, 20);   //  15 to 20
+		SafeWrite32(0x44AFEB, 219); // 214 to 219
+		SafeWrite32(0x44AF47, 19);  //  14 to 19
+		SafeWrite32(0x44AF51, 219); // 214 to 219
+
+		for (size_t i = 0; i < 8; i++) {
+			fo::var::backgrndRects[i].y += 5;
+			fo::var::backgrndRects[i].offy += 5;
+		}
+
+		LoadGameHook::OnGameExit() += UnloadDialogArt;
+	}
 }
 
 }
