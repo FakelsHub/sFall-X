@@ -109,6 +109,14 @@ struct AnimationSad {
 
 static_assert(sizeof(AnimationSad) == 3240, "Incorrect AnimationSad definition.");
 
+struct InventScrData {
+	long artIndex;
+	long width;
+	long height;
+	long x;
+	long y;
+};
+
 struct SquareRect {
 	long y;
 	long x;

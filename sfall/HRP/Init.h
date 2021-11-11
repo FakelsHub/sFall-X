@@ -23,5 +23,4 @@ public:
 	static long ScreenHeight();
 };
 
-
 }
