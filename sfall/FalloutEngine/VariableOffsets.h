@@ -76,6 +76,7 @@
 #define FO_VAR_dialogueWindow             0x518744
 #define FO_VAR_disp_curr                  0x56FB48
 #define FO_VAR_disp_init                  0x51850C
+#define FO_VAR_disp_rect                  0x518510
 #define FO_VAR_disp_start                 0x56FB54
 #define FO_VAR_display_buf                0x631D50
 #define FO_VAR_display_string_buf         0x56DBFC
@@ -148,6 +149,7 @@
 #define FO_VAR_idle_func                  0x51E234
 #define FO_VAR_In_WorldMap                0x672E1C
 #define FO_VAR_info_line                  0x5707D0
+#define FO_VAR_intface_full_wid           0x56FB4C
 #define FO_VAR_interfaceWindow            0x519024
 #define FO_VAR_intfaceEnabled             0x518F10
 #define FO_VAR_intotal                    0x43E95C
