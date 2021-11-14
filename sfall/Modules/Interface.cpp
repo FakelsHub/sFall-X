@@ -27,6 +27,8 @@
 #include "LoadGameHook.h"
 #include "Worldmap.h"
 
+#include "..\HRP\InterfaceBar.h"
+
 #include "Interface.h"
 
 namespace sfall
@@ -121,10 +123,10 @@ skip:
 
 static void __declspec(naked) intface_init_hack() {
 	__asm {
-		add eax, 9276 - (54 / 2); // x offset
-		mov edx, 144 - 90;        // width
-		add [esp + 4], edx;
-		add [esp + 0x10 + 4], edx;
+		add  eax, 9276 - (54 / 2); // x offset
+		mov  edx, 144 - 90;        // width
+		add  [esp + 4], edx;
+		add  [esp + 0x10 + 4], edx;
 		retn;
 	}
 }
@@ -146,6 +148,8 @@ static void APBarRectPatch() {
 }
 
 static void ActionPointsBarPatch() {
+	IFaceBar::UseExpandAPBar = true;
+
 	dlog("Applying expanded action points bar patch.", DL_INIT);
 	if (hrpIsEnabled) {
 		// check valid data
@@ -159,10 +163,11 @@ static void ActionPointsBarPatch() {
 	} else {
 		APBarRectPatch();
 	}
-	SafeWrite32(0x45E343, (DWORD)&movePointBackground);
-	SafeWrite32(0x45EE3F, (DWORD)&movePointBackground);
-	SafeWriteBatch<BYTE>(16, {0x45EE55, 0x45EE7B, 0x45EE82, 0x45EE9C, 0x45EEA0});
-	SafeWriteBatch<DWORD>(9276 - (54 / 2), {0x45EE33, 0x45EEC8, 0x45EF16});
+	// intface_init_
+	SafeWriteBatch<DWORD>((DWORD)&movePointBackground, { 0x45E343, 0x45EE3F });
+	// intface_update_move_points_
+	SafeWriteBatch<BYTE>(16, { 0x45EE55, 0x45EE7B, 0x45EE82, 0x45EE9C, 0x45EEA0 });
+	SafeWriteBatch<DWORD>(9276 - (54 / 2), { 0x45EE33, 0x45EEC8, 0x45EF16 });
 
 	HookCall(0x45D918, intface_init_hook_lock);
 	MakeCall(0x45E356, intface_init_hack);
@@ -804,7 +809,7 @@ static void WorldMapInterfacePatch() {
 		HookCall(0x4C2343, wmInterfaceInit_text_font_hook);
 		dlogr(" Done", DL_INIT);
 	}
-	
+
 	// Adds missing sounds for the buttons of the world map interface (wmInterfaceInit_)
 	HookCalls(wmInterfaceInit_hook, {
 		0x4C2BF4, // location labels
