@@ -9,7 +9,6 @@
 #include "..\..\main.h"
 #include "..\..\Modules\Console.h"
 
-#include "..\..\HRP\Init.h"
 #include "..\..\HRP\InterfaceBar.h"
 
 #include "Text.h"
@@ -60,14 +59,14 @@ static void __fastcall DisplayPrint(const char* message, bool lineBreak) {
 
 	const long max_lines = 100; // aka FO_VAR_max
 	long max_disp_chars = 256;  // HRP value (vanilla 80)
-	char* display_string_buf_addr = sfall::IFaceBar::display_string_buf; // array size: 100x80 (or 100x256 for sfall HRP)
+	char* display_string_buf_addr = HRP::IFaceBar::display_string_buf; // array size: 100x80 (or 100x256 for sfall HRP)
 
-	long width = (sfall::hrpIsEnabled) ? sfall::GetIntHRPValue(HRP_VAR_disp_width) : sfall::IFaceBar::display_width;
+	long width = (HRP::Setting::ExternalEnabled()) ? sfall::GetIntHRPValue(HRP_VAR_disp_width) : HRP::IFaceBar::display_width;
 	if (width == 0) {
 		width = 167; // vanilla size
 		max_disp_chars = 80;
-	} else if (sfall::hrpIsEnabled) {
-		display_string_buf_addr = (char*)sfall::HRPAddress(HRP_VAR_display_string_buf); // array size 100x256, allocated by Mash HRP
+	} else if (HRP::Setting::ExternalEnabled()) {
+		display_string_buf_addr = (char*)HRP::Setting::GetAddress(HRP_VAR_display_string_buf); // array size 100x256, allocated by Mash HRP
 	}
 
 	if (!(fo::var::combat_state & fo::CombatStateFlag::InCombat)) {
@@ -113,7 +112,7 @@ static void __fastcall DisplayPrint(const char* message, bool lineBreak) {
 	fo::var::setInt(FO_VAR_disp_curr) = fo::var::getInt(FO_VAR_disp_start);
 
 	fo::func::text_font(font);
-    __asm call fo::funcoffs::display_redraw_;
+	__asm call fo::funcoffs::display_redraw_;
 }
 
 static void __declspec(naked) display_print_hack_replacemet() {
@@ -189,10 +188,10 @@ static void __declspec(naked) display_print_line_break_extHRP() {
 void Text::init() {
 	auto printFunc = display_print_line_break; // for vanilla and HRP 4.1.8
 
-	if (sfall::HRP::Enabled) {
+	if (HRP::Setting::IsEnabled()) {
 		sfall::MakeJump(fo::funcoffs::display_print_, display_print_hack_replacemet); // 0x43186C
 	} else {
-		if (sfall::hrpIsEnabled && !sfall::hrpVersionValid) {
+		if (HRP::Setting::ExternalEnabled() && !HRP::Setting::VersionIsValid) {
 			printFunc = display_print_line_break_extHRP;
 		}
 	}

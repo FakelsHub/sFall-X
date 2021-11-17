@@ -93,13 +93,6 @@ namespace sfall
 
 bool isDebug = false;
 
-bool hrpIsEnabled = false;
-bool hrpVersionValid = false; // HRP 4.1.8 version validation
-
-DWORD HRPAddress(DWORD addr) {
-	return (HRP::hrpDLLBaseAddr + (addr & 0xFFFFF));
-}
-
 char falloutConfigName[65];
 
 static void InitModules() {
@@ -210,7 +203,7 @@ static void SfallInit() {
 
 	char filepath[MAX_PATH];
 	GetModuleFileName(0, filepath, MAX_PATH);
-	
+
 	SetCursor(LoadCursorA(0, IDC_ARROW));
 	ShowCursor(1);
 
@@ -219,10 +212,9 @@ static void SfallInit() {
 	LoggingInit();
 	if (!ddraw.dll) dlog("Error: Cannot load the original ddraw.dll library.\n");
 
-	hrpIsEnabled = HRP::CheckExternalPatch();
-	if (!hrpIsEnabled) 
+	if (!HRP::Setting::CheckExternalPatch()) {
 		WinProc::init();
-	else {
+	} else {
 		ShowCursor(0);
 	}
 
@@ -296,7 +288,7 @@ defaultIni:
 	}
 
 	Translate::init(falloutConfigName);
-	HRP::init();
+	HRP::Setting::init();
 
 	InitReplacementHack();
 	InitModules();

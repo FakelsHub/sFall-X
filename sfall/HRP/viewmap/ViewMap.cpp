@@ -14,14 +14,14 @@
 
 #include "ViewMap.h"
 
-namespace sfall
+namespace HRP
 {
 
 const long grid_width = 200; // _grid_width
 const long square_width = 100;
 const long square_length = 100;
 
-static Rectangle obj_on_screen_rect;
+static sfall::Rectangle obj_on_screen_rect;
 
 long ViewMap::SCROLL_DIST_X;
 long ViewMap::SCROLL_DIST_Y;
@@ -335,32 +335,34 @@ capMin:
 }
 
 void ViewMap::init() {
+	namespace sf = sfall;
+
 	if (SCROLL_DIST_X <= 0)	SCROLL_DIST_X = 480;
 	else if (SCROLL_DIST_X < 320) SCROLL_DIST_X = 320;
 
 	if (SCROLL_DIST_Y <= 0) SCROLL_DIST_Y = 400;
 	else if (SCROLL_DIST_Y < 240) SCROLL_DIST_Y = 240;
 
-	MakeJump(fo::funcoffs::tile_set_center_, tile_set_center_hack_replacement); // 0x4B12F8
-	MakeJump(fo::funcoffs::tile_scroll_to_, tile_scroll_to_hack_replacement);  // 0x4B3924
+	sf::MakeJump(fo::funcoffs::tile_set_center_, tile_set_center_hack_replacement); // 0x4B12F8
+	sf::MakeJump(fo::funcoffs::tile_scroll_to_, tile_scroll_to_hack_replacement);  // 0x4B3924
 
-	HookCall(0x4B2AC0, square_render_floor_hook_art_id);
-	HookCall(0x4B2261, square_render_roof_hook_art_id);
-	HookCall(0x4B2BF7, square_roof_intersect_hook_art_id); // need test object_under_mouse_
-	MakeCall(0x489730, obj_render_pre_roof_hack_0, 1);
-	MakeCall(0x4897E3, obj_render_pre_roof_hack_1);
+	sf::HookCall(0x4B2AC0, square_render_floor_hook_art_id);
+	sf::HookCall(0x4B2261, square_render_roof_hook_art_id);
+	sf::HookCall(0x4B2BF7, square_roof_intersect_hook_art_id); // need test object_under_mouse_
+	sf::MakeCall(0x489730, obj_render_pre_roof_hack_0, 1);
+	sf::MakeCall(0x4897E3, obj_render_pre_roof_hack_1);
 
 	// Fix
-	MakeCall(0x489665, obj_render_pre_roof_hack); // найти баг
+	sf::MakeCall(0x489665, obj_render_pre_roof_hack); // найти баг
 
-	obj_on_screen_rect.width = HRP::ScreenWidth();
-	obj_on_screen_rect.height = HRP::ScreenHeight(); // возможно это должно учитывать интерфейс и быть: height - 100 ?
-	SafeWrite32(0x45C886, (DWORD)&obj_on_screen_rect); // op_obj_on_screen_ replace rectangle
+	obj_on_screen_rect.width = Setting::ScreenWidth();
+	obj_on_screen_rect.height = Setting::ScreenHeight(); // возможно это должно учитывать интерфейс и быть: height - 100 ?
+	sf::SafeWrite32(0x45C886, (DWORD)&obj_on_screen_rect); // op_obj_on_screen_ replace rectangle
 
 	EdgeBorder::init();
 	EdgeClipping::init();
 
-	LoadGameHook::OnAfterGameInit() += []() {
+	sf::LoadGameHook::OnAfterGameInit() += []() {
 		if (IGNORE_PLAYER_SCROLL_LIMITS) fo::var::setInt(FO_VAR_scroll_limiting_on) = 0;
 		if (IGNORE_MAP_EDGES) fo::var::setInt(FO_VAR_scroll_blocking_on) = 0;
 	};

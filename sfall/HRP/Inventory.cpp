@@ -11,7 +11,7 @@
 
 #include "Inventory.h"
 
-namespace sfall
+namespace HRP
 {
 
 static bool setPosition[3];
@@ -21,7 +21,7 @@ static long yPosition;
 static long __fastcall CreateWin(long height, long yPos, long xPos, long width, long mode, long color, long flags) {
 	if (!setPosition[mode]) {
 		setPosition[mode] = true;
-		long x = (HRP::ScreenWidth() - width) / 2;
+		long x = (Setting::ScreenWidth() - width) / 2;
 		long y = (fo::var::getInt(FO_VAR_buf_length_2) - height) / 2;
 		fo::var::iscr_data[mode].x = x;
 		fo::var::iscr_data[mode].y = y;
@@ -64,19 +64,21 @@ static void __declspec(naked) inventory_hook_mouse_click_in() {
 }
 
 void Inventory::init() {
-	// set timer window position to center screen
-	fo::var::iscr_data[5].x = (HRP::ScreenWidth() - fo::var::iscr_data[5].width) / 2;
-	fo::var::iscr_data[5].y = (HRP::ScreenHeight() - fo::var::iscr_data[5].height) / 2;
+	namespace sf = sfall;
 
-	HookCall(0x46ED0E, setup_inventory_hook_win_add);
-	HookCalls(inventory_hook_mouse_click_in, {
+	// set timer window position to center screen
+	fo::var::iscr_data[5].x = (Setting::ScreenWidth() - fo::var::iscr_data[5].width) / 2;
+	fo::var::iscr_data[5].y = (Setting::ScreenHeight() - fo::var::iscr_data[5].height) / 2;
+
+	sf::HookCall(0x46ED0E, setup_inventory_hook_win_add);
+	sf::HookCalls(inventory_hook_mouse_click_in, {
 		0x471145, 0x471270, 0x471301, 0x47138B, // inven_pickup_
 		0x474959, 0x474A23                      // move_inventory_
 	});
 
 	// setup_inventory_
-	SafeMemSet(0x46ED23, CodeType::Nop, 6);
-	SafeMemSet(0x46ED31, CodeType::Nop, 6);
+	sf::SafeMemSet(0x46ED23, sf::CodeType::Nop, 6);
+	sf::SafeMemSet(0x46ED31, sf::CodeType::Nop, 6);
 }
 
 }

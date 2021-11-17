@@ -6,10 +6,10 @@
 
 #pragma once
 
-namespace sfall
+namespace HRP
 {
 
-class Dialog {
+ class Dialog {
 public:
 	static void init();
 
