@@ -436,6 +436,15 @@
     <ClInclude Include="HRP\Inventory.h">
       <Filter>HRP\interface</Filter>
     </ClInclude>
+    <ClInclude Include="HRP\Character.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\LoadSave.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\MiscInterface.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -795,6 +804,15 @@
       <Filter>HRP\interface</Filter>
     </ClCompile>
     <ClCompile Include="HRP\Inventory.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\Character.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\LoadSave.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\MiscInterface.cpp">
       <Filter>HRP\interface</Filter>
     </ClCompile>
   </ItemGroup>
