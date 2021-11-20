@@ -19,7 +19,7 @@ namespace gui
 {
 
 // Returns the position of the newline character, or the position of the character within the specified width (implementation from HRP)
-static long GetPositionWidth(const char* text, long width) {
+static long GetPositionWidth(const char* text, long width, bool lineBreak) {
 	long gapWidth;
 	__asm {
 		call dword ptr ds:[FO_VAR_text_spacing];
@@ -33,7 +33,7 @@ static long GetPositionWidth(const char* text, long width) {
 	char c = text[position];
 	while (c)
 	{
-		if (c == '\\' && text[position + 1] == 'n') return position;
+		if (lineBreak && c == '\\' && text[position + 1] == 'n') return position;
 
 		if (c != ' ') wordCharCount++; else wordCharCount = 0;
 
@@ -87,7 +87,7 @@ static void __fastcall DisplayPrint(const char* message, bool lineBreak) {
 	do {
 		char* display_string_buf = &display_string_buf_addr[max_disp_chars * fo::var::getInt(FO_VAR_disp_start)];
 
-		long pos = GetPositionWidth(message, width);
+		long pos = GetPositionWidth(message, width, lineBreak);
 
 		if (bulletChar) {
 			*display_string_buf = bulletChar;

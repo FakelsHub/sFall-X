@@ -28,7 +28,7 @@ static void __cdecl game_splash_screen_hack_scr_blit(BYTE* srcPixels, long srcWi
 	// TODO: загрузка альтернативного 32-битного изображения формата BMP или текcтуры DirectX
 	// растянуть текстурой для DirectX
 
-	if (SplashScreen::SPLASH_SCRN_SIZE == 1) {
+	if (SplashScreen::SPLASH_SCRN_SIZE == 1 || srcWidth > w || srcHeight > h) {
 		x = Image::GetAspectSize(w, h, (float)srcWidth, (float)srcHeight);
 
 		BYTE* resizeBuff = new BYTE[w * h];
@@ -75,20 +75,7 @@ static void __cdecl game_splash_screen_hack_scr_blit(BYTE* srcPixels, long srcWi
 
 // Fixes colored border of screen when the 0-index of the palette contains the color of a non-black (zero) value
 static void __fastcall Clear(fo::PALETTE* palette) {
-	long minValue = (palette->B + palette->G + palette->R);
-	if (minValue == 0) return;
-
-	long index = 0;
-
-	// search index of the darkest color in the palette
-	for (size_t i = 1; i < 256; i++)
-	{
-		long rgbVal = palette[i].B + palette[i].G + palette[i].R;
-		if (rgbVal < minValue) {
-			minValue = rgbVal;
-			index = i;
-		}
-	}
+	long index = Image::GetDarkColor(palette);
 	if (index != 0) sfall::Graphics::BackgroundClearColor(index);
 }
 

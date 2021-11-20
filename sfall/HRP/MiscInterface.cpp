@@ -62,6 +62,12 @@ void MiscInterface::init() {
 		0x49A1B6, // ScreenSaver_
 	});
 	sfall::BlockCall(0x49A0FB); // ScreenSaver_
+
+	// PauseWindow_
+	sfall::SafeWrite32(0x49042A, Setting::ScreenHeight());
+	sfall::SafeWrite32(0x490436, Setting::ScreenWidth());
+	// ShadeScreen_
+	sfall::SafeWrite32(0x49075F, Setting::ScreenWidth());
 }
 
 }

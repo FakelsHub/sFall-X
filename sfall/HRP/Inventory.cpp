@@ -14,7 +14,7 @@
 namespace HRP
 {
 
-static bool setPosition[3];
+static bool setPosition[3]; // need clear on game reset?
 static long xPosition;
 static long yPosition;
 

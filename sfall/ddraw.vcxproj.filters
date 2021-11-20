@@ -408,9 +408,6 @@
     <ClInclude Include="HRP\Init.h">
       <Filter>HRP</Filter>
     </ClInclude>
-    <ClInclude Include="HRP\SplashScreen.h">
-      <Filter>HRP\interface</Filter>
-    </ClInclude>
     <ClInclude Include="HRP\MainMenu.h">
       <Filter>HRP\interface</Filter>
     </ClInclude>
@@ -444,6 +441,15 @@
     </ClInclude>
     <ClInclude Include="HRP\MiscInterface.h">
       <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\SplashScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\Worldmap.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\HelpScreen.h">
+      <Filter>HRP</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -778,9 +784,6 @@
     <ClCompile Include="HRP\Init.cpp">
       <Filter>HRP</Filter>
     </ClCompile>
-    <ClCompile Include="HRP\SplashScreen.cpp">
-      <Filter>HRP\interface</Filter>
-    </ClCompile>
     <ClCompile Include="HRP\MainMenu.cpp">
       <Filter>HRP\interface</Filter>
     </ClCompile>
@@ -814,6 +817,15 @@
     </ClCompile>
     <ClCompile Include="HRP\MiscInterface.cpp">
       <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\SplashScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\Worldmap.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\HelpScreen.cpp">
+      <Filter>HRP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

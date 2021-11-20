@@ -305,15 +305,15 @@ static const DWORD wmViewportEndBottom[] = {
 	0x4C44BE,                                                   // wmCursorIsVisible_
 };
 
-static void __declspec(naked) wmInterfaceInit_hack() {
-	static const DWORD wmInterfaceInit_Ret = 0x4C23A7;
-	__asm {
-		push eax;
-		mov  eax, 640 - WMAP_WIN_WIDTH;
-		mov  edx, 480 - WMAP_WIN_HEIGHT;
-		jmp  wmInterfaceInit_Ret;
-	}
-}
+//static void __declspec(naked) wmInterfaceInit_hack() {
+//	static const DWORD wmInterfaceInit_Ret = 0x4C23A7;
+//	__asm {
+//		push eax;
+//		mov  eax, 640 - WMAP_WIN_WIDTH;
+//		mov  edx, 480 - WMAP_WIN_HEIGHT;
+//		jmp  wmInterfaceInit_Ret;
+//	}
+//}
 
 static void __declspec(naked) wmInterfaceDrawSubTileList_hack() {
 	__asm {
@@ -432,7 +432,7 @@ static void WorldmapViewportPatch() {
 	SafeWriteBatch<DWORD>(135, {0x4C23BD, 0x4C2408}); // use unused worldmap.frm for new world map interface (wmInterfaceInit_)
 
 	// x/y axis offset of interface window
-	MakeJump(0x4C23A2, wmInterfaceInit_hack);
+	//MakeJump(0x4C23A2, wmInterfaceInit_hack);
 	// size of the created window/buffer
 	SafeWriteBatch<DWORD>(WMAP_WIN_WIDTH, wmWinWidth); // width
 	SafeWrite32(0x4C238B, WMAP_WIN_HEIGHT);            // height (wmInterfaceInit_)
@@ -842,7 +842,7 @@ static void WorldMapInterfacePatch() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (HRP::Setting::ExternalEnabled() && HRP::Setting::VersionIsValid) {
+	if (HRP::Setting::IsEnabled() || (/*HRP::Setting::ExternalEnabled() &&*/ HRP::Setting::VersionIsValid)) { // Why was this only available for 4.1.8?
 		if (worldmapInterface = IniReader::GetConfigInt("Interface", "ExpandWorldMap", 0)) {
 			LoadGameHook::OnAfterGameInit() += WorldmapViewportPatch; // Note: must be applied after WorldMapSlots patch
 		}
