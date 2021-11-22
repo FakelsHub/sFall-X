@@ -451,6 +451,12 @@
     <ClInclude Include="HRP\HelpScreen.h">
       <Filter>HRP</Filter>
     </ClInclude>
+    <ClInclude Include="HRP\DeathScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\SlidesScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -825,6 +831,12 @@
       <Filter>HRP\interface</Filter>
     </ClCompile>
     <ClCompile Include="HRP\HelpScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\DeathScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\SlidesScreen.cpp">
       <Filter>HRP</Filter>
     </ClCompile>
   </ItemGroup>

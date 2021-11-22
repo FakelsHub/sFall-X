@@ -74,6 +74,7 @@ static void __declspec(naked) wmWorldMap_hook_mouse_click_in() {
 		jmp  fo::funcoffs::mouse_click_in_;
 	}
 }
+
 void Worldmap::init() {
 	sfall::HookCall(0x4C23A7, wmInterfaceInit_hook_win_add);
 	sfall::HookCall(0x4C2E86, wmInterfaceInit_hook_win_delete);

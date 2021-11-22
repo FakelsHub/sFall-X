@@ -22,6 +22,8 @@
 #include "MiscInterface.h"
 #include "Worldmap.h"
 #include "HelpScreen.h"
+#include "DeathScreen.h"
+#include "SlidesScreen.h"
 
 #include "Init.h"
 
@@ -175,8 +177,8 @@ void Setting::init() {
 
 	SplashScreen::SPLASH_SCRN_SIZE = sf::IniReader::GetInt("STATIC_SCREENS", "SPLASH_SCRN_SIZE", 1, f2ResIni);
 	HelpScreen::HELP_SCRN_SIZE = sf::IniReader::GetInt("STATIC_SCREENS", "HELP_SCRN_SIZE", 0, f2ResIni);
-	//DEATH_SCRN_SIZE
-	//END_SLIDE_SIZE
+	DeathScreen::DEATH_SCRN_SIZE = sf::IniReader::GetInt("STATIC_SCREENS", "DEATH_SCRN_SIZE", 1, f2ResIni);
+	SlidesScreen::END_SLIDE_SIZE = sf::IniReader::GetInt("STATIC_SCREENS", "END_SLIDE_SIZE", 1, f2ResIni);
 
 	std::string x = sf::trim(sf::IniReader::GetString("MAPS", "SCROLL_DIST_X", "480", 16, f2ResIni));
 	std::string y = sf::trim(sf::IniReader::GetString("MAPS", "SCROLL_DIST_Y", "400", 16, f2ResIni));
@@ -242,6 +244,8 @@ void Setting::init() {
 	LoadSave::init();
 	MiscInterface::init();
 	HelpScreen::init();
+	DeathScreen::init();
+	SlidesScreen::init();
 }
 
 }

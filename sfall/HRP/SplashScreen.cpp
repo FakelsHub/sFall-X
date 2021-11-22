@@ -22,52 +22,44 @@ long SplashScreen::SPLASH_SCRN_SIZE;
 
 static void __cdecl game_splash_screen_hack_scr_blit(BYTE* srcPixels, long srcWidth, long srcHeight, long srcX, long srcY, long width, long height, long x, long y) {
 	RECT rect;
-	long w = sfall::Graphics::GetGameWidthRes();
-	long h = sfall::Graphics::GetGameHeightRes();
+	long w = Setting::ScreenWidth();
+	long h = Setting::ScreenHeight();
 
 	// TODO: загрузка альтернативного 32-битного изображения формата BMP или текcтуры DirectX
 	// растянуть текстурой для DirectX
 
-	if (SplashScreen::SPLASH_SCRN_SIZE == 1 || srcWidth > w || srcHeight > h) {
-		x = Image::GetAspectSize(w, h, (float)srcWidth, (float)srcHeight);
+	if (SplashScreen::SPLASH_SCRN_SIZE || srcWidth > w || srcHeight > h) {
+		if (SplashScreen::SPLASH_SCRN_SIZE == 1) {
+			x = Image::GetAspectSize(w, h, (float)srcWidth, (float)srcHeight);
+			if (x >= w) { // extract x/y image position
+				y = x / w;
+				x -= y * w;
+			}
 
+			rect.top = y;
+			rect.bottom = (y + h) - 1;
+			rect.left = x;
+			rect.right = (rect.left + w) - 1;
+		} else {
+			rect.top = 0;
+			rect.left = 0;
+			rect.right = w - 1;
+			rect.bottom = h - 1;
+		}
 		BYTE* resizeBuff = new BYTE[w * h];
 		Image::Scale(srcPixels, srcWidth, srcHeight, resizeBuff, w, h);
 
-		// extract x/y image position
-		if (x >= w) {
-			y = x / w;
-			x -= y * w;
-		}
-
-		rect.top = y;
-		rect.bottom = (y + h) - 1;
-		rect.left = x;
-		rect.right = (rect.left + w) - 1;
 		sfall::Graphics::UpdateDDSurface(resizeBuff, w, h, w, &rect);
 
 		delete[] resizeBuff;
 		return;
-	} else if (SplashScreen::SPLASH_SCRN_SIZE == 2) {
-		BYTE* resizeBuff = new BYTE[sfall::Graphics::GetGameWidthRes() * sfall::Graphics::GetGameHeightRes()];
-		Image::Scale(srcPixels, srcWidth, srcHeight, resizeBuff, sfall::Graphics::GetGameWidthRes(), sfall::Graphics::GetGameHeightRes());
-
-		rect.top = 0;
-		rect.left = 0;
-		rect.right =sfall:: Graphics::GetGameWidthRes() - 1;
-		rect.bottom = sfall::Graphics::GetGameHeightRes() - 1;
-		sfall::Graphics::UpdateDDSurface(resizeBuff, sfall::Graphics::GetGameWidthRes(), sfall::Graphics::GetGameHeightRes(), sfall::Graphics::GetGameWidthRes(), &rect);
-
-		delete[] resizeBuff;
-		return;
 	}
-
 	// original size to center screen
 
-	rect.left = (sfall::Graphics::GetGameWidthRes() / 2) - (srcWidth / 2) + x;
+	rect.left = ((Setting::ScreenWidth() - srcWidth) / 2) + x;
 	rect.right = (rect.left + srcWidth) - 1 ;
 
-	rect.top = (sfall::Graphics::GetGameHeightRes() / 2) - (srcHeight / 2) + y;
+	rect.top = ((Setting::ScreenHeight() - srcHeight) / 2) + y;
 	rect.bottom = (rect.top + srcHeight) - 1;
 
 	sfall::Graphics::UpdateDDSurface(srcPixels, srcWidth, srcHeight, srcWidth, &rect);
