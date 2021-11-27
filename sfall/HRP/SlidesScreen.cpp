@@ -104,7 +104,7 @@ static long __fastcall DarkRectangle(long tH, long tW, short totalLines) {
 			fo::util::TranslucentDarkFill((BYTE*)fo::var::getInt(FO_VAR_endgame_window_buffer), darkRect.x, darkRect.y, darkRect.width, darkRect.height, Setting::ScreenWidth());
 		} else if (panDesert) { // for correct the overlapping of text when the text is located below the image
 			panDesert = 2;
-			fo::util::FillRect((BYTE*)fo::var::getInt(FO_VAR_endgame_window_buffer), darkRect.x, darkRect.y, darkRect.width, darkRect.height, Setting::ScreenWidth(), color);
+			fo::util::FillRect((BYTE*)fo::var::getInt(FO_VAR_endgame_window_buffer), darkRect.x, darkRect.y, darkRect.width, darkRect.height, Setting::ScreenWidth(), (BYTE)color);
 		}
 	}
 	return x + ((y + (tH * textLine++)) * Setting::ScreenWidth()); // text print offset
