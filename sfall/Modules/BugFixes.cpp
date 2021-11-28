@@ -4007,6 +4007,9 @@ void BugFixes::init()
 
 	// Fix to prevent the main menu music from stopping when entering the load game interface
 	BlockCall(0x480B25);
+
+	// Fix of incorrect value of the limit number of floating messages
+	SafeWrite8(0x4B039F, 20); // text_object_create_ (was 19)
 }
 
 }
