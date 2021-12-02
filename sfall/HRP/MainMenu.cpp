@@ -37,7 +37,7 @@ static long mainmenuWidth = 640;
 static float scaleWidth, scaleHeight; // multiplier for shifting buttons/text
 static float scaleFactor = 1.0f;      // scale for buttons and text
 
-static long offsetX, offsetY;
+static long offsetX = 0, offsetY = 0;
 
 // draw image to mainmenu win
 static void __cdecl main_menu_create_hook_buf_to_buf(BYTE* src, long sw, long sh, long srcW, BYTE* dst, long dstW) {
@@ -115,7 +115,7 @@ static long __fastcall main_menu_create_hook_add_win(long h, long y, long color,
 			w = Setting::ScreenWidth();
 			h = Setting::ScreenHeight();
 
-			x = Image::GetAspectSize(w, h, (float)sw, (float)sh);
+			x = Image::GetAspectSize(sw, sh, 0, 0, w, h);
 
 			if (w > Setting::ScreenWidth()) w = Setting::ScreenWidth();
 			if (h > Setting::ScreenHeight()) h = Setting::ScreenHeight();

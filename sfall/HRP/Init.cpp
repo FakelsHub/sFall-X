@@ -82,7 +82,8 @@ static std::string GetBackupFileName(const char* runFileName, bool wait) {
 	std::string::size_type n = bakExeName.rfind('.');
 	if (n != std::string::npos) {
 		bakExeName.replace(n, 4, ".hrp");
-		while (remove(bakExeName.c_str()) != 0 && wait) Sleep(1000); // delete .hrp (if it exists)
+		char c = 10;
+		while (std::remove(bakExeName.c_str()) != 0 && wait && --c) Sleep(1000); // delete .hrp (if it exists)
 	}
 	return bakExeName;
 }
@@ -94,17 +95,23 @@ static bool DisableExtHRP(const char* runFileName, std::string &cmdline) {
 	std::rename(runFileName, bakExeName.c_str());  // renaming the process file to .hrp
 	CopyFileA(bakExeName.c_str(), runFileName, 0); // restore .exe (already unoccupied by a running process)
 
-	FILE* ft = fopen(runFileName,"r+b");
+	FILE* ft = std::fopen(runFileName,"r+b");
 	if (!ft) return false;
-	fseek(ft, 0xD4880, SEEK_SET); // 0x4E4480
+	std::fseek(ft, 0xD4880, SEEK_SET); // 0x4E4480
 
 	unsigned char restore[] = { 0xC7, 0x05, 0x88, 0x27, 0x6B, 0x00, 0x00, 0xE7, 0x4D, 0x00 };
-	fwrite(restore, 1, sizeof(restore), ft);
-	fclose(ft);
+	_fwrite_nolock(restore, 1, sizeof(restore), ft);
 
+	// 0x4FE1C0 - 0x4FE1E7
+	std::fseek(ft, 0xEE5C0, SEEK_SET);
+
+	int restore1[10] = { 0 };
+	_fwrite_nolock(restore1, 4, sizeof(restore1), ft);
+
+	fclose(ft);
 	cmdline.append(" -restart");
 
-	MessageBoxA(0, "High-Resolution patch has been successfully deactivated.", "sfall", MB_TASKMODAL | MB_ICONINFORMATION);
+	MessageBoxA(0, "High Resolution Patch has been successfully deactivated.", "sfall", MB_TASKMODAL | MB_ICONINFORMATION);
 
 	ShellExecuteA(0, 0, runFileName, cmdline.c_str(), 0, SW_SHOWDEFAULT); // restart game
 	return true;
@@ -172,7 +179,9 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 	//HookCall(0x482899, mem_copy);
 	//SafeWrite16(0x4B2EA8, 0x9090); // _show_grid
 
-	if (!Setting::ExternalEnabled() && sf::IniReader::GetIntDefaultConfig("Main", "HiResMode", 1) == 0) return; // vanilla game mode
+	bool resMode = sf::IniReader::GetIntDefaultConfig("Main", "HiResMode", 1) != 0;
+
+	if (!Setting::ExternalEnabled() && !resMode) return; // vanilla game mode
 
 	SCR_WIDTH  = sf::IniReader::GetInt("Main", "SCR_WIDTH", 640, f2ResIni);
 	SCR_HEIGHT = sf::IniReader::GetInt("Main", "SCR_HEIGHT", 480, f2ResIni);
@@ -183,18 +192,27 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 	if (cmdline.find(" -restart") != std::string::npos) {
 		GetBackupFileName(exeFileName, true); // delete after restart
 	}
+	if (resMode == false) return;
 
 	if (Setting::ExternalEnabled()) {
-		char infoMsg[256];
+		char infoMsg[512];
 		sfall::Translate::Get("sfall", "HiResInfo",
-			"Attention:\nThis version of sfall has its own integrated High-Resolution mode patch, compatible with the High-Resolution patch by Mash.\n\n"
-			"Now you can disable the external HRP to get new graphic improvements from sfall.\n"
-			"In order to continue using the High-Resolution Patch by Mash, disable the \"HiResMode\" option in the ddraw.ini file.\n\n"
-			"Do you want to disable High-Resolution patch by Mash?", infoMsg, 256);
+			"This version of sfall has its own integrated High Resolution mode patch, which is compatible with the High Resolution Patch by Mash.\n\n"
+			"If you want to continue using the High Resolution Patch by Mash without seeing this message, disable the 'HiResMode' option in the ddraw.ini file.\n"
+			"Or you can disable the external HRP to get new graphic improvements from sfall.\n\n"
+			"Do you want to disable the High Resolution Patch by Mash?", infoMsg, 512);
 
-		if (MessageBoxA(0, infoMsg, "sfall: Incompatibility of High-Resolution patches.", MB_TASKMODAL | MB_ICONWARNING | MB_YESNO) == IDYES) {
+		// replace \n for translated message
+		for (size_t i = 0; i < sizeof(infoMsg); i++) {
+			if (infoMsg[i] == '\0') break;
+			if (infoMsg[i] == '\\' && infoMsg[i + 1] == 'n') {
+				infoMsg[i] = ' ';
+				infoMsg[++i] = '\n';
+			}
+		}
+		if (MessageBoxA(0, infoMsg, "sfall: Conflict of High Resolution patches", MB_TASKMODAL | MB_ICONWARNING | MB_YESNO) == IDYES) {
 			if (!DisableExtHRP(exeFileName, cmdline)) {
-				MessageBoxA(0, "An error occurred while trying to deactivate the High-Resolution patch.", "sfall", MB_TASKMODAL | MB_ICONERROR);
+				MessageBoxA(0, "An error occurred while trying to deactivate the High Resolution Patch.", "sfall", MB_TASKMODAL | MB_ICONERROR);
 			} else {
 				ExitProcess(EXIT_SUCCESS); //std::exit(EXIT_SUCCESS);
 			}
@@ -203,7 +221,7 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 	}
 	enabled = true;
 
-	// Read High-Resolution config
+	// Read High Resolution config
 
 	// = IniReader::GetInt("Main", "WINDOWED", 0, f2ResIni);
 	// = IniReader::GetInt("Main", "WINDOWED_FULLSCREEN", 0, f2ResIni);
