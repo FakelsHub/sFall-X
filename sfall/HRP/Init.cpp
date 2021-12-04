@@ -8,9 +8,10 @@
 
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\main.h"
-#include "..\Utils.h"
-#include "..\Modules\LoadOrder.h"
 #include "..\Translate.h"
+#include "..\Utils.h"
+#include "..\Modules\Graphics.h"
+#include "..\Modules\LoadOrder.h"
 
 #include "viewmap\ViewMap.h"
 #include "SplashScreen.h"
@@ -42,6 +43,8 @@ static bool enabled;
 static bool SCALE_2X;
 static long SCR_WIDTH  = 640;
 static long SCR_HEIGHT = 480;
+
+static long GRAPHICS_MODE = 2;
 
 bool Setting::IsEnabled()    { return enabled; }
 long Setting::ScreenWidth()  { return SCR_WIDTH; }
@@ -108,7 +111,7 @@ static bool DisableExtHRP(const char* runFileName, std::string &cmdline) {
 	int restore1[10] = { 0 };
 	_fwrite_nolock(restore1, 4, sizeof(restore1), ft);
 
-	fclose(ft);
+	std::fclose(ft);
 	cmdline.append(" -restart");
 
 	MessageBoxA(0, "High Resolution Patch has been successfully deactivated.", "sfall", MB_TASKMODAL | MB_ICONINFORMATION);
@@ -204,7 +207,7 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 
 		// replace \n for translated message
 		for (size_t i = 0; i < sizeof(infoMsg); i++) {
-			if (infoMsg[i] == '\0') break;
+			if (infoMsg[i] == '\n' || infoMsg[i] == '\0') break;
 			if (infoMsg[i] == '\\' && infoMsg[i + 1] == 'n') {
 				infoMsg[i] = ' ';
 				infoMsg[++i] = '\n';
@@ -223,8 +226,6 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 
 	// Read High Resolution config
 
-	// = IniReader::GetInt("Main", "WINDOWED", 0, f2ResIni);
-	// = IniReader::GetInt("Main", "WINDOWED_FULLSCREEN", 0, f2ResIni);
 	/*
 	if (IniReader::GetInt("Main", "SCALE_2X", 0, f2ResIni)) {
 		SCR_WIDTH /= 2;
@@ -236,7 +237,14 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 		SCALE_2X = true;
 	};
 	*/
-	//gDirectDrawMode = IniReader::GetInt("Main", "GRAPHICS_MODE", 2, f2ResIni) == 1;
+
+	int windowed = (sf::IniReader::GetInt("Main", "WINDOWED", 0, f2ResIni) != 0) ? 1 : 0;
+	if (windowed && sf::IniReader::GetInt("Main", "WINDOWED_FULLSCREEN", 0, f2ResIni)) windowed += 1;
+
+	int gMode = sf::IniReader::GetInt("Main", "GRAPHICS_MODE", 2, f2ResIni);
+	if (gMode < 0 || gMode > 2) gMode = 2;
+	if (gMode <= 1) sf::Graphics::mode = 1 + windowed; // DD7: 1 or 2/3 (vanilla 16(24) bit)
+	if (gMode == 2) sf::Graphics::mode = 4 + windowed; // DX9: 4 or 5/6 (sfall)
 
 	MainMenuScreen::SCALE_BUTTONS_AND_TEXT_MENU = (sf::IniReader::GetInt("MAINMENU", "SCALE_BUTTONS_AND_TEXT_MENU", 0, f2ResIni) != 0);
 	MainMenuScreen::USE_HIRES_IMAGES = (sf::IniReader::GetInt("MAINMENU", "USE_HIRES_IMAGES", 1, f2ResIni) != 0);

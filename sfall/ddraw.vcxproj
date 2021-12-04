@@ -434,6 +434,7 @@
     <ClInclude Include="Modules\SpeedPatch.h" />
     <ClInclude Include="Modules\SubModules\CombatBlock.h" />
     <ClInclude Include="Modules\SubModules\CombatExt.h" />
+    <ClInclude Include="Modules\SubModules\DirectDraw.h" />
     <ClInclude Include="Modules\SubModules\EnginePerks.h" />
     <ClInclude Include="Modules\SubModules\ObjectName.h" />
     <ClInclude Include="Modules\SubModules\WindowRender.h" />
@@ -575,6 +576,7 @@
     <ClCompile Include="Modules\SpeedPatch.cpp" />
     <ClCompile Include="Modules\SubModules\CombatBlock.cpp" />
     <ClCompile Include="Modules\SubModules\CombatExt.cpp" />
+    <ClCompile Include="Modules\SubModules\DirectDraw.cpp" />
     <ClCompile Include="Modules\SubModules\EnginePerks.cpp" />
     <ClCompile Include="Modules\SubModules\ObjectName.cpp" />
     <ClCompile Include="Modules\SubModules\WindowRender.cpp" />
