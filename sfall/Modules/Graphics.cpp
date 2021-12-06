@@ -18,7 +18,6 @@
 
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
-//#include "..\InputFuncs.h"
 #include "..\WinProc.h"
 #include "LoadGameHook.h"
 #include "ScriptShaders.h"
@@ -56,7 +55,7 @@ static DWORD gHeight;
 
 DWORD Graphics::GPUBlt;
 DWORD Graphics::mode;
-bool Graphics::IsWindowMode;
+bool Graphics::IsWindowedMode;
 
 bool Graphics::PlayAviMovie = false;
 bool Graphics::AviMovieWidthFit = false;
@@ -70,10 +69,9 @@ static DDSURFACEDESC mveDesc;
 static D3DSURFACE_DESC movieDesc;
 
 static DirectDraw::PALCOLOR* palette;
+static bool paletteInit = false;
 
-static bool windowInit = false;
 static HWND window;
-
 static DWORD ShaderVersion;
 
 IDirect3D9* d3d9;
@@ -137,7 +135,7 @@ int __stdcall Graphics::GetShaderVersion() {
 }
 
 static void WindowInit() {
-	windowInit = true;
+	paletteInit = true;
 	rcpres[0] = 1.0f / (float)Graphics::GetGameWidthRes();
 	rcpres[1] = 1.0f / (float)Graphics::GetGameHeightRes();
 	ScriptShaders::LoadGlobalShader();
@@ -881,7 +879,7 @@ public:
 		0x4CB36B GNW95_SetPaletteEntries_
 	*/
 	HRESULT __stdcall SetEntries(DWORD a, DWORD b, DWORD c, LPPALETTEENTRY d) { // used to set palette for splash screen, fades, subtitles
-		if (!windowInit || (LONG)c <= 0) return DDERR_INVALIDPARAMS;
+		if (!paletteInit || (LONG)c <= 0) return DDERR_INVALIDPARAMS;
 		//palCounter++;
 
 		fo::PALETTE* destPal = (fo::PALETTE*)d;
@@ -1187,12 +1185,10 @@ void Graphics::init() {
 	int gMode = IniReader::GetConfigInt("Graphics", "Mode", 4);
 	if (gMode >= 4) Graphics::mode = gMode;
 
-	if (Graphics::mode == 6) {
-		//windowStyle = WS_OVERLAPPED;
-	} else if (Graphics::mode < 0 && Graphics::mode > 5) {
+	if (Graphics::mode < 0 && Graphics::mode > 6) {
 		Graphics::mode = 0;
 	}
-	//IsWindowMode = (mode == 2 || mode == 5 || mode == 6);
+	IsWindowedMode = (mode == 2 || mode == 3 || mode == 5 || mode == 6);
 
 	// DirectX9 mode
 	if (Graphics::mode >= 4) {
@@ -1232,7 +1228,7 @@ void Graphics::init() {
 		};
 	} else {
 DDInit:
-		if (HRP::Setting::IsEnabled()) DirectDraw::init(Graphics::mode);
+		if (HRP::Setting::IsEnabled()) DirectDraw::init();
 	}
 
 	if (HRP::Setting::IsEnabled()) HRP::MoviesScreen::SetDrawMode(Graphics::mode < 4);
