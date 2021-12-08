@@ -1165,19 +1165,20 @@ void __stdcall Graphics::ForceGraphicsRefresh(DWORD d) {
 }
 
 void Graphics::BackgroundClearColor(long indxColor) {
-	if (Graphics::mode >= 4) {
-		if (GPUBlt) {
-			D3DLOCKED_RECT buf;
-			mainTex->LockRect(0, &buf, 0, D3DLOCK_DISCARD);
-			std::memset(buf.pBits, indxColor, ResWidth * ResHeight);
-			mainTex->UnlockRect(0);
-		} else {
-			DDSURFACEDESC desc;
-			primarySurface->GetSurfaceDesc(&desc);
-			std::memset(desc.lpSurface, indxColor, ResWidth * ResHeight);
-		}
-	} else {
+	if (Graphics::mode < 4) {
+		DirectDraw::Clear(indxColor);
+		return;
+	}
 
+	if (GPUBlt) {
+		D3DLOCKED_RECT buf;
+		mainTex->LockRect(0, &buf, 0, D3DLOCK_DISCARD);
+		std::memset(buf.pBits, indxColor, ResWidth * ResHeight);
+		mainTex->UnlockRect(0);
+	} else {
+		DDSURFACEDESC desc;
+		primarySurface->GetSurfaceDesc(&desc);
+		std::memset(desc.lpSurface, indxColor, ResWidth * ResHeight);
 	}
 }
 
@@ -1238,7 +1239,11 @@ DDInit:
 
 void Graphics::exit() {
 	WinProc::SavePosition(Graphics::mode);
-	if (Graphics::mode >= 4) CoUninitialize();
+	if (Graphics::mode >= 4)
+		CoUninitialize();
+	else {
+		DirectDraw::exit();
+	}
 }
 
 }

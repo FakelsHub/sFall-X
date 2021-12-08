@@ -92,7 +92,7 @@ public:
 	{
 		long x = rect->left;
 		long y = rect->top;
-		if (Graphics::mode < 4) { // DirecrDraw
+		if (Graphics::mode < 4) { // DirectDraw
 			__asm {
 				xor  eax, eax;
 				push y;

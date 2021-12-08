@@ -4,10 +4,9 @@
  *
  */
 
-#include <ddraw.h>
-
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\main.h"
+#include "..\Modules\Graphics.h"
 
 #include "Image.h"
 
@@ -19,7 +18,6 @@ namespace HRP
 long MoviesScreen::MOVIE_SIZE;
 
 static RECT movieToSize;
-//static bool useDDraw = false;
 
 static void __fastcall SetMovieSize() {
 	long sWidth = Setting::ScreenWidth();
@@ -86,23 +84,29 @@ static void __cdecl movie_MVE_ShowFrame(IDirectDrawSurface* surface, int bW, int
 }
 
 // surface: _nf_mve_buf1
-static void __cdecl movieShowFrame(IDirectDrawSurface* surface, int bW, int bH, int x, int y, int w, int h) {
-	//if (fo::var::getInt(FO_VAR_GNWWin) == -1) return;
-
-	RECT movieSize;
-	movieSize.left = x;
-	movieSize.right = x + bW;
-	movieSize.top = y;
-	movieSize.bottom = y + bH;
+static void __cdecl movieShowFrame(IDirectDrawSurface7* surface, int bW, int bH, int x, int y, int w, int h) {
+	long toW = movieToSize.right - movieToSize.left;
+	long toH = movieToSize.bottom - movieToSize.top;
 
 	fo::var::setInt(FO_VAR_lastMovieX) = movieToSize.left;
 	fo::var::setInt(FO_VAR_lastMovieY) = movieToSize.top;
-	fo::var::setInt(FO_VAR_lastMovieW) = movieToSize.right - movieToSize.left;
-	fo::var::setInt(FO_VAR_lastMovieH) = movieToSize.bottom - movieToSize.top;
+	fo::var::setInt(FO_VAR_lastMovieW) = toW;
+	fo::var::setInt(FO_VAR_lastMovieH) = toH;
 	//FO_VAR_lastMovieBW = bW
 	//FO_VAR_lastMovieBH = bH
 
-	//surface->Blt(&movieToSize, surface, &movieSize, MoviesScreen::MOVIE_SIZE, 0);
+	fo::Window* win = fo::func::GNW_find(fo::var::getInt(FO_VAR_GNWWin));
+	if (!win) return;
+
+	DDSURFACEDESC2 desc;
+	desc.dwSize = sizeof(DDSURFACEDESC);
+	surface->Lock(0, &desc, DDLOCK_WAIT, 0);
+
+	BYTE* dst = win->surface + movieToSize.left + (movieToSize.top * win->width);
+	fo::func::cscale((BYTE*)desc.lpSurface, bW, bH, bW, dst, toW, toH, win->width);
+
+	surface->Unlock(0);
+	sfall::Graphics::UpdateDDSurface(dst, toW, toH, win->width, &movieToSize); // for sfall DD7
 }
 
 // Adjust Y position
@@ -119,7 +123,7 @@ static long __fastcall SubtitleAdjustPosition(long уTop, long yBottom) {
 	long spaceHeight = Setting::ScreenHeight() - y;
 	if (spaceHeight > fo::var::getInt(FO_VAR_subtitleH)) {
 		spaceHeight -= fo::var::getInt(FO_VAR_subtitleH);
-		y += spaceHeight / 2; // центрируем
+		y += spaceHeight / 2; // centering
 	}
 
 	long yMax = Setting::ScreenHeight() - fo::var::getInt(FO_VAR_subtitleH);
@@ -166,9 +170,8 @@ skip:
 	}
 }
 
-// Для DirectX9 используется прямой вывод в тектуру, для DirectDraw используется буферризированный метод (вывод в _GNWWin окно)
+// Direct output to texture is used for DirectX9. Buffered method output to GNWWin window is used for DirectDraw
 void MoviesScreen::SetDrawMode(bool mode) {
-	//useDDraw = mode;
 	// movieStart_ hack
 	if (mode) {
 		sfall::SafeWrite8(0x487781, sfall::CodeType::JumpShort); // force Buffered
@@ -187,7 +190,7 @@ void MoviesScreen::init() {
 	// gmovie_play_ set GNWWin window size
 	sf::SafeWrite32(0x44E7D4, Setting::ScreenHeight());
 	sf::SafeWrite32(0x44E7D9, Setting::ScreenWidth());
-	sf::SafeWrite8(0x44E7D2, fo::WinFlags::Exclusive | fo::WinFlags::MoveOnTop); // fix
+	sf::SafeWrite8(0x44E7D2, fo::WinFlags::Exclusive | fo::WinFlags::MoveOnTop); // fix (нужно скрыть все окна)
 	//sf::SafeWrite8(0x44E7DE, 55); // for debug
 
 	// movieStart_
@@ -206,9 +209,6 @@ void MoviesScreen::init() {
 	// preventing processing scrolling global map during playback
 	sf::MakeCall(0x44E6B2, gmovie_play_hack_begin);
 	sf::MakeCalls(gmovie_play_hack_end, { 0x44EAC9, 0x44EADD });
-
-	// Disable _MVE_lastBuffer copying function (ненужная опция для движка)
-	//sf::SafeWrite8(0x486F2E, sf::CodeType::Jump); // jz > jmp (cleanupMovie_)
 }
 
 }
