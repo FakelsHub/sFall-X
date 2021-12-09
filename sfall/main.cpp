@@ -225,10 +225,12 @@ static void SfallInit() {
 	if (!CRC(filepath)) return;
 
 	LoggingInit();
-	if (!ddraw.dll) dlog("Error: Cannot load the original ddraw.dll library.\n");
 
 	// enabling debugging features
 	isDebug = (IniReader::GetIntDefaultConfig("Debugging", "Enable", 0) != 0);
+
+	if (!ddraw.dll) dlog("Error: Cannot load the original ddraw.dll library.\n");
+
 	if (!isDebug || !IniReader::GetIntDefaultConfig("Debugging", "SkipCompatModeCheck", 0)) {
 		int is64bit;
 		typedef int (__stdcall *chk64bitproc)(HANDLE, int*);
