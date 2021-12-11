@@ -1225,7 +1225,12 @@ void Graphics::init() {
 	}
 	if (Graphics::mode == 5|| Graphics::mode == 2) WinProc::SetMoveKeys();
 
-	if (HRP::Setting::IsEnabled()) HRP::MoviesScreen::SetDrawMode(Graphics::mode < 4);
+	if (HRP::Setting::IsEnabled()) {
+		HRP::MoviesScreen::SetDrawMode(Graphics::mode < 4);
+
+		// Reassigning the function to avoid an unnecessary jump from the engine code
+		LoadGameHook::OnBeforeGameInit() += []() { WinProc::SetWindowProc(); };
+	}
 
 	WindowRender::init();
 }
