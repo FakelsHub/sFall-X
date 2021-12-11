@@ -16,8 +16,6 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma comment(lib, "psapi.lib")
-
 #include "FalloutEngine\Fallout2.h"
 #include "ModuleManager.h"
 #include "Modules\Module.h"
@@ -211,6 +209,10 @@ static void SfallInit() {
 	if (!CRC(filepath)) return;
 
 	LoggingInit();
+
+	// enabling debugging features
+	isDebug = (IniReader::GetIntDefaultConfig("Debugging", "Enable", 0) != 0);
+
 	if (!ddraw.dll) dlog("Error: Cannot load the original ddraw.dll library.\n");
 
 	if (!HRP::Setting::CheckExternalPatch()) {
@@ -219,8 +221,6 @@ static void SfallInit() {
 		ShowCursor(0);
 	}
 
-	// enabling debugging features
-	isDebug = (IniReader::GetIntDefaultConfig("Debugging", "Enable", 0) != 0);
 	if (!isDebug || !IniReader::GetIntDefaultConfig("Debugging", "SkipCompatModeCheck", 0)) {
 		int is64bit;
 		typedef int (__stdcall *chk64bitproc)(HANDLE, int*);

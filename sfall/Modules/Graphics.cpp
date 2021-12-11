@@ -1189,11 +1189,11 @@ void Graphics::init() {
 	if (Graphics::mode >= 4) {
 		dlog("Applying DX9 graphics patch.", DL_INIT);
 #define _DLL_NAME "d3dx9_43.dll"
-		HMODULE h = LoadLibraryEx(_DLL_NAME, 0, LOAD_LIBRARY_AS_DATAFILE);
+		HMODULE h = LoadLibraryExA(_DLL_NAME, 0, LOAD_LIBRARY_AS_DATAFILE);
 		if (!h) {
 			dlogr(" Failed", DL_INIT);
 			MessageBoxA(0, "You have selected DirectX graphics mode, but " _DLL_NAME " is missing.\n"
-						   "Switch back to DirectDraw mode, or install an up to date version of DirectX 9c.", 0, MB_TASKMODAL | MB_ICONERROR);
+						   "Switch back to DirectDraw (Mode=0), or install an up to date version of DirectX 9c.", 0, MB_TASKMODAL | MB_ICONERROR);
 #undef _DLL_NAME
 			ExitProcess(-1);
 			return;
