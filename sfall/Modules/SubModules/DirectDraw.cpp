@@ -149,8 +149,8 @@ public:
 		RECT primRect;
 		primRect.left = win->x;
 		primRect.top = win->y;
-		primRect.right = win->x + desc.dwWidth;
-		primRect.bottom = win->y + desc.dwHeight;
+		primRect.right = win->x + (desc.dwWidth << HRP::Setting::ScaleX2());
+		primRect.bottom = win->y + (desc.dwHeight << HRP::Setting::ScaleX2());
 
 		// Draw
 		while (ddPrimarySurface->Blt(&primRect, ddBackSurface, 0, DDBLT_WAIT, 0) == DDERR_SURFACELOST) ddPrimarySurface->Restore();
@@ -165,8 +165,9 @@ public:
 
 void SetWindow(HWND window) {
 	WinProc::SetHWND(window);
-	WinProc::SetSize(HRP::Setting::ScreenWidth(), HRP::Setting::ScreenHeight());
-	WinProc::SetTitle(HRP::Setting::ScreenWidth(), HRP::Setting::ScreenHeight());
+	WinProc::SetSize(HRP::Setting::ScreenWidth(), HRP::Setting::ScreenHeight(), HRP::Setting::ScaleX2());
+	WinProc::SetTitle(HRP::Setting::ScreenWidth() << HRP::Setting::ScaleX2(), HRP::Setting::ScreenHeight() << HRP::Setting::ScaleX2(), Graphics::mode);
+
 	if (Graphics::mode == 2) WinProc::LoadPosition();
 
 	if (Graphics::IsWindowedMode) {
@@ -200,7 +201,14 @@ static long __stdcall DirectDrawInit(DWORD, IDirectDraw7** _ddContext, DWORD) {
 	if (FAILED(hr)) return -1;
 
 	if (!Graphics::IsWindowedMode) {
-		hr = ddObject->ddContext->SetDisplayMode(HRP::Setting::ScreenWidth(), HRP::Setting::ScreenHeight(), HRP::Setting::ColorBits(), 0, 0);
+		long width = HRP::Setting::ScreenWidth();
+		long height = HRP::Setting::ScreenHeight();
+
+		if (HRP::Setting::ScaleX2()) {
+			width *= 2;
+			height *= 2;
+		}
+		hr = ddObject->ddContext->SetDisplayMode(width, height, HRP::Setting::ColorBits(), 0, 0);
 		if (FAILED(hr)) return -1;
 	}
 
@@ -273,7 +281,7 @@ static void __cdecl GNW95_ShowRect(BYTE* srcSurface, int sWidth, int sHeight, in
 		desc.dwSize = sizeof(DDSURFACEDESC);
 
 		while (true) {
-			// NOTE: Locking not the entire surface reduces performance
+			// NOTE: Not locking the entire surface reduces performance
 			HRESULT hr = ddObject->ddBackSurface->Lock(0, &desc, DDLOCK_WAIT | DDLOCK_WRITEONLY, 0);
 			if (!hr) break;
 			// 0x887601C2
@@ -300,10 +308,10 @@ static void __cdecl GNW95_ShowRect(BYTE* srcSurface, int sWidth, int sHeight, in
 
 		const POINT* win = WinProc::GetClientPos();
 		RECT primRect;
-		primRect.left = win->x + x;
-		primRect.top = win->y + y;
-		primRect.right = win->x + x + width;
-		primRect.bottom = win->y + y + height;
+		primRect.left = win->x + (x << HRP::Setting::ScaleX2());
+		primRect.top = win->y + (y << HRP::Setting::ScaleX2());
+		primRect.right = win->x + (backRect.right << HRP::Setting::ScaleX2());
+		primRect.bottom = win->y + (backRect.bottom << HRP::Setting::ScaleX2());
 
 		// Draw
 		while (ddObject->ddPrimarySurface->Blt(&primRect, ddObject->ddBackSurface, &backRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST) ddObject->ddPrimarySurface->Restore();

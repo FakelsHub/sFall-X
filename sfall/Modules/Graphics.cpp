@@ -1003,7 +1003,7 @@ public:
 	HRESULT __stdcall SetCooperativeLevel(HWND a, DWORD b) { // called 0x4CB005 GNW95_init_DirectDraw_
 		window = a;
 		WinProc::SetHWND(window);
-		WinProc::SetTitle(gWidth, gHeight);
+		WinProc::SetTitle(gWidth, gHeight, Graphics::mode);
 
 		if (Graphics::mode >= 5) {
 			long windowStyle = (Graphics::mode == 5) ? (WS_VISIBLE | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU) : WS_OVERLAPPED;
@@ -1070,10 +1070,8 @@ HRESULT __stdcall InitFakeDirectDrawCreate(void*, IDirectDraw** b, void*) {
 		Graphics::GPUBlt = 2; // Swap them around to keep compatibility with old ddraw.ini
 	else if (Graphics::GPUBlt == 2) Graphics::GPUBlt = 0; // Use CPU
 
-	if (Graphics::mode == 5) {
-		WinProc::SetSize(gWidth, gHeight);
-		WinProc::LoadPosition();
-	}
+	WinProc::SetSize(gWidth, gHeight, 0);
+	if (Graphics::mode == 5) WinProc::LoadPosition();
 
 	rcpres[0] = 1.0f / (float)gWidth;
 	rcpres[1] = 1.0f / (float)gHeight;
@@ -1180,7 +1178,7 @@ void Graphics::init() {
 	int gMode = IniReader::GetConfigInt("Graphics", "Mode", 4);
 	if (gMode >= 4) Graphics::mode = gMode;
 
-	if (Graphics::mode < 0 && Graphics::mode > 6) {
+	if (Graphics::mode < 0 || Graphics::mode > 6) {
 		Graphics::mode = 0;
 	}
 	IsWindowedMode = (mode == 2 || mode == 3 || mode == 5 || mode == 6);
