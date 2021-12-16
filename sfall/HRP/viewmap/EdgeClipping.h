@@ -14,6 +14,7 @@ class EdgeClipping {
 public:
 	static void init();
 
+	static long CheckMapClipping();
 };
 
 }

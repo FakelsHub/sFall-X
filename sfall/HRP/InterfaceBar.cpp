@@ -185,7 +185,7 @@ static void InterfaceArtScale(BYTE* scr, long w, long h, BYTE* dst, long dh) {
 	long sw = sxOffset - 30;
 
 	// scale the rest of the display area rectangle
-	fo::func::cscale(scr + 30, sw, h, w, dst + 30, dw, dh, IFaceBar::IFACE_BAR_WIDTH); // TODO: Заменить алгоритм масштабирования на более качественный
+	fo::func::cscale(scr + 30, sw, h, w, dst + 30, dw, dh, IFaceBar::IFACE_BAR_WIDTH); // TODO: Replace the scaling algorithm with a better one
 }
 
 static long __cdecl InterfaceArt(BYTE* scr, long w, long h, long srcWidth, BYTE* dst, long dstWidth) {
@@ -565,13 +565,13 @@ void IFaceBar::init() {
 	if (IFACE_BAR_MODE > 0) {
 		// Set view map height to game resolution
 		// replace subtract 99 to add 1
-		sf::SafeWrite8(0x481CDF, 1);
-		sf::SafeWrite8(0x481E2E, 1);
+		sf::SafeWrite8(0x481CDF, 1);  // iso_init_
+		sf::SafeWrite8(0x481E2E, 1);  // iso_init_
 		// replace subtract 99 to add 1
-		sf::SafeWrite8(0x481DC3, -1);
-		sf::SafeWrite8(0x4827A9, -1);
+		sf::SafeWrite8(0x481DC3, -1); // iso_init_
+		sf::SafeWrite8(0x4827A9, -1); // map_scroll_
 		// remove subtract 100
-		sf::SafeWrite8(0x48284F, 0);
+		sf::SafeWrite8(0x48284F, 0); // map_scroll_
 	}
 
 	sf::LoadGameHook::OnBeforeGameClose() += []() {

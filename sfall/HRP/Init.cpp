@@ -252,7 +252,7 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 		return;
 	}
 	enabled = true;
-	sf::dlog("Applying High Resolution Patch.", DL_MAIN);
+	sf::dlog("Applying built-in High Resolution Patch.", DL_MAIN);
 
 	// Read High Resolution config
 
@@ -273,9 +273,14 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 		if (COLOUR_BITS != 32 && COLOUR_BITS != 24 && COLOUR_BITS != 16) COLOUR_BITS = 32;
 	}
 
-	if (SCR_HEIGHT >= 960 && SCR_WIDTH >= 1280 && sf::IniReader::GetInt("Main", "SCALE_2X", 0, f2ResIni)) {
-		SCR_WIDTH /= 2;
-		SCR_HEIGHT /= 2;
+	if (sf::IniReader::GetInt("Main", "SCALE_2X", 0, f2ResIni)) {
+		if (SCR_HEIGHT < 960 && SCR_WIDTH < 1280) {
+			SCR_WIDTH = 640;
+			SCR_HEIGHT = 480;
+		} else {
+			SCR_WIDTH /= 2;
+			SCR_HEIGHT /= 2;
+		}
 		SCALE_2X = 1;
 	}
 

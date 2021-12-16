@@ -28,6 +28,7 @@
 #include "Worldmap.h"
 
 #include "..\HRP\InterfaceBar.h"
+#include "..\HRP\viewmap\EdgeClipping.h"
 
 #include "Interface.h"
 
@@ -938,6 +939,9 @@ static void SpeedInterfaceCounterAnimsPatch() {
 static bool IFACE_BAR_MODE = false;
 
 static long gmouse_handle_event_hook() {
+	// checking whether the player clicks on the clipping area of the map
+	if (!HRP::EdgeClipping::CheckMapClipping()) return 0; // block
+
 	long countWin = fo::var::num_windows;
 	long ifaceWin = fo::var::interfaceWindow;
 	fo::Window* win = nullptr;
@@ -951,7 +955,9 @@ static long gmouse_handle_event_hook() {
 			if (fo::func::mouse_click_in(rect->left, rect->top, rect->right, rect->bottom)) return 0; // 0 - block clicking in the window area
 		}
 	}
+
 	if (IFACE_BAR_MODE) return 1;
+
 	// if IFACE_BAR_MODE is not enabled, check the display_win window area
 	win = fo::func::GNW_find(fo::var::getInt(FO_VAR_display_win));
 	RECT *rect = &win->wRect;
@@ -1042,6 +1048,10 @@ static void UIAnimationSpeedPatch() {
 	SimplePatch<BYTE>(&addrs[4], 2, "Misc", "PipboyTimeAnimDelay", 50, 0, 127);
 }
 
+static void HackMouseEvent() {
+	HookCall(0x44C018, gmouse_handle_event_hook);
+}
+
 void Interface::init() {
 
 	InterfaceWindowPatch();
@@ -1063,10 +1073,15 @@ void Interface::init() {
 	// Transparent/Hidden - will not toggle the mouse cursor when the cursor hovers over a transparent/hidden window
 	// ScriptWindow - prevents the player from moving when clicking on the window if the 'Transparent' flag is not set
 	HookCall(0x44B737, gmouse_bk_process_hook);
-	LoadGameHook::OnBeforeGameInit() += []() {
-		if (HRP::Setting::VersionIsValid) IFACE_BAR_MODE = (GetIntHRPValue(HRP_VAR_IFACE_BAR_MODE) != 0);
-		HookCall(0x44C018, gmouse_handle_event_hook); // replaces hack function from HRP
-	};
+	if (HRP::Setting::IsEnabled()) {
+		IFACE_BAR_MODE = (HRP::IFaceBar::IFACE_BAR_MODE != 0);
+		HackMouseEvent();
+	} else {
+		LoadGameHook::OnBeforeGameInit() += []() {
+			if (HRP::Setting::VersionIsValid) IFACE_BAR_MODE = (GetIntHRPValue(HRP_VAR_IFACE_BAR_MODE) != 0);
+			HackMouseEvent(); // replaces hack function from HRP by Mash
+		};
+	}
 }
 
 void Interface::exit() {

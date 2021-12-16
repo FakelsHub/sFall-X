@@ -33,7 +33,7 @@
 #define FO_VAR_buf_rect_2                 0x66BBD4
 #define FO_VAR_buf_length_2               0x66BE14
 #define FO_VAR_buf_width_2                0x66BE30
-#define FO_VAR_buf_size                   0x6610A0 
+#define FO_VAR_buf_size                   0x6610A0
 #define FO_VAR_button_down_data           0x519500
 #define FO_VAR_button_up_data             0x5194FC
 #define FO_VAR_carCurrentArea             0x672E68
@@ -146,7 +146,7 @@
 #define FO_VAR_i_rhand                    0x59E968
 #define FO_VAR_i_wid                      0x59E964
 #define FO_VAR_i_wid_max_x                0x59E974
-#define FO_VAR_i_wid_max_y                0x59E970 
+#define FO_VAR_i_wid_max_y                0x59E970
 #define FO_VAR_i_worn                     0x59E954
 #define FO_VAR_idle_func                  0x51E234
 #define FO_VAR_In_WorldMap                0x672E1C
@@ -329,6 +329,7 @@
 #define FO_VAR_tile_center_tile           0x66BE34
 #define FO_VAR_tile_offx                  0x66BDFC
 #define FO_VAR_tile_offy                  0x66BDF8
+#define FO_VAR_tile_mask                  0x66B9C4
 #define FO_VAR_tile_x                     0x66BE18
 #define FO_VAR_tile_y                     0x66BE1C
 #define FO_VAR_title_color                0x56D750

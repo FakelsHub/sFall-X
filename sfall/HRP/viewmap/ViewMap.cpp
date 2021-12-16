@@ -76,9 +76,7 @@ void ViewMap::GetWinMapHalfSize(long &outW, long &outH) {
 static long __fastcall tile_set_center(long tile, long modeFlags) {
 	if (tile < 0 || tile >= 40000) return -1; // _grid_size:40000
 
-	long mapElevation = fo::var::map_elevation;
-
-	if (modeFlags) tile = EdgeBorder::GetCenterTile(tile, mapElevation); // получает центральную плитку в каких случаях?
+	if (modeFlags) tile = EdgeBorder::GetCenterTile(tile, fo::var::map_elevation); // получает центральную плитку в каких случаях?
 
 	if (!(modeFlags & 2) && fo::var::getInt(FO_VAR_scroll_limiting_on)) {
 		long x,	y;
@@ -142,7 +140,7 @@ static long __fastcall tile_set_center(long tile, long modeFlags) {
 
 	if (modeFlags & 1 && fo::var::getInt(FO_VAR_refresh_enabled)) {
 		fo::func::tile_refresh_display();
-		return -1; // почему так? (исправляет баг отрисовки карты)
+		return -1; // it is necessary for the correct rendering of the map
 	}
 	return 0;
 }
@@ -319,18 +317,111 @@ static void __declspec(naked) obj_render_pre_roof_hack_1() {
 static void __declspec(naked) obj_render_pre_roof_hack() {
 	__asm {
 		mov  ebx, [eax];
-		lea  eax, [edx + ebx];
-		cmp  eax, 40000; // _grid_size
-		jge  capMax;
-		cmp  eax, 0;
-		jl   capMin;
+		lea  eax, [edx + ebx]; // edx - tilenum
+		cmp  eax, 40000;       // _grid_size
+		jge  tileMax;
+		test eax, eax;
+		js   tileMin;
 		retn;
-capMax:
+tileMax:
 		mov  eax, 39999;
 		retn;
-capMin:
+tileMin:
 		xor  eax, eax;
 		retn;
+	}
+}
+
+static void __declspec(naked) obj_create_intersect_list_hack() {
+	__asm {
+		mov  ecx, [ebx + eax];
+		lea  eax, [edx + ecx]; // edx - tilenum
+		cmp  eax, 40000;       // _grid_size
+		jge  tileMax;
+		test eax, eax;
+		js   tileMin;
+		retn;
+tileMax:
+		mov  eax, 39999;
+		retn;
+tileMin:
+		xor  eax, eax;
+		retn;
+	}
+}
+
+// Implementation of the tile_num_ engine function without checking the grid boundary (from HRP 3.0.6 by Mash)
+static long __fastcall tile_num_HRP(long x, long y) {
+	long X, Y;
+
+	long yTileOff = y - fo::var::getInt(FO_VAR_tile_offy);
+	if (yTileOff >= 0) {
+		Y = yTileOff / 12;
+	} else {
+		Y = (yTileOff + 1) / 12 - 1;
+	}
+
+	long xTileOff = x - fo::var::getInt(FO_VAR_tile_offx) - 16 * Y;
+	if (xTileOff >= 0) {
+		X = xTileOff / 64;
+	} else {
+		//__asm {
+		//	mov eax, xTileOff;
+		//  inc eax;
+		//	mov edx, eax;
+		//	sar edx, 31; // always -1
+		//	shl edx, 6;  // always -64
+		//	sbb eax, edx;
+		//	sar eax, 6;
+		//  dec eax;
+		//	mov X, eax;
+		//}
+		X = ((xTileOff + 1) / 64) - 1;
+	}
+
+	long xOffset = xTileOff - (X * 64);
+	long yOffset = yTileOff - 12 * Y;
+	long tY = X + Y;
+	long tX = X * 2;
+
+	if (xOffset >= 32) {
+		xOffset -= 32;
+		tX++;
+	}
+
+	long xTile = fo::var::getInt(FO_VAR_tile_x) + tX;
+	long yTile = fo::var::getInt(FO_VAR_tile_y) + tY;
+
+	switch (fo::var::tile_mask[(32 * yOffset) + xOffset]) {
+	case 1:
+		yTile--;
+		break;
+	case 2:
+		if (++xTile & 1) yTile--;
+		break;
+	case 3:
+		if (!(--xTile & 1)) yTile++;
+		break;
+	case 4:
+		yTile++;
+		break;
+	}
+	return (grid_width * yTile) + (grid_width - 1 - xTile);
+}
+
+static void __declspec(naked) obj_render_pre_roof_hack_tile_num() {
+	__asm {
+		push ecx;
+		call tile_num_HRP;
+		pop  ecx;
+		retn;
+	}
+}
+
+static void __declspec(naked) obj_create_intersect_list_hack_tile_num() {
+	__asm {
+		mov  ecx, eax;
+		jmp  tile_num_HRP;
 	}
 }
 
@@ -352,11 +443,14 @@ void ViewMap::init() {
 	sf::MakeCall(0x489730, obj_render_pre_roof_hack_0, 1);
 	sf::MakeCall(0x4897E3, obj_render_pre_roof_hack_1);
 
-	// Fix
-	sf::MakeCall(0x489665, obj_render_pre_roof_hack); // найти баг
+	// Fixes from 3.06 (fixes crashes when going beyond the limits of the vanilla grid size of the map)
+	sf::MakeCall(0x489665, obj_render_pre_roof_hack);
+	sf::HookCall(0x4895B7, obj_render_pre_roof_hack_tile_num); // replaces the tile_num_ function
+	sf::MakeCall(0x48C66B, obj_create_intersect_list_hack, 1);
+	sf::HookCall(0x48C5F3, obj_create_intersect_list_hack_tile_num); // replaces the tile_num_ function
 
 	obj_on_screen_rect.width = Setting::ScreenWidth();
-	obj_on_screen_rect.height = Setting::ScreenHeight(); // возможно это должно учитывать интерфейс и быть: height - 100 ?
+	obj_on_screen_rect.height = Setting::ScreenHeight(); // (perhaps it should take into account the interface)
 	sf::SafeWrite32(0x45C886, (DWORD)&obj_on_screen_rect); // op_obj_on_screen_ replace rectangle
 
 	EdgeBorder::init();
@@ -366,7 +460,6 @@ void ViewMap::init() {
 		if (IGNORE_PLAYER_SCROLL_LIMITS) fo::var::setInt(FO_VAR_scroll_limiting_on) = 0;
 		if (IGNORE_MAP_EDGES) fo::var::setInt(FO_VAR_scroll_blocking_on) = 0;
 	};
-
 
 	// Dev block tile_set_border_
 	//BlockCall(0x4B11A3); // tile_init_
