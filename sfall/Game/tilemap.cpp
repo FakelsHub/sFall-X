@@ -198,9 +198,10 @@ struct sfChild {
 	char rotation;
 };
 
-static std::array<sfChild, 2000> m_pathData;
-static std::array<sfChild, 2000> m_dadData;
+static std::vector<sfChild> m_pathData;
+static std::vector<sfChild> m_dadData;
 static std::array<uint8_t, 5000> seenTile;
+static long maxPathNodes = 2000;
 
 static __forceinline fo::GameObject* CheckTileBlocking(void* blockFunc, long tile, fo::GameObject* object) {
 	using namespace fo::Fields;
@@ -222,9 +223,10 @@ static __inline long DistanceFromPositions(long sX, long sY, long tX, long tY) {
 	return (diffX + diffY) - (minDiff >> 1);
 }
 
-// optimized version with added 'type' arg
+// optimized version with added args
 // type: 1 - tile path, 0 - rotation path
-long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTile, long targetTile, long type, void* arrayRef, long checkTargetTile, void* blockFunc) {
+// maxNodes: limiting the building of a path
+long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTile, long targetTile, long type, long maxNodes, void* arrayRef, long checkTargetTile, void* blockFunc) {
 
 	if (checkTargetTile && fo::func::obj_blocking_at_wrapper(srcObject, targetTile, srcObject->elevation, blockFunc)) return 0;
 
@@ -253,6 +255,14 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 	auto& dadData = m_dadData.begin();
 	size_t pathCounter = 1;
 	sfChild childData;
+	long node = 0;
+
+	if (maxNodes > maxPathNodes) maxNodes = maxPathNodes;
+
+	// Tweak for NumPathNodes option
+	if (maxNodes > 10000 && srcObject != fo::var::obj_dude && maxNodes == maxPathNodes) {
+		maxNodes = 10000; // limit for NPCs (maybe need less)
+	}
 
 	// search path tiles
 	while (true)
@@ -281,8 +291,8 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 
 		if (childData.tile == targetTile) break; // exit the loop path is built
 
-		*dadData = childData;
-		if (++dadData == m_dadData.end()) {
+		*dadData++ = childData;
+		if (++node >= maxNodes) { //++dadData == m_dadData.end()
 			return 0; // path can't be built reached the end of the array (limit the maximum path length)
 		}
 
@@ -306,8 +316,8 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 						}
 					}
 				}
-				if (++pathCounter >= 2000) { // ограничение максимальной длины пути?
-					return 0;
+				if (++pathCounter >= 2000) { // ограничение максимального длины пути?
+					return 0;                // *** не убирать брекпоин, до прояснения этого ***
 				}
 
 				pathData = m_pathData.begin();
@@ -380,22 +390,39 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 	return pathLen;
 }
 
-//static void __declspec(naked) make_path_func_replacement() {
-//	__asm {
-//		xchg [esp], ecx; // ret addr <> array
-//		push 0;          // type
-//		push ebx;        // target tile
-//		push ecx;        // ret addr
-//		mov  ecx, eax;
-//		jmp  Tilemap::make_path_func;
-//	}
-//}
+static void __declspec(naked) make_path_func_hack_replacement() {
+	__asm {
+		xchg [esp], ecx;   // ret addr <> array
+		push maxPathNodes; // [add sfall]
+		push 0;            // type rotation [add sfall]
+		push ebx;          // target tile
+		push ecx;          // ret addr
+		mov  ecx, eax;
+		jmp  Tilemap::make_path_func;
+	}
+}
+
+static bool replaced = false;
+
+void Tilemap::SetPathMaxNodes(long maxNodes) {
+	maxPathNodes = maxNodes;
+
+	if (!replaced) {
+		replaced = true;
+		sf::MakeJump(fo::funcoffs::make_path_func_, make_path_func_hack_replacement); // 0x415EFC
+	} else{
+		m_pathData.resize(maxNodes);
+		m_dadData.resize(maxNodes);
+	}
+}
 
 void Tilemap::init() {
 	sf::MakeJump(fo::funcoffs::tile_num_beyond_ + 1, tile_num_beyond_replacement); // 0x4B1B84
 
-	// for test in game
-	//sf::MakeJump(fo::funcoffs::make_path_func_, make_path_func_replacement); // 0x415EFC
+	//m_pathData.reserve(40000);
+	//m_dadData.reserve(40000);
+	m_pathData.resize(maxPathNodes);
+	m_dadData.resize(maxPathNodes);
 }
 
 }
