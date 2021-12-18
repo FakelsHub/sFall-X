@@ -3929,7 +3929,7 @@ void BugFixes::init()
 	// to prevent the player name from being displayed at the bottom of the window when the text is longer than one screen
 	MakeCall(0x445ECC, gdReviewDisplay_hack);
 
-	// TODO: If à bug is found that leads to an animation glitch, then this fix can be removed
+	// TODO: If Ã  bug is found that leads to an animation glitch, then this fix can be removed
 	// Fix crash or animation glitch of the critter in combat when an explosion from explosives and the AI attack animation are performed simultaneously
 	// Note: all events in combat will occur before the AI (party member) attack
 	HookCall(0x422E5F, combat_hook); // execute all events after the end of the combat sequence
@@ -3996,7 +3996,7 @@ void BugFixes::init()
 	MakeJump(0x4B6C3B, checkAllRegions_hack);
 	HookCall(0x4B6C13, checkAllRegions_hook);
 
-	// Fix not redrawing the window after window show when it is located on top of other windows (MOST TOP) and has the 'DontMoveTop' flag
+	// Fix for the window with the "DontMoveTop" flag that not being redrawn after the show function call if it was not the topmost one
 	MakeJump(0x4D6E04, win_show_hack);
 
 	// Fix the script attached to an object not being initialized (not run) properly upon object creation

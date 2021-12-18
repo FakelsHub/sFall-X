@@ -40,6 +40,12 @@
     <Filter Include="Game\AI">
       <UniqueIdentifier>{34a50afa-4b08-4f9c-964f-3ea7d75832dc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HRP\interface">
+      <UniqueIdentifier>{6ee1fa02-a414-401e-a367-dee92c2c810a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HRP\viewmap">
+      <UniqueIdentifier>{aad887b9-5fc2-4171-be31-39b4f1eaef13}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h" />
@@ -399,6 +405,67 @@
     <ClInclude Include="Modules\SubModules\ObjectName.h">
       <Filter>Modules\SubModules</Filter>
     </ClInclude>
+    <ClInclude Include="HRP\Init.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\MainMenu.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\Image.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\viewmap\EdgeBorder.h">
+      <Filter>HRP\viewmap</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\viewmap\ViewMap.h">
+      <Filter>HRP\viewmap</Filter>
+    </ClInclude>
+    <ClInclude Include="WinProc.h" />
+    <ClInclude Include="HRP\InterfaceBar.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\viewmap\EdgeClipping.h">
+      <Filter>HRP\viewmap</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\Dialog.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\Inventory.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\Character.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\LoadSave.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\MiscInterface.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\SplashScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\Worldmap.h">
+      <Filter>HRP\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\HelpScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\DeathScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\SlidesScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\CreditsScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="HRP\MoviesScreen.h">
+      <Filter>HRP</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SubModules\DirectDraw.h">
+      <Filter>Modules\SubModules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -727,6 +794,67 @@
       <Filter>Game\AI</Filter>
     </ClCompile>
     <ClCompile Include="Modules\SubModules\ObjectName.cpp">
+      <Filter>Modules\SubModules</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\Init.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\MainMenu.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\Image.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\viewmap\EdgeBorder.cpp">
+      <Filter>HRP\viewmap</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\viewmap\ViewMap.cpp">
+      <Filter>HRP\viewmap</Filter>
+    </ClCompile>
+    <ClCompile Include="WinProc.cpp" />
+    <ClCompile Include="HRP\InterfaceBar.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\viewmap\EdgeClipping.cpp">
+      <Filter>HRP\viewmap</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\Dialog.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\Inventory.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\Character.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\LoadSave.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\MiscInterface.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\SplashScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\Worldmap.cpp">
+      <Filter>HRP\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\HelpScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\DeathScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\SlidesScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\CreditsScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="HRP\MoviesScreen.cpp">
+      <Filter>HRP</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SubModules\DirectDraw.cpp">
       <Filter>Modules\SubModules</Filter>
     </ClCompile>
   </ItemGroup>
