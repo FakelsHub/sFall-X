@@ -149,7 +149,7 @@ static void APBarRectPatch() {
 }
 
 static void ActionPointsBarPatch() {
-	HRP::IFaceBar::UseExpandAPBar = true;
+	HRP::IFaceBar::SetExpandAPBar();
 
 	dlog("Applying expanded action points bar patch.", DL_INIT);
 	if (HRP::Setting::ExternalEnabled()) {
@@ -843,7 +843,7 @@ static void WorldMapInterfacePatch() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	if (HRP::Setting::IsEnabled() || (/*HRP::Setting::ExternalEnabled() &&*/ HRP::Setting::VersionIsValid)) { // Why was this only available for 4.1.8?
+	if (HRP::Setting::IsEnabled() || HRP::Setting::VersionIsValid) { // Why was this only available for 4.1.8?
 		if (worldmapInterface = IniReader::GetConfigInt("Interface", "ExpandWorldMap", 0)) {
 			LoadGameHook::OnAfterGameInit() += WorldmapViewportPatch; // Note: must be applied after WorldMapSlots patch
 		}
@@ -936,8 +936,6 @@ static void SpeedInterfaceCounterAnimsPatch() {
 	}
 }
 
-static bool IFACE_BAR_MODE = false;
-
 static long gmouse_handle_event_hook() {
 	// checking whether the player clicks on the clipping area of the map
 	if (!HRP::EdgeClipping::CheckMapClipping()) return 0; // block
@@ -956,7 +954,7 @@ static long gmouse_handle_event_hook() {
 		}
 	}
 
-	if (IFACE_BAR_MODE) return 1;
+	if (HRP::IFaceBar::IFACE_BAR_MODE) return 1;
 
 	// if IFACE_BAR_MODE is not enabled, check the display_win window area
 	win = fo::func::GNW_find(fo::var::getInt(FO_VAR_display_win));
@@ -1048,10 +1046,6 @@ static void UIAnimationSpeedPatch() {
 	SimplePatch<BYTE>(&addrs[4], 2, "Misc", "PipboyTimeAnimDelay", 50, 0, 127);
 }
 
-static void HackMouseEvent() {
-	HookCall(0x44C018, gmouse_handle_event_hook);
-}
-
 void Interface::init() {
 
 	InterfaceWindowPatch();
@@ -1073,15 +1067,8 @@ void Interface::init() {
 	// Transparent/Hidden - will not toggle the mouse cursor when the cursor hovers over a transparent/hidden window
 	// ScriptWindow - prevents the player from moving when clicking on the window if the 'Transparent' flag is not set
 	HookCall(0x44B737, gmouse_bk_process_hook);
-	if (HRP::Setting::IsEnabled()) {
-		IFACE_BAR_MODE = (HRP::IFaceBar::IFACE_BAR_MODE != 0);
-		HackMouseEvent();
-	} else {
-		LoadGameHook::OnBeforeGameInit() += []() {
-			if (HRP::Setting::VersionIsValid) IFACE_BAR_MODE = (GetIntHRPValue(HRP_VAR_IFACE_BAR_MODE) != 0);
-			HackMouseEvent(); // replaces hack function from HRP by Mash
-		};
-	}
+	HookCall(0x44C018, gmouse_handle_event_hook); // (replaces hack function from HRP by Mash)
+	if (HRP::Setting::VersionIsValid) HRP::IFaceBar::IFACE_BAR_MODE = (GetIntHRPValue(HRP_VAR_IFACE_BAR_MODE) != 0);
 }
 
 void Interface::exit() {
