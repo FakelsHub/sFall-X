@@ -77,7 +77,7 @@ fo::GameObject* AIInventory::SearchInventoryItemType(fo::GameObject* source, fo:
 }
 
 static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefScore) {
-	long score;
+	long score = 0;
 	fo::AttackSubType weapType = fo::AttackSubType::NONE;
 	if (weapon) {
 		fo::Proto* proto;

@@ -3929,7 +3929,7 @@ void BugFixes::init()
 	// to prevent the player name from being displayed at the bottom of the window when the text is longer than one screen
 	MakeCall(0x445ECC, gdReviewDisplay_hack);
 
-	// TODO: If à bug is found that leads to an animation glitch, then this fix can be removed
+	// TODO: If Ã  bug is found that leads to an animation glitch, then this fix can be removed
 	// Fix crash or animation glitch of the critter in combat when an explosion from explosives and the AI attack animation are performed simultaneously
 	// Note: all events in combat will occur before the AI (party member) attack
 	HookCall(0x422E5F, combat_hook); // execute all events after the end of the combat sequence
@@ -4007,6 +4007,9 @@ void BugFixes::init()
 
 	// Fix to prevent the main menu music from stopping when entering the load game interface
 	BlockCall(0x480B25);
+
+	// Fix of incorrect value of the limit number of floating messages
+	SafeWrite8(0x4B039F, 20); // text_object_create_ (was 19)
 }
 
 }

@@ -648,14 +648,15 @@ TrySpendExtraAP:
 		Фаза поиска цели для атакующего если она не была задана для атаки
 	**************************************************************************/
 	bool findTargetAfterKill = false;
-	fo::GameObject* findTarget;
+	fo::GameObject* findTarget = nullptr;
 
 	if (!target) {
 		sf::PartyControl::SetOrderTarget(source); // Party order attack feature
 
 ReFindNewTarget:
 		DEV_PRINTF("\n[AI] Find targets...");
-		target = findTarget = AISearchTarget::AIDangerSource_Extended(source, 1);
+		target = AISearchTarget::AIDangerSource_Extended(source, 1);
+		findTarget = target;
 
 		if (!target) DEV_PRINTF("\n[AI] No find target!"); else DEV_PRINTF1("\n[AI] Pick target: %s", fo::func::critter_name(target));
 

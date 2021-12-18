@@ -197,16 +197,14 @@ static int CheckEXE() {
 	return std::strncmp((const char*)0x53C938, "FALLOUT Mapper", 14);
 }
 
-static void SfallInit() {
-	if (!CheckEXE()) return;
-
+static HMODULE SfallInit() {
 	char filepath[MAX_PATH];
 	GetModuleFileName(0, filepath, MAX_PATH);
 
 	SetCursor(LoadCursorA(0, IDC_ARROW));
 	ShowCursor(1);
 
-	if (!CRC(filepath)) return;
+	if (!CRC(filepath)) return 0;
 
 	LoggingInit();
 
@@ -284,12 +282,15 @@ defaultIni:
 
 	InitReplacementHack();
 	InitModules();
+
+	fo::var::setInt(FO_VAR_GNW95_hDDrawLib) = (long)ddraw.sfall;
+	return ddraw.sfall;
 }
 
 }
 
-static bool LoadOriginalDll(DWORD dwReason) {
-	switch (dwReason) {
+static bool LoadOriginalDll(DWORD fdwReason) {
+	switch (fdwReason) {
 		case DLL_PROCESS_ATTACH:
 			char path[MAX_PATH];
 			CopyMemory(path + GetSystemDirectoryA(path , MAX_PATH - 10), "\\ddraw.dll", 11); // path to original dll
@@ -327,9 +328,12 @@ static bool LoadOriginalDll(DWORD dwReason) {
 	return false;
 }
 
-bool __stdcall DllMain(HANDLE hDllHandle, DWORD dwReason, LPVOID lpreserved) {
-	if (LoadOriginalDll(dwReason)) {
-		sfall::SfallInit();
+bool __stdcall DllMain(HINSTANCE hInstDLL, DWORD fdwReason, LPVOID lpReserved) {
+	if (LoadOriginalDll(fdwReason)) {
+		if (sfall::CheckEXE()) {
+			ddraw.sfall = hInstDLL;
+			sfall::MakeCall(0x4DE8DE, sfall::SfallInit); // LoadDirectX_
+		}
 	}
 	return true;
 }

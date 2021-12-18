@@ -32,273 +32,136 @@ namespace sfall
 
 int DamageMod::formula;
 
+// Integer division w/ round half to even for Glovz's damage formula
+// Prerequisite: both dividend and divisor must be positive integers (should already be handled in the main function)
+static long DivRound(long dividend, long divisor) {
+	if (dividend <= divisor) {
+		// if equal then return 1
+		return (dividend != divisor && (dividend << 1) <= divisor) ? 0 : 1;
+	}
+
+	long quotient = dividend / divisor;
+	dividend %= divisor; // get the remainder
+
+	// check the remainder
+	if (dividend == 0) return quotient;
+
+	dividend <<= 1; // multiply by 2
+
+	// if equal then round to even
+	return (dividend > divisor || (dividend == divisor && (quotient & 1))) ? quotient + 1 : quotient;
+}
+
 // Damage Fix v5 (with v5.1 Damage Multiplier tweak) by Glovz 2014.04.16.xx.xx
-// TODO: rewrite in C++
 void DamageMod::DamageGlovz(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamage, int rounds, int armorDT, int armorDR, int bonusRangedDamage, int multiplyDamage, int difficulty) {
+	if (rounds <= 0) return;                                // check the number of hits
 
-	if (rounds <= 0) return;
+	long ammoY = fo::func::item_w_dam_div(ctd.weapon);      // ammoY value (divisor)
+	if (ammoY <= 0) ammoY = 1;
 
-	int getAmmoY   = fo::func::item_w_dam_div(ctd.weapon);      // get the ammoY value (divisor)
-	int getAmmoX   = fo::func::item_w_dam_mult(ctd.weapon);     // get the ammoX value
-	int getAmmoDRM = fo::func::item_w_dr_adjust(ctd.weapon);    // get the ammoDRM value
-	int mValue;
+	long ammoX = fo::func::item_w_dam_mult(ctd.weapon);     // ammoX value
+	if (ammoX <= 0) ammoX = 1;
 
-	__asm {
-		mov esi, ctd;
-		mov edi, accumulatedDamage;
-begin:
-		mov  mValue, 0;                            // clear value
-		mov  edx, dword ptr ds:[esi + 4];          // get hit mode weapon being used by an attacker
-		mov  eax, dword ptr ds:[esi];              // get pointer to critter attacking
-		call fo::funcoffs::item_w_damage_;         // get the raw damage value
-		mov  ebx, bonusRangedDamage;               // get the bonus ranged damage value
-		cmp  ebx, 0;                               // compare the range bonus damage value to 0
-		jle  rdJmp;                                // if the RB value is less than or equal to 0 then goto rdJmp
-		add  eax, ebx;                             // add the RB value to the RD value
-rdJmp:
-		cmp  eax, 0;                               // compare the new damage value to 0
-		jle  noDamageJmp;                          // goto noDamageJmp
-		mov  ebx, eax;                             // set the ND value (EBX)
-		mov  edx, armorDT;                         // get the armorDT value
-		cmp  edx, 0;                               // compare the armorDT value to 0
-		jle  bJmp;                                 // if the armorDT value is less than or equal to 0 then goto bJmp
-		mov  eax, dword ptr getAmmoY;              // get the ammoY value
-		cmp  eax, 0;                               // compare the ammoY value to 0
-		jg   aJmp;                                 // if the ammoY value is greater than 0 then goto aJmp
-		mov  eax, 1;                               // set the ammoY value to 1
-aJmp:
-		xor  ecx, ecx;                             // clear value (old ebp)
-		cmp  edx, eax;                             // compare the dividend with the divisor
-		jl   lrThan;                               // the dividend is less than the divisor then goto lrThan
-		jg   grThan;                               // the dividend is greater than the divisor then goto grThan
-		jmp  setOne;                               // if the two values are equal then goto setOne
-////////////////////////////////////
-lrThan:
-		mov  ecx, edx;                             // store the dividend value temporarily
-		imul edx, 2;                               // multiply dividend value by 2
-		sub  edx, eax;                             // subtract divisor value from the dividend value
-		cmp  edx, 0;                               // compare the result to 0
-		jl   setZero;                              // if the result is less than 0 then goto setZero
-		jg   setOne;                               // if the result is greater than 0 then goto setOne
-		mov  edx, ecx;                             // restore dividend value
-		and  edx, 1;                               // if true (1) then odd if false (0) then even
-		jz   setZero;                              // if the result is equal to 0 then setZero
-		jmp  setOne;                               // if the result is not 0 then goto setOne
-////////////////////////////////////
-grThan:
-		mov  ecx, eax;                             // assign the divisor value
-		xor  eax, eax;                             // clear value
-bbbJmp:
-		inc  eax;                                  // add 1 to the quotient value
-		sub  edx, ecx;                             // subtract the divisor value from the dividend value
-		cmp  edx, ecx;                             // compare the remainder value to the divisor value
-		jge  bbbJmp;                               // if the remainder value is greater or equal to the divisor value then goto bbbJmp
-		jz   endDiv;                               // if the remainder value is equal to 0 then goto endDiv
-		imul edx, 2;                               // multiply temp remainder value by 2
-		sub  edx, ecx;                             // subtract the divisor value from the temp remainder
-		cmp  edx, 0;                               // compare the result to 0
-		jl   endDiv;                               // if the result is less than 0 then goto endDiv
-		jg   addOne;                               // if the result is greater than 0 then goto addOne
-		mov  ecx, eax;                             // assign the quotient value
-		and  ecx, 1;                               // if true (1) then odd if false (0) then even
-		jz   endDiv;                               // if the result is equal to zero goto endDiv
-addOne:
-		inc  eax;                                  // add 1 to the quotient value
-		jmp  endDiv;                               // goto endDiv
-////////////////////////////////////
-setOne:
-		mov  eax, 1;                               // set the quotient value to 1
-		jmp  endDiv;                               // goto endDiv
-////////////////////////////////////
-setZero:
-		xor  eax, eax;                             // clear value
-endDiv:
-		cmp  mValue, 2;                            // compare value to 2
-		je   divTwo;                               // goto divTwo
-		cmp  mValue, 3;                            // compare value to 3
-		je   divThree;                             // goto divThree
-		cmp  mValue, 4;                            // compare value to 4
-		je   divFour;                              // goto divFour
-		cmp  mValue, 5;                            // compare value to 5
-		je   divFive;                              // goto divFive
-		cmp  mValue, 6;                            // compare value to 6
-		je   divSix;                               // goto divSix
-		cmp  mValue, 7;                            // compare value to 7 (added for v5.1 tweak)
-		je   divSeven;                             // goto divSeven
+	long ammoDRM = fo::func::item_w_dr_adjust(ctd.weapon);  // ammoDRM value
+	if (ammoDRM > 0) ammoDRM = -ammoDRM;                    // to negative
 
-		sub  ebx, eax;                             // subtract the new armorDT value from the RD value
-		jmp  cJmp;                                 // goto cJmp
-////////////////////////////////////
-bJmp:
-		mov  edx, armorDR;                         // get the armorDR value
-		cmp  edx, 0;                               // compare the armorDR value to 0
-		jle  dJmp;                                 // if the armorDR value is less than or equal to 0 then goto dJmp
-cJmp:
-		cmp  ebx, 0;                               // compare the new damage value to 0
-		jle  noDamageJmp;                          // goto noDamageJmp
-		mov  edx, armorDR;                         // get the armorDR value
-		cmp  edx, 0;                               // compare the armorDR value to 0
-		jle  eJmp;                                 // if the armorDR value is less than or equal to 0 then goto eJmp
-		mov  eax, difficulty;                      // get the CD value
-		cmp  eax, 100;                             // compare the CD value to 100
-		jg   sdrJmp;                               // if the CD value is greater than 100 then goto sdrJmp
-		je   aSubCJmp;                             // if the CD value is equal to 100 then goto aSubCJmp
-		add  edx, 20;                              // add 20 to the armorDR value
-		jmp  aSubCJmp;                             // goto aSubCJmp
-////////////////////////////////////
-sdrJmp:
-		sub  edx, 20;                              // subtract 20 from the armorDR value
-aSubCJmp:
-		mov  eax, dword ptr getAmmoDRM;            // get the ammoDRM value
-		cmp  eax, 0;                               // compare the ammoDRM value to 0
-		jl   adrJmp;                               // if the ammoDRM value is less than 0 then goto adrJmp
-		je   bSubCJmp;                             // if the ammoDRM value is equal to 0 then goto bSubCJmp
-		xor  ecx, ecx;                             // clear value
-		sub  ecx, eax;                             // subtract ammoDRM value from 0
-		mov  eax, ecx;                             // set new ammoDRM value
-adrJmp:
-		add  edx, eax;                             // add the ammoDRM value to the armorDR value
-bSubCJmp:
-		mov  eax, dword ptr getAmmoX;              // get the ammoX value
-		cmp  eax, 0;                               // compare the ammoX value to 0
-		jg   cSubCJmp;                             // if the ammoX value is greater than 0 then goto cSubCJmp;
-		mov  eax, 1;                               // set the ammoX value to 1
-cSubCJmp:
-		mov  mValue, 2;                            // set value to 2
-		jmp  aJmp;                                 // goto aJmp
-////////////////////////////////////
-divTwo:
-		mov  edx, ebx;                             // set temp value
-		imul edx, eax;                             // multiply the ND value by the armorDR value
-		mov  eax, 100;                             // set divisor value to 100
-		mov  mValue, 3;                            // set value to 3
-		jmp  aJmp;                                 // goto aJmp
-////////////////////////////////////
-divThree:
-		sub  ebx, eax;                             // subtract the damage resisted value from the ND value
-		jmp  eJmp;                                 // goto eJmp
-////////////////////////////////////
-dJmp:
-		mov  eax, dword ptr getAmmoX;              // get the ammoX value
-		cmp  eax, 1;                               // compare the ammoX value to 1
-		jle  bSubDJmp;                             // if the ammoX value is less than or equal to 1 then goto bSubDJmp;
-		mov  eax, dword ptr getAmmoY;              // get the ammoY value
-		cmp  eax, 1;                               // compare the ammoY value to 1
-		jle  aSubDJmp;                             // if the ammoY value is less than or equal to 1 then goto aSubDJmp
-		mov  edx, ebx;                             // set temp value
-		imul edx, 15;                              // multiply the ND value by 15
-		mov  eax, 100;                             // set divisor value to 100
-		mov  mValue, 4;                            // set value to 4
-		jmp  aJmp;                                 // goto aJmp
-////////////////////////////////////
-divFour:
-		add  ebx, eax;                             // add the quotient value to the ND value
-		jmp  eJmp;                                 // goto eJmp
-////////////////////////////////////
-aSubDJmp:
-		mov  edx, ebx;                             // set temp value
-		imul edx, 20;                              // multiply the ND value by 20
-		mov  eax, 100;                             // set divisor value to 100
-		mov  mValue, 5;                            // set value to 5
-		jmp  aJmp;                                 // goto aJmp
-////////////////////////////////////
-divFive:
-		add  ebx, eax;                             // add the quotient value to the ND value
-		jmp  eJmp;                                 // goto eJmp
-////////////////////////////////////
-bSubDJmp:
-		mov  eax, dword ptr getAmmoY;              // get the ammoY value
-		cmp  eax, 1;                               // compare the ammoY value to 1
-		jle  eJmp;                                 // goto eJmp
-		mov  edx, ebx;                             // set temp value
-		imul edx, 10;                              // multiply the ND value by 10
-		mov  eax, 100;                             // set divisor value to 100
-		mov  mValue, 6;                            // set value to 6
-		jmp  aJmp;                                 // goto aJmp
-////////////////////////////////////
-divSix:
-		add  ebx, eax;                             // add the quotient value to the ND value
-eJmp:
-		cmp  ebx, 0;                               // compare the new damage value to 0
-		jle  noDamageJmp;                          // goto noDamageJmp
-		mov  eax, multiplyDamage;                  // get the Critical Multiplier(CM) value
-		cmp  eax, 2;                               // compare the CM value to 2
-		jle  addNDJmp;                             // if the CM value is less than or equal to 2 then goto addNDJmp
+	long calcDT = (armorDT > 0) ? DivRound(armorDT, ammoY) : armorDT;
 
-		cmp  DamageMod::formula, 2;                // check selected damage formula (added for v5.1 tweak)
-		jz   tweak;
-		imul ebx, eax;                             // multiply the ND value by the CM value
-		sar  ebx, 1;                               // divide the result by 2
-		jmp  addNDJmp;
-////////////////////////////////////
-//////// begin v5.1 tweak //////////
-////////////////////////////////////
-tweak:
-		mov  edx, ebx;                             // set temp ND value
-		imul edx, eax;                             // multiply the temp ND value by the CM value
-		imul edx, 25;                              // multiply the temp ND value by 25
-		mov  eax, 100;                             // set divisor value to 100
-		mov  mValue, 7;                            // set value to 7
-		jmp  aJmp;                                 // goto aJmp
-////////////////////////////////////
-divSeven:
-		add  ebx, eax;                             // add the critical damage value to the ND value
-//////// end v5.1 tweak ////////////
-addNDJmp:
-		add  dword ptr ds:[edi], ebx;              // add to accumulate damage
-noDamageJmp:
-		dec  dword ptr rounds;                     // the hits counter value decrements by one
-		jnz  begin;                                // compare the number of hits to 0
+	long calcDR = armorDR;
+	if (armorDR > 0) {
+		if (difficulty > 100) {                             // if the CD value is greater than 100
+			calcDR -= 20;                                   // subtract 20 from the armorDR value
+		} else if (difficulty < 100) {                      // if the CD value is less than 100
+			calcDR += 20;                                   // add 20 to the armorDR value
+		}
+		calcDR += ammoDRM;                                  // add the ammoDRM value to the armorDR value
+		calcDR = DivRound(calcDR, ammoX);                   // goto divTwo
+		if (calcDR >= 100) return;                          // if armorDR >= 100, skip damage calculation
+	}
+
+	// start of damage calculation loop
+	for (long i = 0; i < rounds; i++) {
+		long rawDamage = fo::func::item_w_damage(ctd.attacker, ctd.hitMode); // get the raw damage value
+		rawDamage += bonusRangedDamage;                     // add the bonus ranged damage value to the RD value
+		if (rawDamage <= 0) continue;                       // if raw damage <= 0, skip damage calculation and go to bottom of loop
+
+		if (armorDT > 0) {                                  // compare the armorDT value to 0
+			rawDamage -= calcDT;                            // subtract the new armorDT value from the RD value
+			if (rawDamage <= 0) continue;                   // if raw damage <= 0, skip damage calculation and go to bottom of loop
+		}
+
+		if (armorDR > 0) {                                  // compare the armorDR value to 0
+			long resistedDamage = DivRound(calcDR * rawDamage, 100); // goto divThree
+			rawDamage -= resistedDamage;                    // subtract the damage resisted value from the RD value
+			if (rawDamage <= 0) continue;                   // if raw damage <= 0, skip damage calculation and go to bottom of loop
+		}
+
+		// bonus damage to unarmored target
+		if (armorDT <= 0 && armorDR <= 0) {
+			if (ammoX > 1 && ammoY > 1) {                   // FMJ/high-end
+				rawDamage += DivRound(rawDamage * 15, 100); // goto divFour
+			} else if (ammoX > 1) {                         // JHP
+				rawDamage += DivRound(rawDamage * 20, 100); // goto divFive
+			} else if (ammoY > 1) {                         // AP
+				rawDamage += DivRound(rawDamage * 10, 100); // goto divSix
+			}
+		}
+
+		if (formula == 2) { // v5.1 tweak
+			rawDamage += DivRound(rawDamage * multiplyDamage * 25, 100); // goto divSeven
+		} else {
+			rawDamage = (rawDamage * multiplyDamage) >> 1;  // divide the result by 2
+		}
+		if (rawDamage > 0) accumulatedDamage += rawDamage;  // accumulate damage (make sure the result > 0 before adding)
 	}
 }
 
-// YAAM
+// YAAM v1.1a by Haenlomal 2010.05.13
 void DamageMod::DamageYAAM(fo::ComputeAttackResult &ctd, DWORD &accumulatedDamage, int rounds, int armorDT, int armorDR, int bonusRangedDamage,int multiplyDamage, int difficulty) {
+	if (rounds < 0) return;                                 // Check number of hits
 
 	int ammoDiv = fo::func::item_w_dam_div(ctd.weapon);     // Retrieve Ammo Divisor
 	int ammoMult = fo::func::item_w_dam_mult(ctd.weapon);   // Retrieve Ammo Dividend
 
 	multiplyDamage *= ammoMult;                             // Damage Multipler = Critical Multipler * Ammo Dividend
-	int ammoDivisor = 1 * ammoDiv;                          // Ammo Divisor = 1 * Ammo Divisor (ebp set to 1 earlier in function)
 
 	int ammoDT = fo::func::item_w_dr_adjust(ctd.weapon);    // Retrieve ammo DT (well, it's really Retrieve ammo DR, but since we're treating ammo DR as ammo DT...)
 
+	int calcDT = armorDT - ammoDT;                          // DT = armor DT - ammo DT
+	int _calcDT = calcDT;
+
+	if (_calcDT > 0) {                                      // Is DT >= 0?
+		_calcDT = 0;                                        // If yes, set DT = 0
+	} else if (_calcDT < 0) {
+		_calcDT *= 10;                                      // Otherwise, DT = DT * 10 (note that this should be a negative value)
+		calcDT = 0;
+	}
+
+	int calcDR = armorDR + _calcDT;                         // DR = armor DR + DT (note that DT should be less than or equal to zero)
+	if (calcDR < 0) {                                       // Is DR >= 0?
+		calcDR = 0;                                         // If no, set DR = 0
+	} else if (calcDR >= 100) {                             // Is DR >= 100?
+		return;                                             // If yes, damage will be zero, so stop calculating
+	}
+
 	// Start of damage calculation loop
-	for (int i = 0; i < rounds; i++) {                      // Check number of hits
+	for (int i = 0; i < rounds; i++)
+	{
 		int rawDamage = fo::func::item_w_damage(ctd.attacker, ctd.hitMode); // Retrieve Raw Damage
 		rawDamage += bonusRangedDamage;                     // Raw Damage = Raw Damage + Bonus Ranged Damage
-
-		int calcDT = armorDT - ammoDT;                      // DT = armor DT - ammo DT
-		if (calcDT < 0) calcDT = 0;
 
 		rawDamage -= calcDT;                                // Raw Damage = Raw Damage - DT
 		if (rawDamage <= 0) continue;                       // Is Raw Damage <= 0? If yes, skip damage calculation and go to bottom of loop
 
 		rawDamage *= multiplyDamage;                        // Raw Damage = Raw Damage * Damage Multiplier
-		if (ammoDivisor != 0) {                             // avoid divide by zero error
-			rawDamage /= ammoDivisor;                       // Raw Damage = Raw Damage / Ammo Divisor
+		if (ammoDiv != 0) {                                 // avoid divide by zero error
+			rawDamage /= ammoDiv;                           // Raw Damage = Raw Damage / Ammo Divisor
 		}
 		rawDamage /= 2;                                     // Raw Damage = Raw Damage / 2 (related to critical hit damage multiplier bonus)
 		rawDamage *= difficulty;                            // Raw Damage = Raw Damage * combat difficulty setting (75 if wimpy, 100 if normal or if attacker is player, 125 if rough)
 		rawDamage /= 100;                                   // Raw Damage = Raw Damage / 100
 
-		calcDT = armorDT - ammoDT;                          // DT = armor DT - ammo DT
-		if (calcDT != 0) {
-			if (calcDT > 0) {                               // Is DT >= 0?
-				calcDT = 0;                                 // If yes, set DT = 0
-			} else {
-				calcDT *= 10;                               // Otherwise, DT = DT * 10 (note that this should be a negative value)
-			}
-		}
-
-		int calcDR = armorDR + calcDT;                      // DR = armor DR + DT (note that DT should be less than or equal to zero)
-		if (calcDR >= 100) {                                // Is DR >= 100?
-			continue;                                       // If yes, damage will be zero, so stop calculating and go to bottom of loop
-		} else if (calcDR < 0) {                            // Is DR >= 0?
-			calcDR = 0;                                     // If no, set DR = 0
-		}
-
-		int resistedDamage =  calcDR * rawDamage;           // Otherwise, Resisted Damage = DR * Raw Damage
+		int resistedDamage = calcDR * rawDamage;            // Otherwise, Resisted Damage = DR * Raw Damage
 		resistedDamage /= 100;                              // Resisted Damage = Resisted Damage / 100
 		rawDamage -= resistedDamage;                        // Raw Damage = Raw Damage - Resisted Damage
 
@@ -393,16 +256,11 @@ static void __declspec(naked) DisplayBonusHtHDmg1_hook() {
 	}
 }
 
-static const char* __fastcall GetHtHName(long handOffset) {
-	fo::AttackType hit = Unarmed::GetStoredHitMode((handOffset == 0) ? fo::HandSlot::Left : fo::HandSlot::Right);
-	return Unarmed::GetName(hit);
-}
-
-static bool bonusHtHDamageFix = false;
+static bool bonusHtHDamageFix = true;
 static bool displayBonusDamage = false;
 
 static long __fastcall GetHtHDamage(fo::GameObject* source, long &meleeDmg, long handOffset) {
-	long max, min;
+	long min, max;
 
 	fo::AttackType hit = Unarmed::GetStoredHitMode((handOffset == 0) ? fo::HandSlot::Left : fo::HandSlot::Right);
 	long bonus = Unarmed::GetDamage(hit, min, max);
@@ -413,6 +271,11 @@ static long __fastcall GetHtHDamage(fo::GameObject* source, long &meleeDmg, long
 	if (displayBonusDamage && bonusHtHDamageFix) min += perkBonus;
 
 	return min + bonus;
+}
+
+static const char* __fastcall GetHtHName(long handOffset) {
+	fo::AttackType hit = Unarmed::GetStoredHitMode((handOffset == 0) ? fo::HandSlot::Left : fo::HandSlot::Right);
+	return Unarmed::GetName(hit);
 }
 
 static void __declspec(naked) DisplayBonusHtHDmg2_hack() {
@@ -439,8 +302,8 @@ customName:
 
 long DamageMod::GetHtHMinDamageBonus(fo::GameObject* source) {
 	return (bonusHtHDamageFix)
-		? game::Stats::perk_level(source, fo::Perk::PERK_bonus_hth_damage) << 1 // Multiply by 2
-		: 0;
+	       ? game::Stats::perk_level(source, fo::Perk::PERK_bonus_hth_damage) << 1 // Multiply by 2
+	       : 0;
 }
 
 void DamageMod::init() {
@@ -490,7 +353,7 @@ void DamageMod::init() {
 		dlogr(" Done", DL_INIT);
 	}
 
-	// Display actual damage values for unarmed attacks (display_stats_ hacks)
+	// Display the actual damage values of unarmed attacks (display_stats_ hacks)
 	MakeJump(0x472546, DisplayBonusHtHDmg2_hack);
 	SafeWrite32(0x472558, 0x509EDC); // fmt: '%s %d-%d'
 	SafeWrite8(0x472552, 0x98 + 4);

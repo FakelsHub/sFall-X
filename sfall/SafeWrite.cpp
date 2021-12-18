@@ -24,9 +24,10 @@ static __declspec(noinline) void __stdcall SafeWriteFunc(uint8_t code, uint32_t 
 	*((BYTE*)addr) = code;
 	*((DWORD*)(addr + 1)) = data;
 
-	for (size_t i = 0; i < len; i++) {
-		*((BYTE*)(addrMem + i)) = CodeType::Nop;
-	}
+	do {
+		*(BYTE*)addrMem++ = CodeType::Nop;
+	} while (--len);
+
 	VirtualProtect((void*)addr, protectLen, oldProtect, &oldProtect);
 
 	CheckConflict(addr, protectLen);
