@@ -149,67 +149,8 @@ static __declspec(naked) void gmouse_bk_process() {
 	}
 }
 
-/*
-static void __declspec(naked) mem_copy() {
-	__asm {
-		cmp     edx, eax;
-		jz      end;
-
-		push    ecx;
-		push    esi;
-		push    edi;
-		mov     ecx, ebx;
-		jnb     forward;
-
-		lea     esi, [edx + ecx];
-//		and     ebx, 3;
-		cmp     esi, eax;
-		jbe     forward; // src <= dst
-
-		// backward copy
-		dec     esi; //lea     esi, [edi - 1];
-		lea     edi, [eax + ecx]; // dst + num
-
-		std;
-		dec     edi;
-		dec     esi;
-		dec     edi;
-		shr     ecx, 1;
-		rep movsw;
-
-		adc     ecx, ecx;
-		inc     esi;
-		inc     edi;
-//		mov     ecx, ebx;
-		rep movsb
-		cld;
-		pop     edi;
-		pop     esi;
-		pop     ecx;
-end:
-		retn;
-
-forward:
-		and     ebx, 3;
-		mov     esi, edx;
-		mov     edi, eax;
-		shr     ecx, 2;
-		rep movsd;
-		mov     ecx, ebx;
-		rep movsb;
-		pop     edi;
-		pop     esi;
-		pop     ecx;
-		retn;
-	}
-}
-*/
-
 void Setting::init(const char* exeFileName, std::string &cmdline) {
 	namespace sf = sfall;
-
-	//HookCall(0x482899, mem_copy);
-	//SafeWrite16(0x4B2EA8, 0x9090); // _show_grid
 
 	bool hiResMode = sf::IniReader::GetIntDefaultConfig("Main", "HiResMode", 1) != 0;
 
@@ -229,7 +170,7 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 	if (Setting::ExternalEnabled()) {
 		char infoMsg[512];
 		sfall::Translate::Get("sfall", "HiResInfo",
-			"This version of sfall has its own integrated High Resolution mode patch, which is compatible with the High Resolution Patch by Mash.\n\n"
+			"This version of sfall has its own integrated High Resolution mode patch, which is compatible with with the settings of the High Resolution Patch by Mash.\n\n"
 			"If you want to continue using the High Resolution Patch by Mash without seeing this message, disable the 'HiResMode' option in the ddraw.ini file.\n"
 			"Or you can disable the external HRP to get new graphic improvements from sfall.\n\n"
 			"Do you want to disable the High Resolution Patch by Mash?", infoMsg, 512);

@@ -346,8 +346,8 @@ void Objects::init() {
 	LoadGameHook::OnBeforeGameStart() += []() {
 		if (HRP::Setting::ExternalEnabled()) {
 			if (HRP::Setting::VersionIsValid) {
-				bool hrpFogIsEnabled = (GetIntHRPValue(HRP_VAR_FOG_OF_WAR) != 0);
-				sfallProcessSeenState = !hrpFogIsEnabled;
+				bool fogIsEnabled = (GetIntHRPValue(HRP_VAR_FOG_OF_WAR) != 0);
+				sfallProcessSeenState = !fogIsEnabled;
 			}
 		} else {
 			sfallProcessSeenState = 1;

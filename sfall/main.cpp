@@ -183,7 +183,7 @@ static void CompatModeCheck(HKEY root, const char* filepath, int extra) {
 					MessageBoxA(0, "Fallout appears to be running in compatibility mode.\n" //, and sfall was not able to disable it.\n"
 								   "Please check the compatibility tab of fallout2.exe, and ensure that the following settings are unchecked:\n"
 								   "Run this program in compatibility mode for..., run in 256 colours, and run in 640x480 resolution.\n"
-								   "If these options are disabled, click the 'change settings for all users' button and see if that enables them.", "Error", MB_TASKMODAL | MB_ICONERROR);
+								   "If these options are disabled, click the 'change settings for all users' button and see if that enables them.", 0, MB_TASKMODAL | MB_ICONERROR);
 
 					ExitProcess(-1);
 				}
@@ -215,8 +215,6 @@ static HMODULE SfallInit() {
 
 	if (!HRP::Setting::CheckExternalPatch()) {
 		WinProc::init();
-	} else {
-		ShowCursor(0);
 	}
 
 	if (!isDebug || !IniReader::GetIntDefaultConfig("Debugging", "SkipCompatModeCheck", 0)) {
@@ -282,6 +280,8 @@ defaultIni:
 
 	InitReplacementHack();
 	InitModules();
+
+	if (HRP::Setting::ExternalEnabled()) ShowCursor(0);
 
 	fo::var::setInt(FO_VAR_GNW95_hDDrawLib) = (long)ddraw.sfall;
 	return ddraw.sfall;
