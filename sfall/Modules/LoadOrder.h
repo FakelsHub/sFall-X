@@ -30,7 +30,6 @@ public:
 
 	static void art_get_name_hack();
 
-	static void AddResourcePatches(std::string &dat, std::string &patches);
 };
 
 }

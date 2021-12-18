@@ -60,8 +60,8 @@ public:
 
 	static DWORD mode;
 	static DWORD GPUBlt;
-	static bool IsWindowedMode;
 
+	static HWND GetFalloutWindowInfo(RECT* rect);
 	static long GetGameWidthRes();
 	static long GetGameHeightRes();
 
@@ -86,13 +86,11 @@ public:
 	static void RefreshGraphics();
 	static void __stdcall ForceGraphicsRefresh(DWORD d);
 
-	static void BackgroundClearColor(long indxColor);
-
 	static __forceinline void UpdateDDSurface(BYTE* surface, int width, int height, int widthFrom, RECT* rect)
 	{
 		long x = rect->left;
 		long y = rect->top;
-		if (Graphics::mode < 4) { // DirectDraw
+		if (Graphics::mode == 0) {
 			__asm {
 				xor  eax, eax;
 				push y;
@@ -101,10 +99,10 @@ public:
 				push width;
 				push eax; // yFrom
 				push eax; // xFrom
-				push height; // heightFrom
+				push eax; // heightFrom
 				push widthFrom;
 				push surface;
-				call ds:[FO_VAR_scr_blit]; // call GNW95_ShowRect_(int from, int widthFrom, int heightFrom, int xFrom, int yFrom, int width, int height, int x, int y)
+				call ds:[FO_VAR_scr_blit]; // GNW95_ShowRect_(int from, int widthFrom, int heightFrom, int xFrom, int yFrom, int width, int height, int x, int y)
 				add  esp, 9*4;
 			}
 		} else {

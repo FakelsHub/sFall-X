@@ -155,18 +155,9 @@ void __declspec(naked) interpretError(const char* fmt, ...) {
 }
 
 long __fastcall tile_num(long x, long y) {
-	__asm xor ebx, ebx; // don't delete (bug in tile_num_)
+	__asm push ebx; // don't delete (bug in tile_num_)
 	WRAP_WATCOM_FCALL2(tile_num_, x, y);
-}
-
-void __fastcall square_xy(long x, long y, long* outSX, long* outSY) {
-	__asm {
-		xor  ebx, ebx; // don't delete (bug in square_xy_)
-		mov  eax, ecx;
-		push outSY;
-		mov  ecx, outSX;
-		call fo::funcoffs::square_xy_;
-	}
+	__asm pop  ebx;
 }
 
 GameObject* __fastcall obj_blocking_at_wrapper(GameObject* obj, DWORD tile, DWORD elevation, void* func) {

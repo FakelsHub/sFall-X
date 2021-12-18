@@ -50,12 +50,6 @@ struct GameObject;
 struct Program;
 struct ScriptInstance;
 
-struct PALETTE { // F2 palette
-	BYTE B;
-	BYTE G;
-	BYTE R;
-};
-
 struct Art {
 	long flags;
 	char path[16];
@@ -114,21 +108,6 @@ struct AnimationSad {
 };
 
 static_assert(sizeof(AnimationSad) == 3240, "Incorrect AnimationSad definition.");
-
-struct InventScrData {
-	long artIndex;
-	long width;
-	long height;
-	long x;
-	long y;
-};
-
-struct SquareRect {
-	long y;
-	long x;
-	long offx;
-	long offy;
-};
 
 // Bounding rectangle, used by tile_refresh_rect and related functions.
 struct BoundRect {
@@ -489,12 +468,6 @@ public:
 	BYTE data[1]; // begin frame image data
 } FrmFrameData;
 
-// for one frame
-struct FrmData {
-	FrmHeaderData header;
-	FrmFrameData frame;
-};
-
 struct FrmFile {            // sizeof 2954
 	long id;                // 0x00
 	short fps;              // 0x04
@@ -586,9 +559,9 @@ struct UnlistedFrm {
 		frameAreaSize = 0;
 		frames = nullptr;
 	}
-
 	~UnlistedFrm() {
-		if (frames != nullptr) delete[] frames;
+		if (frames != nullptr)
+			delete[] frames;
 	}
 };
 
@@ -1195,32 +1168,6 @@ struct QuestData {
 	long gvarIndex;
 	long displayThreshold;
 	long completedThreshold;
-};
-
-struct BlendColorTableData {
-	struct BlendData {
-		unsigned char colors[256];
-	};
-	BlendData data[16]; // [0] - without blending (filled values from 0 to 255)
-};
-
-struct BlendColorTable {
-	long unk; // counter?
-	BlendColorTableData table;
-};
-
-static_assert(sizeof(BlendColorTable) == 0x1004, "Incorrect BlendColorTable definition.");
-
-struct FontData { // sizeof = 0x810
-	short field0;
-	short field2;
-	short field4;
-	short field6;
-	short field8;
-	short fieldA;
-	short fieldC;
-	char  eUnkArray[2046];
-	long  field80C;
 };
 
 #pragma pack(pop)

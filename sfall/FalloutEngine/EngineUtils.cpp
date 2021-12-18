@@ -233,7 +233,7 @@ long ObjIsOpenable(fo::GameObject* object) {
 		DWORD lock;
 		fo::FrmHeaderData* frm = fo::func::art_ptr_lock(object->artFid, &lock);
 		if (frm) {
-			if (frm->numFrames > 1) result = 1;
+			if (frm->numFrames > 1)	result = 1;
 			fo::func::art_ptr_unlock(lock);
 		}
 	}
@@ -442,7 +442,6 @@ long wmGetCurrentTerrainType() {
 }
 
 //---------------------------------------------------------
-// TODO: Review SurfaceCopyToMem/DrawToSurface functions
 // copy the area from the interface buffer to the data array
 void SurfaceCopyToMem(long fromX, long fromY, long width, long height, long fromWidth, BYTE* fromSurface, BYTE* toMem) {
 	fromSurface += fromY * fromWidth + fromX;
@@ -502,10 +501,10 @@ void DrawToSurface(long width, long height, long fromX, long fromY, long fromWid
 	}
 }
 
-void TranslucentDarkFill(BYTE* surface, long x, long y, long width, long height, long surfWidth) {
-	BYTE* surf = surface + (y * surfWidth) + x;
-	fo::func::wmInterfaceDrawSubTileRectFogged(surf, width, height, surfWidth);
-}
+//void TranslucentDarkFill(BYTE* surface, long x, long y, long width, long height, long surfWidth) {
+//	BYTE* surf = surface + (y * surfWidth) + x;
+//	fo::func::wmInterfaceDrawSubTileRectFogged(surf, width, height, surfWidth);
+//}
 
 // Fills the specified interface window with index color
 bool WinFillRect(long winID, long x, long y, long width, long height, BYTE indexColor) {
@@ -527,14 +526,6 @@ bool WinFillRect(long winID, long x, long y, long width, long height, BYTE index
 		surf += pitch;
 	};
 	return result;
-}
-
-void FillRect(BYTE* surface, long x, long y, long width, long height, long wPitch, BYTE indexColor) {
-	surface += (wPitch * y) + x;
-	while (height--) {
-		std::memset(surface, indexColor, width);
-		surface += wPitch;
-	};
 }
 
 // Fills the specified interface window with index color 0 (black color)

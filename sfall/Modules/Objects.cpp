@@ -344,8 +344,8 @@ void Objects::init() {
 	};
 
 	LoadGameHook::OnBeforeGameStart() += []() {
-		if (HRP::Setting::ExternalEnabled()) {
-			if (HRP::Setting::VersionIsValid) {
+		if (hrpIsEnabled) {
+			if (hrpVersionValid) {
 				bool hrpFogIsEnabled = (GetIntHRPValue(HRP_VAR_FOG_OF_WAR) != 0);
 				sfallProcessSeenState = !hrpFogIsEnabled;
 			}
@@ -373,7 +373,7 @@ void Objects::init() {
 
 	// Adds the "Line of Sight" function for items and critters object
 	MakeCall(0x48C889, obj_process_seen_hack, 1);
-	if (HRP::Setting::ExternalEnabled() == false || HRP::Setting::VersionIsValid) {
+	if (hrpIsEnabled == false || hrpVersionValid) {
 		HookCall(0x4841D6, map_place_dude_and_mouse_hook); // enable seen process
 	}
 }

@@ -18,8 +18,6 @@ public:
 	static void ClearOverlay(fo::Window* win);
 	static void ClearOverlay(fo::Window* win, Rectangle &rect);
 	static BYTE* GetOverlaySurface(fo::Window* win);
-
-	static void EnableRecalculateFadeSteps();
 };
 
 }

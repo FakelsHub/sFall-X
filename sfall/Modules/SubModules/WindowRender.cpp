@@ -128,31 +128,10 @@ void WindowRender::DestroyOverlaySurface(fo::Window* win) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static bool reCalculate = false;
-static float fadeMulti = 1.0f;
+static double fadeMulti;
 
 static __declspec(naked) void palette_fade_to_hook() {
 	__asm {
-		cmp  reCalculate, 0;
-		je   skipCalc;
-		push eax;
-		mov  eax, 0x493A4C; // palette_init_
-		push return;        // ret addr
-		push ebx;
-		push ecx;
-		push edx;
-		push esi;
-		push edi;
-		sub  esp, 8;
-		jmp  eax; // recalc
-return:
-		pop  eax;
-		mov  ebx, ds:[FO_VAR_fade_steps];
-skipCalc:
-		cmp  fadeMulti, 0x3F800000; // 1.0f
-		jne  mult;
-		jmp  fo::funcoffs::fadeSystemPalette_;
-mult:
 		push ebx; // _fade_steps
 		fild [esp];
 		fmul fadeMulti;
@@ -162,17 +141,13 @@ mult:
 	}
 }
 
-void WindowRender::EnableRecalculateFadeSteps() {
-	reCalculate = true;
-}
-
 void WindowRender::init() {
-	int multi = IniReader::GetConfigInt("Graphics", "FadeMultiplier", 100);
-	if (multi != 100 || reCalculate) {
+
+	fadeMulti = GetConfigInt("Graphics", "FadeMultiplier", 100);
+	if (fadeMulti != 100) {
 		dlog("Applying fade patch.", DL_INIT);
 		HookCall(0x493B16, palette_fade_to_hook);
-		if (multi <= 0) multi = 1;
-		fadeMulti = multi / 100.0f;
+		fadeMulti = ((double)fadeMulti) / 100.0;
 		dlogr(" Done", DL_INIT);
 	}
 

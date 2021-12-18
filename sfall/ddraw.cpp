@@ -20,16 +20,12 @@
 
 extern ddrawDll ddraw;
 
-//typedef HRESULT (__stdcall *DDrawCreateProc)(DWORD a, IDirectDraw* b, DWORD c);
-//
-//HRESULT __stdcall FakeDirectDrawCreate(DWORD a, IDirectDraw* b, DWORD c) {
-//	DDrawCreateProc proc = (DDrawCreateProc)ddraw.DirectDrawCreate;
-//	if (!proc) return -1;
-//	return proc(a, b, c);
-//}
+typedef HRESULT (__stdcall *DDrawCreateProc)(void* a, void* b, void* c);
 
-__declspec(naked) void FakeDirectDrawCreate() {
-	__asm jmp [ddraw.DirectDrawCreate];
+HRESULT __stdcall FakeDirectDrawCreate(void* a, void* b, void* c) {
+	DDrawCreateProc proc = (DDrawCreateProc)ddraw.DirectDrawCreate;
+	if (!proc) return -1;
+	return proc(a, b, c);
 }
 
 __declspec(naked) void FakeAcquireDDThreadLock() {

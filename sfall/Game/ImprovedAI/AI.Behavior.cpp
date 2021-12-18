@@ -985,7 +985,7 @@ static fo::GameObject* ClearMovePathSub(fo::GameObject* source, fo::GameObject* 
 	uint16_t pathTiles[800]; // массив гексов
 
 	// построить путь до цели игнорируя гексы союзных криттеров
-	long pathLen = game::Tilemap::make_path_func(source, source->tile, target->tile, 1, 2000, pathTiles, 0, AIHelpersExt::obj_ai_move_blocking_at_);
+	long pathLen = game::Tilemap::make_path_func(source, source->tile, target->tile, 1, pathTiles, 0, AIHelpersExt::obj_ai_move_blocking_at_);
 	if (pathLen > 0) {
 		// путь построен, ищем криттеров по гексам пути
 		long tile = source->tile;
@@ -1005,7 +1005,7 @@ static fo::GameObject* ClearMovePathSub(fo::GameObject* source, fo::GameObject* 
 			if (obj) {
 				if (lastCritter) {
 					// проверить путь до текущего криттера
-					if (game::Tilemap::make_path_func(source, source->tile, obj->tile, 0, 2000, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) {
+					if (game::Tilemap::make_path_func(source, source->tile, obj->tile, 0, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) {
 						// путь блокирован, передвинуть предыдущего криттера
 						if (MoveCritter(source, lastCritter, pathTiles[lastStep - 1])) return lastCritter;
 					}
@@ -1024,7 +1024,7 @@ static fo::GameObject* ClearMovePathSub(fo::GameObject* source, fo::GameObject* 
 				#endif
 
 				// проверить свободен ли путь от него до цели
-				if (game::Tilemap::make_path_func(obj, obj->tile, target->tile, 0, 2000, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
+				if (game::Tilemap::make_path_func(obj, obj->tile, target->tile, 0, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
 					// путь свободен, значит только этот критер блокирует путь
 					if (obj->critter.IsNotActive()) return obj; // криттер не активен, возвращаем его как блокирующего путь
 					findBlock = true;
