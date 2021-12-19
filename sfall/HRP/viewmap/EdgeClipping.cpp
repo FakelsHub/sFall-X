@@ -267,8 +267,11 @@ void EdgeClipping::init() {
 	namespace sf = sfall;
 
 	sf::HookCall(0x4B15F6, refresh_game_hook_rect_inside_bound);
+	sf::HookCall(0x4B1565, refresh_game_hook_rect_inside_bound); // refresh_mapper_
 
 	sf::HookCall(0x483EF0, map_scroll_refresh_game_hook_rect_inside_bound);
+	sf::HookCall(0x483F53, map_scroll_refresh_game_hook_rect_inside_bound); // map_scroll_refresh_mapper_
+
 	sf::MakeCall(0x44E481, gmouse_check_scrolling_hack); // from HRP 3.06 (TODO: redo the implementation so that the scrolling of the map works)
 
 	// Prevents the rendering of "post roof" objects (eliminates the bug of red pixels remaining from the hex cursor on the edges of the cropped part of the map)
