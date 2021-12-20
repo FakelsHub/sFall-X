@@ -3200,7 +3200,7 @@ void BugFixes::init()
 {
 	#ifndef NDEBUG
 	LoadGameHook::OnBeforeGameClose() += PrintAddrList;
-	if ((GetConfigInt("Debugging", "BugFixes", 1) == 0)) return;
+	if ((IniReader::GetConfigInt("Debugging", "BugFixes", 1) == 0)) return;
 	#endif
 
 	// Missing game initialization
@@ -3224,7 +3224,7 @@ void BugFixes::init()
 	SafeWrite16(0x46A4E7, 0x04DB);
 
 	// Fix for vanilla division operator treating negative integers as unsigned
-	if (GetConfigInt("Misc", "DivisionOperatorFix", 1)) {
+	if (IniReader::GetConfigInt("Misc", "DivisionOperatorFix", 1)) {
 		dlog("Applying division operator fix.", DL_FIX);
 		SafeWrite32(0x46A51D, 0xFBF79990); // xor edx, edx; div ebx > cdq; idiv ebx
 		dlogr(" Done", DL_FIX);
@@ -3270,7 +3270,7 @@ void BugFixes::init()
 	MakeCall(0x49BE70, obj_use_power_on_car_hack);
 
 	// Fix for being able to charge the car by using cells on other scenery/critters
-	if (GetConfigInt("Misc", "CarChargingFix", 1)) {
+	if (IniReader::GetConfigInt("Misc", "CarChargingFix", 1)) {
 		dlog("Applying car charging fix.", DL_FIX);
 		MakeJump(0x49C36D, protinst_default_use_item_hack);
 		dlogr(" Done", DL_FIX);
@@ -3491,7 +3491,7 @@ void BugFixes::init()
 	dlogr(" Done", DL_FIX);
 
 	// Fix for being unable to sell used geiger counters or stealth boys
-	if (GetConfigInt("Misc", "CanSellUsedGeiger", 1)) {
+	if (IniReader::GetConfigInt("Misc", "CanSellUsedGeiger", 1)) {
 		dlog("Applying fix for being unable to sell used geiger counters or stealth boys.", DL_FIX);
 		SafeWriteBatch<BYTE>(0xBA, { 0x478115, 0x478138 }); // item_queued_ (will return the found item)
 		MakeJump(0x474D22, barter_attempt_transaction_hack, 1);
@@ -3613,7 +3613,7 @@ void BugFixes::init()
 	dlogr(" Done", DL_FIX);
 
 	// Display full item description for weapon/ammo in the barter screen
-	showItemDescription = (GetConfigInt("Misc", "FullItemDescInBarter", 0) != 0);
+	showItemDescription = (IniReader::GetConfigInt("Misc", "FullItemDescInBarter", 0) != 0);
 	if (showItemDescription) {
 		dlog("Applying full item description in barter patch.", DL_FIX);
 		HookCall(0x49B452, obj_examine_func_hack_weapon); // it's jump
@@ -3621,7 +3621,7 @@ void BugFixes::init()
 	}
 
 	// Display experience points with the bonus from Swift Learner perk when gained from non-scripted situations
-	if (GetConfigInt("Misc", "DisplaySwiftLearnerExp", 1)) {
+	if (IniReader::GetConfigInt("Misc", "DisplaySwiftLearnerExp", 1)) {
 		dlog("Applying Swift Learner exp display patch.", DL_FIX);
 		MakeCall(0x4AFAEF, statPCAddExperienceCheckPMs_hack);
 		HookCall(0x4221E2, combat_give_exps_hook);
@@ -3637,7 +3637,7 @@ void BugFixes::init()
 	SafeWrite16(0x456B76, 0x23EB); // jmp loc_456B9B (skip unused engine code)
 
 	// Fix broken obj_can_hear_obj function
-	if (GetConfigInt("Misc", "ObjCanHearObjFix", 0)) {
+	if (IniReader::GetConfigInt("Misc", "ObjCanHearObjFix", 0)) {
 		dlog("Applying obj_can_hear_obj fix.", DL_FIX);
 		SafeWrite8(0x4583D8, 0x3B);            // jz loc_458414
 		SafeWrite8(0x4583DE, CodeType::JumpZ); // jz loc_458414
@@ -3645,7 +3645,7 @@ void BugFixes::init()
 		dlogr(" Done", DL_FIX);
 	}
 
-	if (GetConfigInt("Misc", "AIBestWeaponFix", 1) > 0) {
+	if (IniReader::GetConfigInt("Misc", "AIBestWeaponFix", 1) > 0) {
 		dlog("Applying AI best weapon choose fix.", DL_FIX);
 		// Fixed an wrong item was passed to the function to check the presence of perk at the weapon
 		HookCall(0x42954B, ai_best_weapon_hook);
@@ -3682,7 +3682,7 @@ void BugFixes::init()
 	dlogr(" Done", DL_FIX);
 
 	// Fix for the "mood" argument of start_gdialog function being ignored for talking heads
-	if (GetConfigInt("Misc", "StartGDialogFix", 0)) {
+	if (IniReader::GetConfigInt("Misc", "StartGDialogFix", 0)) {
 		dlog("Applying start_gdialog argument fix.", DL_FIX);
 		MakeCall(0x456F08, op_start_gdialog_hack);
 		dlogr(" Done", DL_FIX);
@@ -3699,9 +3699,9 @@ void BugFixes::init()
 	// Radiation fixes
 	MakeCall(0x42D6C3, process_rads_hack, 1); // prevents player's death if a stat is less than 1 when removing radiation effects
 	HookCall(0x42D67A, process_rads_hook);    // fix for the same effect message being displayed when removing radiation effects
-	radEffectsMsgNum = GetConfigInt("Misc", "RadEffectsRemovalMsg", radEffectsMsgNum);
+	radEffectsMsgNum = IniReader::GetConfigInt("Misc", "RadEffectsRemovalMsg", radEffectsMsgNum);
 	// Display messages about radiation for the active geiger counter
-	if (GetConfigInt("Misc", "ActiveGeigerMsgs", 1)) {
+	if (IniReader::GetConfigInt("Misc", "ActiveGeigerMsgs", 1)) {
 		dlog("Applying active geiger counter messages patch.", DL_FIX);
 		SafeWriteBatch<BYTE>(CodeType::JumpZ, {0x42D424, 0x42D444}); // jnz > jz
 		dlogr(" Done", DL_FIX);
@@ -3737,7 +3737,7 @@ void BugFixes::init()
 	// Fix and repurpose the unused called_shot/num_attack arguments of attack_complex function
 	// called_shot - additional damage, that would be applied in any case when hitting to the target
 	// num_attacks - the number of free action points on the first turn only
-	if (GetConfigInt("Misc", "AttackComplexFix", 0)) {
+	if (IniReader::GetConfigInt("Misc", "AttackComplexFix", 0)) {
 		dlog("Applying attack_complex arguments fix.", DL_FIX);
 		HookCall(0x456D4A, op_attack_hook);
 		SafeWrite8(0x456D61, 0x74); // mov [gcsd.free_move], esi
@@ -3868,7 +3868,7 @@ void BugFixes::init()
 	MakeCall(0x4C03AA, wmWorldMap_hack, 2);
 
 	// Fix to prevent using number keys to enter unvisited areas on a town map
-	if (GetConfigInt("Debugging", "TownMapHotkeys", 0) == 0) {
+	if (IniReader::GetConfigInt("Debugging", "TownMapHotkeys", 0) == 0) {
 		dlog("Applying town map hotkeys patch.", DL_FIX);
 		MakeCall(0x4C495A, wmTownMapFunc_hack, 1);
 		dlogr(" Done", DL_FIX);
@@ -3880,7 +3880,7 @@ void BugFixes::init()
 
 	// Fix for the car being lost when entering a location via the Town/World button and then leaving on foot
 	// (sets GVAR_CAR_PLACED_TILE (633) to -1 on exit to the world map)
-	if (GetConfigInt("Misc", "CarPlacedTileFix", 1)) {
+	if (IniReader::GetConfigInt("Misc", "CarPlacedTileFix", 1)) {
 		dlog("Applying car placed tile fix.", DL_FIX);
 		MakeCall(0x4C2367,  wmInterfaceInit_hack);
 		dlogr(" Done", DL_FIX);
@@ -4000,7 +4000,7 @@ void BugFixes::init()
 	MakeJump(0x4D6E04, win_show_hack);
 
 	// Fix the script attached to an object not being initialized (not run) properly upon object creation
-	createObjectSidStartFix = (GetConfigInt("Misc", "CreateObjectSidFix", 0) > 0);
+	createObjectSidStartFix = (IniReader::GetConfigInt("Misc", "CreateObjectSidFix", 0) > 0);
 	MakeCall(0x4551C0, op_create_object_sid_hack, 1);
 	// Additional fix op_create_object_sid_ for prevent the crash when the prototype of object is missing
 	SafeWrite8(0x45507B, 0x51); // jz 0x4550CD

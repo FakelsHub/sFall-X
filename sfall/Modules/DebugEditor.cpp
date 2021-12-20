@@ -543,8 +543,8 @@ void DebugEditor::init() {
 	DontDeleteProtosPatch();
 	AlwaysReloadMsgs();
 
-	debugEditorKey = IniReader::GetIntDefaultConfig("Input", "DebugEditorKey", 0);
-	if (debugEditorKey != 0) {
+	debugEditorKey = IniReader::GetIntDefaultConfig("Debugging", "DebugEditorKey", 0) & 0xFF;
+	if (debugEditorKey) {
 		OnKeyPressed() += [](DWORD scanCode, bool pressed) {
 			if (scanCode == debugEditorKey && pressed && IsGameLoaded()) {
 				RunDebugEditor();
@@ -552,7 +552,7 @@ void DebugEditor::init() {
 		};
 	}
 
-	showMapGridKey = IniReader::GetIntDefaultConfig("Debugging", "ShowMapGridKey", 0) & 0xFF;
+	showMapGridKey = IniReader::GetIntDefaultConfig("Debugging", "MapGridToggleKey", 0) & 0xFF;
 	if (showMapGridKey) {
 		OnKeyPressed() += [](DWORD scanCode, bool pressed) {
 			if (scanCode == showMapGridKey && pressed && IsGameLoaded()) {
