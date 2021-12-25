@@ -30,8 +30,8 @@ namespace sfall
 
 static const DWORD ExpectedSize = 1189888;
 static const DWORD ExpectedCRC[] = {
-	0xE1680293, // original
-	0xEF34F989  // original + HRP?
+	0xE1680293, // US 1.02d
+	0xEF34F989  // US 1.02d + HRP by Mash
 };
 
 static void inline ExitMessageFail(const char* a) {
@@ -92,7 +92,7 @@ bool CRC(const char* filepath) {
 	}
 
 	DWORD size = GetFileSize(h, 0);
-	if (size < ExpectedSize) {
+	if (size < (ExpectedSize - 1024)) {
 		CloseHandle(h);
 		ExitMessageFail("You're trying to use sfall with an incompatible version of Fallout.");
 		return false;
@@ -125,11 +125,12 @@ bool CRC(const char* filepath) {
 					   "%s has an unexpected CRC.\nExpected 0x%x but got 0x%x.", filepath, ExpectedCRC[0], crc);
 
 		if (size == ExpectedSize) {
-			MessageBoxA(0, buf, 0, MB_TASKMODAL | MB_ICONWARNING);
+			if (MessageBoxA(0, buf, "Mismatched CRC", MB_TASKMODAL | MB_ICONWARNING | MB_ABORTRETRYIGNORE) == IDABORT) {
+				std::exit(EXIT_FAILURE);
+			}
 			return true;
-		} else {
-			ExitMessageFail(buf);
 		}
+		ExitMessageFail(buf);
 	}
 	return matchedCRC;
 }

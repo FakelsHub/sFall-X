@@ -247,16 +247,13 @@ bool HeroIsFemale() {
 // Alternative implementation of item_d_check_addict_ engine function with critter argument and returned addict queue data
 fo::QueueAddictData* __fastcall CheckAddictByPid(fo::GameObject* critter, long pid) {
 	if (pid == -1) {
-		// return queue player addiction
+		// return queue player addiction (is it necessary here?)
 		return (fo::QueueAddictData*)fo::func::queue_find_first(fo::var::obj_dude, fo::QueueType::addict_event);
 	}
 
 	fo::QueueAddictData* queue = (fo::QueueAddictData*)fo::func::queue_find_first(critter, fo::QueueType::addict_event);
-	if (!queue) return queue; // null
-
-	while (queue->drugPid != pid) {
-		queue = (fo::QueueAddictData*)fo::func::queue_find_first(critter, fo::QueueType::addict_event);
-		if (!queue) break;
+	while (queue && queue->drugPid != pid) {
+		queue = (fo::QueueAddictData*)fo::func::queue_find_next(critter, fo::QueueType::addict_event);
 	}
 	return queue; // return null or pointer to queue_addict
 }
