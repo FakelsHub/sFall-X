@@ -34,6 +34,8 @@ public:
 	// Gets the value from the default config (i.e. ddraw.ini)
 	static int IniReader::GetIntDefaultConfig(const char* section, const char* setting, int defaultValue);
 
+	static std::string IniReader::GetStringDefaultConfig(const char* section, const char* setting, const char* defaultValue, size_t bufSize);
+
 	// Gets a list of values from the default config (i.e. ddraw.ini)
 	static std::vector<std::string> IniReader::GetListDefaultConfig(const char* section, const char* setting, const char* defaultValue, size_t bufSize, char delimiter);
 
@@ -62,6 +64,8 @@ public:
 	static std::vector<std::string> GetList(const char* section, const char* setting, const char* defaultValue, size_t bufSize, char delimiter, const char* iniFile);
 
 	static int IniReader::SetConfigInt(const char* section, const char* setting, int value);
+
+	static int IniReader::SetDefaultConfigString(const char* section, const char* setting, const char* value);
 };
 
 // Gets the integer value from given INI file.

@@ -1,4 +1,4 @@
-/*
+﻿/*
  *    sfall
  *    Copyright (C) 2009, 2010  The sfall team
  *
@@ -74,7 +74,7 @@ static const DWORD CRC_table[256] = {
 	0x1886B265, 0x12D9FF10, 0x0C38288F, 0x066765FA, 0x0C435932, 0x061C1447, 0x18FDC3D8, 0x12A28EAD
 };
 
-static DWORD crcInternal(BYTE* data, DWORD size) {
+static DWORD CalcCRCInternal(BYTE* data, DWORD size) {
 	DWORD crc = 0XFFFFFFFF;
 	for (DWORD i = 0; i < size; i++) {
 		crc = CRC_table[(((BYTE)(crc)) ^ data[i])] ^ (crc >> 8);
@@ -82,20 +82,33 @@ static DWORD crcInternal(BYTE* data, DWORD size) {
 	return crc ^ 0XFFFFFFFF;
 }
 
-bool CRC(const char* filepath) {
+static bool CheckExtraCRC(DWORD crc) {
+	auto extraCrcList = IniReader::GetListDefaultConfig("Debugging", "ExtraCRC", "", 512, ',');
+	if (!extraCrcList.empty()) {
+		return std::any_of(extraCrcList.begin(), extraCrcList.end(), [crc](const std::string& testCrcStr)
+			{
+				auto testedCrc = strtoul(testCrcStr.c_str(), 0, 16);
+				return testedCrc && crc == testedCrc; // return for lambda
+			}
+		);
+	}
+	return false;
+}
+
+DWORD CRC(const char* filepath) {
 	char buf[512];
 
 	HANDLE h = CreateFileA(filepath, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
 	if (h == INVALID_HANDLE_VALUE) {
 		ExitMessageFail("Cannot open game exe for CRC check.");
-		return false;
+		return 0;
 	}
 
 	DWORD size = GetFileSize(h, 0);
 	if (size < (ExpectedSize - 1024)) {
 		CloseHandle(h);
 		ExitMessageFail("You're trying to use sfall with an incompatible version of Fallout.");
-		return false;
+		return 0;
 	}
 
 	DWORD crc;
@@ -103,36 +116,47 @@ bool CRC(const char* filepath) {
 	ReadFile(h, bytes, size, &crc, 0);
 	CloseHandle(h);
 
-	crc = crcInternal(bytes, size);
+	crc = CalcCRCInternal(bytes, size);
 	delete[] bytes;
 
 	for (int i = 0; i < sizeof(ExpectedCRC) / 4; i++) {
-		if (crc == ExpectedCRC[i]) return true;
+		if (crc == ExpectedCRC[i]) return -1; // vanilla CRC
 	}
 
-	bool matchedCRC = false;
-
-	auto extraCrcList = IniReader::GetListDefaultConfig("Debugging", "ExtraCRC", "", 512, ',');
-	if (!extraCrcList.empty()) {
-		matchedCRC = std::any_of(extraCrcList.begin(), extraCrcList.end(), [crc](const std::string& testCrcStr) {
-			auto testedCrc = strtoul(testCrcStr.c_str(), 0, 16);
-			return testedCrc && crc == testedCrc; // return for lambda
-		});
-	}
+ReTry:
+	bool matchedCRC = CheckExtraCRC(crc);
 	if (!matchedCRC) {
 		sprintf_s(buf, "You're trying to use sfall with an incompatible version of Fallout.\n"
 					   "Was expecting '" TARGETVERSION "'.\n\n"
 					   "%s has an unexpected CRC.\nExpected 0x%x but got 0x%x.", filepath, ExpectedCRC[0], crc);
 
 		if (size == ExpectedSize) {
-			if (MessageBoxA(0, buf, "Mismatched CRC", MB_TASKMODAL | MB_ICONWARNING | MB_ABORTRETRYIGNORE) == IDABORT) {
+			switch (MessageBoxA(0, buf, "CRC Mismatch", MB_TASKMODAL | MB_ICONWARNING | MB_ABORTRETRYIGNORE)) {
+			case IDABORT:
 				std::exit(EXIT_FAILURE);
+				break;
+			case IDRETRY:
+				goto ReTry;
 			}
-			return true;
+			return crc;
 		}
 		ExitMessageFail(buf);
 	}
-	return matchedCRC;
+	return (matchedCRC) ? crc : 0;
+}
+
+DWORD GetCRC(FILE* fl) {
+	std::fseek(fl, 0, SEEK_END);
+	size_t size = std::ftell(fl);
+	BYTE* bytes = new BYTE[size];
+
+	std::fseek(fl, 0, SEEK_SET);
+	std::fread(bytes, 1, size, fl);
+
+	DWORD crc = CalcCRCInternal(bytes, size);
+	delete[] bytes;
+
+	return (!CheckExtraCRC(crc)) ? crc : 0; // проверяет имеется ли такой CRC в списке
 }
 
 }

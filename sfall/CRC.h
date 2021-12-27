@@ -19,6 +19,7 @@
 namespace sfall
 {
 
-bool CRC(const char* filepath);
+DWORD CRC(const char* filepath);
+DWORD GetCRC(FILE* fl);
 
 }

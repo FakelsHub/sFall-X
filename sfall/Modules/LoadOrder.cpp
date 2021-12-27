@@ -134,7 +134,7 @@ static bool PatchesCompare(const char* p1, const char* p2) {
 
 		if (c1 != c2 || ++n > len1 || n > len2) return false;
 
-		if (n == len1 && n == len2) break; // is matches
+		if (n == len1 && n == len2) break; // paths are matched
 	};
 	return true;
 }
@@ -549,7 +549,7 @@ static void SfallResourceFile() {
 
 void LoadOrder::AddResourcePatches(std::string &dat, std::string &patches) {
 	if (!dat.empty()) sfPatchFiles.push_back(std::move(dat));
-	if (!patches.empty()) sfPatchFiles.push_back(std::move(trim(patches))); // need trim?
+	if (!patches.empty()) sfPatchFiles.push_back(std::move(patches));
 }
 
 void LoadOrder::init() {

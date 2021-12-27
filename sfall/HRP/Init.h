@@ -11,7 +11,7 @@ namespace HRP
 
 class Setting {
 public:
-	static void init(const char*, std::string&);
+	static void init(const char*, std::string&, DWORD);
 
 	static DWORD GetAddress(DWORD addr);
 	static bool VersionIsValid; // HRP 4.1.8 version validation

@@ -10,6 +10,7 @@
 
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\main.h"
+#include "..\CRC.h"
 #include "..\Translate.h"
 #include "..\Utils.h"
 #include "..\WinProc.h"
@@ -95,7 +96,7 @@ static std::string GetBackupFileName(const char* runFileName, bool wait) {
 	return bakExeName;
 }
 
-static bool DisableExtHRP(const char* runFileName, std::string &cmdline) {
+static bool DisableExtHRP(const char* runFileName, std::string &cmdline, DWORD crc) {
 	std::string bakExeName = std::move(GetBackupFileName(runFileName, false));
 	if (bakExeName.empty()) return false;
 
@@ -115,6 +116,20 @@ static bool DisableExtHRP(const char* runFileName, std::string &cmdline) {
 	int restore1[10] = { 0 };
 	_fwrite_nolock(restore1, 4, 10, ft);
 
+	if (crc != -1) {
+		std::fflush(ft);
+		DWORD newCRC = sfall::GetCRC(ft);
+		if (newCRC != 0) {
+			char buf[33] = "0x";
+			itoa(newCRC, &buf[2], 16);
+
+			auto extraCRC = sfall::IniReader::GetStringDefaultConfig("Debugging", "ExtraCRC", "", 512);
+			if (!extraCRC.empty()) extraCRC.append(", ");
+			extraCRC.append(buf);
+
+			sfall::IniReader::SetDefaultConfigString("Debugging", "ExtraCRC", extraCRC.c_str());
+		}
+	}
 	std::fclose(ft);
 	cmdline.append(" -restart");
 
@@ -149,7 +164,7 @@ static __declspec(naked) void gmouse_bk_process() {
 	}
 }
 
-void Setting::init(const char* exeFileName, std::string &cmdline) {
+void Setting::init(const char* exeFileName, std::string &cmdline, DWORD crc) {
 	namespace sf = sfall;
 
 	bool hiResMode = sf::IniReader::GetIntDefaultConfig("Main", "HiResMode", 1) != 0;
@@ -184,7 +199,7 @@ void Setting::init(const char* exeFileName, std::string &cmdline) {
 			}
 		}
 		if (MessageBoxA(0, infoMsg, "sfall: Conflict of High Resolution patches", MB_TASKMODAL | MB_ICONWARNING | MB_YESNO) == IDYES) {
-			if (!DisableExtHRP(exeFileName, cmdline)) {
+			if (!DisableExtHRP(exeFileName, cmdline, crc)) {
 				MessageBoxA(0, "An error occurred while trying to deactivate the High Resolution Patch.", "sfall", MB_TASKMODAL | MB_ICONERROR);
 			} else {
 				ExitProcess(EXIT_SUCCESS); //std::exit(EXIT_SUCCESS);

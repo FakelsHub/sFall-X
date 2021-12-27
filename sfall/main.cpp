@@ -204,7 +204,8 @@ static HMODULE SfallInit() {
 	SetCursor(LoadCursorA(0, IDC_ARROW));
 	ShowCursor(1);
 
-	if (!CRC(filepath)) return 0;
+	DWORD crc = CRC(filepath);
+	if (!crc) return 0;
 
 	LoggingInit();
 
@@ -276,7 +277,7 @@ defaultIni:
 	}
 
 	Translate::init(falloutConfigName);
-	HRP::Setting::init(filepath, cmdline);
+	HRP::Setting::init(filepath, cmdline, crc);
 
 	InitReplacementHack();
 	InitModules();
