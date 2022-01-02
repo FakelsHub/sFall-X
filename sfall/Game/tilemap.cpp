@@ -16,6 +16,7 @@ namespace game
 
 namespace sf = sfall;
 
+/* The same as the obj_blocking_at_ function, but ignores objects of the critter type */
 static fo::GameObject* __fastcall obj_path_blocking_at(fo::GameObject* source, long tile, long elev) {
 	if (tile < 0 || tile >= 40000) return nullptr;
 
@@ -198,7 +199,7 @@ struct sfChild {
 	char rotation;
 };
 
-static std::vector<sfChild> m_pathData;
+static std::vector<sfChild> m_pathData; // _child_path
 static std::vector<sfChild> m_dadData;
 static std::array<uint8_t, 5000> seenTile;
 static long maxPathNodes = 2000;
@@ -215,7 +216,7 @@ static __forceinline fo::GameObject* CheckTileBlocking(void* blockFunc, long til
 	//return object;
 }
 
-// same as idist_
+// same as idist_ function
 static __inline long DistanceFromPositions(long sX, long sY, long tX, long tY) {
 	long diffX = std::abs(tX - sX);
 	long diffY = std::abs(tY - sY);
@@ -223,7 +224,7 @@ static __inline long DistanceFromPositions(long sX, long sY, long tX, long tY) {
 	return (diffX + diffY) - (minDiff >> 1);
 }
 
-// optimized version with added args
+// Optimized and fixed version of the make_path_func_ function with added arguments
 // type: 0 - rotation path, 1 - tile path
 // maxNodes: limiting the building of a path
 long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTile, long targetTile, long type, long maxNodes, void* arrayRef, long checkTargetTile, void* blockFunc) {
@@ -285,14 +286,14 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 				}
 			}
 		}
-		childData = *pathData; // copy element data
+		childData = *pathData; // copying element data to the childData
 		pathData->tile = -1;   // set a free element
 		pathCounter--;
 
 		if (childData.tile == targetTile) break; // exit the loop path is built
 
-		*dadData++ = childData;
-		if (++node >= maxNodes) { //++dadData == m_dadData.end()
+		*dadData++ = childData; // copying sfChild structure data from childData to dad
+		if (++node >= maxNodes) {
 			return 0; // path can't be built reached the end of the array (limit the maximum path length)
 		}
 
@@ -302,7 +303,7 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 
 			long seenIndex = tile >> 3;
 			uint8_t seenMask = 1 << (tile & 7);
-			if (!(seenTile[seenIndex] & seenMask)) {
+			if (!(seenTile[seenIndex] & seenMask)) { // already checked this hex? (0 not)
 				seenTile[seenIndex] |= seenMask;
 
 				if (tile != targetTile) {
@@ -316,7 +317,8 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 						}
 					}
 				}
-				if (++pathCounter >= 2000) { // ограничение максимального длины пути?
+				if (++pathCounter >= 2000) { // limiting the maximum path length?
+					fo::func::debug_printf("\nTilemap::make_path_func: failed to build a path, exceeded the 'pathCounter' limit.");
 					return 0;                // *** не убирать брекпоин, до прояснения ***
 				}
 
@@ -354,6 +356,8 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 	uint16_t* arrayT = reinterpret_cast<uint16_t*>(arrayRef);
 	size_t pathLen = 0;
 
+	//fo::func::debug_printf("\nmake_path_func: tiles [to %d]", childData.tile);
+
 	// building and calculating the path length
 	do {
 		if (childData.tile == sourceTile) break; // reached the source tile
@@ -363,11 +367,16 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 			} else {
 				*arrayR++ = childData.rotation;
 			}
+			//fo::func::debug_printf(" <- %d", childData.tile);
 		}
 		// search a linked tile 'from -> tile'
-		while (dadData->from_tile != -1 && childData.from_tile != dadData->tile) --dadData;
+		dadData = m_dadData.begin();
+		while (childData.from_tile != dadData->tile) dadData++;
+
 		childData = *dadData;
 	} while (++pathLen < 800);
+
+	//fo::func::debug_printf(" <- %d [from] len:%d\n", dadData->tile, pathLen);
 
 	if (arrayRef && pathLen > 1) {
 		// reverse the array values
@@ -394,8 +403,8 @@ long __fastcall Tilemap::make_path_func(fo::GameObject* srcObject, long sourceTi
 static void __declspec(naked) make_path_func_hack_replacement() {
 	__asm {
 		xchg [esp], ecx;   // ret addr <> array
-		push maxPathNodes; // [add sfall]
-		push 0;            // type rotation [add sfall]
+		push maxPathNodes; // [added sfall]
+		push 0;            // type rotation [added sfall]
 		push ebx;          // target tile
 		push ecx;          // ret addr
 		mov  ecx, eax;

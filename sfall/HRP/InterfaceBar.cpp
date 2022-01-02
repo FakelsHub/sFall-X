@@ -425,7 +425,7 @@ static void __fastcall DrawAlternateAmmoMetre(long x, long y) {
 	if (y > 0) {
 		unsigned char dColor, lColor = 0;
 		do {
-			if (lColor = 0 || IFaceBar::ALTERNATE_AMMO_METRE == 3) GetAmmoMetreColors(y, lColor, dColor);
+			if (IFaceBar::ALTERNATE_AMMO_METRE == 3 || lColor == 0) GetAmmoMetreColors(y, lColor, dColor);
 
 			surface[0] = 11;
 			surface[1] = lColor;
