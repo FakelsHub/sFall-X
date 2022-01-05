@@ -7,6 +7,7 @@
 #include "..\..\FalloutEngine\Fallout2.h"
 #include "..\..\main.h"
 #include "..\..\Modules\LoadGameHook.h"
+#include "..\..\Modules\MainLoopHook.h"
 
 #include "..\Init.h"
 #include "EdgeBorder.h"
@@ -425,8 +426,9 @@ static void __declspec(naked) obj_create_intersect_list_hack_tile_num() {
 	}
 }
 
+namespace sf = sfall;
+
 void ViewMap::init() {
-	namespace sf = sfall;
 
 	if (SCROLL_DIST_X <= 0)	SCROLL_DIST_X = 480;
 	else if (SCROLL_DIST_X < 320) SCROLL_DIST_X = 320;
@@ -463,6 +465,30 @@ void ViewMap::init() {
 
 	// Dev block tile_set_border_
 	//BlockCall(0x4B11A3); // tile_init_
+}
+
+static void __declspec(naked) obj_move_to_tile_hook_redraw() {
+	__asm {
+		mov  sf::MainLoopHook::displayWinUpdateState, 1;
+		call fo::funcoffs::tile_set_center_;
+		mov  eax, ds:[FO_VAR_display_win];
+		jmp  fo::funcoffs::win_draw_; // update black edges after tile_set_center_
+	}
+}
+
+static void __declspec(naked) map_check_state_hook_redraw() {
+	__asm {
+		cmp  sf::MainLoopHook::displayWinUpdateState, 0;
+		je   obj_move_to_tile_hook_redraw;
+		jmp  fo::funcoffs::tile_set_center_;
+	}
+}
+
+void ViewMap::RedrawFix() {
+	// Redraw the screen to update black edges of the map (HRP bug)
+	// https://github.com/phobos2077/sfall/issues/282
+	sf::HookCall(0x48A954, obj_move_to_tile_hook_redraw);
+	sf::HookCall(0x483726, map_check_state_hook_redraw);
 }
 
 }

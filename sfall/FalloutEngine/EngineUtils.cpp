@@ -258,6 +258,15 @@ fo::QueueAddictData* __fastcall CheckAddictByPid(fo::GameObject* critter, long p
 	return queue; // return null or pointer to queue_addict
 }
 
+fo::QueueRadiationData* __fastcall GetRadiationEvent(long type) {
+	fo::QueueRadiationData* queue = (fo::QueueRadiationData*)fo::func::queue_find_first(fo::var::obj_dude, fo::radiation_event);
+	while (queue) {
+		if (queue->init == type) return queue;
+		queue = (fo::QueueRadiationData*)fo::func::queue_find_next(fo::var::obj_dude, fo::radiation_event);
+	}
+	return nullptr;
+}
+
 // Checks whether the player is under the influence of negative effects of radiation
 long __fastcall IsRadInfluence() {
 	fo::QueueRadiationData* queue = (fo::QueueRadiationData*)fo::func::queue_find_first(fo::var::obj_dude, fo::radiation_event);
@@ -358,7 +367,7 @@ void GetObjectsTileRadius(std::vector<fo::GameObject*> &objs, long sourceTile, l
 		while (obj)
 		{
 			if (type == -1 || type == obj->Type()) {
-				bool multiHex = (obj->flags & fo::ObjectFlag::MultiHex) ? true : false;
+				char multiHex = (obj->flags & fo::ObjectFlag::MultiHex) ? 1 : 0;
 				if (fo::func::tile_dist(sourceTile, obj->tile) <= (radius + multiHex)) {
 					objs.push_back(obj);
 				}
@@ -383,7 +392,7 @@ void GetObjectsTileRadius(std::multimap<long, fo::GameObject*> &objs, long sourc
 		while (obj)
 		{
 			if (typeMask == -1 || TypeMask(obj->Type(), typeMask)) {
-				unsigned char multiHex = (obj->flags & fo::ObjectFlag::MultiHex) ? 1 : 0;
+				char multiHex = (obj->flags & fo::ObjectFlag::MultiHex) ? 1 : 0;
 				long dist = fo::func::tile_dist(sourceTile, obj->tile);
 				if (dist <= (radius + multiHex)) {
 					objs.emplace(dist, obj);

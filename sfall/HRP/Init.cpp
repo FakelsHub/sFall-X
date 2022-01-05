@@ -167,6 +167,8 @@ static __declspec(naked) void gmouse_bk_process() {
 void Setting::init(const char* exeFileName, std::string &cmdline, DWORD crc) {
 	namespace sf = sfall;
 
+	ViewMap::RedrawFix();
+
 	bool hiResMode = sf::IniReader::GetIntDefaultConfig("Main", "HiResMode", 1) != 0;
 
 	if (!Setting::ExternalEnabled() && !hiResMode) return; // vanilla game mode
@@ -185,7 +187,7 @@ void Setting::init(const char* exeFileName, std::string &cmdline, DWORD crc) {
 	if (Setting::ExternalEnabled()) {
 		char infoMsg[512];
 		sfall::Translate::Get("sfall", "HiResInfo",
-			"This version of sfall has its own integrated High Resolution mode patch, which is compatible with with the settings of the High Resolution Patch by Mash.\n\n"
+			"This version of sfall has its own integrated High Resolution mode patch, which is compatible with the settings of the High Resolution Patch by Mash.\n\n"
 			"If you want to continue using the High Resolution Patch by Mash without seeing this message, disable the 'HiResMode' option in the ddraw.ini file.\n"
 			"Or you can disable the external HRP to get new graphic improvements from sfall.\n\n"
 			"Do you want to disable the High Resolution Patch by Mash?", infoMsg, 512);
