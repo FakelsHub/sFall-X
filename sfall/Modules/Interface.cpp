@@ -1052,9 +1052,9 @@ void Interface::init() {
 	InventoryCharacterRotationSpeedPatch();
 	UIAnimationSpeedPatch();
 
-	if (IniReader::GetConfigInt("Interface", "RemoveWindowRounding", 1)) {
+	//if (IniReader::GetConfigInt("Interface", "RemoveWindowRounding", 1)) {
 		SafeWriteBatch<BYTE>(CodeType::JumpShort, {0x4D6EDD, 0x4D6F12});
-	}
+	//}
 
 	if (IniReader::GetConfigInt("Interface", "ActionPointsBar", 0)) {
 		ActionPointsBarPatch();

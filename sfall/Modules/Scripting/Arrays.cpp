@@ -15,7 +15,8 @@ namespace script
 /*
 	GLOBAL variable for arrays
 */
-DWORD arraysBehavior = 1; // 0 - backward compatible with pre-3.4, 1 - permanent arrays don't get stored in savegames by default
+// TODO: Remove reladed old code
+const DWORD arraysBehavior = 1; // 0 - backward compatible with pre-3.4, 1 - permanent arrays don't get stored in savegames by default
 
 // arrays map: arrayId => arrayVar
 ArraysMap arrays;
