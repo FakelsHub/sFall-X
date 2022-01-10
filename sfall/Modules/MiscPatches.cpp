@@ -28,6 +28,8 @@
 namespace sfall
 {
 
+static int idle = -1;
+
 static char mapName[16]       = {};
 static char patchName[33]     = {};
 static char versionString[65] = {};
@@ -51,6 +53,15 @@ static const long StatsDisplayTable[14] = {
 	fo::Stat::STAT_dmg_resist_explosion,
 	fo::Stat::STAT_dmg_resist_electrical
 };
+
+static void __declspec(naked) GNW95_process_message_hack() {
+	__asm {
+		push idle;
+		call Sleep;
+		cmp  ds:[FO_VAR_GNW95_isActive], 0;
+		retn;
+	}
+}
 
 static void __declspec(naked) WeaponAnimHook() {
 	__asm {
@@ -1025,6 +1036,10 @@ static void EngineOptimizationPatches() {
 	SafeWrite8(0x47C135, 140 + 10); // jz 0x47C1CF
 }
 
+void MiscPatches::SetIdle(int value) {
+	idle = (value > 30) ? 30 : value;
+}
+
 void MiscPatches::init() {
 
 	EngineOptimizationPatches();
@@ -1084,6 +1099,10 @@ void MiscPatches::init() {
 	fo::var::idle_func = reinterpret_cast<void*>(Sleep);
 	SafeWrite16(0x4C9F12, 0x7D6A); // push 125 (ms)
 
+	int ms = IniReader::GetConfigInt("System", "ProcessorIdle", -1);
+	if (ms > idle) SetIdle(ms);
+	if (idle >= 0) MakeCall(0x4C9CF8, GNW95_process_message_hack, 2);
+
 	SafeWrite8(0x4810AB, CodeType::JumpShort); // Disable selfrun
 
 	BlockCall(0x4425E6); // Patch out ereg call
@@ -1110,6 +1129,7 @@ void MiscPatches::init() {
 	}
 
 	// Highlight "Radiated" in red color when the player is under the influence of negative effects of radiation
+	// also highlight in gray when the player still has an impending radiation effect
 	HookCalls(ListDrvdStats_hook, { 0x43549C, 0x4354BE });
 
 	// Allow setting custom colors from the game palette for object outlines

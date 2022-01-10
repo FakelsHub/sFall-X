@@ -53,8 +53,6 @@ static Delegate<> onMapExit;
 
 static uint32_t __stdcall HandleMapUpdateForScripts(const uint32_t procId);
 
-static int idle;
-
 char ScriptExtender::gTextBuffer[5120]; // used as global temp text buffer for script functions
 
 std::string ScriptExtender::iniConfigFolder;
@@ -666,8 +664,6 @@ static void ResetStateAfterFrame() {
 }
 
 static inline void RunGlobalScripts(int mode1, int mode2) {
-	if (idle > -1) Sleep(idle);
-
 	for (size_t i = 0; i < globalScripts.size(); i++) {
 		if (globalScripts[i].repeat
 			&& (globalScripts[i].mode == mode1 || globalScripts[i].mode == mode2)
@@ -943,9 +939,6 @@ void ScriptExtender::init() {
 	for (unsigned int i = 0; i < globalScriptPathList.size(); i++) {
 		ToLowerCase(globalScriptPathList[i]);
 	}
-
-	idle = IniReader::GetConfigInt("System", "ProcessorIdle", -1);
-	if (idle > -1 && idle > 30) idle = 30;
 
 	iniConfigFolder = IniReader::GetConfigString("Scripts", "IniConfigFolder", "", 64);
 	size_t len = iniConfigFolder.length();

@@ -1052,6 +1052,7 @@ void Interface::init() {
 	InventoryCharacterRotationSpeedPatch();
 	UIAnimationSpeedPatch();
 
+	// Remove window position rounding for scripting interface window
 	//if (IniReader::GetConfigInt("Interface", "RemoveWindowRounding", 1)) {
 		SafeWriteBatch<BYTE>(CodeType::JumpShort, {0x4D6EDD, 0x4D6F12});
 	//}
