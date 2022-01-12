@@ -241,7 +241,7 @@ void op_set_weapon_ammo_pid(OpcodeContext& ctx) {
 	if (fo::util::GetProto(obj->protoId, &proto)) {
 		long type = proto->item.type;
 		if (type == fo::ItemType::item_type_weapon || type == fo::ItemType::item_type_misc_item) {
-			obj->item.ammoPid = ctx.arg(1).rawValue();
+			obj->item.ammoPid = (fo::ProtoID)ctx.arg(1).rawValue();
 		}
 	} else {
 		ctx.printOpcodeError(protoFailedLoad, ctx.getOpcodeName(), obj->protoId);
@@ -486,20 +486,20 @@ void mf_get_object_ai_data(OpcodeContext& ctx) {
 	fo::AIcap* cap = fo::func::ai_cap(ctx.arg(0).object());
 	DWORD arrayId, value = -1;
 	switch (ctx.arg(1).rawValue()) {
-		case 0:  value = cap->aggression;       break;
-		case 1:  value = cap->area_attack_mode; break;
-		case 2:  value = cap->attack_who;       break;
-		case 3:  value = cap->best_weapon;      break;
-		case 4:  value = cap->chem_use;         break;
-		case 5:  value = cap->disposition;      break;
-		case 6:  value = cap->distance;         break;
-		case 7:  value = cap->max_dist;         break;
-		case 8:  value = cap->min_hp;           break;
-		case 9:  value = cap->min_to_hit;       break;
-		case 10: value = cap->hurt_too_much;    break; // DAM_BLIND/DAM_CRIP_* flags
-		case 11: value = cap->run_away_mode;    break;
-		case 12: value = cap->secondary_freq;   break;
-		case 13: value = cap->called_freq;      break;
+		case 0:  value = cap->aggression;             break;
+		case 1:  value = (long)cap->area_attack_mode; break;
+		case 2:  value = (long)cap->attack_who;       break;
+		case 3:  value = (long)cap->pref_weapon;      break;
+		case 4:  value = (long)cap->chem_use;         break;
+		case 5:  value = (long)cap->disposition;      break;
+		case 6:  value = (long)cap->distance;         break;
+		case 7:  value = cap->max_dist;               break;
+		case 8:  value = cap->min_hp;                 break;
+		case 9:  value = cap->min_to_hit;             break;
+		case 10: value = cap->hurt_too_much;          break; // DAM_BLIND/DAM_CRIP_* flags
+		case 11: value = (long)cap->run_away_mode;    break;
+		case 12: value = cap->secondary_freq;         break;
+		case 13: value = cap->called_freq;            break;
 		case 14:
 			arrayId = CreateTempArray(3, 0);
 			arrays[arrayId].val[0].set(cap->chem_primary_desire[0]);

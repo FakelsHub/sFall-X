@@ -43,8 +43,14 @@ public:
 	static fo::AttackSubType GetWeaponSubType(fo::GameObject* item, bool isSecond);
 	static fo::AttackSubType GetWeaponSubType(fo::GameObject* item, fo::AttackType hitMode);
 
+	static bool ItemIsGun(fo::GameObject* item);
+
 	// Проверяет относится ли предмет к типу стрелковому или метательному оружию
-	static bool IsGunOrThrowingWeapon(fo::GameObject* item, long type = -1);
+	static bool WeaponIsGunOrThrowing(fo::GameObject* item, long type = -1);
+
+	static long SearchTileShoot(fo::GameObject* target, long &inOutTile, char* path, long len);
+
+	static bool TileWayIsDoor(long tile, long elev);
 
 	static long GetFreeTile(fo::GameObject* source, long tile, long distMax, long dir);
 	static long GetDirFreeTile(fo::GameObject* source, long tile, long distMax);
@@ -57,8 +63,11 @@ public:
 	static bool CanSeeObject(fo::GameObject* source, fo::GameObject* target);
 
 	static fo::GameObject* __fastcall obj_ai_move_blocking_at(fo::GameObject* source, long tile, long elev);
-	// wrapper
-	static void obj_ai_move_blocking_at_();
+	static void obj_ai_move_blocking_at_(); // wrapper
+
+	static fo::GameObject* __fastcall obj_ai_shoot_blocking_at(fo::GameObject* source, long tile, long elev);
+	static void obj_ai_shoot_blocking_at_(); // wrapper
+
 };
 
 }

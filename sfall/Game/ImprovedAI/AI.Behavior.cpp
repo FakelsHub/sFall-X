@@ -35,10 +35,10 @@
 	on_your_own - специального поведение для этого не определено.
 
 	Disposition: Шаблоны предустановленных настроек для партийцев игрока. Специальных поведений в движке игры для них неопределено.
-	coward      -
-	defensive   -
-	aggressive  -
-	berserk     -
+	coward      - трусливое   (distance=snipe,       run_away_mode=not_feeling_good, chem_use=stims_when_hurt_little, area_attack_mode=sometimes,  AttackWho=closest)
+	defensive   - осторожное  (distance=stay_close,  run_away_mode=not_feeling_good, chem_use=stims_when_hurt_lots,   area_attack_mode=be_careful, AttackWho=whomever_attacking_me, )
+	aggressive  - агрессивное (distance=on_your_own, run_away_mode=tourniquet,       chem_use=stims_when_hurt_lots,   area_attack_mode=be_careful, AttackWho=whomever)
+	berserk     - напролом    (distance=on_your_own, run_away_mode=never,            chem_use=stims_when_hurt_lots,   area_attack_mode=sometimes,  AttackWho=whomever)
 */
 
 namespace game
@@ -64,7 +64,7 @@ static long  __fastcall AIPickupWeaponFix(fo::GameObject* critter, long distance
 	if (!allowPickUp) {
 		// если NPC имеет стрелковое или метательное оружие, тогда позволено подойти к предмету
 		fo::GameObject* item = fo::func::inven_right_hand(critter);
-		if (item && AIHelpersExt::IsGunOrThrowingWeapon(item)) return 1; // allow pickup
+		if (item && AIHelpersExt::WeaponIsGunOrThrowing(item)) return 1; // allow pickup
 	}
 	DEV_PRINTF1("\nai_search_environ: ItemPickUpFix is allow: %d\n", allowPickUp);
 	return 0 | allowPickUp; // false - next item
@@ -176,29 +176,10 @@ noSwitch:
 // Функция попытается найти свободный гекс для совершения выстрела AI по цели, в случаях когда цель для AI заблокирована для выстрела каким либо объектом
 // если свободный гекс для встрела не будет найден то выполнится действие функции ai_move_steps_closer
 // TODO: Необходимо улучшить алгоритм для поиска гекса для совершения выстрела, для снайперов должна быть применена другая тактика
-static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObject* target, fo::AttackType &hitMode) {
-	long distance, shotTile = 0;
+static long __fastcall SearchTileForShoot(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode, long shotCost, long length, long moveAP, char* rotationData) {
+	long distance = 0,
+		 shotTile = 0;
 
-	fo::AIcap* cap = AICombat::AttackerAI();
-	if (cap->distance == fo::AIpref::distance::stay) return 0;
-
-	fo::GameObject* itemHand = fo::func::inven_right_hand(source);
-	if (!itemHand || fo::func::item_w_subtype(itemHand, hitMode) <= fo::AttackSubType::MELEE) {
-		return 0;
-	}
-
-	long shotCost = game::Items::item_w_mp_cost(source, hitMode, 0);
-	long moveAP = source->critter.getMoveAP() - shotCost; // left ap for distance move
-	if (moveAP <= 0) return 0;
-
-	DEV_PRINTF1("\n[AI] Search tile for shoot: max AP distance %d", moveAP);
-
-	char rotationData[800];
-	long length = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, (void*)fo::funcoffs::obj_blocking_at_);
-	if (length == 0) {
-		DEV_PRINTF("\n[AI] Search tile for shoot: path blocked.");
-		return 0;
-	}
 	long pathLength = length;
 	if (pathLength > moveAP) pathLength = moveAP;
 	else if (moveAP > pathLength) moveAP = pathLength;
@@ -235,12 +216,12 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 		shotTile = checkTile;
 		distance = i + 1;
 		DEV_PRINTF2("\n[AI] Get friendly fire shot tile:%d, Move dist:%d", checkTile, distance);
-		// проверяем следующие гексы в пути
+		// проверяем следующие гексы пути
 	}
 
 	// взяли гекс, но еще остались свободные AP
 	if (shotTile && moveAP > distance) {
-		if (cap->distance != fo::AIpref::distance::snipe && cap->disposition != fo::AIpref::disposition::coward &&  // оставляем AP для поведения "Snipe"
+		if (AICombat::AttackerAI()->distance != fo::AIpref::Distance::snipe && AICombat::AttackerAI()->disposition != fo::AIpref::Disposition::coward &&  // оставляем AP для поведения "Snipe"
 			fo::func::determine_to_hit_from_tile(source, shotTile, target, fo::BodyPart::Uncalled, hitMode) < 50) { // проверить шанс попадания по цели
 
 			moveAP -= distance;
@@ -277,9 +258,101 @@ static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObje
 			}
 		}
 	}
-	if (shotTile && sf::isDebug) fo::func::debug_printf("\n[AI] %s: Move to tile for shot.", fo::func::critter_name(source));
+	return (distance << 16) | shotTile;
+}
 
-	int result = (shotTile && AIHelpersExt::CombatMoveToTile(source, shotTile, distance) == 0) ? 1 : 0;
+static long __fastcall GetTileForThruShoot(fo::GameObject* source, fo::GameObject* target, long length, char* rotationData, long moveAP) {
+	long tile = source->tile;
+
+	//long sx, sy; // x432 / y350
+	//long tx, ty; // x704 / y506
+	//fo::func::tile_coord(source->tile, &sx, &sy);
+	//fo::func::tile_coord(target->tile, &tx, &ty);
+
+	// x = 704 (tx)
+	// y = 350 (sy)
+	// x 9 гексов разницы
+	// y 7
+
+	for (int i = 0; i < length; i++)
+	{
+		tile = fo::func::tile_num_in_direction(tile, rotationData[i], 1);
+		//if (i == 0) continue; // пропускаем первый гекс
+
+		fo::GameObject* obj = fo::func::obj_blocking_at(source, tile, source->elevation);
+		if (obj && obj->flags & fo::ObjectFlag::ShootThru) {
+
+			// проверить простреливается ли линия к цели через объект
+			fo::GameObject* outObj = obj; // игнорируем obj
+			fo::func::make_straight_path_func(target, target->tile, tile, 0, (DWORD*)&outObj, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
+			if (outObj && !outObj->IsCritter()) continue; // не простреливается, следующий объект
+
+			// построить путь до объекта
+			// определить гекс линии прострела
+			long sTile = 0;
+			long dist = fo::func::tile_dist(target->tile, obj->tile) + 1;
+			for (long i = dist; i < dist + 2; i++) // максимальная дистанция за объектом +3
+			{
+				sTile = Tilemap::tile_num_beyond(target->tile, obj->tile, i);
+				if (!fo::func::obj_blocking_at(source, sTile, source->elevation)) break;
+				sTile =  0;
+			}
+			if (sTile == 0) continue;
+
+			char path[800];
+			long len = fo::func::make_path_func(source, source->tile, sTile, path, 0, (void*)fo::funcoffs::obj_blocking_at_);
+			if (len == 0) continue; // невозможно построить путь
+			//if (len > length) return -1;
+
+			// путь до гекса построен, определить с какого гекса пути можно сделать выстрел
+			if (len > moveAP) len = moveAP;
+			tile = source->tile;
+			dist = AIHelpersExt::SearchTileShoot(target, tile, path, len);
+			if (dist) return (dist << 16) | tile; // гекс для выстрела
+		}
+	}
+	return 0;
+}
+
+static long __fastcall AISearchTileForShoot(fo::GameObject* source, fo::GameObject* target, fo::AttackType &hitMode) {
+
+	if (AICombat::AttackerAI()->distance == fo::AIpref::Distance::stay) return 0;
+
+	fo::GameObject* itemHand = fo::func::inven_right_hand(source);
+	if (!itemHand || fo::func::item_w_subtype(itemHand, hitMode) <= fo::AttackSubType::MELEE) {
+		return 0;
+	}
+
+	long shotCost = game::Items::item_w_mp_cost(source, hitMode, 0);
+	long moveAP = source->critter.getMoveAP() - shotCost; // left ap for distance move
+	if (moveAP <= 0) return 0;
+
+	DEV_PRINTF1("\n[AI] Search tile for shoot: max AP distance %d", moveAP);
+
+	long shotTile1 = 0;
+	long shotTile2 = 0;
+
+	char rotationData[800];
+	long length = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, (void*)fo::funcoffs::obj_blocking_at_);
+	if (length != 0) {
+		shotTile1 = SearchTileForShoot(source, target, hitMode, shotCost, length, moveAP, rotationData);
+	} else {
+		DEV_PRINTF("\n[AI] Search tile for shoot: Nove path blocked.");
+	}
+
+	long length2 = fo::func::make_path_func(source, source->tile, target->tile, rotationData, 0, AIHelpersExt::obj_ai_shoot_blocking_at_);
+	if (length2 > 0) {
+		if (length2 != length) shotTile2 = GetTileForThruShoot(source, target, length2, rotationData, moveAP);
+	} else {
+		DEV_PRINTF("\n[AI] Search tile for shoot: Thru path blocked.");
+	}
+
+	if ((shotTile2 >> 16) > (shotTile1 >> 16)) shotTile1 = shotTile2;
+	long shotTile = shotTile1 & 0xFFFF;
+
+	if (shotTile && sf::isDebug) fo::func::debug_printf("\n[AI] %s: Move to tile for shot: %d", fo::func::critter_name(source), shotTile);
+
+	int result = (shotTile && AIHelpersExt::CombatMoveToTile(source, shotTile, shotTile1 >> 16) == 0) ? 1 : 0;
 	if (result) hitMode = (fo::AttackType)fo::func::ai_pick_hit_mode(source, itemHand, target); // try pick new weapon mode after move
 
 	return result;
@@ -307,7 +380,7 @@ default:
 /////////////////////////////////////////////////////////////////////////////////////////
 
 static bool LookupOnGround = false;
-static bool LootingCorpses = false;
+static long LootingCorpses = 0;
 
 // [Test Done]
 static fo::GameObject* AISearchBestWeaponInCorpses(fo::GameObject* source, fo::GameObject* itemEnv, fo::GameObject* target, long &inCorpse, long &distToObject) {
@@ -428,7 +501,11 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 		}
 		fo::func::obj_delete_list(objectsList);
 	}
-	return (LootingCorpses) ? AISearchBestWeaponInCorpses(source, item, target, inCorpse, distToObject) : item;
+
+	// Члены партии не осматривают трупы в поисках лучшего оружия
+	return ((LootingCorpses == 1 && !AICombat::AttackerInParty()) || LootingCorpses == 2)
+		? AISearchBestWeaponInCorpses(source, item, target, inCorpse, distToObject)
+		: item;
 }
 
 // Проверяет сможет ли атакующий атаковать цель с текущей позиции используя лучшее оружие
@@ -436,7 +513,7 @@ static fo::GameObject* AISearchBestWeaponOnGround(fo::GameObject* source, fo::Ga
 static bool CheckCanAttackTarget(fo::GameObject* bestWeapon, fo::GameObject* itemHand, fo::GameObject* source, fo::GameObject* target) {
 	if (AIHelpersExt::GetWeaponSubType(bestWeapon, 0) <= fo::AttackSubType::MELEE) {
 		DEV_PRINTF("\n[AI] BestWeapon is MELEE.");
-		if (AIHelpersExt::IsGunOrThrowingWeapon(itemHand, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) {
+		if (AIHelpersExt::WeaponIsGunOrThrowing(itemHand, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY)) {
 			DEV_PRINTF("\n[AI] Hand Weapon is ranged.");
 			if (ai::AIHelpers::AttackInRange(source, bestWeapon, target) == false) {
 				return false;
@@ -619,7 +696,7 @@ static CombatShootResult __fastcall AICheckAttack(fo::GameObject* &weapon, fo::G
 			if (hitMode == fo::AttackType::ATKTYPE_RWEAPON_SECONDARY && AICombat::combatDifficulty != CombatDifficulty::Easy && safetyRange == 0) {
 				// используется вторичный режим оружия (стрельба очередью) и имеется расстояние между целью и атакующим
 				// если атакующему хватате очков действия на подход к цели то выполнить передвижение к цели
-				if (statIQ > 5 && dist > 0 && dist <= 5 && AICombat::AttackerAI()->distance != fo::AIpref::distance::snipe) {
+				if (statIQ > 5 && dist > 0 && dist <= 5 && AICombat::AttackerAI()->distance != fo::AIpref::Distance::snipe) {
 					if (fo::func::item_w_anim_weap(weapon, hitMode) == fo::Animation::ANIM_fire_burst) {
 						long costAP = game::Items::item_weapon_mp_cost(source, weapon, hitMode, 0);
 						long moveDist = source->critter.getMoveAP() - costAP;
@@ -681,7 +758,7 @@ static void __declspec(naked) ai_try_attack_hook_w_switch_begin_turn() {
 
 // Заставляет NPC двигаться ближе к цели, чтобы начать атаковать, когда расстояние до цели превышает дальность действия оружия
 static long __fastcall AIMoveStepToAttackTile(fo::GameObject* source, fo::GameObject* target, long &outHitMode) {
-	if (AICombat::AttackerAI()->distance == fo::AIpref::distance::stay) return 1;
+	if (AICombat::AttackerAI()->distance == fo::AIpref::Distance::stay) return 1;
 
 	fo::GameObject* itemHand = fo::func::inven_right_hand(source);
 	if (!itemHand) return 1;
@@ -1004,10 +1081,10 @@ static fo::GameObject* ClearMovePathSub(fo::GameObject* source, fo::GameObject* 
 			fo::GameObject* obj = fo::func::obj_blocking_at(source, tile, source->elevation);
 			if (obj) {
 				if (lastCritter) {
-					// проверить путь до текущего криттера
+					// проверить путь от атакующкго (source) до криттера (obj)
 					if (game::Tilemap::make_path_func(source, source->tile, obj->tile, 0, 2000, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) == 0) {
-						// путь блокирован, передвинуть предыдущего криттера
-						if (MoveCritter(source, lastCritter, pathTiles[lastStep - 1])) return lastCritter;
+						// путь блокирован, передвинуть предыдущего криттера если у него имеется AP
+						if (lastCritter->critter.getAP() > 0 && MoveCritter(source, lastCritter, pathTiles[lastStep - 1])) return lastCritter;
 					}
 				}
 				lastCritter = obj; // запоминаем текущего криттера
@@ -1026,7 +1103,7 @@ static fo::GameObject* ClearMovePathSub(fo::GameObject* source, fo::GameObject* 
 				// проверить свободен ли путь от него до цели
 				if (game::Tilemap::make_path_func(obj, obj->tile, target->tile, 0, 2000, 0, 0, (void*)fo::funcoffs::obj_blocking_at_) > 0) {
 					// путь свободен, значит только этот критер блокирует путь
-					if (obj->critter.IsNotActive()) return obj; // криттер не активен, возвращаем его как блокирующего путь
+					if (obj->critter.getAP() <= 0 || obj->critter.IsNotActive()) return obj; // криттер не активен или у него нет очков действий, возвращаем его как блокирующего путь
 					findBlock = true;
 					break;
 				}
@@ -1053,14 +1130,13 @@ static fo::GameObject* ClearMovePath(fo::GameObject* source, fo::GameObject* tar
 		fo::GameObject* obj = ClearMovePathSub(source, target, outTile);
 		if (!obj || obj == object) return obj;
 		object = obj;
-		//__asm call fo::funcoffs::gmouse_bk_process_;
 	} while (--count);
 
 	return object;
 }
 
-// Доработанная и улушенная реализаия функции ai_move_steps_closer_ (с исправлениями)
-// Функции принимает дополнительные флаги для игнорирования stay/stat_close
+// Доработанная и улучшенная реализация функции ai_move_steps_closer_ (с исправлениями)
+// Функция принимает дополнительные флаги для игнорирования stay/stat_close
 // flags:
 //  0x00000001 - печатает сообщение (vanilla)
 //	0x01000000 - игнорирует только stay_close
@@ -1082,16 +1158,21 @@ long __fastcall AIBehavior::AIMoveStepsCloser(long flags, fo::GameObject* target
 
 	if (fo::func::obj_dist(source, target) <= 1) return -1;
 
-	long prefDistance = fo::func::ai_cap(source)->distance;
+	fo::AIpref::Distance prefDistance = fo::func::ai_cap(source)->distance;
 
-	if (!ignoreStay && prefDistance == fo::AIpref::distance::stay) {
+	if (!ignoreStay && prefDistance == fo::AIpref::Distance::stay) {
 		return -1;
 	}
 
-	if (!ignoreStayClose && prefDistance == fo::AIpref::distance::stay_close) {
+	if (!ignoreStayClose && prefDistance == fo::AIpref::Distance::stay_close) {
+		// [ADD-EXT] stay_close - tweak for non party member NPC
+		if (source->critter.teamNum != fo::var::obj_dude->critter.teamNum) {
+			if (fo::func::obj_dist(source, target) > 5) return -1;
+		}
+
 		// Стоять на месте:
-		// если цель не игрок, и расстояние от игрока до source больше чем 5 гексов
-		// или если расстояние между целью и игроком более 5 гексов, и дистанция для передвижения привышает радиус в 5 гексов от игрока
+		// если target не игрок, и расстояние от игрока до source больше чем 5 гексов
+		// или если расстояние между target и игроком более 5 гексов, и дистанция для передвижения привышает радиус в 5 гексов от игрока
 		if (target != fo::var::obj_dude) {
 			long scr_dude_dist = fo::func::obj_dist(source, fo::var::obj_dude);
 			if (scr_dude_dist > 5 || fo::func::obj_dist(target, fo::var::obj_dude) > 5 && distance + scr_dude_dist > 5) {
@@ -1113,6 +1194,7 @@ long __fastcall AIBehavior::AIMoveStepsCloser(long flags, fo::GameObject* target
 	if (!fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_blocking_at_)) {
 		// [ADD-EXT] Реализация функции освобождения пути криттера блокирующего путь к цели
 		if (fo::func::critter_body_type(source) != fo::BodyType::Biped) goto block;
+
 		long gotoTile = -1;
 		fo::GameObject* object = ClearMovePath(source, target, gotoTile);
 		if (object) {
@@ -1121,8 +1203,9 @@ long __fastcall AIBehavior::AIMoveStepsCloser(long flags, fo::GameObject* target
 		}
 		else if (gotoTile != -1) {
 			destinationTile = gotoTile;
-		} else {
-	block:	// не удалось построить путь, найти ближайщего криттера	
+		}
+		else {
+	block:	// не удалось построить путь, найти ближайщего криттера
 			fo::var::moveBlockObj = nullptr;
 			if (!fo::func::make_path_func(source, source->tile, target->tile, 0, 0, (void*)fo::funcoffs::obj_ai_blocking_at_)
 				&& fo::var::moveBlockObj && fo::var::moveBlockObj->IsCritter())
@@ -1228,7 +1311,9 @@ skip:
 void AIBehavior::init(bool smartBehavior) {
 
 	// Реализация поиска предметов в трупах убитых NPC (looting corpses)
-	LootingCorpses = (sf::IniReader::GetConfigInt("CombatAI", "LootingCorpses", 1) > 0);
+	LootingCorpses = sf::IniReader::GetConfigInt("CombatAI", "LootingCorpses", 1);
+	if (LootingCorpses < 0 || LootingCorpses > 2) LootingCorpses = 1;
+
 	AIInventory::init(LootingCorpses);
 
 	// Реализация функции ai_move_steps_closer_ для освобождения пути криттера блокирующего путь к цели

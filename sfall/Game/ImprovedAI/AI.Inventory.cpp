@@ -15,6 +15,7 @@
 #include "..\items.h"
 
 #include "AI.Behavior.h"
+#include "AI.Combat.h"
 #include "AI.FuncHelpers.h"
 
 #include "AI.Inventory.h"
@@ -27,6 +28,7 @@ namespace imp_ai
 namespace sf = sfall;
 
 static bool bestWeaponFix;
+static long lootingCorpses = 0;
 
 fo::GameObject* AIInventory::BestWeapon(fo::GameObject* source, fo::GameObject* weapon1, fo::GameObject* weapon2, fo::GameObject* target) {
 	fo::GameObject* bestWeapon = fo::func::ai_best_weapon(source, weapon1, weapon2, target);
@@ -105,7 +107,7 @@ static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefSco
 
 	int order = 0;
 	outPrefScore = 0;
-	while (weapType != fo::var::weapPrefOrderings[cap->best_weapon + 1][order]) //*(&weapPrefOrderings[5 * (cap->best_weapon + 1)] + order * 4)
+	while (weapType != fo::var::weapPrefOrderings[(long)cap->pref_weapon + 1][order])
 	{
 		outPrefScore++;
 		if (++order > 4) break;
@@ -116,7 +118,7 @@ static long WeaponScore(fo::GameObject* weapon, fo::AIcap* cap, long &outPrefSco
 // Облегченная реализация функции ai_best_weapon_ без проверки на target
 static fo::GameObject* BestWeaponLite(fo::GameObject* source, fo::GameObject* weaponPrimary, fo::GameObject* weaponSecondary) {
 	auto cap = fo::func::ai_cap(source);
-	if ((fo::AIpref::weapon_pref)cap->best_weapon == fo::AIpref::weapon_pref::random) {
+	if (cap->pref_weapon == fo::AIpref::WeaponPref::random) {
 		return (fo::func::roll_random(1, 100) <= 50) ? weaponPrimary : weaponSecondary;
 	}
 
@@ -136,17 +138,17 @@ static fo::GameObject* BestWeaponLite(fo::GameObject* source, fo::GameObject* we
 		}
 		if (secondaryScore > primaryScore) return weaponSecondary;
 	} else {
-		// у оружия разное предпочтение, у кого очков предпочтения меньше то лучше
+		// primaryPrefScore/secondaryPrefScore - чем больше число, тем ниже приоритет
 
-		if (weaponPrimary && weaponPrimary->protoId == fo::PID_FLARE && weaponSecondary) {
+		if (weaponPrimary && weaponPrimary->protoId == fo::ProtoID::PID_FLARE && weaponSecondary) {
 			return weaponSecondary;
 		}
-		if (weaponSecondary && weaponSecondary->protoId == fo::PID_FLARE && weaponPrimary) {
+		if (weaponSecondary && weaponSecondary->protoId == fo::ProtoID::PID_FLARE && weaponPrimary) {
 			return weaponPrimary;
 		}
 
-		fo::AIpref::weapon_pref pref = (fo::AIpref::weapon_pref)cap->best_weapon;
-		if ((pref < fo::AIpref::weapon_pref::no_pref || pref > fo::AIpref::weapon_pref::unarmed) && std::abs(secondaryScore - primaryScore) > 5) {
+		fo::AIpref::WeaponPref pref = cap->pref_weapon;
+		if ((pref == fo::AIpref::WeaponPref::unset || pref >= fo::AIpref::WeaponPref::unarmed_over_thrown) && std::abs(secondaryScore - primaryScore) > 5) {
 			return (primaryScore < secondaryScore) ? weaponSecondary : weaponPrimary;
 		}
 		if (primaryPrefScore > secondaryPrefScore) {
@@ -472,6 +474,9 @@ static long __fastcall AISearchCorpseWeapon(fo::GameObject* target, fo::GameObje
 		DEV_PRINTF1("\n[AI] ai_search_environ: weapon: %s", fo::func::critter_name(itemEnv));
 	}
 
+	// Члены партии не осматривают трупы для поиска оружия
+	//if (lootingCorpses == 1 && AICombat::AttackerInParty()) return 1; // default
+
 	fo::GameObject* outItem = itemEnv;
 	if (AIInventory::ai_search_environ_corpse(source, fo::ItemType::item_type_weapon, outItem, weapon) < 0 || outItem == itemEnv) return 1; // default
 
@@ -543,8 +548,6 @@ default:
 	}
 }
 
-static bool lootingCorpses = false;
-
 long AIInventory::ai_search_environ_corpse_drug(fo::GameObject* source, fo::ItemType type, long noInvenItem, fo::GameObject* &itemEnv) {
 	if (!lootingCorpses) return 0;
 
@@ -571,9 +574,9 @@ long AIInventory::ai_search_environ_corpse_drug(fo::GameObject* source, fo::Item
 	return (item) ? 1 : -1;
 }
 
-void AIInventory::init(bool isLooting) {
+void AIInventory::init(long isLooting) {
 	if (isLooting) {
-		lootingCorpses = true;
+		lootingCorpses = isLooting;
 		sf::HookCall(0x42A5F6, ai_switch_weapons_hook_search);
 		sf::HookCall(0x42AA25, ai_try_attack_hook_search_ammo);
 	}

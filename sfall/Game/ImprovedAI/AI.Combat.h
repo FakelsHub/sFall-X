@@ -45,6 +45,7 @@ public:
 	static long AttackerBonusAP();
 	static long AttackerBodyType();
 	static bool AttackerIsHumanoid();
+	static bool AttackerInParty();
 	static fo::AIcap* AttackerAI();
 };
 

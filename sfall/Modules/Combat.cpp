@@ -289,7 +289,7 @@ static long __fastcall CheckDisableBurst(fo::GameObject* critter, fo::GameObject
 			return 10; // Disable Burst (area_attack_mode - non-existent value)
 		}
 	}
-	return cap->area_attack_mode; // default engine
+	return (long)cap->area_attack_mode; // default engine
 }
 
 static void __declspec(naked) ai_pick_hit_mode_hack_noBurst() {

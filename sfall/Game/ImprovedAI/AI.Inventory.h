@@ -13,7 +13,7 @@ namespace imp_ai
 
 class AIInventory {
 public:
-	static void init(bool);
+	static void init(long);
 
 	// Оригинальнная функция ai_best_weapon_ с вызовом крючка
 	static fo::GameObject* BestWeapon(fo::GameObject* source, fo::GameObject* weapon1, fo::GameObject* weapon2, fo::GameObject* target);

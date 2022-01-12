@@ -40,7 +40,7 @@ namespace sf = sfall;
 //	проверка "OutOfRange" помещена перед "NotEnoughAPs"
 //	дополнительно добавлено
 //	NoActionPoint: когда когда у атакующего нет очков действий
-//	CatnUseWeapon: тоже самое что и CrippledHand/CrippledHands
+//	CantUseWeapon: тоже самое что и CrippledHand/CrippledHands
 CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::GameObject* target, fo::AttackType hitMode, long isCalled) {
 	if (source->critter.getAP() <= 0) return CombatShootResult::NoActionPoint;
 	if (target && target->critter.damageFlags & fo::DAM_DEAD) return CombatShootResult::TargetDead; // target is dead
@@ -194,20 +194,26 @@ bool AICombat::AttackerIsHumanoid() {
 	return attacker.IsHumanoid();
 }
 
+bool AICombat::AttackerInParty() {
+	return attacker.InDudeParty;
+}
+
 fo::AIcap* AICombat::AttackerAI() {
 	return attacker.cap;
 }
 
 // Расстояния для напарников игрока когда они остаются без найденной цели
-static inline long getAIPartyMemberDistances(long aiDistance) {
-	static long aiPartyMemberDistances[5] = {
+static inline long getAIPartyMemberDistances(fo::AIpref::Distance aiDistance) {
+	static long partyMemberDistances[5] = {
 		5,   // stay_close
 		10,  // charge
 		12,  // snipe
 		8,   // on_your_own
 		5000 // stay
 	};
-	return (aiDistance >= 0 && aiDistance < 5) ? aiPartyMemberDistances[aiDistance] : 6;
+	return (aiDistance >= fo::AIpref::Distance::stay_close && aiDistance <= fo::AIpref::Distance::stay)
+		? partyMemberDistances[(long)aiDistance]
+		: 6;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -220,6 +226,7 @@ static bool CheckCoverTile(std::vector<long> &v, long tile) {
 static long GetCoverBehindObjectTile(fo::GameObject* source, fo::GameObject* target, long inRadius, long allowMoveDistance) {
 	std::multimap<long, fo::GameObject*> objects;
 	std::vector<long> checkTiles;
+	std::vector<fo::GameObject*> critters;
 
 	const unsigned long mask = 0xFFFF0000 | (fo::OBJ_TYPE_WALL << 8) | fo::OBJ_TYPE_SCENERY;
 	fo::util::GetObjectsTileRadius(objects, source->tile, inRadius, source->elevation, mask); // объекты должны быть отсортированы по дальности расположения
@@ -228,6 +235,8 @@ static long GetCoverBehindObjectTile(fo::GameObject* source, fo::GameObject* tar
 
 	long distToTarget = fo::func::obj_dist(source, target); // расстояние до цели
 	long addDist = (distToTarget <= 3) ? 3 : 0;             // если цель расположена близко то сначала будем искать дальнее укрытие
+
+	attacker.cover.tile = -1;
 
 reTryFindCoverTile:
 
@@ -273,7 +282,7 @@ reTryFindCoverTile:
 			long distTarget = fo::func::tile_dist(target->tile, _tile);
 			if (distSource + addDist >= distTarget) {
 				//DEV_PRINTF3("\nCover no optimal distance: %d | s:%d >= t:%d", _tile, distSource + addDist, distTarget);
-				if (!addDist) checkTiles.push_back(_tile);
+				if (addDist == 0) checkTiles.push_back(_tile);
 				continue; // не оптимальное
 			}
 
@@ -282,6 +291,19 @@ reTryFindCoverTile:
 				//DEV_PRINTF1("\nCover tile is shooting:%d", _tile);
 				checkTiles.push_back(_tile);
 				continue; // простреливается
+			}
+
+			// проверить сколько критеров занимают данную дислокацию в раудисе 3-х гексов (более 3-х критеров уже толпа)
+			critters.clear();
+			fo::util::GetObjectsTileRadius(critters, _tile, 3, source->elevation, fo::OBJ_TYPE_CRITTER);
+			if (critters.size() >= 3) {
+				checkTiles.push_back(_tile);
+				continue; // слишком много криттеров
+			}
+
+			if (AIHelpersExt::TileWayIsDoor(_tile, source->elevation)) {
+				checkTiles.push_back(_tile);
+				continue;
 			}
 
 			// проверить не заблокирован ли путь к гексу
@@ -315,29 +337,42 @@ reTryFindCoverTile:
 	return -1;
 }
 
-// Проверяет условия при которых будет доступно укрытие для NPC
+/*
+	Тактическое укрытие: определено для всех типов Biped кроме Gecko
+	для charge  - недоступно, если цель находится на дистанции больше, чем атакующий может иметь очков действий (атакующий будет приближаться к цели)
+	для stay    - недоступно
+	для berserk - недоступно
+	для coward  - не проверяет наличее оружия (прячется всегда)
+*/
 static long CheckCoverConditionAndGetTile(fo::GameObject* source, fo::GameObject* target) {
-	if (target->critter.IsNotActive()) return -1;
+	if (!attacker.IsHumanoid() || target->critter.IsNotActive()) return -1;
 
-	// выход если NPC безоружен или у атакующего не стрелковое оружие
-	fo::GameObject* item = fo::func::inven_right_hand(source);
-	if (!item || AIHelpersExt::GetWeaponSubType(item, false) != fo::AttackSubType::GUNS) {
+	if (attacker.cap->distance == fo::AIpref::Distance::stay || attacker.cap->disposition == fo::AIpref::Disposition::berserk ||
+	   (attacker.cap->distance == fo::AIpref::Distance::charge && fo::func::obj_dist(source, target) > attacker.maxAP))
+	{
 		return -1;
 	}
 
-	// если цель вооружена и простреливается то переместиться за укрытие
-	bool isRangeAttack = false;
-	if (target == fo::var::obj_dude) {
-		fo::GameObject* lItem = fo::func::inven_left_hand(target);
-		if (lItem && AIHelpersExt::IsGunOrThrowingWeapon(lItem)) isRangeAttack = true;
-	}
-	if (!isRangeAttack) {
-		fo::GameObject* rItem = fo::func::inven_right_hand(target);
-		if (!rItem || !AIHelpersExt::IsGunOrThrowingWeapon(rItem)) return -1;
-		isRangeAttack = true;
-	}
-	if (isRangeAttack && fo::func::combat_is_shot_blocked(target, target->tile, source->tile, source, 0)) return -1; // может ли цель стрелять по цели
+	if (attacker.cap->disposition != fo::AIpref::Disposition::coward) {
+		// выход если NPC безоружен или у атакующего не стрелковое оружие
+		fo::GameObject* item = fo::func::inven_right_hand(source);
+		if (!item || AIHelpersExt::GetWeaponSubType(item, false) != fo::AttackSubType::GUNS) {
+			return -1;
+		}
 
+		// если цель вооружена и простреливается то переместиться за укрытие
+		bool isRangeAttack = false;
+		if (target == fo::var::obj_dude) {
+			fo::GameObject* lItem = fo::func::inven_left_hand(target);
+			if (lItem && AIHelpersExt::WeaponIsGunOrThrowing(lItem)) isRangeAttack = true;
+		}
+		if (!isRangeAttack) {
+			fo::GameObject* rItem = fo::func::inven_right_hand(target);
+			if (!rItem || !AIHelpersExt::WeaponIsGunOrThrowing(rItem)) return -1;
+			isRangeAttack = true;
+		}
+		if (isRangeAttack && fo::func::combat_is_shot_blocked(target, target->tile, source->tile, source, 0)) return -1; // может ли цель стрелять по цели
+	}
 	return GetCoverBehindObjectTile(source, target, source->critter.getAP() + 1, source->critter.getMoveAP());
 }
 
@@ -368,16 +403,16 @@ static unsigned long GetTargetDistance(fo::GameObject* source, fo::GameObject* &
 static long GetMoveAwayDistaceFromTarget(fo::GameObject* source, fo::GameObject* &target) {
 
 	if (attacker.killType > fo::KillType::KILL_TYPE_women ||    // critter is not men & women
-		attacker.cap->disposition == fo::AIpref::disposition::berserk ||
+		attacker.cap->disposition == fo::AIpref::Disposition::berserk ||
 		///cap->distance == AIpref::distance::stay || // stay в ai_move_away запрещает движение
-		attacker.cap->distance == fo::AIpref::distance::charge) // charge в используется для сближения с целью
+		attacker.cap->distance == fo::AIpref::Distance::charge) // charge в используется для сближения с целью
 	{
 		return 0;
 	}
 
 	unsigned long distance = source->critter.getAP(); // для coward: отойдет на максимально возможную дистанцию
 
-	if (attacker.cap->disposition != fo::AIpref::disposition::coward) {
+	if (attacker.cap->disposition != fo::AIpref::Disposition::coward) {
 		if (distance >= 3) return 0; // source still has a lot of action points
 
 		distance = GetTargetDistance(source, target);
@@ -422,7 +457,7 @@ static long GetMoveAwayDistaceFromTarget(fo::GameObject* source, fo::GameObject*
 		}
 moveAway:
 		// if attacker is aggressive then **not move away** from any throwing weapons (include grenades)
-		if (attacker.cap->disposition == fo::AIpref::aggressive) {
+		if (attacker.cap->disposition == fo::AIpref::Disposition::aggressive) {
 			if (wTypeRs == fo::AttackSubType::THROWING || wTypeLs == fo::AttackSubType::THROWING) return 0;
 			if (wTypeR  == fo::AttackSubType::THROWING || wTypeL  == fo::AttackSubType::THROWING) return 0;
 		} else {
@@ -510,7 +545,7 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 	long distance = 0;
 
 	/* Distance: Charge behavior */
-	if (attacker.cap->distance == fo::AIpref::distance::charge && fo::func::obj_dist(source, target) > fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) / 2) {
+	if (attacker.cap->distance == fo::AIpref::Distance::charge && fo::func::obj_dist(source, target) > fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) / 2) {
 		DEV_PRINTF1("\n[AI] AIpref::distance::charge: %s", fo::func::critter_name(target));
 		// приблизиться на расстояние для совершения одной атаки
 		distance = source->critter.getAP();
@@ -519,28 +554,31 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 		if (source->critter.getAP(distance) < cost) return;
 		fo::func::ai_move_steps_closer(source, target, distance, 1);
 	}
+
 	/* Distance: Snipe behavior */
-	else if (attacker.cap->distance == fo::AIpref::distance::snipe && (distance = fo::func::obj_dist(source, target)) < 10) {
+	// Атакующий отойдет на расстояние в 10 гексов от своей цели если она на него нападает
+	else if (attacker.cap->distance == fo::AIpref::Distance::snipe && AIHelpersExt::ItemIsGun(fo::func::inven_right_hand(source))) {
 		DEV_PRINTF1("\n[AI] AIpref::distance::snipe: %s", fo::func::critter_name(target));
-		if (sf::AI::AIGetLastTarget(target) == source) { // target атакует source target->critter.getHitTarget()
-			// атакующий отойдет на расстояние в 10 гексов от своей цели если она на него нападает
+		distance = fo::func::obj_dist(source, target);
+		if (distance < 10 && sf::AI::AIGetLastTarget(target) == source) { // target атакует/атаковал source
+			// нападаюший имеет рейтинг больше чем у атакующего
 			bool shouldMove = ((fo::func::combatai_rating(source) + 10) < fo::func::combatai_rating(target));
 			if (shouldMove) {
 				long costAP = AIHelpersExt::GetCurrenShootAPCost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
 				if (costAP != -1) {
 					long shotCount = source->critter.getAP() / costAP;
-					long freeAPs = source->critter.getAP() - (costAP * shotCount); // положительное число если останутся AP после атаки
+					long freeAPs = source->critter.getAP() - (costAP * shotCount); // положительное число: оставшиеся AP после совершения атаки
 					if (freeAPs > 0) {
-						long dist = distance - 1;
-						if (freeAPs + dist >= 5) shouldMove = false;
+						// не отходит, если расстояние между атакующим и нападаюшим после атаки будет привышать 5 и более гексов
+						if ((freeAPs + (distance - 1)) >= 5) shouldMove = false;
 					}
 				}
+				if (shouldMove) fo::func::ai_move_away(source, target, 10);
 			}
-			if (shouldMove) fo::func::ai_move_away(source, target, 10);
 		}
 	}
 	/* Distance: Stay Close behavior */
-	// Данное поведение здесь удалено, оно используется только после атаки в функции cai_perform_distance_prefs_
+	// Данное поведение удалено, оно используется только после атаки в функции cai_perform_distance_prefs_
 }
 
 static void ReTargetTileFromFriendlyFire(fo::GameObject* source, fo::GameObject* target, bool сheckAP) {
@@ -580,7 +618,7 @@ static void CombatAI_Extended(fo::GameObject* source, fo::GameObject* target) {
 		включена опция NPCRunAwayMode и атакующий не является постоянным партийцем игрока
 		(для постоянных партийцев min_hp рассчитывается при выборе предпочтений в панели управления)
 	**************************************************************************/
-	if (AICombat::npcPercentMinHP && attacker.cap->getRunAwayMode() != fo::AIpref::run_away_mode::none && !fo::util::IsPartyMember(source))
+	if (AICombat::npcPercentMinHP && attacker.cap->run_away_mode != fo::AIpref::RunAway::none && !fo::util::IsPartyMember(source))
 	{
 		long caiMinHp = fo::func::cai_get_min_hp(attacker.cap);
 		long maxHP = fo::func::stat_level(source, fo::STAT_max_hit_points);
@@ -756,7 +794,7 @@ ReFindNewTarget:
 				fo::func::combatAIInfoSetFriendlyDead(source, nullptr);                // очистка
 			} else {
 				// определить поведение когда не было убитых криттеров
-				if (attacker.cap->getDistance() != fo::AIpref::distance::stay) {
+				if (attacker.cap->distance != fo::AIpref::Distance::stay) {
 
 					/***** пока нет ни каких действий *****/
 				}
@@ -772,7 +810,7 @@ ReFindNewTarget:
 	/************************************************************************************
 		Поведение: Для случаев когда цель для атакующего не была найдена.
 		1. Если атакующий принадлежит к партийцам игрока, то в случае если цель не была найдена в функции ai_danger_source
-		   партиец должен направиться к игроку, если он находится на расстоянии превышающее установленную дистанцию в aiPartyMemberDistances.
+		   партиец должен направиться к игроку, если он находится на расстоянии превышающее установленную дистанцию в partyMemberDistances.
 		2. Если атакующий не принадлежит к партийцам игрока, то он должен найти своего ближайшего со-командника
 		   у которого есть цель и двигаться к нему.
 	************************************************************************************/
@@ -801,7 +839,7 @@ ReFindNewTarget:
 				fo::func::ai_move_steps_closer(source, ally_Critter, dist, 0);
 				DEV_PRINTF1("\n[AI] Move close to: %s", fo::func::critter_name(ally_Critter));
 			}
-			else if (!attacker.InDudeParty && attacker.cap->getDistance() != fo::AIpref::distance::stay)
+			else if (!attacker.InDudeParty && attacker.cap->distance != fo::AIpref::Distance::stay)
 			{	// поведение не для партийцев игрока
 				// если атакующий уже находится в радиусе, рандомное перемещение вокруг ally_Critter
 				long tile = AIHelpersExt::GetRandomDistTile(source, ally_Critter->tile, 5);
@@ -844,19 +882,19 @@ ReFindNewTarget:
 	/************************************************************************************
 		Поведение: Не были израсходованы очки действий.
 	************************************************************************************/
-	if (source->critter.getAP() == attacker.maxAP && attacker.cap->getDistance() != fo::AIpref::distance::stay) {
+	if (source->critter.getAP() == attacker.maxAP && attacker.cap->distance != fo::AIpref::Distance::stay) {
 		if (!findTarget) { // не было найдено доступных целей
 			// найти ближайшего со-комадника у которого есть цель (проверить цели)
-			fo::GameObject* ally_Critter = fo::func::ai_find_nearest_team_in_combat(source, source, 1);
+			fo::GameObject* teamCritter = fo::func::ai_find_nearest_team_in_combat(source, source, 1);
 
 			// если critter не найден и атакующий из команды игрока, то присвоить в качестве critter obj_dude
-			if (!ally_Critter && source->critter.teamNum == 0) ally_Critter = fo::var::obj_dude;
+			if (!teamCritter && source->critter.teamNum == 0) teamCritter = fo::var::obj_dude;
 
-			DEV_PRINTF1("\n[AI] Find team critter: %s", (ally_Critter) ? fo::func::critter_name(ally_Critter) : "<None>");
-			if (ally_Critter) {
-				long dist = fo::func::obj_dist(source, ally_Critter);
-				fo::func::ai_move_steps_closer(source, ally_Critter, dist, 0);
-				DEV_PRINTF1("\n[AI] Move close to: %s", fo::func::critter_name(ally_Critter));
+			DEV_PRINTF1("\n[AI] Find team critter: %s", (teamCritter) ? fo::func::critter_name(teamCritter) : "<None>");
+			if (teamCritter) {
+				long dist = fo::func::obj_dist(source, teamCritter);
+				fo::func::ai_move_steps_closer(source, teamCritter, dist, 0);
+				DEV_PRINTF1("\n[AI] Move close to: %s", fo::func::critter_name(teamCritter));
 			}
 		} else if (attacker.InDudeParty == false) {
 			// рандомное перемещение
@@ -888,15 +926,8 @@ ReFindNewTarget:
 		// добавить AP атакующему только для перемещения, этот бонус можно использовать совместно со сложностью боя (только для типа Biped)
 		if (!attacker.InDudeParty) attacker.SetMoveBonusAP(source);
 
-		/*
-			Тактическое укрытие: определено для всех типов Biped кроме Gecko
-			для charge - недоступно, если цель находится на дистанции больше, чем атакующий может иметь очков действий (атакующий будет приближаться к цели)
-			для stay   - недоступно (можно позволить в пределах 3 гексов)
-		*/
-		long coverTile = (attacker.cap->getDistance() == fo::AIpref::distance::stay || !attacker.IsHumanoid() ||
-						 (attacker.cap->getDistance() == fo::AIpref::distance::charge && fo::func::obj_dist(source, moveAwayTarget) > attacker.maxAP))
-						? -1 // не использовать укрытие
-						: CheckCoverConditionAndGetTile(source, moveAwayTarget);
+		// Проверяет условия при которых будет доступно укрытие для NPC
+		long coverTile = CheckCoverConditionAndGetTile(source, moveAwayTarget);
 
 		// условия для отхода в укрытие
 		if (attacker.cover.tile != -1 && source->critter.damageLastTurn > 0) {                      // атакующий получил повреждения в прошлом ходе
@@ -908,6 +939,7 @@ ReFindNewTarget:
 				coverTile = attacker.cover.tile;
 			}
 		}
+
 		// отход в укрытие имеет приоритет над другими функциями перестраивания
 		if (coverTile != -1) {
 			if (AIHelpersExt::CombatMoveToTile(source, coverTile, source->critter.getAP()) != 0) coverTile = -1;

@@ -96,14 +96,14 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 	if (shotIsBlock && pathToTarget >= 5) { // shot block to target, can move
 		long dist_disposition = distance;
 		switch (cap->disposition) {
-		case fo::AIpref::defensive:
+		case fo::AIpref::Disposition::defensive:
 			pathToTarget += 5;
 			dist_disposition += 5;
 			break;
-		case fo::AIpref::aggressive: // AI aggressive never does not change its target if the move-path to the target is not blocked
+		case fo::AIpref::Disposition::aggressive: // AI aggressive never does not change its target if the move-path to the target is not blocked
 			pathToTarget = 1;
 			break;
-		case fo::AIpref::berserk:
+		case fo::AIpref::Disposition::berserk:
 			pathToTarget /= 2;
 			dist_disposition -= 5;
 			break;
@@ -156,7 +156,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 			if (diff > 0) { // shot out of range (положительное число не хватает дистанции для оружия)
 				/*if (!pathToTarget) return true; // move block to target and shot out of range -> picking alternate target (это больше не нужно т.к. есть твик к подходу)*/
 
-				if (cap->disposition == fo::AIpref::coward && diff > sf::GetRandom(8, 12)) {
+				if (cap->disposition == fo::AIpref::Disposition::coward && diff > sf::GetRandom(8, 12)) {
 					DEV_PRINTF("-> is located beyond range of weapon. I'm afraid to approach target!");
 					return true;
 				}
@@ -217,7 +217,7 @@ static CombatShootResult CombatCheckBadShotLite(fo::GameObject* source, fo::Game
 
 	long attackRange = fo::func::item_w_range(source, hitMode);
 	if (attackRange > 1) {
-		if (AIHelpersExt::IsGunOrThrowingWeapon(item, hitMode) == false) {
+		if (AIHelpersExt::WeaponIsGunOrThrowing(item, hitMode) == false) {
 			return CombatShootResult::Ok; // for melee weapon
 		}
 		if (fo::func::combat_is_shot_blocked(source, source->tile, tile, target, 0)) {
@@ -265,28 +265,28 @@ fo::GameObject* AISearchTarget::AIDangerSource(fo::GameObject* source, long type
 	long isPartyMember = fo::func::isPartyMember(source);
 
 	fo::AIcap* cap = AICombat::AttackerAI();
-	fo::AIpref::attack_who attack_who = (isPartyMember || npcAttackWhoFix) // [add ext] NPCAttackWhoFix option
-										? (fo::AIpref::attack_who)cap->attack_who
-										: fo::AIpref::attack_who::no_attack_mode;
+	fo::AIpref::AttackWho attack_who = (isPartyMember || npcAttackWhoFix) // [add ext] NPCAttackWhoFix option
+										? cap->attack_who
+										: fo::AIpref::AttackWho::no_attack_mode;
 
 	if (isPartyMember) {
-		if (cap->distance != fo::AIpref::distance::charge) {
+		if (cap->distance != fo::AIpref::Distance::charge) {
 			switch (cap->disposition) { // +1 in vanilla, but sfall have the correct values for 'disposition'
-				case fo::AIpref::disposition::custom:
-				case fo::AIpref::disposition::coward:
-				case fo::AIpref::disposition::defensive:
-				case fo::AIpref::disposition::aggressive:
+				case fo::AIpref::Disposition::custom:
+				case fo::AIpref::Disposition::coward:
+				case fo::AIpref::Disposition::defensive:
+				case fo::AIpref::Disposition::aggressive:
 					isIgnoreFlee = true;
 					break;
-				case fo::AIpref::disposition::berserk:
-				case fo::AIpref::disposition::none:
+				case fo::AIpref::Disposition::berserk:
+				case fo::AIpref::Disposition::none:
 					break;
 				//default:
 			}
 		}
 
 		switch (attack_who) {
-			case fo::AIpref::attack_who::whomever_attacking_me:
+			case fo::AIpref::AttackWho::whomever_attacking_me:
 			{
 				fo::GameObject* lastTarget = fo::func::combatAIInfoGetLastTarget(fo::var::obj_dude);
 				if (!lastTarget) lastTarget = fo::var::obj_dude->critter.getHitTarget(); // [add ext] Possible fix if suddenly last target is not be set
@@ -302,9 +302,9 @@ fo::GameObject* AISearchTarget::AIDangerSource(fo::GameObject* source, long type
 				}
 				return lastTarget;
 			}
-			case fo::AIpref::attack_who::strongest:
-			case fo::AIpref::attack_who::weakest:
-			case fo::AIpref::attack_who::closest:
+			case fo::AIpref::AttackWho::strongest:
+			case fo::AIpref::AttackWho::weakest:
+			case fo::AIpref::AttackWho::closest:
 				// [tweak FIX] Tweak for finding new targets for party members
 				// Save the current target in the "target1" variable and find other potential targets
 				fo::GameObject* hitTarget = source->critter.getHitTarget();
@@ -329,7 +329,7 @@ ReFindNewTargets:
 				targets[0] = fo::func::ai_find_nearest_team(source, sourceTarget, 1); // search for the team's first nearby enemy
 			}
 		} else {
-			if (attack_who == fo::AIpref::attack_who::whomever || attack_who == fo::AIpref::attack_who::no_attack_mode) {
+			if (attack_who == fo::AIpref::AttackWho::whomever || attack_who == fo::AIpref::AttackWho::no_attack_mode) {
 				// NPCs (or PM with whomever) always attack the target that is set to who_hit_me
 				// [add ext] Additional function allows to analyze the current target (TryToFindTargets option)
 				if (reFindNewTargets > 1) goto ReFindNewTargets;
@@ -355,10 +355,10 @@ FindNewTargets:
 	}
 
 	DWORD funcComp = fo::funcoffs::compare_nearer_;
-	if (attack_who == fo::AIpref::attack_who::strongest) {
+	if (attack_who == fo::AIpref::AttackWho::strongest) {
 		funcComp = fo::funcoffs::compare_strength_;
 	}
-	else if (attack_who == fo::AIpref::attack_who::weakest) {
+	else if (attack_who == fo::AIpref::AttackWho::weakest) {
 		funcComp = fo::funcoffs::compare_weakness_;
 	}
 	fo::func::qsort(&targets, 4, 4, funcComp);

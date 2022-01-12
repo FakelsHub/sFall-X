@@ -57,8 +57,13 @@ long AIHelpersExt::CombatMoveToTile(fo::GameObject* source, long tile, long dist
 	func(source, tile, source->elevation, dist, -1);
 
 	long result = fo::func::register_end();
+
+	//DEV_PRINTF2("\n[AI] CombatMoveToTile: move from:%d to %d", source->tile, tile);
+	//DEV_PRINTF2(" dist:%d, path len:%d", dist, fo::func::make_path_func(source, source->tile, tile, 0, 0, (void*)fo::funcoffs::obj_ai_blocking_at_));
+
 	if (!result) {
 		__asm call fo::funcoffs::combat_turn_run_;
+
 		if (source->critter.IsNotActiveOrDead()) {
 			source->critter.movePoints = 0; // для предотвращения дальнейших действий в бою
 		}
@@ -127,11 +132,16 @@ fo::AttackSubType AIHelpersExt::GetWeaponSubType(fo::GameObject* item, fo::Attac
 	return GetWeaponSubType(item, isSecond);
 }
 
+bool AIHelpersExt::ItemIsGun(fo::GameObject* item) {
+	if (!item || fo::func::item_get_type(item) != fo::ItemType::item_type_weapon) return false;
+	return GetWeaponSubType(item, false) == fo::AttackSubType::GUNS;
+}
+
 // Проверяет относится ли предмет к типу стрелкового или метательному оружию
-bool AIHelpersExt::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
+bool AIHelpersExt::WeaponIsGunOrThrowing(fo::GameObject* item, long type) {
 	fo::Proto* proto = fo::util::GetProto(item->protoId);
 
-	if (type > fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) type--;
+	if (type >= fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) type -= 2;
 
 	if (type == -1 || type == fo::AttackType::ATKTYPE_LWEAPON_PRIMARY) {
 		long typePrimary = fo::util::GetWeaponType(proto->item.flagsExt);
@@ -142,6 +152,90 @@ bool AIHelpersExt::IsGunOrThrowingWeapon(fo::GameObject* item, long type) {
 	if (type == -1 || type == fo::AttackType::ATKTYPE_LWEAPON_SECONDARY) {
 		long typeSecondary = fo::util::GetWeaponType(proto->item.flagsExt >> 4);
 		if (typeSecondary >= fo::AttackSubType::THROWING) {
+			return true;
+		}
+	}
+	return false;
+}
+
+long AIHelpersExt::SearchTileShoot(fo::GameObject* target, long &inOutTile, char* path, long len) {
+	long tile = inOutTile;
+	long dist = 0;
+
+	for (long i = 0; i < len; i++)
+	{
+		tile = fo::func::tile_num_in_direction(tile, path[i], 1);
+		// проверить простреливается ли линия к цели через объект
+		fo::GameObject* outObj = nullptr;
+		fo::func::make_straight_path_func(target, target->tile, tile, 0, (DWORD*)&outObj, 0x20, (void*)fo::funcoffs::obj_shoot_blocking_at_);
+		if (!outObj || outObj->IsCritter()) { // простреливается
+			dist = i + 1;
+			inOutTile = tile;
+		}
+	}
+	return dist;
+}
+
+bool TileHasDoorObject(long tile, long elev) {
+	fo::GameObject* obj = fo::func::obj_find_first_at_tile(elev, tile);
+	while (obj)
+	{
+		if (obj->Type() == fo::OBJ_TYPE_SCENERY && fo::util::GetProto(obj->protoId)->scenery.type == fo::ScenerySubType::DOOR) {
+			return true;
+		}
+		obj = fo::func::obj_find_next_at_tile();
+	}
+	return false;
+}
+
+bool TileHasWallObject(long tile, long elev) {
+	fo::GameObject* obj = fo::func::obj_find_first_at_tile(elev, tile);
+	while (obj)
+	{
+		if (obj->Type() == fo::OBJ_TYPE_WALL) return true;
+		obj = fo::func::obj_find_next_at_tile();
+	}
+	return false;
+}
+
+bool CheckWallDoor(long d1, long d2, long tile, long elev) {
+	long _tile = fo::func::tile_num_in_direction(tile, d1, 1);
+
+	if (fo::func::obj_blocking_at(0, _tile, elev)) {
+		if (TileHasWallObject(_tile, elev)) {
+			_tile = fo::func::tile_num_in_direction(tile, d2, 1);
+			if (fo::func::obj_blocking_at(0, _tile, elev)) {
+				if (TileHasWallObject(_tile, elev)) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+bool AIHelpersExt::TileWayIsDoor(long tile, long elev) {
+
+	if (TileHasDoorObject(tile, elev)) return true;
+
+	// проверяем линию стены направления 5 и 2
+	if (CheckWallDoor(5, 2, tile, elev)) {
+		DEV_PRINTF("\n[AI] TileWayIsDoor!");
+		return true;
+	}
+	// проверяем линию стены направления 3 и 1
+	if (CheckWallDoor(3, 1, tile, elev)) {
+		// если на гексе в направлении 2 нет стены значит это проход
+		if (TileHasWallObject(fo::func::tile_num_in_direction(tile, 2, 1), elev) == false) {
+			DEV_PRINTF("\n[AI] TileWayIsDoor!");
+			return true;
+		}
+	}
+	// проверяем линию стены направления 4 и 0
+	if (CheckWallDoor(4, 0, tile, elev)) {
+		// если на гексе в направлении 5 нет стены значит это проход
+		if (TileHasWallObject(fo::func::tile_num_in_direction(tile, 5, 1), elev) == false) {
+			DEV_PRINTF("\n[AI] TileWayIsDoor!");
 			return true;
 		}
 	}
@@ -187,6 +281,7 @@ getTile:
 	return freeTile;
 }
 
+// [Unused]
 long AIHelpersExt::GetDirFreeTile(fo::GameObject* source, long tile, long distMax) {
 	long dist = 1;
 	do {
@@ -243,8 +338,9 @@ long AIHelpersExt::GetRandomDistTile(fo::GameObject* source, long tile, long dis
 	return (object) ? GetRandomDistTile(source, tile, --distMax) : _tile;
 }
 
+// [Unused]
 // Проверяет простреливается ли линия от sourceTile до targetTile
-// Return result: 0 - блокировано, 1 - простреливается, -1 - простреливается, но целевой гекс занят критером
+// Return: 0 - блокировано, 1 - простреливается, -1 - простреливается, но целевой гекс занят критером
 long CheckLineOfFire(long sourceTile, long targetTile) {
 	fo::GameObject* object = nullptr;
 
@@ -265,7 +361,7 @@ long CheckLineOfFire(long sourceTile, long targetTile) {
 	return -1;
 }
 
-//
+// [Unused]
 // нужна ли поддержка для многогексовых критеров? если нужна то заменить на combat_is_shot_blocked_
 bool AIHelpersExt::CanSeeObject(fo::GameObject* source, fo::GameObject* target) {
 	fo::GameObject* src = source;
@@ -338,6 +434,57 @@ void __declspec(naked) AIHelpersExt::obj_ai_move_blocking_at_() {
 		retn;
 	}
 }
+
+fo::GameObject* __fastcall AIHelpersExt::obj_ai_shoot_blocking_at(fo::GameObject* source, long tile, long elev) {
+	if (tile < 0 || tile >= 40000) return nullptr;
+
+	fo::ObjectTable* obj = fo::var::objectTable[tile];
+	while (obj)
+	{
+		if (elev == obj->object->elevation) {
+			fo::GameObject* object = obj->object;
+			long flags = object->flags;
+			// возвращаем объект если это не Криттер и не установлен флаг ShootThru или Mouse_3d
+			if (!(flags & (fo::ObjectFlag::Mouse_3d | fo::ObjectFlag::ShootThru)) && source != object) {
+				if (object->TypeFid() != fo::ObjType::OBJ_TYPE_CRITTER) return object;
+			}
+		}
+		obj = obj->nextObject;
+	}
+	// проверка мультигексовых объектов
+	long direction = 0;
+	do {
+		long _tile = fo::func::tile_num_in_direction(tile, direction, 1);
+		if (_tile >= 0 && _tile < 40000) {
+			obj = fo::var::objectTable[_tile];
+			while (obj)
+			{
+				if (elev == obj->object->elevation) {
+					fo::GameObject* object = obj->object;
+					long flags = object->flags;
+					if (flags & fo::ObjectFlag::MultiHex && !(flags & (fo::ObjectFlag::Mouse_3d | fo::ObjectFlag::ShootThru)) && source != object) {
+						if (object->TypeFid() != fo::ObjType::OBJ_TYPE_CRITTER) return object;
+					}
+				}
+				obj = obj->nextObject;
+			}
+		}
+	} while (++direction < 6);
+
+	return nullptr;
+}
+
+void __declspec(naked) AIHelpersExt::obj_ai_shoot_blocking_at_() {
+	__asm {
+		push ecx;
+		push ebx;
+		mov  ecx, eax;
+		call obj_ai_shoot_blocking_at;
+		pop  ecx;
+		retn;
+	}
+}
+
 
 // TODO: WIP
 /*
