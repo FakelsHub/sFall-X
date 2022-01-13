@@ -101,7 +101,7 @@ static bool InternalRecv(SOCKET s, void* _data, int size) {
 }
 
 static void RunEditorInternal(SOCKET &s) {
-	*(DWORD*)FO_VAR_script_engine_running = 0;
+	fo::var::setInt(FO_VAR_script_engine_running) = 0;
 
 	std::vector<DWORD*> vec = std::vector<DWORD*>();
 	for (int elv = 0; elv < 3; elv++) {
@@ -234,7 +234,7 @@ static void RunEditorInternal(SOCKET &s) {
 	delete[] arrays;
 
 	FlushInputBuffer();
-	*(DWORD*)FO_VAR_script_engine_running = 1;
+	fo::var::setInt(FO_VAR_script_engine_running) = 1;
 }
 
 void RunDebugEditor() {
@@ -498,12 +498,19 @@ static void DontDeleteProtosPatch() {
 	}
 }
 
-void AlwaysReloadMsgs() {
+static void AlwaysReloadMsgs() {
 	if (IniReader::GetIntDefaultConfig("Debugging", "AlwaysReloadMsgs", 0)) {
 		dlog("Applying always reload messages patch.", DL_INIT);
 		SafeWrite8(0x4A6B8D, 0x0);
 		dlogr(" Done", DL_INIT);
 	}
+}
+
+static void RunCrashMonitor() {
+	std::string args (std::to_string(fo::var::getInt(FO_VAR_GNW95_hwnd)));
+	args.append(" 1");
+
+	ShellExecuteA(0, 0, ".\\CrashReport\\crashmonitor.exe", args.c_str(), 0, SW_SHOWDEFAULT);
 }
 
 /*
@@ -528,6 +535,10 @@ void TestingTimerResolution() {
 */
 
 void DebugEditor::init() {
+	#ifndef _DEBUG
+		LoadGameHook::OnGameInit() += RunCrashMonitor;
+	#endif
+
 	if (DebugModePatch() > 1) {
 		//LoadGameHook::OnGameInit() += TestingTimerResolution;
 	}
