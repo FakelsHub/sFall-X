@@ -239,7 +239,7 @@ use macros `sort_array`, `sort_array_reverse`, `reverse_array`, `shuffle_array` 
 _*mixed - means any type_
 
 ___
-## BACKWARD COMPATIBILITY NOTES
+## BACKWARD COMPATIBILITY NOTES (DEPRECATED)
 
 For those who used arrays in their mods before sfall 3.4:
 
@@ -248,3 +248,5 @@ For those who used arrays in their mods before sfall 3.4:
 2. How savegame compatibility is handled?. Saved arrays are stored in sfallgv.sav file (in savegame) in new (more flexible) format, just after the old arrays. So basically, when you load older savegame, sfall will load arrays from old format and save them to new format on next game save. If you load savegame made with sfall 3.4 using sfall 3.3 (for example), game shouldn't crash, but all arrays will be lost.
 
 3. Previously you had to specify size in bytes for array elements. This parameter is now ignored and you can store strings of arbitrary length in arrays.
+
+The **ArraysBehavior** option has been removed from sfall 4.3.3/3.8.33, now arrays always work in **ArraysBehavior=1** mode.
