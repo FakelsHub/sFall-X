@@ -21,7 +21,7 @@
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\InputFuncs.h"
-#include "Graphics.h"
+//#include "Graphics.h"
 #include "LoadGameHook.h"
 #include "ScriptExtender.h"
 #include "Scripting\Arrays.h"
@@ -60,10 +60,6 @@ struct sArray {
 	long  size;
 	long  flag;
 };
-
-static void DEGameWinRedraw() {
-	if (Graphics::mode != 0) fo::func::process_bk(); // test for 1/2 mode
-}
 
 static bool SetBlocking(SOCKET s, bool block) {
 	DWORD d = !block;
@@ -226,7 +222,7 @@ static void RunEditorInternal(SOCKET &s) {
 			}
 			break;
 		}
-		DEGameWinRedraw();
+		__asm call fo::funcoffs::GNW95_process_message_;
 	}
 
 	SetGlobals(sglobals);
@@ -508,9 +504,9 @@ static void AlwaysReloadMsgs() {
 
 static void RunCrashMonitor() {
 	std::string args (std::to_string(fo::var::getInt(FO_VAR_GNW95_hwnd)));
-	args.append(" 1");
+	args.append(" 1 0x00000000");
 
-	ShellExecuteA(0, 0, ".\\CrashReport\\crashmonitor.exe", args.c_str(), 0, SW_SHOWDEFAULT);
+	ShellExecuteA(0, 0, ".\\CrashReport\\CrashMonitor.exe", args.c_str(), 0, SW_SHOWDEFAULT);
 }
 
 /*
