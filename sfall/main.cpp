@@ -94,6 +94,10 @@ bool isDebug = false;
 
 char falloutConfigName[65];
 
+HMODULE GetHModule() {
+	return ddraw.sfall;
+}
+
 static void InitModules() {
 	dlogr("In InitModules", DL_MAIN);
 

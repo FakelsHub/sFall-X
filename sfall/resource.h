@@ -1,1 +1,1 @@
-#include "version.h"
+#define IDR_RCDATA1                     101

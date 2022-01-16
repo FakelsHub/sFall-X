@@ -46,6 +46,9 @@
     <Filter Include="HRP\viewmap">
       <UniqueIdentifier>{aad887b9-5fc2-4171-be31-39b4f1eaef13}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{373592d5-7134-4ccd-b79f-227024cad07f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h" />
@@ -97,7 +100,6 @@
     <ClInclude Include="Modules\Stats.h">
       <Filter>Modules</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="SafeWrite.h" />
     <ClInclude Include="Modules\Graphics.h">
@@ -468,6 +470,9 @@
     </ClInclude>
     <ClInclude Include="FalloutEngine\GamePids.h">
       <Filter>FalloutEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -866,8 +871,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="exports.def" />
-    <None Include="FalloutEngine\Variables_def.h">
-      <Filter>FalloutEngine</Filter>
+    <None Include="..\DebugEditor\FalloutDebug.exe">
+      <Filter>Resource</Filter>
     </None>
   </ItemGroup>
 </Project>

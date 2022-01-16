@@ -18,10 +18,11 @@
 
 #include <vector>
 
+#include "..\resource.h"
 #include "..\main.h"
 #include "..\FalloutEngine\Fallout2.h"
 #include "..\InputFuncs.h"
-//#include "Graphics.h"
+#include "Graphics.h"
 #include "LoadGameHook.h"
 #include "ScriptExtender.h"
 #include "Scripting\Arrays.h"
@@ -60,6 +61,24 @@ struct sArray {
 	long  size;
 	long  flag;
 };
+
+static bool ExtractFile(HMODULE hModule) {
+	HRSRC res = FindResourceA(hModule, MAKEINTRESOURCE(IDR_RCDATA1), RT_RCDATA);
+	if (res == NULL) return false;
+
+	DWORD resSize = SizeofResource(hModule, res);
+	HGLOBAL resData = LoadResource(hModule, res);
+	void* data = LockResource(resData);
+
+	HANDLE h = CreateFileA("FalloutDebug.exe", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+	if (h == INVALID_HANDLE_VALUE) return false;
+
+	DWORD outSize;
+	WriteFile(h, data, resSize, &outSize, 0);
+	CloseHandle(h);
+
+	return true;
+}
 
 static bool SetBlocking(SOCKET s, bool block) {
 	DWORD d = !block;
@@ -270,7 +289,9 @@ void RunDebugEditor() {
 
 	si.cb = sizeof(si);
 
-	if (!CreateProcessA("FalloutDebug.exe", "FalloutDebug.exe -debugedit", 0, 0, false, 0, 0, 0, &si, &pi)) {
+	char c = 1;
+	while (!CreateProcessA("FalloutDebug.exe", "FalloutDebug.exe -debugedit", 0, 0, false, 0, 0, 0, &si, &pi)) {
+		if (c-- && ExtractFile(GetHModule())) continue;
 		closesocket(sock);
 		WSACleanup();
 		return;
@@ -504,6 +525,7 @@ static void AlwaysReloadMsgs() {
 
 static void RunCrashMonitor() {
 	std::string args (std::to_string(fo::var::getInt(FO_VAR_GNW95_hwnd)));
+	args.append(Graphics::IsWindowedMode ? " 0" : " 1");
 	args.append(" 1 0x00000000");
 
 	ShellExecuteA(0, 0, ".\\CrashReport\\CrashMonitor.exe", args.c_str(), 0, SW_SHOWDEFAULT);

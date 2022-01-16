@@ -1,8 +1,14 @@
 #include "version.h"
+#include "resource.h"
 
 1 VERSIONINFO
  FILEVERSION VERSION_MAJOR,VERSION_MINOR,VERSION_BUILD,VERSION_REV
  PRODUCTVERSION VERSION_MAJOR,VERSION_MINOR,VERSION_BUILD,VERSION_REV
+ FILEFLAGSMASK 0x0L
+ FILEFLAGS 0x0L
+ FILEOS 0x0L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
 BEGIN
 	BLOCK "StringFileInfo"
 	BEGIN
@@ -12,7 +18,7 @@ BEGIN
 		VALUE "FileVersion", VERSION_STRING
 		VALUE "InternalName", "sfall"
 		VALUE "LegalCopyright", LEGAL_COPYRIGHT
-		VALUE "ProductName", "sfall"
+		VALUE "ProductName", "sFall Extended"
 		VALUE "ProductVersion", VERSION_STRING
 		END
 	END
@@ -21,3 +27,8 @@ BEGIN
 		VALUE "Translation", 0x0409, 0x0000
 	END
 END
+
+//
+// RCDATA
+//
+IDR_RCDATA1             RCDATA                  "..\\DebugEditor\\FalloutDebug.exe"
