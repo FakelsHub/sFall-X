@@ -980,6 +980,8 @@ static void PlayingMusicPatch() {
 	HookCall(0x482BA0, map_load_file_hook);
 
 	HookCall(0x4C5999, wmSetMapMusic_hook); // related fix
+
+	LoadGameHook::OnGameReset() += []() { cMusicArea = -1; };
 }
 
 static void __declspec(naked) op_display_msg_hook() {
