@@ -109,8 +109,8 @@ Critter arg1 - The attacker
 Critter arg2 - The target of the attack
 int     arg3 - The targeted bodypart
 int     arg4 - Source tile (may differ from attacker's tile, when AI is considering potential fire position)
-int     arg5 - Attack Type (one of ATKTYPE_*)
-int     arg6 - Ranged flag. 1 means the hit chance is calculated by taking into account the bonuses/penalties of the distance to the target
+int     arg5 - Attack Type (see ATKTYPE_* constants)
+int     arg6 - Ranged flag. 1 if the hit chance calculation takes into account the distance to the target. This does not mean the attack is a ranged attack
 int     arg7 - The raw hit chance before applying the cap
 
 int     ret0 - the new hit chance
@@ -119,7 +119,7 @@ int     ret0 - the new hit chance
 
 #### `HOOK_AFTERHITROLL (hs_afterhitroll.int)`
 
-Runs after Fallout has decided if an attack will hit or miss
+Runs after Fallout has decided if an attack will hit or miss.
 
 ```
 int     arg0 - If the attack will hit: 0 - critical miss, 1 - miss, 2 - hit, 3 - critical hit
@@ -169,8 +169,8 @@ int     ret0 - The pid of an object to override the attacking weapon with
 
 #### `HOOK_DEATHANIM2 (hs_deathanim2.int)`
 
-Runs after Fallout has calculated the death animation. Lets you set your own custom frame id, so more powerful than `HOOK_DEATHANIM2`, but performs no validation.  
-When using critter_dmg function, this script will also run. In that case weapon pid will be -1 and attacker will point to an object with `obj_art_fid == 0x20001F5`.  
+Runs after Fallout has calculated the death animation. Lets you set your own custom frame id, so more powerful than `HOOK_DEATHANIM1`, but performs no validation.  
+When using `critter_dmg` function, this script will also run. In that case weapon pid will be -1 and attacker will point to an object with `obj_art_fid == 0x20001F5`.  
 Does not run for critters in the knockdown/out state.
 
 ```
@@ -344,10 +344,10 @@ __DEPRECATED HOOKS:__
 ###### `HOOK_HEXSHOOTBLOCKING (hs_hexshootblocking.int)`
 ###### `HOOK_HEXSIGHTBLOCKING (hs_hexsightblocking.int)`
 
-Runs when checking to see if a hex blocks movement or shooting. (or ai-ing, presumably...)
+Run when checking to see if a hex blocks movement or shooting. (or ai-ing, presumably...)
 
 __NOTE:__ These hook scripts can become very CPU-intensive and you should avoid using them.
-For this reason, these hooks are not properly supported in sfall, and may be removed in future versions.  
+For this reason, these hooks are not thoroughly supported in sfall, and may be removed in future versions.  
 If you want to check if some tile or path is blocked, use functions: `obj_blocking_tile`, `obj_blocking_line`, `path_find_to`.  
 If you want script to be called every time NPC moves by hex in combat, use `HOOK_MOVECOST` hook.
 
@@ -368,7 +368,7 @@ Runs when retrieving the damage rating of the player's used weapon. (Which may b
 ```
 int     arg0 - The default min damage
 int     arg1 - The default max damage
-Item    arg2 - The weapon used. (0 if unarmed)
+Item    arg2 - The weapon used (0 if unarmed)
 Critter arg3 - The critter doing the attacking
 int     arg4 - The type of attack
 int     arg5 - non-zero if this is an attack using a melee weapon
@@ -387,22 +387,22 @@ To add proper check for ammo before attacking and proper calculation of the numb
 ```
 Item    arg0 - The weapon
 int     arg1 - Number of bullets in burst or 1 for single shots
-int     arg2 - The amount of ammo that will be consumed, calculated by cost of the original function (this is basically 2 for Super Cattle Prod and Mega Power Fist)
-               Note: for hook type 2, this value is the cost of ammo (default is always 1)
+int     arg2 - The amount of ammo that will be consumed, calculated by the original ammo cost function (this is basically 2 for Super Cattle Prod and Mega Power Fist)
+               NOTE: for hook type 2, this value is the ammo cost per round (default is always 1)
 int     arg3 - Type of hook:
                     0 - when subtracting ammo after single shot attack
                     1 - when checking for "out of ammo" before attack
                     2 - when calculating number of burst rounds
-                    3 - when subtracting ammo after burst attack)
+                    3 - when subtracting ammo after burst attack
 
-int     ret0 - The new amount of ammo, or ammo cost value for hook type 2 (set to 0 for unlimited ammo)
+int     ret0 - The new amount of ammo to be consumed, or ammo cost per round for hook type 2 (set to 0 for unlimited ammo)
 ```
 -------------------------------------------
 
 #### `HOOK_KEYPRESS (hs_keypress.int)`
 
 Runs once every time when any key was pressed or released.
-- DX codes: see __dik.h__ header or https://kippykip.com/b3ddocs/commands/scancodes.htm
+- DX codes: see **dik.h** header or https://kippykip.com/b3ddocs/commands/scancodes.htm
 - VK codes: http://msdn.microsoft.com/en-us/library/windows/desktop/dd375731%28v=vs.85%29.aspx
 
 __NOTE:__ If you want to override a key, the new key DX scancode should be the same for both pressed and released events.
@@ -418,7 +418,7 @@ int     ret0 - overrides the pressed key (a new key DX scancode or 0 for no over
 
 #### `HOOK_MOUSECLICK (hs_mouseclick.int)`
 
-Runs once every time when a mouse button was pressed or release.
+Runs once every time when a mouse button was pressed or released.
 
 ```
 int     arg0 - event type: 1 - pressed, 0 - released
@@ -430,7 +430,7 @@ int     arg1 - button number (0 - left, 1 - right, up to 7)
 
 Runs when using any skill on any object.
 
-This is fired before the default handlers are called, which you can override. In this case you should write your own skill use handler entirely, or otherwise nothing will happen (this includes fade in/fade out, time lapsing and messages - all of this can be scripted; to get vanilla text messages - use `message_str_game` along with `sprintf()`).
+This is fired before the default handlers are called, which you can override. In this case you should write your own skill use handler entirely, or otherwise nothing will happen (this includes fade in/fade out, time lapsing and messages - all of this can be scripted; to get vanilla text messages - use `message_str_game` along with `sprintf`).
 Suggested use - override first aid/doctor skills to buff/nerf them, override steal skill to disallow observing NPCs inventories in some cases.
 Doesn't seem to run when lock picking.
 
@@ -488,7 +488,7 @@ int     arg3 - Type of hook:
 int     ret0 - overrides the returned result of the function:
                 0 - not in range (can't see)
                 1 - in range (will see if not blocked)
-                2 - forced detection (will see regardless, only used in "obj_can_see_obj" scripting function which is called by every critter in the game)
+                2 - forced detection (will see regardless, only used in "obj_can_see_obj" script function which is called by every critter in the game)
 ```
 -------------------------------------------
 
@@ -545,7 +545,7 @@ int     ret0 - overrides hard-coded handler (-1 - use engine handler, any other 
 Runs after calculating character figure FID on the inventory screen, whenever the game decides that character appearance might change.  
 Also happens on other screens, like barter.
 
-__NOTE:__ FID has following format: `0x0ABBCDDD`, where: `A` - is object type, `BB` - animation code (always 0 in this case), `C` - weapon code, `DDD` - FRM index in LST file.
+__NOTE:__ FID has following format: `0x0ABBCDDD`, where: `A` - object type, `BB` - animation code (always 0 in this case), `C` - weapon code, `DDD` - FRM index in LST file.
 
 ```
 int     arg0 - the vanilla FID calculated by the engine according to critter base FID and armor/weapon being used
@@ -650,10 +650,10 @@ int     ret1 - overrides the result of engine calculation: 0/1 - failure, 2/3 - 
 
 #### `HOOK_DESCRIPTIONOBJ (hs_descriptionobj.int)`
 
-Runs when using the examine action icon to display object description. You can override the description of the object.  
+Runs when using the examine action icon to display the description of an object. You can override the description text.
 An example usage would be to add an additional description to the item based on player's stats/skills.
 
-__NOTE:__ Not runs if the script of the object overrides the description.
+__NOTE:__ Does not run if the script of the object overrides the description.
 
 ```
 Obj     arg0 - the object
@@ -800,28 +800,28 @@ int     ret1 - pass 1 to cancel the encounter and load the specified map from th
 
 #### `HOOK_ADJUSTPOISON (hs_adjustpoison.int)`
 
-Runs when the critter's poison level is changed or damage is caused by the poison effect.
+Runs when a critter's poison level is changed, or when the player takes damage from the poison.
 
 ```
-Critter arg0 - critter
-int     arg1 - amount of the increase/decrease of the poisoning level
-int     arg2 - damage value at the time of applying poison effect
-               (damage the poison effect is implemented only for the player's character, for other critters this value will always be 0)
+Critter arg0 - the critter
+int     arg1 - the amount of poison being added/removed
+int     arg2 - the damage value at the time of applying the poison effect
+               (damage from the poison effect is implemented only for the player character; for other critters, this value will always be 0)
 
-int     ret0 - the new value of the amount poisoning level
-int     ret1 - the new damage value, only negative values are allowed (will only be valid at the time of the poison damage)
+int     ret0 - the new amount of poison being added/removed
+int     ret1 - the new damage value, only negative values are allowed (will only be valid at the time of taking damage from the poison)
 ```
 -------------------------------------------
 
-#### `HOOK_ADJUSTRADIATION (hs_adjustradiation.int)`
+#### `HOOK_ADJUSTRADS (hs_adjustrads.int)`
 
-Runs when the critter's rads level is changed.
+Runs when a critter's radiation level is changed.
 
 ```
-Critter arg0 - critter (usual dude_obj)
-int     arg1 - amount of the increase/decrease of the rads level
+Critter arg0 - the critter (usually dude_obj)
+int     arg1 - the amount of radiation being added/removed
 
-int     ret0 - the new value of the amount rads level
+int     ret0 - the new amount of radiation being added/removed
 ```
 -------------------------------------------
 
@@ -836,7 +836,7 @@ int     arg0 - event type:
              3 - checks the chance when using skills (not listed below)
              4 - check the chance of using Repair skill
              5 - check the chance of using Doctor skill
-             6 - check the chance of using Steal skill for the thief (player's)
+             6 - check the chance of using Steal skill for the thief (usually the player's)
              7 - the second Steal skill chance check for the target to catch the thief, in which the target's failure is the thief's success result
 int     arg1 - the value of roll result (see ROLL_* constants), which is calculated as:
                 - for ROLL_CRITICAL_SUCCESS: random(1, 100) <= (random_chance / 10) + bonus
@@ -845,14 +845,14 @@ int     arg2 - the chance value
 int     arg3 - the bonus value, used when checking critical success
 int     arg4 - random chance, calculated as: (chance - random(1, 100)), where a negative value is a failure check (ROLL_FAILURE)
 
-int     ret0 - override the roll result
+int     ret0 - overrides the roll result
 ```
 -------------------------------------------
 
 #### `HOOK_BESTWEAPON (hs_bestweapon.int)`
 
 Runs when the AI decides which weapon is the best while searching the inventory for a weapon to equip in combat.  
-This is also runs when the player presses the "Use Best Weapon" button on the party member control panel.
+This also runs when the player presses the "Use Best Weapon" button on the party member control panel.
 
 ```
 Critter arg0 - the critter searching for a weapon
@@ -867,9 +867,9 @@ Item    ret0 - overrides the chosen best weapon
 
 #### `HOOK_CANUSEWEAPON (hs_canuseweapon.int)`
 
-Run when the AI checks whether it can use a weapon, or when the game checks whether the player can use a item (weapon) in hand slot.  
+Run when the AI checks whether it can use a weapon, or when the game checks whether the player can use an item (weapon) in hand slot.  
 For AI, this mostly happens when NPCs try to find weapons in their inventory or on the map.  
-For the player, this happens when the game updates the item data for the main slot of the interface bar.
+For the player, this happens when the game updates the item data for active item slots on the interface bar.
 
 ```
 Critter arg0 - the critter doing the check

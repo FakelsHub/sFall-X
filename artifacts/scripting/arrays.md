@@ -245,8 +245,8 @@ For those who used arrays in their mods before sfall 3.4:
 
 1. There is an INI parameter **ArraysBehavior** in **Misc** section of "ddraw.ini". If set to 0, all scripts which used sfall arrays before should work. This basically changes that `create_array` will create permanent arrays which are "saved" by default and their ID is also permanent. It is 1 by default.
 
+__NOTE:__ Starting from sfall 4.3.3/3.8.33, the **ArraysBehavior** option is removed, and arrays always work in **ArraysBehavior=1** mode. Make sure to review your scripts if you need to save arrays into savegames.
+
 2. How savegame compatibility is handled?. Saved arrays are stored in sfallgv.sav file (in savegame) in new (more flexible) format, just after the old arrays. So basically, when you load older savegame, sfall will load arrays from old format and save them to new format on next game save. If you load savegame made with sfall 3.4 using sfall 3.3 (for example), game shouldn't crash, but all arrays will be lost.
 
 3. Previously you had to specify size in bytes for array elements. This parameter is now ignored and you can store strings of arbitrary length in arrays.
-
-The **ArraysBehavior** option has been removed from sfall 4.3.3/3.8.33, now arrays always work in **ArraysBehavior=1** mode.

@@ -647,6 +647,7 @@ public:
 				fo::func::buf_to_buf(mveSurface, width, mveDesc.dwHeight, width, (BYTE*)dRect.pBits, dRect.Pitch);
 			}
 		} else {
+			int sPitch = width;
 			int height = mveDesc.dwHeight;
 
 			if (d != 0) { // scale
@@ -655,7 +656,9 @@ public:
 				height = dst->bottom - dst->top;
 
 				HRP::Image::Scale(mveSurface, mveDesc.lPitch, mveDesc.dwHeight, mveScaleSurface, width, height, ResWidth);
+
 				mveSurface = mveScaleSurface;
+				sPitch = ResWidth;
 			}
 
 			int pitch = dRect.Pitch / 4;
@@ -665,7 +668,7 @@ public:
 			{
 				int x = width;
 				while (x--) pBits[x] = palette[mveSurface[x]].xRGB;
-				mveSurface += width;
+				mveSurface += sPitch;
 				pBits += pitch;
 			}
 		}
