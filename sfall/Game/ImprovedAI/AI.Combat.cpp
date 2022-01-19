@@ -354,11 +354,9 @@ static long CheckCoverConditionAndGetTile(fo::GameObject* source, fo::GameObject
 	}
 
 	if (attacker.cap->disposition != fo::AIpref::Disposition::coward) {
-		// выход если NPC безоружен или у атакующего не стрелковое оружие
+		// выход если атакующий безоружен или у него не стрелковое оружие
 		fo::GameObject* item = fo::func::inven_right_hand(source);
-		if (!item || AIHelpersExt::GetWeaponSubType(item, false) != fo::AttackSubType::GUNS) {
-			return -1;
-		}
+		if (AIHelpersExt::ItemIsGun(item) == false) return -1;
 
 		// если цель вооружена и простреливается то переместиться за укрытие
 		bool isRangeAttack = false;
@@ -545,20 +543,28 @@ static void DistancePrefBeforeAttack(fo::GameObject* source, fo::GameObject* tar
 	long distance = 0;
 
 	/* Distance: Charge behavior */
-	if (attacker.cap->distance == fo::AIpref::Distance::charge && fo::func::obj_dist(source, target) > fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) / 2) {
+	// Атакующий приблизится к цели на расстояние для совершения одной атаки
+	if (attacker.cap->distance == fo::AIpref::Distance::charge &&
+		// дистанция между атакующим и целью больше чем половина радиуса действия оружия атакующего
+		fo::func::obj_dist(source, target) > fo::func::item_w_range(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY) / 2) {
+
 		DEV_PRINTF1("\n[AI] AIpref::distance::charge: %s", fo::func::critter_name(target));
-		// приблизиться на расстояние для совершения одной атаки
+
 		distance = source->critter.getAP();
 		long cost = AIHelpersExt::GetCurrenShootAPCost(source, fo::AttackType::ATKTYPE_RWEAPON_PRIMARY, 0);
 		if (cost != -1 && distance > cost) distance -= cost;
-		if (source->critter.getAP(distance) < cost) return;
+
+		if (source->critter.getAP(distance) < cost) return; // не передвигаться если после перемещения не будет достаточно очков для совершения атаки
+
 		fo::func::ai_move_steps_closer(source, target, distance, 1);
 	}
 
 	/* Distance: Snipe behavior */
 	// Атакующий отойдет на расстояние в 10 гексов от своей цели если она на него нападает
 	else if (attacker.cap->distance == fo::AIpref::Distance::snipe && AIHelpersExt::ItemIsGun(fo::func::inven_right_hand(source))) {
+
 		DEV_PRINTF1("\n[AI] AIpref::distance::snipe: %s", fo::func::critter_name(target));
+
 		distance = fo::func::obj_dist(source, target);
 		if (distance < 10 && sf::AI::AIGetLastTarget(target) == source) { // target атакует/атаковал source
 			// нападаюший имеет рейтинг больше чем у атакующего
@@ -819,30 +825,30 @@ ReFindNewTarget:
 			DEV_PRINTF1("\n[AI] %s: No enemy critters...", attacker.name);
 			return;
 		}
-		DEV_PRINTF1("\n[AI] %s: I no have target! Try find ally critters.", attacker.name);
+		DEV_PRINTF1("\n[AI] %s: I no have target! Try find team critters.", attacker.name);
 
 		// найти ближайшего со-комадника у которого есть цель (проверить цели)
-		fo::GameObject* ally_Critter = fo::func::ai_find_nearest_team_in_combat(source, source, 1);
+		fo::GameObject* teamCritter = fo::func::ai_find_nearest_team_in_combat(source, source, 1);
 
 		// если critter не найден и атакующий из команды игрока, то присвоить в качестве critter obj_dude
-		if (!ally_Critter && source->critter.teamNum == 0) ally_Critter = fo::var::obj_dude;
+		if (!teamCritter && source->critter.teamNum == 0) teamCritter = fo::var::obj_dude;
 
 		long distance = (attacker.InDudeParty) ? getAIPartyMemberDistances(attacker.cap->distance) : 6; // default (было 5)
 
-		DEV_PRINTF1("\n[AI] Find team critter: %s", (ally_Critter) ? fo::func::critter_name(ally_Critter) : "<None>");
-		if (ally_Critter) {
-			long dist = fo::func::obj_dist(source, ally_Critter);
+		DEV_PRINTF1("\n[AI] Find team critter: %s", (teamCritter) ? fo::func::critter_name(teamCritter) : "<None>");
+		if (teamCritter) {
+			long dist = fo::func::obj_dist(source, teamCritter);
 			if (dist > distance) // дистанция больше чем определено по умолчанию, идем к криттеру из своей команды который имеет цель
 			{
-				dist -= distance; // | 7-6=1
+				dist -= distance;
 				dist = sf::GetRandom(dist, dist + 3);
-				fo::func::ai_move_steps_closer(source, ally_Critter, dist, 0);
-				DEV_PRINTF1("\n[AI] Move close to: %s", fo::func::critter_name(ally_Critter));
+				fo::func::ai_move_steps_closer(source, teamCritter, dist, 0);
+				DEV_PRINTF1("\n[AI] Move close to: %s", fo::func::critter_name(teamCritter));
 			}
 			else if (!attacker.InDudeParty && attacker.cap->distance != fo::AIpref::Distance::stay)
 			{	// поведение не для партийцев игрока
-				// если атакующий уже находится в радиусе, рандомное перемещение вокруг ally_Critter
-				long tile = AIHelpersExt::GetRandomDistTile(source, ally_Critter->tile, 5);
+				// если атакующий уже находится в радиусе, рандомное перемещение вокруг teamCritter
+				long tile = AIHelpersExt::GetRandomDistTile(source, teamCritter->tile, 5);
 				if (tile != -1) {
 					DEV_PRINTF("\n[AI] Random move tile.");
 					AIHelpersExt::CombatMoveToTile(source, tile, source->critter.getAP());

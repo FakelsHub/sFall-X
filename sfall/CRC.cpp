@@ -46,7 +46,7 @@ static DWORD CalcCRCInternal(BYTE* data, DWORD size) {
 	for (size_t i = 0; i < 256; i++) {
 		DWORD r = i;
 		for (size_t j = 0; j < 8; j++) {
-			r = (r >> 1) ^ (Polynomial & (0 - (r & 1)));
+			r = (r >> 1) ^ (Polynomial & (0 - (r & 1))); // (r & 1) ? (r >> 1) ^ Polynomial : r >> 1;
 		}
 		tableCRC[i] = r;
 	}
@@ -81,7 +81,7 @@ DWORD CRC(const char* filepath) {
 	}
 
 	DWORD size = GetFileSize(h, 0);
-	if (size < (ExpectedSize - 1024)) {
+	if (size < (ExpectedSize / 2)) {
 		CloseHandle(h);
 		ExitMessageFail("You're trying to use sfall with an incompatible version of Fallout.");
 		return 0;
@@ -99,7 +99,7 @@ DWORD CRC(const char* filepath) {
 		if (crc == ExpectedCRC[i]) return -1; // vanilla CRC
 	}
 
-ReTry:
+Retry:
 	bool matchedCRC = CheckExtraCRC(crc);
 	if (!matchedCRC) {
 		sprintf_s(buf, "You're trying to use sfall with an incompatible version of Fallout.\n"
@@ -112,7 +112,7 @@ ReTry:
 				std::exit(EXIT_FAILURE);
 				break;
 			case IDRETRY:
-				goto ReTry;
+				goto Retry;
 			}
 			return crc;
 		}

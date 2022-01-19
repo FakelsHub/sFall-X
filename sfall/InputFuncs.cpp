@@ -1,4 +1,4 @@
-/*
+﻿/*
  *    sfall
  *    Copyright (C) 2008, 2009, 2010  The sfall team
  *
@@ -340,7 +340,14 @@ public:
 
 	HRESULT __stdcall SetCooperativeLevel(HWND a, DWORD b) {
 		if (DeviceType == kDeviceType_KEYBOARD && backgroundKeyboard) b = DISCL_BACKGROUND | DISCL_NONEXCLUSIVE;
-		if (DeviceType == kDeviceType_MOUSE && backgroundMouse) b = DISCL_BACKGROUND | DISCL_NONEXCLUSIVE;
+
+		if (DeviceType == kDeviceType_MOUSE) {
+			if (backgroundMouse) {
+				b = DISCL_BACKGROUND | DISCL_NONEXCLUSIVE;
+			} else if (Graphics::IsWindowedMode) {
+				//b = DISCL_FOREGROUND | DISCL_NONEXCLUSIVE; // для полноэкранного режима используются DISCL_FOREGROUND + DISCL_EXCLUSIVE
+			}
+		}
 		return RealDevice->SetCooperativeLevel(a, b);
 	}
 
@@ -397,6 +404,7 @@ public:
 
 	/*** IDirectInput8A methods ***/
 	HRESULT __stdcall CreateDevice(REFGUID r, IDirectInputDeviceA** device, IUnknown* unused) {
+
 		GUID GUID_SysMouse    = { 0x6F1D2B60, 0xD5A0, 0x11CF, { 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00} };
 		GUID GUID_SysKeyboard = { 0x6F1D2B61, 0xD5A0, 0x11CF, { 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00} };
 
@@ -441,20 +449,20 @@ public:
 
 inline void InitInputFeatures() {
 
-	reverseMouse = GetConfigInt("Input", "ReverseMouseButtons", 0) != 0;
-	useScrollWheel = GetConfigInt("Input", "UseScrollWheel", 1) != 0;
-	wheelMod = GetConfigInt("Input", "ScrollMod", 0);
+	reverseMouse = IniReader::GetConfigInt("Input", "ReverseMouseButtons", 0) != 0;
+	useScrollWheel = IniReader::GetConfigInt("Input", "UseScrollWheel", 1) != 0;
+	wheelMod = IniReader::GetConfigInt("Input", "ScrollMod", 0);
 
-	LONG MouseSpeed = GetConfigInt("Input", "MouseSensitivity", 100);
+	LONG MouseSpeed = IniReader::GetConfigInt("Input", "MouseSensitivity", 100);
 	if (MouseSpeed != 100) {
 		adjustMouseSpeed = true;
 		mouseSpeedMod = ((double)MouseSpeed) / 100.0;
 	}
 
-	middleMouseKey = GetConfigInt("Input", "MiddleMouse", 0x30);
+	middleMouseKey = IniReader::GetConfigInt("Input", "MiddleMouse", 0x30);
 
-	backgroundKeyboard = GetConfigInt("Input", "BackgroundKeyboard", 0) != 0;
-	backgroundMouse = GetConfigInt("Input", "BackgroundMouse", 0) != 0;
+	backgroundKeyboard = IniReader::GetConfigInt("Input", "BackgroundKeyboard", 0) != 0;
+	backgroundMouse = IniReader::GetConfigInt("Input", "BackgroundMouse", 0) != 0;
 
 	keyboardLayout = GetKeyboardLayout(0);
 }
@@ -467,6 +475,7 @@ typedef HRESULT (__stdcall *DInputCreateProc)(HINSTANCE a,DWORD b,IDirectInputA*
 HRESULT __stdcall FakeDirectInputCreate(HINSTANCE a, DWORD b, IDirectInputA** c, IUnknown* d) {
 	HMODULE dinput = LoadLibraryA("dinput.dll");
 	if (!dinput || dinput == INVALID_HANDLE_VALUE) return -1;
+
 	DInputCreateProc proc = (DInputCreateProc)GetProcAddress(dinput, "DirectInputCreateA");
 	if (!proc) return -1;
 

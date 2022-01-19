@@ -290,7 +290,11 @@ static long __fastcall pickup_item(fo::GameObject* source, fo::GameObject* item)
 	}
 
 	long result = fo::func::item_move_force(item->owner, source, item, moveCount);
-	if (result) fo::func::debug_printf("\n[AI] Error pickup item (%s).", fo::func::critter_name(item));
+	if (result) {
+		fo::func::debug_printf("\n[AI] Error pickup item: %s.", fo::func::critter_name(item));
+	} else if (sf::isDebug) {
+		fo::func::debug_printf("\n[AI] Pickup item: %s.", fo::func::critter_name(item));
+	}
 	return result;
 }
 
