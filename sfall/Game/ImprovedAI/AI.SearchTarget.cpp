@@ -92,7 +92,7 @@ static bool CheckAttackerTarget(fo::GameObject* source, fo::GameObject* target) 
 		return true;                        // picking alternate target
 	}
 
-	fo::AIcap* cap = AICombat::AttackerAI();
+	fo::AIcap* cap = fo::func::ai_cap(source);
 	if (shotIsBlock && pathToTarget >= 5) { // shot block to target, can move
 		long dist_disposition = distance;
 		switch (cap->disposition) {
@@ -245,7 +245,7 @@ static long AICombatCheckBadShot(fo::GameObject* source, fo::GameObject* target,
 				if (hit <= 30) return 1; // bad
 			}
 			else if (type & 8) { // for attack bad to hit
-				long minToHit = AICombat::AttackerAI()->min_to_hit;
+				long minToHit = fo::func::ai_cap(source)->min_to_hit;
 				long hit = fo::func::determine_to_hit_no_range(source, target, fo::BodyPart::Uncalled, AICombat::AttackerHitMode());
 				if (hit < minToHit) return 1; // bad
 			}
@@ -264,7 +264,7 @@ fo::GameObject* AISearchTarget::AIDangerSource(fo::GameObject* source, long type
 	bool isIgnoreFlee = false;
 	long isPartyMember = fo::func::isPartyMember(source);
 
-	fo::AIcap* cap = AICombat::AttackerAI();
+	fo::AIcap* cap = fo::func::ai_cap(source);
 	fo::AIpref::AttackWho attack_who = (isPartyMember || npcAttackWhoFix) // [add ext] NPCAttackWhoFix option
 										? cap->attack_who
 										: fo::AIpref::AttackWho::no_attack_mode;

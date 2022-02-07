@@ -944,11 +944,11 @@ static AIBehavior::AttackResult __fastcall AICheckResultAfterAttack(fo::GameObje
 		if (source->critter.getAP(dist) >= costAP) { // очков действия хватает чтобы сделать удар
 			DEV_PRINTF("\n[AI] Attack result: UNARMED ATTACK\n");
 
-			// проверить веротность удара и очки жизней прежде чем подходить
+			// проверить вероятность удара и очки жизней прежде чем подходить
 
 			if (dist > 0 && AIHelpersExt::ForceMoveToTarget(source, target, dist) == -1) return AIBehavior::AttackResult::Default; // не удалось приблизиться к цели
-			hitMode = fo::AttackType::ATKTYPE_PUNCH; // установить тип атаки
-			weapon = nullptr;                        // без оружия
+			hitMode = fo::AttackType::ATKTYPE_PUNCH; // установить тип атаки "без оружия"
+			//weapon = nullptr;                      // не делать это, иначе возможны баги в ванильной ai_try_attack
 			return AIBehavior::AttackResult::ReTryAttack;
 		}
 	}

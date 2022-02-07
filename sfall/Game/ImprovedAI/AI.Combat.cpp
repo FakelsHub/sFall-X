@@ -45,19 +45,24 @@ CombatShootResult AICombat::combat_check_bad_shot(fo::GameObject* source, fo::Ga
 	if (source->critter.getAP() <= 0) return CombatShootResult::NoActionPoint;
 	if (target && target->critter.damageFlags & fo::DAM_DEAD) return CombatShootResult::TargetDead; // target is dead
 
-	fo::GameObject* item = fo::func::inven_right_hand(source);
-	if (item) {
-		if (!AIHelpersExt::AICanUseWeapon(item)) return CombatShootResult::CantUseWeapon;
+	bool unarmed = (hitMode != fo::AttackType::ATKTYPE_RWEAPON_PRIMARY && hitMode != fo::AttackType::ATKTYPE_RWEAPON_SECONDARY);
 
-		long flags = source->critter.damageFlags;
-		if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::util::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
-			return CombatShootResult::CrippledHand; // one of the hands is crippled, can't use a two-handed weapon
+	if (!unarmed) {
+		fo::GameObject* item = fo::func::inven_right_hand(source);
+		if (item) {
+			if (!AIHelpersExt::AICanUseWeapon(item)) return CombatShootResult::CantUseWeapon;
+
+			long flags = source->critter.damageFlags;
+			if (flags & (fo::DAM_CRIP_ARM_RIGHT | fo::DAM_CRIP_ARM_LEFT) && (fo::util::GetProto(item->protoId)->item.flagsExt & fo::ItemFlags::TwoHand)) { // item_w_is_2handed_
+				return CombatShootResult::CrippledHand; // one of the hands is crippled, can't use a two-handed weapon
+			}
+			if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
+				return CombatShootResult::CrippledHands; // crippled both hands
+			}
+			if (fo::func::item_w_max_ammo(item) > 0 && sf::Combat::check_item_ammo_cost(item, hitMode) <= 0) return CombatShootResult::NoAmmo;
 		}
-		if ((flags & fo::DAM_CRIP_ARM_LEFT) && (flags & fo::DAM_CRIP_ARM_RIGHT)) {
-			return CombatShootResult::CrippledHands; // crippled both hands
-		}
-		if (fo::func::item_w_max_ammo(item) > 0 && sf::Combat::check_item_ammo_cost(item, hitMode) <= 0) return CombatShootResult::NoAmmo;
 	}
+
 	long distance = (target) ? fo::func::obj_dist(source, target) : 1;
 	long attackRange = fo::func::item_w_range(source, hitMode);
 	if (distance > attackRange) return CombatShootResult::OutOfRange; // target is out of range of the attack
