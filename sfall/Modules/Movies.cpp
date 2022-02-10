@@ -85,6 +85,7 @@ private:
 
 		lpAllocInfo->dwFlags |= VMR9AllocFlag_TextureSurface; // | VMR9AllocFlag_DXVATarget;
 		lpAllocInfo->Pool = D3DPOOL_SYSTEMMEM;
+		//lpAllocInfo->Format = D3DFMT_X8R8G8B8;
 
 		// Ask the VMR-9 to allocate the surfaces for us.
 		for (auto &surface : surfaces) SAFERELEASE(surface);
@@ -522,7 +523,7 @@ static void __declspec(naked) op_play_gmovie_hack() {
 }
 
 void SkipOpeningMoviesPatch() {
-	int skipOpening = GetConfigInt("Misc", "SkipOpeningMovies", 0);
+	int skipOpening = IniReader::GetConfigInt("Misc", "SkipOpeningMovies", 0);
 	if (skipOpening) {
 		dlog("Skipping opening movies.", DL_INIT);
 		SafeWrite16(0x4809C7, 0x1CEB); // jmps 0x4809E5
@@ -557,6 +558,24 @@ static __declspec(naked) void LostFocus() {
 	}
 }
 
+/*
+	WIP: Task
+	Implement subtitle output from the need to play an mve file in the background.
+*/
+bool Movies::DirectShowMovies() {
+	int allowDShowMovies = IniReader::GetConfigInt("Graphics", "AllowDShowMovies", 0);
+	if (allowDShowMovies > 0) {
+		Graphics::AviMovieWidthFit = (allowDShowMovies >= 2);
+		MakeJump(0x44E690, gmovie_play_hack);
+		HookCall(0x44E993, gmovie_play_hook_stop);
+
+		/* NOTE: At this address 0x487781 (movieStart_), HRP by Mash changes the callback procedure to display mve frames. */
+
+		return true;
+	}
+	return false;
+}
+
 void Movies::init() {
 	dlog("Applying movie patch.", DL_INIT);
 
@@ -571,36 +590,20 @@ void Movies::init() {
 
 		_itoa_s(i + 1, &optName[5], 3, 10);
 		if (i < DEFAULT_MOVIES) {
-			GetConfigString("Misc", optName, fo::var::movie_list[i], &MoviePaths[index], 65);
+			IniReader::GetConfigString("Misc", optName, fo::var::movie_list[i], &MoviePaths[index], 65);
 		} else {
-			GetConfigString("Misc", optName, "", &MoviePaths[index], 65);
+			IniReader::GetConfigString("Misc", optName, "", &MoviePaths[index], 65);
 		}
 	}
-	dlog(".", DL_INIT);
 	SafeWriteBatch<DWORD>((DWORD)MoviePtrs, { 0x44E6AE, 0x44E721, 0x44E75E, 0x44E78A }); // gmovie_play_
 	MakeCall(0x44E896, gmovie_play_hack_subpal, 2);
 	MakeCall(0x45A1C9, op_play_gmovie_hack);
-	dlog(".", DL_INIT);
-
-	/*
-		WIP: Task
-		Implement subtitle output from the need to play an mve file in the background.
-	*/
-	if (Graphics::mode >= 4) {
-		int allowDShowMovies = GetConfigInt("Graphics", "AllowDShowMovies", 0);
-		if (allowDShowMovies > 0) {
-			Graphics::AviMovieWidthFit = (allowDShowMovies >= 2);
-			MakeJump(0x44E690, gmovie_play_hack);
-			HookCall(0x44E993, gmovie_play_hook_stop);
-			/* NOTE: At this address 0x487781 (movieStart_), HRP changes the callback procedure to display mve frames. */
-		}
-	}
 	dlogr(" Done", DL_INIT);
 
 	DWORD days = SimplePatch<DWORD>(0x4A36EC, "Misc", "MovieTimer_artimer4", 360, 0);
 	days = SimplePatch<DWORD>(0x4A3747, "Misc", "MovieTimer_artimer3", 270, 0, days);
 	days = SimplePatch<DWORD>(0x4A376A, "Misc", "MovieTimer_artimer2", 180, 0, days);
-	Artimer1DaysCheckTimer = GetConfigInt("Misc", "MovieTimer_artimer1", 90);
+	Artimer1DaysCheckTimer = IniReader::GetConfigInt("Misc", "MovieTimer_artimer1", 90);
 	if (Artimer1DaysCheckTimer != 90) {
 		Artimer1DaysCheckTimer = max(0, min(days, Artimer1DaysCheckTimer));
 		char s[255];

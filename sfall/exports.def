@@ -28,3 +28,6 @@ SetAppCompatData            = FakeSetAppCompatData               @23
 ; sfall override
 DirectDrawCreat2            = FakeDirectDrawCreate2              @24
 DirectInputCreateA          = FakeDirectInputCreate              @25
+
+; for crash monitor
+SaveScreenA                                                      @30
