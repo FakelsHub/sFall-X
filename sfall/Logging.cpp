@@ -35,28 +35,28 @@ void dlog(const char* a) {
 }
 
 void dlog(const char* a, int type) {
-	if (isDebug && (type == DL_MAIN || (type & DebugTypes))) {
+	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
 		Log << a;
 		Log.flush();
 	}
 }
 
 void dlog(const std::string& a, int type) {
-	if (isDebug && (type == DL_MAIN || (type & DebugTypes))) {
+	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
 		Log << a;
 		Log.flush();
 	}
 }
 
 void dlogr(const char* a, int type) {
-	if (isDebug && (type == DL_MAIN || (type & DebugTypes))) {
+	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
 		Log << a << "\n";
 		Log.flush();
 	}
 }
 
 void dlogr(const std::string& a, int type) {
-	if (isDebug && (type == DL_MAIN || (type & DebugTypes))) {
+	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
 		Log << a << "\n";
 		Log.flush();
 	}

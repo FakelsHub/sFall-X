@@ -189,7 +189,7 @@ void Render::init() {
 
 	// Custom implementation of the GNW_win_refresh function
 	sf::MakeJump(0x4D6FD9, GNW_win_refresh_hack, 1);
-	// replace _screendump_buf to _screen_buffer for create screenshot (for sfall DirectX9 mode in HRP by Mash)
+	// replace _screendump_buf to _screen_buffer for create screenshot (for sfall DirectX9 mode with HRP by Mash)
 	sf::SafeWriteBatch<DWORD>(FO_VAR_screen_buffer, { 0x4C8FD1, 0x4C900D });
 
 	// dev test

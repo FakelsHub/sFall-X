@@ -74,6 +74,7 @@
 #include "Modules\Worldmap.h"
 
 #include "CRC.h"
+#include "InputFuncs.h"
 #include "Logging.h"
 #include "ReplacementFuncs.h"
 #include "Translate.h"
@@ -99,7 +100,7 @@ HMODULE GetHModule() {
 }
 
 static void InitModules() {
-	dlogr("In InitModules", DL_MAIN);
+	dlogr("In InitModules", DL_INIT);
 
 	auto& manager = ModuleManager::getInstance();
 
@@ -170,7 +171,7 @@ static void InitModules() {
 
 	manager.initAll();
 
-	dlogr("Leave InitModules", DL_MAIN);
+	dlogr("Leave InitModules", DL_INIT);
 }
 
 static void CompatModeCheck(HKEY root, const char* filepath, int extra) {
@@ -284,6 +285,7 @@ defaultIni:
 	HRP::Setting::init(filepath, cmdline, crc);
 
 	InitReplacementHack();
+	InitInput();
 	InitModules();
 
 	if (HRP::Setting::ExternalEnabled()) ShowCursor(0);
