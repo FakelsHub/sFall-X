@@ -38,11 +38,15 @@
 namespace sfall
 {
 
-#define UNUSEDFUNCTION { return DDERR_GENERIC; }
-#define SAFERELEASE(a) { if (a) { a->Release(); a = nullptr; } }
-
 //typedef HRESULT (__stdcall *DDrawCreateProc)(void*, IDirectDraw**, void*);
 //typedef IDirect3D9* (__stdcall *D3DCreateProc)(UINT version);
+
+#define UNUSEDFUNCTION          { return DDERR_GENERIC; }
+#define SAFERELEASE(a)          { if (a) { a->Release(); a = nullptr; } }
+
+#define ShowMessageBox(text)    ShowWindow(window, SW_MINIMIZE); \
+                                MessageBoxA(window, text, "SFALL DirectX 9", MB_TASKMODAL | MB_ICONWARNING); \
+                                ShowWindow(window, SW_RESTORE)
 
 #if !(NDEBUG) && !(_DEBUG)
 static LPD3DXFONT font;
@@ -187,19 +191,14 @@ static void ResetDevice(bool create) {
 		DWORD mThreadFlags = (dShowMovies) ? D3DCREATE_MULTITHREADED : 0;
 
 		dlog("Creating D3D9 Device...", DL_MAIN);
-		if (FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE| mThreadFlags, &params, &d3d9Device))) { // D3DCREATE_PUREDEVICE
-			if (FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE| mThreadFlags, &params, &d3d9Device))) {
+		if (FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE | mThreadFlags, &params, &d3d9Device))) { // D3DCREATE_PUREDEVICE
+			if (FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE | mThreadFlags, &params, &d3d9Device))) {
 				d3d9Device = nullptr;
 				dlogr(" Failed!", DL_MAIN);
 				return;
 			}
 			software = true;
-			if (params.Windowed) {
-				MessageBoxA(window, "Failed to create hardware vertex processing device.\nUsing software vertex processing instead.",
-							"SFALL DirectX 9", MB_TASKMODAL | MB_ICONWARNING);
-			} else {
-				dlog(" Failed to create hardware vertex processing device. Using software vertex processing instead.", DL_MAIN);
-			}
+			ShowMessageBox("Failed to create hardware vertex processing device.\nUsing software vertex processing instead.");
 		}
 
 		D3DCAPS9 caps;
@@ -232,7 +231,7 @@ static void ResetDevice(bool create) {
 
 				textureFormat = (A8IsSupport) ? D3DFMT_A8 : D3DFMT_L8; // D3DFMT_A8 - not supported on some older video cards
 			} else {
-				MessageBoxA(window, "Failed to create shader effects.\nSwithing to CPU for conversion the palette.", "SFALL DirectX 9", MB_TASKMODAL | MB_ICONWARNING);
+				ShowMessageBox("Failed to create shader effects.\nSwithing to CPU for conversion the palette.");
 
 				if (mainTex) SAFERELEASE(mainTex); // release texture D3DFMT_A8 format
 				Graphics::GPUBlt = 0;
@@ -244,9 +243,8 @@ static void ResetDevice(bool create) {
 			textureFormat = D3DFMT_X8R8G8B8;
 			d3d9Device->CreateTexture(ResWidth, ResHeight, 1, 0, textureFormat, D3DPOOL_SYSTEMMEM, &mainTex, 0);
 
-			MessageBoxA(window, "Texture format error.\nGPU does not support the D3DFMT_L8 texture format.\nNow CPU is used to convert the palette."
-								"Set 'GPUBlt' option to CPU for hide this warning message.",
-								"SFALL DirectX 9", MB_TASKMODAL | MB_ICONWARNING);
+			ShowMessageBox("Texture format error.\nGPU does not support the D3DFMT_L8 texture format.\nNow CPU is used to convert the palette."
+			               "Set 'GPUBlt' option to CPU for hide this warning message.");
 
 			Graphics::GPUBlt = 0;
 		}
@@ -971,7 +969,7 @@ public:
 
 	ULONG __stdcall AddRef()  { return ++Refs; }
 
-	ULONG __stdcall Release() { // called from game on exit
+	ULONG __stdcall Release() { // called from GNW95_reset_mode_ (on game exit)
 		if (!--Refs) {
 			ScriptShaders::Release();
 
@@ -1032,7 +1030,13 @@ public:
 	HRESULT __stdcall GetScanLine(LPDWORD) { UNUSEDFUNCTION; }
 	HRESULT __stdcall GetVerticalBlankStatus(LPBOOL) { UNUSEDFUNCTION; }
 	HRESULT __stdcall Initialize(GUID *) { UNUSEDFUNCTION; }
-	HRESULT __stdcall RestoreDisplayMode() { return DD_OK; }
+
+	HRESULT __stdcall RestoreDisplayMode() { // called from GNW95_reset_mode_
+		#ifdef NDEBUG
+		ShowWindow(window, SW_HIDE);
+		#endif
+		return DD_OK;
+	}
 
 	HRESULT __stdcall SetCooperativeLevel(HWND a, DWORD b) { // called 0x4CB005 GNW95_init_DirectDraw_
 		window = a;
@@ -1198,9 +1202,9 @@ void Graphics::BackgroundClearColor(long indxColor) {
 	}
 
 	if (GPUBlt) {
-		D3DLOCKED_RECT buf;
-		mainTex->LockRect(0, &buf, 0, D3DLOCK_DISCARD);
-		std::memset(buf.pBits, indxColor, ResWidth * ResHeight);
+		D3DLOCKED_RECT rectLock;
+		mainTex->LockRect(0, &rectLock, 0, D3DLOCK_DISCARD);
+		std::memset(rectLock.pBits, indxColor, rectLock.Pitch * ResHeight);
 		mainTex->UnlockRect(0);
 	} else {
 		DDSURFACEDESC desc;
