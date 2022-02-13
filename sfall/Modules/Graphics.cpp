@@ -44,9 +44,9 @@ namespace sfall
 #define UNUSEDFUNCTION          { return DDERR_GENERIC; }
 #define SAFERELEASE(a)          { if (a) { a->Release(); a = nullptr; } }
 
-#define ShowMessageBox(text)    ShowWindow(window, SW_MINIMIZE); \
+#define ShowMessageBox(text)    if (!Graphics::IsWindowedMode) ShowWindow(window, SW_MINIMIZE); \
                                 MessageBoxA(window, text, "SFALL DirectX 9", MB_TASKMODAL | MB_ICONWARNING); \
-                                ShowWindow(window, SW_RESTORE)
+                                if (!Graphics::IsWindowedMode) ShowWindow(window, SW_RESTORE)
 
 #if !(NDEBUG) && !(_DEBUG)
 static LPD3DXFONT font;
@@ -107,7 +107,6 @@ static IDirect3DVertexBuffer9* vertexSfallRes;
 static IDirect3DVertexBuffer9* vertexMovie; // for AVI
 //static IDirect3DVertexBuffer9* vertexStaticScreen; // splash/death/endslides
 
-static IDirect3DTexture9* paletteTex;
 static IDirect3DTexture9* gpuPalette;
 static ID3DXEffect* gpuBltEffect;
 
@@ -205,6 +204,9 @@ static void ResetDevice(bool create) {
 		d3d9Device->GetDeviceCaps(&caps);
 		ShaderVersion = ((caps.PixelShaderVersion & 0x0000FF00) >> 8) * 10 + (caps.PixelShaderVersion & 0xFF);
 
+		bool npow2 = ((caps.TextureCaps & D3DPTEXTURECAPS_POW2) != 0); //(caps.TextureCaps & D3DPTEXTURECAPS_NONPOW2CONDITIONAL)
+		if (npow2) dlog("Warning: The video card does not support textures that are not multiples of the power of two.\n", DL_MAIN);
+
 		// Use: 0 - only CPU, 1 - force GPU, 2 - Auto Mode (GPU or switch to CPU)
 		if (Graphics::GPUBlt == 2 && ShaderVersion < 20) Graphics::GPUBlt = 0;
 
@@ -227,8 +229,6 @@ static void ResetDevice(bool create) {
 
 				Graphics::SetDefaultTechnique();
 
-				d3d9Device->CreateTexture(256, 1, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &paletteTex, 0);
-
 				textureFormat = (A8IsSupport) ? D3DFMT_A8 : D3DFMT_L8; // D3DFMT_A8 - not supported on some older video cards
 			} else {
 				ShowMessageBox("Failed to create shader effects.\nSwithing to CPU for conversion the palette.");
@@ -248,7 +248,8 @@ static void ResetDevice(bool create) {
 
 			Graphics::GPUBlt = 0;
 		}
-		if (Graphics::GPUBlt == 0) palette = new DirectDraw::PALCOLOR[256];
+
+		palette = new DirectDraw::PALCOLOR[256];
 
 		#if !(NDEBUG) && !(_DEBUG)
 			D3DXCreateFontA(d3d9Device, 24, 0, 500, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial", &font);
@@ -579,7 +580,10 @@ void Graphics::SetDefaultTechnique() {
 }
 
 static void SetGPUPalette() {
-	d3d9Device->UpdateTexture(paletteTex, gpuPalette);
+	D3DLOCKED_RECT lock;
+	gpuPalette->LockRect(0, &lock, 0, D3DLOCK_DISCARD);
+	std::memcpy(lock.pBits, palette, 256 * 4);
+	gpuPalette->UnlockRect(0);
 }
 
 class FakeDirectDrawSurface : IDirectDrawSurface {
@@ -762,10 +766,8 @@ public:
 			ResetDevice(false);
 			DeviceLost = false;
 			// restore palette
-			if (Graphics::GPUBlt) {
-				paletteTex->AddDirtyRect(0);
-				SetGPUPalette();
-			}
+			if (Graphics::GPUBlt) SetGPUPalette();
+
 			#ifndef NDEBUG
 			dlog("\nD3D9 device restored.", DL_MAIN);
 			#endif
@@ -916,34 +918,23 @@ public:
 		fo::PALETTE* destPal = (fo::PALETTE*)d;
 
 		if (Graphics::GPUBlt) {
-			D3DLOCKED_RECT pal;
-			if (c != 256) {
-				RECT rect = { (LONG)b, 0, (LONG)(b + c), 1 };
-				paletteTex->LockRect(0, &pal, &rect, D3DLOCK_NO_DIRTY_UPDATE);
-				paletteTex->AddDirtyRect(&rect);
-				b = 0;
-			} else {
-				paletteTex->LockRect(0, &pal, 0, 0);
-			}
-			// copy and swap color B <> R
-			do {
-				((DirectDraw::PALCOLOR*)pal.pBits)[b].R = destPal->R << 2;
-				((DirectDraw::PALCOLOR*)pal.pBits)[b].G = destPal->G << 2;
-				((DirectDraw::PALCOLOR*)pal.pBits)[b].B = destPal->B << 2;
+			while (true) {
+				palette[b].xRGB = *(DWORD*)destPal;
+				if (--c == 0) break;
 				destPal++;
 				b++;
-			} while (--c);
-			paletteTex->UnlockRect(0);
+			};
 			if (!DeviceLost) SetGPUPalette();
 		} else {
 			// copy and swap color B <> R
-			do {
+			while (true) {
 				palette[b].R = destPal->R << 2;
 				palette[b].G = destPal->G << 2;
 				palette[b].B = destPal->B << 2;
+				if (--c == 0) break;
 				destPal++;
 				b++;
-			} while (--c);
+			};
 
 			primarySurface->SetPalette(0); // update texture
 			if (FakeDirectDrawSurface::IsPlayMovie) return DD_OK; // prevents flickering movie at the beginning of playback (w/o HRP & GPUBlt=2)
@@ -982,7 +973,6 @@ public:
 			SAFERELEASE(sTex2);
 			SAFERELEASE(vertexOrigRes);
 			SAFERELEASE(vertexSfallRes);
-			SAFERELEASE(paletteTex);
 			SAFERELEASE(gpuPalette);
 			SAFERELEASE(gpuBltEffect);
 			SAFERELEASE(vertexMovie);

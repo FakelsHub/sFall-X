@@ -29,36 +29,35 @@ namespace sfall
 static int DebugTypes = 0;
 static std::ofstream Log;
 
-void dlog(const char* a) {
+template <class T>
+static void OutLog(T a) {
 	Log << a;
 	Log.flush();
 }
 
 void dlog(const char* a, int type) {
 	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
-		Log << a;
-		Log.flush();
+		OutLog(a);
 	}
 }
 
 void dlog(const std::string& a, int type) {
 	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
-		Log << a;
-		Log.flush();
+		OutLog(a);
 	}
 }
 
 void dlogr(const char* a, int type) {
 	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
 		Log << a << "\n";
-		Log.flush();
+		//Log.flush();
 	}
 }
 
 void dlogr(const std::string& a, int type) {
 	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
 		Log << a << "\n";
-		Log.flush();
+		//Log.flush();
 	}
 }
 
@@ -68,8 +67,7 @@ void dlog_f(const char* fmt, int type, ...) {
 		va_start(args, type);
 		char buf[1024];
 		vsnprintf_s(buf, sizeof(buf), _TRUNCATE, fmt, args);
-		Log << buf;
-		Log.flush();
+		OutLog(buf);
 		va_end(args);
 	}
 }
@@ -78,8 +76,7 @@ void dlogh(const char* fmt, long arg1, long arg2, long arg3) {
 	if (DL_HOOK & DebugTypes) {
 		char buf[1024];
 		_snprintf_s(buf, sizeof(buf), _TRUNCATE, fmt, arg1, arg2, arg3);
-		Log << buf;
-		Log.flush();
+		OutLog(buf);
 	}
 }
 
@@ -91,8 +88,7 @@ void devlog_f(const char* fmt, int type, ...) {
 		va_start(args, type);
 		char buf[1024];
 		vsnprintf_s(buf, sizeof(buf), _TRUNCATE, fmt, args);
-		Log << buf;
-		Log.flush();
+		OutLog(buf);
 		va_end(args);
 	}
 }
