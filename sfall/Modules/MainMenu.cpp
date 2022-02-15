@@ -30,7 +30,7 @@ namespace sfall
 #ifdef NDEBUG
 static const char* VerString1 = "HRP & SFALL " VERSION_STRING " - Extended";
 #else
-static const char* VerString1 = "HRP & SFALL " VERSION_STRING " - ext [Debug]";
+static const char* VerString1 = "HRP & SFALL " VERSION_STRING " - Ext. [Debug]";
 #endif
 
 long MainMenu::mXOffset;

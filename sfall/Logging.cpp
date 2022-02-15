@@ -49,15 +49,13 @@ void dlog(const std::string& a, int type) {
 
 void dlogr(const char* a, int type) {
 	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
-		Log << a << "\n";
-		//Log.flush();
+		Log << a << std::endl;
 	}
 }
 
 void dlogr(const std::string& a, int type) {
 	if (type == DL_MAIN || (isDebug && (type & DebugTypes))) {
-		Log << a << "\n";
-		//Log.flush();
+		Log << a << std::endl;
 	}
 }
 

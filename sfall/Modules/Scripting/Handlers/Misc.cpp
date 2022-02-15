@@ -98,7 +98,7 @@ void op_get_year(OpcodeContext& ctx) {
 
 void __declspec(naked) op_eax_available() {
 	__asm {
-		xor  edx, edx
+		mov  edx, 1; // 1 - for sfall-X
 		_J_RET_VAL_TYPE(VAR_TYPE_INT);
 	}
 }

@@ -296,12 +296,14 @@ void Opcodes::InitNew() {
 		opcodes[0x1d0] = op_write_short;
 		opcodes[0x1d1] = op_write_int;
 		opcodes[0x21b] = op_write_string;
-		for (int i = 0x1d2; i < 0x1dc; i++) {
-			opcodes[i] = op_call_offset;
-		}
 	} else {
 		dlogr("  Unsafe opcodes disabled.", DL_SCRIPT);
 	}
+
+	for (int i = 0x1d2; i < 0x1dc; i++) {
+		opcodes[i] = op_call_offset;
+	}
+
 	opcodes[0x156] = op_read_byte;
 	opcodes[0x157] = op_read_short;
 	opcodes[0x158] = op_read_int;
