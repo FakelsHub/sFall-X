@@ -1337,6 +1337,3 @@ HRESULT __stdcall FakeDirectDrawCreate2(void* a, IDirectDraw** b, void* c) {
 	return sfall::InitFakeDirectDrawCreate(a, b, c);
 }
 
-HRESULT __stdcall SaveScreenA() {
-	return (HRESULT)0; //sfall::SaveScreen("CrashScreen.png");
-}

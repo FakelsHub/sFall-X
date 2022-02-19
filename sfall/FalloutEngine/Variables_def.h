@@ -20,7 +20,7 @@ VAR_(btable,                     DWORD)
 VAR_(btncnt,                     DWORD)
 VAR_(carCurrentArea,             DWORD)
 VAR_(carGasAmount,               long) // from 0 to 80000
-VARA(cmap,                       fo::PALETTE, 256)
+VARA(cmap,                       fo::PALETTE, 256) // palette without gamma
 VAR_(colorTable,                 DWORD)
 VAR_(combat_end_due_to_load,     DWORD)
 VAR_(combat_free_move,           DWORD)
@@ -40,6 +40,7 @@ VAR_(cur_id,                     DWORD)
 VAR_(curr_font_num,              DWORD)
 VARA(curr_pc_stat,               long, fo::PCSTAT_max_pc_stat)
 VAR_(curr_stack,                 DWORD)
+VARA(current_palette,            fo::PALETTE, 256) // current palette without gamma
 VAR_(currentProgram,             fo::Program*)
 VAR_(cursor_line,                DWORD)
 VAR_(DARK_GREY_Color,            BYTE)

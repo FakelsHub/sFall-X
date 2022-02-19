@@ -483,6 +483,9 @@
     <ClInclude Include="HLSL\L8PixelShader.h">
       <Filter>HLSL</Filter>
     </ClInclude>
+    <ClInclude Include="FalloutEngine\Variables_def.h">
+      <Filter>FalloutEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

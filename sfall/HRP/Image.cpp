@@ -166,8 +166,8 @@ struct BMPHEADER {
 };
 #pragma pack(pop)
 
-/* BMP 24-bit
-bool MakeBMP(const char* file, BYTE* dataRGB32, long width, long height, long pitch) {
+// BMP 24-bit
+bool Image::MakeBMP(const char* file, BYTE* dataRGB32, long width, long height, long pitch) {
 	long bmpExtraSize = width * 3 % 4;
 	if (bmpExtraSize != 0) bmpExtraSize = 4 - bmpExtraSize;
 
@@ -177,7 +177,7 @@ bool MakeBMP(const char* file, BYTE* dataRGB32, long width, long height, long pi
 	BMPHEADER bmpHeader;
 	std::memset(&bmpHeader, 0, sizeof(BMPHEADER));
 
-	bmpHeader.bFile.bfType = 'BM';
+	bmpHeader.bFile.bfType = 'MB';
 	bmpHeader.bFile.bfSize = sizeImage + sizeof(BMPHEADER);
 	bmpHeader.bFile.bfOffBits = sizeof(BMPHEADER);
 	bmpHeader.bInfo.biSize = sizeof(BITMAPINFOHEADER);
@@ -192,9 +192,9 @@ bool MakeBMP(const char* file, BYTE* dataRGB32, long width, long height, long pi
 	BYTE* dData = bmpImageData;
 
 	// 32-bit to 24-bit
-	for (size_t h = 0; h < height; h++) {
+	for (long h = 0; h < height; h++) {
 		BYTE* sData = dataRGB32;
-		for (size_t w = 0; w < width; w++)
+		for (long w = 0; w < width; w++)
 		{
 			*dData++ = *sData++;
 			*dData++ = *sData++;
@@ -205,7 +205,7 @@ bool MakeBMP(const char* file, BYTE* dataRGB32, long width, long height, long pi
 		dData += bmpExtraSize;
 	}
 
-	HANDLE hFile = CreateFileA(file, GENERIC_WRITE, 0, 0, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, 0);
+	HANDLE hFile = CreateFileA(file, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 	bool result = (hFile != INVALID_HANDLE_VALUE);
 
 	if (result) {
@@ -217,6 +217,6 @@ bool MakeBMP(const char* file, BYTE* dataRGB32, long width, long height, long pi
 	delete[] bmpImageData;
 
 	return result;
-}*/
+}
 
 }

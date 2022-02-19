@@ -27,6 +27,8 @@
 #include "ScriptExtender.h"
 #include "Scripting\Arrays.h"
 
+#include "..\HRP\Image.h"
+
 #include "DebugEditor.h"
 
 namespace sfall
@@ -596,4 +598,30 @@ void DebugEditor::init() {
 	}
 }
 
+static void __stdcall MakeCrashScreen() {
+	BYTE* screenBuffer = (BYTE*)fo::var::getInt(FO_VAR_screen_buffer);
+	if (!screenBuffer) return;
+
+	size_t size = HRP::Setting::ScreenHeight() * HRP::Setting::ScreenWidth();
+	DWORD* dataRGB = new DWORD[size];
+	DWORD* data = dataRGB;
+
+	do {
+		unsigned char iColor = *screenBuffer++;
+
+		DWORD xBGR = 0;
+		xBGR |= (fo::var::current_palette[iColor].R * 4);
+		xBGR |= (fo::var::current_palette[iColor].G * 4) << 8;
+		xBGR |= (fo::var::current_palette[iColor].B * 4) << 16;
+		*data++ = xBGR;
+	} while (--size);
+
+	HRP::Image::MakeBMP("CrashScreen.bmp", (BYTE*)dataRGB, HRP::Setting::ScreenWidth(), HRP::Setting::ScreenHeight(), HRP::Setting::ScreenWidth() * 4);
+	delete[] dataRGB;
+}
+
+}
+
+void __stdcall SaveScreenA() {
+	sfall::MakeCrashScreen();
 }
