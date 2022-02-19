@@ -89,11 +89,12 @@ bool Setting::ExternalEnabled() {
 static std::string GetBackupFileName(const char* runFileName, bool wait) {
 	std::string bakExeName(runFileName);
 	std::string::size_type n = bakExeName.rfind('.');
-	if (n != std::string::npos) {
-		bakExeName.replace(n, 4, ".hrp");
-		char c = 10;
-		while (std::remove(bakExeName.c_str()) != 0 && wait && --c) Sleep(1000); // delete .hrp (if it exists)
-	}
+	if (n == std::string::npos) return std::string(); // empty
+
+	bakExeName.replace(n, 4, ".hrp");
+	char c = 10;
+	while (std::remove(bakExeName.c_str()) != 0 && wait && --c) Sleep(1000); // delete .hrp (if it exists)
+
 	return bakExeName;
 }
 
@@ -134,7 +135,7 @@ static bool DisableExtHRP(const char* runFileName, std::string &cmdline, DWORD c
 	std::fclose(ft);
 	cmdline.append(" -restart");
 
-	MessageBoxA(0, "High Resolution Patch has been successfully deactivated.", "sfall", MB_TASKMODAL | MB_ICONINFORMATION);
+	//MessageBoxA(0, "High Resolution Patch has been successfully deactivated.", "sfall", MB_TASKMODAL | MB_ICONINFORMATION);
 
 	ShellExecuteA(0, 0, runFileName, cmdline.c_str(), 0, SW_SHOWDEFAULT); // restart game
 	return true;
